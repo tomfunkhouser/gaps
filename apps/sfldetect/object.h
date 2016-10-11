@@ -1,0 +1,46 @@
+#ifndef __OBJECT__STUFF__
+#define __OBJECT__STUFF__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Class declarations
+////////////////////////////////////////////////////////////////////////
+
+class ObjectDescriptor;
+class ObjectPoint;
+class ObjectPointSet;
+class ObjectModel;
+class ObjectLabel;
+class ObjectSegmentation;
+class ObjectDetection;
+class ObjectAssignment;
+class ObjectParse;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Dependency include files 
+////////////////////////////////////////////////////////////////////////
+
+#include "R3Surfels/R3Surfels.h"
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Include files for object stuff
+////////////////////////////////////////////////////////////////////////
+
+#include "descriptor.h"
+#include "point.h"
+#include "pointset.h"
+#include "align.h"
+#include "segmentation.h"
+#include "detection.h"
+#include "model.h"
+#include "label.h"
+#include "assignment.h"
+#include "parse.h"
+
+#endif
+
