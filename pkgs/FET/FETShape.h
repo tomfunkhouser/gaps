@@ -29,7 +29,9 @@ public:
   // Properties
   R3Box BBox(void) const;
   R3Point Centroid(void) const;
-  R3Point Origin(void) const;
+  R3Point Viewpoint(void) const;
+  R3Vector Towards(void) const;
+  R3Vector Up(void) const;
   RNLength AverageFeatureRadius(void) const;
   const R3Affine& Transformation(int transformation_type = 0) const;
   const char *Name(void) const;
@@ -38,7 +40,9 @@ public:
   void ResetTransformation(void);
   void SetTransformation(const R3Affine& transformation);
   void PerturbTransformation(RNLength translation_magnitude, RNAngle rotation_magnitude);
-  void SetOrigin(const R3Point& origin);
+  void SetViewpoint(const R3Point& viewpoint);
+  void SetTowards(const R3Vector& towards);
+  void SetUp(const R3Vector& up);
   void SetName(const char *name);
 
   // Display
@@ -65,6 +69,10 @@ public:
     RNBoolean discard_boundaries = FALSE);
 
 public:
+  // Internal properties
+  R3Point Origin(void) const;
+  void SetOrigin(const R3Point& origin);
+
   // Internal manipulation
   void InsertChild(FETShape *child);
   void RemoveChild(FETShape *child);
@@ -119,10 +127,12 @@ public:
   
   // Geometric properties
   R3Kdtree<struct FETFeature *> *kdtree;
-  R3Point origin;
-  R3Box bbox;
+  R3Point viewpoint; // untransformed
+  R3Vector towards, up; // untransformed
+  R3Box bbox; // transformed
 
   // Other properties
+  R3Point origin; // untransformed
   char *name;
 };
 
@@ -264,6 +274,39 @@ Centroid(void) const
 
 
 
+inline R3Point FETShape::
+Viewpoint(void) const
+{
+  // Return viewpoint
+  R3Point result = viewpoint;
+  result.Transform(current_transformation);
+  return result;
+}
+
+
+
+inline R3Vector FETShape::
+Towards(void) const
+{
+  // Return towards
+  R3Vector result = towards;
+  result.Transform(current_transformation);
+  return result;
+}
+
+
+
+inline R3Vector FETShape::
+Up(void) const
+{
+  // Return up
+  R3Vector result = up;
+  result.Transform(current_transformation);
+  return result;
+}
+
+
+
 inline const R3Affine& FETShape::
 Transformation(int transformation_type) const
 {
@@ -290,6 +333,36 @@ SetOrigin(const R3Point& origin)
 {
   // Set origin
   this->origin = origin;
+}
+
+
+
+inline void FETShape::
+SetViewpoint(const R3Point& viewpoint)
+{
+  // Set viewpoint
+  this->viewpoint = viewpoint;
+  this->viewpoint.InverseTransform(current_transformation);
+}
+
+
+
+inline void FETShape::
+SetTowards(const R3Vector& towards)
+{
+  // Set towards
+  this->towards = towards;
+  this->towards.InverseTransform(current_transformation);
+}
+
+
+
+inline void FETShape::
+SetUp(const R3Vector& up)
+{
+  // Set up
+  this->up = up;
+  this->up.InverseTransform(current_transformation);
 }
 
 

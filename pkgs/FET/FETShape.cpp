@@ -22,8 +22,11 @@ FETShape(FETReconstruction *reconstruction)
     current_transformation(R3identity_affine),
     ground_truth_transformation(R3identity_affine),
     kdtree(NULL),
-    origin(RN_UNKNOWN, RN_UNKNOWN, RN_UNKNOWN),
+    viewpoint(0, 0, 0),
+    towards(0, 0, 0),
+    up(0, 0, 0),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    origin(RN_UNKNOWN, RN_UNKNOWN, RN_UNKNOWN),
     name(NULL)
 {
   // Initialize variable index
@@ -53,8 +56,11 @@ FETShape(const FETShape& shape)
     current_transformation(shape.current_transformation),
     ground_truth_transformation(shape.ground_truth_transformation),
     kdtree(NULL),
-    origin(shape.origin),
+    viewpoint(shape.viewpoint),
+    towards(shape.towards),
+    up(shape.up),
     bbox(shape.bbox),
+    origin(shape.origin),
     name((shape.name) ? strdup(shape.name) : NULL)
 {
   // Initialize variable index
@@ -469,6 +475,7 @@ ReadBinary(FILE *fp)
   int dummy = 0;
   int r, nparents, nfeatures;
   char name_buffer[256];
+  float v[3], t[3], u[3];
   RNScalar c[3], current_matrix[16], ground_truth_matrix[16];
   fread(&r, sizeof(int), 1, fp);
   fread(name_buffer, sizeof(char), 256, fp);
@@ -478,11 +485,17 @@ ReadBinary(FILE *fp)
   fread(&current_matrix[0], sizeof(RNScalar), 16, fp);
   fread(&ground_truth_matrix[0], sizeof(RNScalar), 16, fp);
   fread(variable_inertias, sizeof(RNScalar), max_variables, fp);
-  for (int k = 0; k < 16; k++) fread(&dummy, sizeof(int), 1, fp);
+  fread(&v[0], sizeof(float), 3, fp);
+  fread(&t[0], sizeof(float), 3, fp);
+  fread(&u[0], sizeof(float), 3, fp);
+  for (int k = 0; k < 7; k++) fread(&dummy, sizeof(int), 1, fp);
   if (name_buffer[0] != '\0') name = strdup(name_buffer);
   current_transformation.Reset(R4Matrix(current_matrix), 0);
   initial_transformation.Reset(R4Matrix(current_matrix), 0);
   ground_truth_transformation.Reset(R4Matrix(ground_truth_matrix), 0);
+  viewpoint.Reset(v[0], v[1], v[2]);
+  towards.Reset(t[0], t[1], t[2]);
+  up.Reset(u[0], u[1], u[2]);
   origin.Reset(c[0], c[1], c[2]);
   
   // Check reconstruction index
@@ -512,6 +525,9 @@ WriteBinary(FILE *fp) const
   int nparents = NParents();
   int nfeatures = NFeatures();
   char name_buffer[256] = { '\0' };
+  float v[3]; v[0] = (float) viewpoint[0]; v[1] = (float) viewpoint[1]; v[2] = (float) viewpoint[2];
+  float t[3]; t[0] = (float) towards[0]; t[1] = (float) towards[1]; t[2] = (float) towards[2];
+  float u[3]; u[0] = (float) up[0]; u[1] = (float) up[1]; u[2] = (float) up[2];
   if (name) strncpy(name_buffer, name, 255);
   R4Matrix current_matrix = current_transformation.Matrix();
   R4Matrix ground_truth_matrix = ground_truth_transformation.Matrix();
@@ -523,7 +539,10 @@ WriteBinary(FILE *fp) const
   fwrite(&current_matrix[0][0], sizeof(RNScalar), 16, fp);
   fwrite(&ground_truth_matrix[0][0], sizeof(RNScalar), 16, fp);
   fwrite(variable_inertias, sizeof(RNScalar), max_variables, fp);
-  for (int k = 0; k < 16; k++) fwrite(&dummy, sizeof(int), 1, fp);
+  fwrite(v, sizeof(float), 3, fp);
+  fwrite(t, sizeof(float), 3, fp);
+  fwrite(u, sizeof(float), 3, fp);
+  for (int k = 0; k < 7; k++) fwrite(&dummy, sizeof(int), 1, fp);
 
   // Write parents
   for (int i = 0; i < nparents; i++) {
