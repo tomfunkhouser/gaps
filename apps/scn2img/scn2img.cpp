@@ -44,6 +44,7 @@ static int capture_material_images = 0;
 static int capture_node_images = 0;
 static int capture_category_images = 0;
 static int capture_boundary_images = 0;
+static int capture_room_surface_images = 0;
 static int capture_room_boundary_images = 0;
 
 
@@ -101,7 +102,8 @@ enum {
   BRDF_COLOR_SCHEME,
   MATERIAL_COLOR_SCHEME,
   NODE_COLOR_SCHEME,
-  CATEGORY_COLOR_SCHEME
+  CATEGORY_COLOR_SCHEME,
+  ROOM_SURFACE_COLOR_SCHEME
 };
 
 
@@ -595,7 +597,7 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       element->Draw(R3_DEFAULT_DRAW_FLAGS);
     }
   }
-  else if ((color_scheme == NODE_COLOR_SCHEME) || (color_scheme == CATEGORY_COLOR_SCHEME)) {
+  else if ((color_scheme == NODE_COLOR_SCHEME) || (color_scheme == CATEGORY_COLOR_SCHEME) || (color_scheme == ROOM_SURFACE_COLOR_SCHEME)) {
     // Draw integer values per node
     if (color_scheme == NODE_COLOR_SCHEME) {
       LoadInteger(node->SceneIndex() + 1);
@@ -604,6 +606,13 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       Category *category = (node_category_assignments) ? node_category_assignments[node->SceneIndex()] : NULL;
       int category_identifier = (category) ? category->identifier : 0;
       LoadInteger(category_identifier);
+    }
+    else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
+      if (!node->Name()) LoadInteger(0);
+      else if (!strncmp(node->Name(), "Walls#", 6)) LoadInteger(1);
+      else if (!strncmp(node->Name(), "Floors#", 7)) LoadInteger(2);
+      else if (!strncmp(node->Name(), "Ceilings#", 9)) LoadInteger(3);
+      else LoadInteger(0);
     }
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
@@ -942,6 +951,18 @@ void Redraw(void)
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_category.png", output_image_directory, name);
+        image.WriteFile(output_image_filename);
+      }
+    }
+  }
+
+  // Capture and write room_surface image 
+  if (capture_room_surface_images) {
+    if (DrawSceneWithOpenGL(*camera, scene, ROOM_SURFACE_COLOR_SCHEME, TRUE)) {
+      R2Grid image(width, height);
+      if (CaptureInteger(image)) {
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_room_surface.png", output_image_directory, name);
         image.WriteFile(output_image_filename);
       }
     }
@@ -1428,6 +1449,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_instance_images")) { capture_images = capture_node_images = 1; }
       else if (!strcmp(*argv, "-capture_category_images")) { capture_images = capture_category_images = 1; }
       else if (!strcmp(*argv, "-capture_boundary_images")) { capture_images = capture_boundary_images = 1; }
+      else if (!strcmp(*argv, "-capture_room_surface_images")) { capture_images = capture_room_surface_images = 1; }
       else if (!strcmp(*argv, "-capture_room_boundary_images")) { capture_images = capture_room_boundary_images = 1; }
       else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_name = *argv; capture_category_images = 1; }
       else if (!strcmp(*argv, "-kinect_min_depth")) { argc--; argv++; kinect_min_depth = atof(*argv); }
@@ -1471,6 +1493,7 @@ ParseArgs(int argc, char **argv)
     capture_node_images = 1;
     capture_category_images = 1;
     capture_boundary_images = 1;
+    capture_room_surface_images = 1;
     capture_room_boundary_images = 1;
   }
 

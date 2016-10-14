@@ -41,7 +41,7 @@ R3StopCamera()
 
 R3Camera::
 R3Camera(void)
-    : cs(R3Point(0,0,0), R3Triad(R3Vector(0,0,0), R3Vector(0,0,0), R3Vector(0,0,0))),
+    : cs(R3Point(0,0,0), R3Triad(R3Vector(1,0,0), R3Vector(0,1,0), R3Vector(0,0,1))),
       xfov(0),
       yfov(0),
       neardist(0),
