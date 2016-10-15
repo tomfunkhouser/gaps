@@ -58,6 +58,8 @@ static double interpolation_step = 0.1;
 
 // Camera scoring variables
 
+static int scene_scoring_method = 0;
+static int object_scoring_method = 0;
 static double min_visible_objects = 3;
 static double min_visible_fraction = 0.01;
 static double min_distance_from_obstacle = 0.1;
@@ -839,25 +841,44 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
     node_pixel_counts[node_index]++;
   }
 
-  // Count nodes and pixels visible on all objects of large enough size
-  int node_count = 0;
-  int pixel_count = 0;
-  for (int i = 0; i < scene->NNodes(); i++) {
-    R3SceneNode *node = scene->Node(i);
-    if (!IsObject(node)) continue;
-    if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
-    pixel_count += node_pixel_counts[i];
-    node_count++;
-  }
+  // Compute score
+  RNScalar score = 0;
+  if (scene_scoring_method == 0) {
+    // Count nodes and pixels visible on all objects of large enough size
+    int node_count = 0;
+    int pixel_count = 0;
+    for (int i = 0; i < scene->NNodes(); i++) {
+      R3SceneNode *node = scene->Node(i);
+      if (!IsObject(node)) continue;
+      if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
+      pixel_count += node_pixel_counts[i];
+      node_count++;
+    }
   
+    // Compute score (product of #objects and #objectpixels)
+    if (node_count > min_visible_objects) {
+      score = node_count * pixel_count / (RNScalar) max_pixel_count;
+    }
+  }
+  else if (scene_scoring_method == 1) {
+    RNScalar sum = 0;
+    int node_count = 0;
+    for (int i = 0; i < scene->NNodes(); i++) {
+      R3SceneNode *node = scene->Node(i);
+      if (!IsObject(node)) continue;
+      if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
+      sum += log(1000 * node_pixel_counts[i] / max_pixel_count);
+      node_count++;
+    }
+
+    // Compute score (log of product of number of pixels visible in each object)
+    if (node_count > min_visible_objects) {
+      score = sum;
+    }
+  }
+
   // Delete pixel counts
   delete [] node_pixel_counts;
-
-  // Check node count
-  if (node_count < min_visible_objects) return 0;
-
-  // Compute score 
-  RNScalar score = node_count * pixel_count / (RNScalar) max_pixel_count;
 
   // Return score
   return score;
@@ -1619,6 +1640,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-min_distance_from_obstacle")) { argc--; argv++; min_distance_from_obstacle = atof(*argv); }
       else if (!strcmp(*argv, "-min_visible_objects")) { argc--; argv++; min_visible_objects = atoi(*argv); }
       else if (!strcmp(*argv, "-min_score")) { argc--; argv++; min_score = atof(*argv); }
+      else if (!strcmp(*argv, "-scene_scoring_method")) { argc--; argv++; scene_scoring_method = atoi(*argv); }
+      else if (!strcmp(*argv, "-object_scoring_method")) { argc--; argv++; object_scoring_method = atoi(*argv); }
       else if (!strcmp(*argv, "-position_sampling")) { argc--; argv++; position_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-angle_sampling")) { argc--; argv++; angle_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-interpolation_step")) { argc--; argv++; interpolation_step = atof(*argv); }
@@ -1690,19 +1713,6 @@ int main(int argc, char **argv)
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
