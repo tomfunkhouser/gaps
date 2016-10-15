@@ -333,6 +333,7 @@ Draw(void) const
     // Draw point
     glPointSize(5);
     glBegin(GL_POINTS);
+    R3LoadNormal(normal);
     R3LoadPoint(position);
     glEnd();
     glPointSize(1);

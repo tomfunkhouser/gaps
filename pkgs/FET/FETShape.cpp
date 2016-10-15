@@ -625,6 +625,66 @@ UpdateVariableValues(const RNScalar *x)
 
 
 void FETShape::
+UpdateFeatureProperties(void)
+{
+  // Get some useful variables
+  const int max_neighbor_points = 16;
+  RNLength max_neighbor_distance = RN_INFINITY;
+
+  // Build shape's feature kdtree 
+  if (!kdtree) {
+    FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+    kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
+    if (!kdtree) RNAbort("Cannot build kdtree");
+  }
+
+  // Update normal and radius for every feature (if none already)
+  for (int i = 0; i < NFeatures(); i++) {
+    FETFeature *feature = Feature(i);
+
+    // Check if already up-to-date
+    if ((feature->Radius() > 0) && (feature->Normal() != R3zero_vector))  continue;
+
+    // Get features in neighborhood
+    RNArray<FETFeature *> neighbor_features;
+    if (!kdtree->FindClosest(feature, RN_EPSILON, max_neighbor_distance, max_neighbor_points, neighbor_features)) continue;
+    assert(neighbor_features.NEntries() <= max_neighbor_points);
+    if (neighbor_features.NEntries() < 3) continue;
+
+    // Get array of points for passing to centroid and principle axes functions
+    int num_neighbor_points = neighbor_features.NEntries();
+    R3Point neighbor_points[max_neighbor_points];
+    for (int j = 0; j < num_neighbor_points; j++) {
+      FETFeature *neighbor_feature = neighbor_features.Kth(j);
+      neighbor_points[j] = neighbor_feature->Position();
+    }
+
+    // Compute neighborhood properties
+    RNScalar neighborhood_variances[3];
+    R3Point neighborhood_centroid = R3Centroid(num_neighbor_points, neighbor_points);
+    R3Triad neighborhood_axes = R3PrincipleAxes(neighborhood_centroid, num_neighbor_points, neighbor_points, NULL, neighborhood_variances);
+    if (neighborhood_variances[0] < RN_EPSILON) continue;
+    RNLength radius = sqrt(neighborhood_variances[0]);
+     R3Vector direction = neighborhood_axes[0];
+    R3Vector normal = neighborhood_axes[2];
+    R3Plane tangent_plane(feature->Position(), normal);
+    if (R3SignedDistance(tangent_plane, this->Centroid()) < 0) normal.Flip();
+      
+    // Update feature properties
+    feature->SetDirection(direction);
+    feature->SetNormal(normal);
+    feature->SetRadius(radius);
+
+    // Update shape type ???
+    // if (variances[1] / variances[0] < 0.25) feature->SetShapeType(LINE_FEATURE_SHAPE);
+    // else if (variances[2] / variances[0] < 0.25) feature->SetShapeType(PLANE_FEATURE_SHAPE);
+    // else feature->SetShapeType(POINT_FEATURE_SHAPE);
+  }
+}
+
+
+
+void FETShape::
 UpdateBBox(void)
 {
   // Update bounding box

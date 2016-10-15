@@ -88,8 +88,9 @@ public:
   void InverseTransform(R3Vector& vector) const;
 
   // Internal updates
-  void InvalidateBBox();
-  void UpdateBBox();
+  void UpdateFeatureProperties(void);
+  void InvalidateBBox(void);
+  void UpdateBBox(void);
 
   // Variable stuff
   int NVariables(void) const;
