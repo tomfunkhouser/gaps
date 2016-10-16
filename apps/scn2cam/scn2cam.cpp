@@ -867,7 +867,7 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
       R3SceneNode *node = scene->Node(i);
       if (!IsObject(node)) continue;
       if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
-      sum += log(1000 * node_pixel_counts[i] / max_pixel_count);
+      sum += log(node_pixel_counts[i] / min_pixel_count_per_object);
       node_count++;
     }
 
