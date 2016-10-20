@@ -1415,10 +1415,23 @@ ReadMesh(const char *filename)
   for (int i = 0; i < mesh.NVertices(); i++) {
     R3MeshVertex *mesh_vertex = mesh.Vertex(i);
     const R3Point& position = mesh.VertexPosition(mesh_vertex);
-    // const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
-    // R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position, normal);
     R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
     vertices.Insert(triangle_vertex);
+
+    // Check if should assign vertex normal
+    RNBoolean smooth = TRUE;
+    const RNAngle max_smooth_angle = RN_PI/5.0;
+    for (int j = 0; j < mesh.VertexValence(mesh_vertex); j++) {
+      R3MeshEdge *mesh_edge = mesh.EdgeOnVertex(mesh_vertex, j);
+      RNAngle angle = mesh.EdgeInteriorAngle(mesh_edge);
+      if (fabs(angle - RN_PI) > max_smooth_angle) { smooth = FALSE; break; }
+    }
+
+    // Assign vertex normal
+    if (smooth) {
+      const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
+      triangle_vertex->SetNormal(normal);
+    }
   }
 
   // Create array of triangles
