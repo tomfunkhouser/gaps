@@ -307,7 +307,9 @@ AssignNodesToCategories(void)
       }
       else {
         if (node_name_length < category_name_length) continue;
-        const char *node_category_name = node_name + node_name_length - category_name_length;
+        const char *node_category_name = strrchr(node_name, '_');
+        if (!node_category_name) continue;
+        else node_category_name++;
         if (strcmp(node_category_name, category->name)) continue;
       }
       assignments[i] = category;
