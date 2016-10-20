@@ -2732,22 +2732,24 @@ static FETMatch *
 CreateMatchWithRANSAC(FETReconstruction *reconstruction,
    FETShape *shape1, FETShape *shape2)
 {
-#if 0
-  return NULL;
-#else
   // Just checking
   if (shape1->NFeatures() == 0) return NULL;
   if (shape2->NFeatures() == 0) return NULL;
 
   // Parameters
-  int max_icp_iterations = 4;
-  int max_ransac_iterations_per_feature = 4;
+  // int max_icp_iterations = 4;
+  int max_icp_iterations = 0;
+  // int max_ransac_iterations_per_feature = 4;
+  int max_ransac_iterations_per_feature = 1;
+  int num_feature2_samples = 256;
+  int num_inlier_samples = 128;
   RNScalar target_overlap = 0.1;
   RNLength target_distance = target_overlap * shape1->BBox().DiagonalRadius();
   RNLength generator_tolerance = reconstruction->max_euclidean_distance;
   RNLength inlier_tolerance = reconstruction->max_euclidean_distance;
   RNAngle max_normal_angle = reconstruction->max_normal_angle;
-  if (inlier_tolerance <= 0) inlier_tolerance = 8 * shape2->AverageFeatureRadius();
+  if (generator_tolerance < 0) generator_tolerance = RN_INFINITY;
+  if (inlier_tolerance < 0) generator_tolerance = RN_INFINITY;
   
   // Save the shape transformations
   R3Affine saved_transformation1 = shape1->current_transformation;
@@ -2770,7 +2772,6 @@ CreateMatchWithRANSAC(FETReconstruction *reconstruction,
   float max_descriptor_distance_squared[NUM_FEATURE_TYPES];
   for (int i = 0; i < NUM_FEATURE_TYPES; i++) {
     max_descriptor_distance_squared[i] = FLT_MAX;
-#if 0
     int mdds = features[i][0].NEntries() + features[i][1].NEntries();
     if (mdds > 2) {
       int ndds = 0;
@@ -2794,7 +2795,6 @@ CreateMatchWithRANSAC(FETReconstruction *reconstruction,
       }
       delete [] dds;
     }
-#endif
   }
   
   // For N iterations
@@ -2864,10 +2864,9 @@ CreateMatchWithRANSAC(FETReconstruction *reconstruction,
     listB.Empty();
     // for (int j = 0; j < shape2->NFeatures(); j++) {
     //   FETFeature *feature = shape2->Feature(j);
-    int max_feature_samples = 256;
     int generator_type = features1[0]->GeneratorType();
     RNScalar best_descriptor_distance_squared = max_descriptor_distance_squared[generator_type];
-    for (int j = 0; j < max_feature_samples; j++) {
+    for (int j = 0; j < num_feature2_samples; j++) {
       FETFeature *feature = SelectRandomFeature(features[generator_type][1]);
       RNScalar descriptor_distance_squared = feature->descriptor.SquaredDistance(features1[0]->descriptor);
       if (descriptor_distance_squared < best_descriptor_distance_squared) {
@@ -3014,7 +3013,6 @@ CreateMatchWithRANSAC(FETReconstruction *reconstruction,
 
     // Count the inliers
     RNScalar score = 0;
-    int num_inlier_samples = 128;
     int inlier_skip = shape1->NFeatures() / num_inlier_samples + 1;
     for (int j = 0; j < shape1->NFeatures(); j += inlier_skip) {
       FETFeature *feature1 = shape1->Feature(j);
@@ -3053,7 +3051,6 @@ CreateMatchWithRANSAC(FETReconstruction *reconstruction,
 
   // Return match
   return match;
-#endif
 }
 
 

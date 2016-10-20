@@ -677,7 +677,7 @@ Align(R3Mesh *mesh1, R3Mesh *mesh2,
   R3Point *points2 = new R3Point [ max_points ];
   int npoints2 = CreatePoints(mesh2, weights2, nweights2, points2, max_points, sample_method);
   if ((scale2 == 0) || (npoints2 == 0)) {
-    fprintf(stderr, "Unable to process first mesh\n");
+    fprintf(stderr, "Unable to process second mesh\n");
     return 0;
   }
 

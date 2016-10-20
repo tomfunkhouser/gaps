@@ -426,6 +426,8 @@ FindClosest(PtrType query_point,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -471,6 +473,8 @@ FindClosest(const R3Point& query_position,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -619,6 +623,8 @@ FindClosest(PtrType query_point,
   if (!root) return 0;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return 0;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -657,6 +663,8 @@ FindClosest(const R3Point& query_position, RNScalar min_distance, RNScalar max_d
   if (!root) return 0;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return 0;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -776,6 +784,8 @@ FindAll(PtrType query_point,
   if (!root) return 0;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return 0;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -811,6 +821,8 @@ FindAll(const R3Point& query_position, RNScalar min_distance, RNScalar max_dista
   if (!root) return 0;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return 0;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -939,6 +951,8 @@ FindAny(PtrType query_point,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -971,6 +985,8 @@ FindAny(const R3Point& query_position,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -1793,6 +1809,8 @@ FindFurthest(PtrType query_point,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 
@@ -1838,6 +1856,8 @@ FindFurthest(const R3Point& query_position,
   if (!root) return NULL;
 
   // Use squared distances for efficiency
+  if (max_distance < 0) return NULL;
+  if (min_distance < 0) min_distance = 0;
   RNLength min_distance_squared = min_distance * min_distance;
   RNLength max_distance_squared = max_distance * max_distance;
 

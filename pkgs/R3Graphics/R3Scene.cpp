@@ -635,7 +635,7 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, const char *object_name, R
 {
   // Create material if none
   if (!material) {
-    R3Brdf *brdf = new R3Brdf("Default");
+    R3Brdf *brdf = new R3Brdf(R3default_brdf, "Default");
     scene->InsertBrdf(brdf);
     material = new R3Material(brdf, "Default");
     scene->InsertMaterial(material);
@@ -1415,8 +1415,9 @@ ReadMesh(const char *filename)
   for (int i = 0; i < mesh.NVertices(); i++) {
     R3MeshVertex *mesh_vertex = mesh.Vertex(i);
     const R3Point& position = mesh.VertexPosition(mesh_vertex);
-    const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
-    R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position, normal);
+    // const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
+    // R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position, normal);
+    R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
     vertices.Insert(triangle_vertex);
   }
 

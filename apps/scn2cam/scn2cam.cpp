@@ -1417,7 +1417,7 @@ CreateWorldInHandCameras(void)
   RNScalar fardist = 100 * radius;
   RNScalar aspect = (RNScalar) height / (RNScalar) width;
   RNAngle yfov = atan(aspect * tan(xfov));
-  RNLength distance = 3.0 * radius;
+  RNLength distance = 2.5 * radius;
 
   // Determine number of cameras
   int ncameras = 0;
