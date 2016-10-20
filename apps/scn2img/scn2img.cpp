@@ -54,6 +54,7 @@ static int width = 640;
 static int height = 480;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
+static int headlight = 1;
 static int glut = 1;
 static int mesa = 0;
 
@@ -816,11 +817,13 @@ void Redraw(void)
   glEnable(GL_NORMALIZE);
 
   // Initialize headlight
-  static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
-  static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-  glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-  glEnable(GL_LIGHT0);
+  if (headlight) {
+    static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
+    static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+    glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+    glEnable(GL_LIGHT0);
+  }
 
   // Initialize graphics modes  
   // glEnable(GL_CULL_FACE);
@@ -1464,6 +1467,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
       else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
       else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
+      else if (!strcmp(*argv, "-no_headlight")) { headlight = 0; }
+      else if (!strcmp(*argv, "-headlight")) { headlight = 1; }
       else if (!strcmp(*argv, "-background")) {
         argc--; argv++; background[0] = atof(*argv);
         argc--; argv++; background[1] = atof(*argv);
