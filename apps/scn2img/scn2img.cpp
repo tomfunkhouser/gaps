@@ -306,10 +306,12 @@ AssignNodesToCategories(void)
         if (strncmp(node_name, "Ceilings#", 9)) continue;
       }
       else {
-        if (node_name_length < category_name_length) continue;
-        const char *node_category_name = strrchr(node_name, '_');
+        const char *node_category_name = NULL;
+        const char *p = node_name + node_name_length;
+        while (p-- > node_name+3) {
+          if (isalnum(*(p-2)) && (*(p-1) == '_') && isalnum(*(p))) { node_category_name = p; break; }
+        }
         if (!node_category_name) continue;
-        else node_category_name++;
         if (strcmp(node_category_name, category->name)) continue;
       }
       assignments[i] = category;
