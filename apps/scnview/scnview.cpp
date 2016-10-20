@@ -46,6 +46,7 @@ static R3SceneElement *selected_element = NULL;
 static RNArray<R3Camera *> *cameras = NULL;
 static int selected_camera_index = -1;
 static R3Point center(0, 0, 0);
+static int headlight = 1;
 
 
 
@@ -930,11 +931,13 @@ void GLUTInit(int *argc, char **argv)
   glEnable(GL_LIGHTING); 
 
   // Initialize headlight
-  static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
-  static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-  glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-  glEnable(GL_LIGHT0);
+  if (headlight) {
+    static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
+    static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+    glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+    glEnable(GL_LIGHT0);
+  }
   
   // Initialize graphics modes  
   glEnable(GL_DEPTH_TEST);
@@ -1083,6 +1086,8 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
+      else if (!strcmp(*argv, "-headlight")) headlight = 1;
+      else if (!strcmp(*argv, "-no_headlight")) headlight = 0;
       else if (!strcmp(*argv, "-hide_faces")) show_faces = 0;
       else if (!strcmp(*argv, "-show_faces")) show_faces = 1;
       else if (!strcmp(*argv, "-show_edges")) show_edges = 1;
