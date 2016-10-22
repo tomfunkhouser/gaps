@@ -126,6 +126,91 @@ SetQuadraticAttenuation(RNScalar qa)
 
 
 
+RNScalar R3AreaLight::
+IntensityAtPoint(const R3Point& point) const
+{
+    // Parameter ????
+    const int max_samples = 4;
+
+    // Check if light is active
+    if (!IsActive()) return 0.0;
+
+    // Check if point is in front of light 
+    if (R3SignedDistance(circle.Plane(), point) <= 0) return 0.0;
+
+    // Get circle axes
+    R3Vector direction = circle.Normal();
+    RNDimension dim = direction.MinDimension();
+    R3Vector axis1 = direction % R3xyz_triad[dim];
+    axis1.Normalize();
+    R3Vector axis2 = direction % axis1;
+    axis2.Normalize();
+
+    // Sample points on light source
+    int sample_count = 0;
+    RNScalar sample_sum = 0.0;
+    while (sample_count < max_samples) {
+        // Sample point in circle
+        RNScalar r1 = 2.0 * RNRandomScalar() - 1.0;
+        RNScalar r2 = 2.0 * RNRandomScalar() - 1.0;
+        if (r1*r1 + r2*r2 > 1) continue;
+        R3Point sample_point = Position();
+        sample_point += r1 * Radius() * axis1;
+        sample_point += r2 * Radius() * axis2;
+        sample_count++;
+        
+        // Compute direction at point
+        R3Vector L = sample_point - point;
+        L.Normalize();
+
+        // Compute intensity at point
+        RNScalar I = Intensity() * Direction().Dot(-L);
+        if (RNIsNegativeOrZero(I)) return 0.0;
+        RNLength d = R3Distance(point, sample_point);
+        RNScalar denom = constant_attenuation;
+        denom += d * linear_attenuation;
+        denom += d * d * quadratic_attenuation;
+        if (RNIsPositive(denom)) I /= denom;
+
+        // Add to result
+        sample_sum += I;
+    }
+
+    // Return average
+    RNArea area = circle.Area();
+    RNScalar sample_mean = sample_sum;
+    if (sample_count > 0) sample_mean /= sample_count;
+    return area * sample_mean;
+}
+
+
+
+RNScalar R3AreaLight::
+RadiusOfInfluence(RNScalar intensity_threshhold) const
+{
+    // Return distance beyond which intensity is below threshold
+    // kq*d^2 + kl*d + (kc - 1/a) = 0 (use quadratic formula)
+    if (!IsActive()) return 0.0;
+    if (RNIsZero(Intensity())) return 0.0;
+    if (RNIsZero(intensity_threshhold)) return RN_INFINITY;
+    RNScalar A = quadratic_attenuation;
+    RNScalar B = linear_attenuation;
+    RNScalar C = constant_attenuation - Intensity() / intensity_threshhold;
+    RNScalar r = (-B + sqrt(B*B - 4.0*A*C)) / (2.0*A);
+    return r + Radius();
+}
+
+
+
+R3Sphere R3AreaLight::
+SphereOfInfluence(RNScalar intensity_threshold) const
+{
+    // Return sphere within which light intensity is above threshhold
+    return R3Sphere(Position(), RadiusOfInfluence(intensity_threshold));
+}
+
+
+
 RNRgb R3AreaLight::
 DiffuseReflection(const R3Brdf& brdf, 
     const R3Point& point, const R3Vector& normal) const
@@ -135,6 +220,9 @@ DiffuseReflection(const R3Brdf& brdf,
 
     // Check if light is active
     if (!IsActive()) return RNblack_rgb;
+
+    // Check if point is in front of light 
+    if (R3SignedDistance(circle.Plane(), point) <= 0) return RNblack_rgb;
 
     // Get material properties
     const RNRgb& Dc = brdf.Diffuse();
@@ -163,17 +251,18 @@ DiffuseReflection(const R3Brdf& brdf,
         sample_point += r2 * Radius() * axis2;
         sample_count++;
         
+        // Compute direction at point
+        R3Vector L = sample_point - point;
+        L.Normalize();
+
         // Compute intensity at point
-        RNScalar I = Intensity();
+        RNScalar I = Intensity() * Direction().Dot(-L);
+        if (RNIsNegativeOrZero(I)) return RNblack_rgb;
         RNLength d = R3Distance(point, sample_point);
         RNScalar denom = constant_attenuation;
         denom += d * linear_attenuation;
         denom += d * d * quadratic_attenuation;
         if (RNIsPositive(denom)) I /= denom;
-
-        // Compute direction at point
-        R3Vector L = sample_point - point;
-        L.Normalize();
 
         // Compute diffuse reflection from sample point
         RNScalar NL = normal.Dot(L);
@@ -281,7 +370,7 @@ void R3AreaLight::
 Draw(int i) const
 {
     // Draw light
-    GLenum index = (GLenum) (GL_LIGHT2 + i);
+    GLenum index = (GLenum) (GL_LIGHT0 + i);
     if (index > GL_LIGHT7) return;
     GLfloat buffer[4];
     buffer[0] = Intensity() * Color().R();

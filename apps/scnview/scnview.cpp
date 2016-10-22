@@ -16,11 +16,13 @@
 static char *input_scene_name = NULL;
 static char *output_image_name = NULL;
 static char *input_cameras_name = NULL;
+static char *input_lights_name = NULL;
 static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
 static R3Vector initial_camera_up(0, 0, 1);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
 static RNRgb background_color(0,0,0);
+static double max_vertex_spacing = 0;
 static int print_verbose = 0;
 
 
@@ -46,7 +48,7 @@ static R3SceneElement *selected_element = NULL;
 static RNArray<R3Camera *> *cameras = NULL;
 static int selected_camera_index = -1;
 static R3Point center(0, 0, 0);
-static int headlight = 1;
+static int headlight = 0;
 
 
 
@@ -111,6 +113,47 @@ KthMaterial(int k)
 
 
 static void 
+LoadLights(R3Scene *scene, R3SceneNode *node)
+{
+  // Check if lights were already added for whole scene
+  int max_lights = (headlight) ? 7 : 8;
+  if (scene->NLights() <= max_lights) return;
+
+  // Find best lights based on spheres of influence
+  RNArray<R3Light *> lights;
+  const R3Box& node_bbox = node->BBox();
+  for (int i = 0; i < scene->NLights(); i++) {
+    R3Light *light1 = scene->Light(i);
+    R3Sphere sphere1 = light1->SphereOfInfluence(1E-3);
+    if (!R3Intersects(sphere1, node_bbox)) continue;
+    RNScalar d1 = R3Distance(sphere1.Centroid(), node_bbox);
+    
+    // Find position for light1 in sorted list
+    int index = lights.NEntries();
+    for (int j = 0; j < lights.NEntries(); j++) {
+      R3Light *light2 = lights.Kth(j);
+      R3Sphere sphere2 = light2->SphereOfInfluence(1E-3);
+      RNScalar d2 = R3Distance(sphere2.Centroid(), node_bbox);
+      if (d1 < d2) { index = j; break; }
+    }
+
+    // Insert into sorted array of best lights 
+    if (index < max_lights) {
+      lights.InsertKth(light1, index);
+      lights.Truncate(max_lights);
+    }
+  }
+
+  // Load best lights for node
+  for (int i = 0; i < lights.NEntries(); i++) {
+    R3Light *light = lights.Kth(i);
+    light->Draw(i + headlight);
+  }
+}
+
+
+
+static void 
 LoadLights(R3Scene *scene)
 {
   // Load ambient light
@@ -122,9 +165,12 @@ LoadLights(R3Scene *scene)
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
 
   // Load scene lights
-  for (int i = 0; i < scene->NLights(); i++) {
-    R3Light *light = scene->Light(i);
-    light->Draw(i);
+  int max_lights = (headlight) ? 7 : 8;
+  if (scene->NLights() <= max_lights) {
+    for (int i = 0; i < scene->NLights(); i++) {
+      R3Light *light = scene->Light(i);
+      light->Draw(i + headlight);
+    }
   }
 }
 
@@ -226,7 +272,7 @@ DrawLights(R3Scene *scene)
       glBegin(GL_LINES);
       R3Point centroid = scene->BBox().Centroid();
       R3LoadPoint(centroid - radius * direction);
-      R3LoadPoint(centroid - 1.25 * radius * direction);
+      R3LoadPoint(centroid - 0.1 * radius * direction);
       glEnd();
     }
     else if (light->ClassID() == R3PointLight::CLASS_ID()) {
@@ -234,8 +280,8 @@ DrawLights(R3Scene *scene)
       R3PointLight *point_light = (R3PointLight *) light;
       R3Point position = point_light->Position();
 
-     // Draw sphere at light position 
-       R3Sphere(position, 0.1 * radius).Draw();
+      // Draw sphere at light position 
+      R3Sphere(position, 0.01 * radius).Draw();
     }
     else if (light->ClassID() == R3SpotLight::CLASS_ID()) {
       R3SpotLight *spot_light = (R3SpotLight *) light;
@@ -243,12 +289,12 @@ DrawLights(R3Scene *scene)
       R3Vector direction = spot_light->Direction();
 
       // Draw sphere at light position 
-      R3Sphere(position, 0.1 * radius).Draw();
+      R3Sphere(position, 0.01 * radius).Draw();
   
       // Draw direction vector
       glBegin(GL_LINES);
       R3LoadPoint(position);
-      R3LoadPoint(position + 0.25 * radius * direction);
+      R3LoadPoint(position + 0.025 * radius * direction);
       glEnd();
     }
     else {
@@ -263,7 +309,8 @@ DrawLights(R3Scene *scene)
 static void 
 DrawShapes(R3Scene *scene, R3SceneNode *node, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
 {
-  // Convenient variables
+  // Load lights
+  LoadLights(scene, node);
 
   // Push transformation
   node->Transformation().Push();
@@ -296,6 +343,18 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, RNFlags draw_flags = R3_DEFAULT_DR
 
   // Pop transformation
   node->Transformation().Pop();
+}
+
+
+
+static void 
+DrawShapes(R3Scene *scene, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
+{
+  // Load lights
+  LoadLights(scene);
+
+  // Draw the scene
+  DrawShapes(scene, scene->Root(), draw_flags);
 }
 
 
@@ -510,9 +569,6 @@ void GLUTRedraw(void)
   // Check scene
   if (!scene) return;
 
-  // Set viewing transformation
-  viewer->Camera().Load();
-
   // Clear window 
   // background_color = scene->Background();
   glClearColor(background_color.R(), background_color.G(), background_color.B(), 1.0);
@@ -522,8 +578,8 @@ void GLUTRedraw(void)
   if (show_backfacing) glDisable(GL_CULL_FACE);
   else glEnable(GL_CULL_FACE);
 
-  // Load lights
-  LoadLights(scene);
+  // Set viewing transformation
+  viewer->Camera().Load();
 
   // Draw camera
   if (show_cameras) {
@@ -570,7 +626,7 @@ void GLUTRedraw(void)
   if (show_faces) {
     glEnable(GL_LIGHTING);
     R3null_material.Draw();
-    DrawShapes(scene, scene->Root());
+    DrawShapes(scene);
     R3null_material.Draw();
   }
 
@@ -921,6 +977,9 @@ void GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // | GLUT_STENCIL
   GLUTwindow = glutCreateWindow("Scene Viewer");
 
+  // Initialize depth testing
+  glEnable(GL_DEPTH_TEST);
+
   // Initialize lighting
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -929,18 +988,6 @@ void GLUTInit(int *argc, char **argv)
   glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
   glEnable(GL_NORMALIZE);
   glEnable(GL_LIGHTING); 
-
-  // Initialize headlight
-  if (headlight) {
-    static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
-    static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-    glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-    glEnable(GL_LIGHT0);
-  }
-  
-  // Initialize graphics modes  
-  glEnable(GL_DEPTH_TEST);
 
   // Initialize GLUT callback functions 
   glutDisplayFunc(GLUTRedraw);
@@ -955,12 +1002,32 @@ void GLUTInit(int *argc, char **argv)
 
 void GLUTMainLoop(void)
 {
-  // Initialize camera
-  // if (viewer && scene) viewer->SetCamera(scene->Camera());
-
+  // Just checking
+  if (!viewer || !scene) return;
+  
   // Initialize viewing center
-  if (scene) center = scene->BBox().Centroid();
+  center = scene->BBox().Centroid();
 
+  // Initialize camera
+  viewer->SetCamera(scene->Camera());
+
+  // Remove transformations
+  scene->RemoveTransformations();
+  
+  // Subdivide triangles for lighting
+  if (max_vertex_spacing > 0) {
+    scene->SubdivideTriangles(max_vertex_spacing);
+  }
+
+  // Define headlight
+  if (headlight) {
+    static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
+    static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+    glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+    glEnable(GL_LIGHT0);
+  }
+  
   // Run main loop -- never returns 
   glutMainLoop();
 }
@@ -980,6 +1047,7 @@ CreateBirdsEyeViewer(const R3Scene *scene)
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   return new R3Viewer(camera, viewport);
 }
+
 
 
 static R3Scene *
@@ -1078,6 +1146,30 @@ ReadCameras(const char *filename)
 
 
 
+static int
+ReadLights(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read lights file
+  if (!scene->ReadLightsFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read lights from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Lights = %d\n", scene->NLights());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+  
+
+
 static int 
 ParseArgs(int argc, char **argv)
 {
@@ -1086,8 +1178,6 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-headlight")) headlight = 1;
-      else if (!strcmp(*argv, "-no_headlight")) headlight = 0;
       else if (!strcmp(*argv, "-hide_faces")) show_faces = 0;
       else if (!strcmp(*argv, "-show_faces")) show_faces = 1;
       else if (!strcmp(*argv, "-show_edges")) show_edges = 1;
@@ -1098,9 +1188,18 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1;
       else if (!strcmp(*argv, "-show_rays")) show_rays = 1;
       else if (!strcmp(*argv, "-show_backfaces")) show_backfacing = 1;
-      else if (!strcmp(*argv, "-image")) { argc--; argv++; output_image_name = *argv; }
+      else if (!strcmp(*argv, "-headlight")) headlight = 1;
+      else if (!strcmp(*argv, "-max_vertex_spacing")) {
+        argc--; argv++; max_vertex_spacing = atof(*argv);
+      }
+      else if (!strcmp(*argv, "-image")) {
+        argc--; argv++; output_image_name = *argv;
+      }
       else if (!strcmp(*argv, "-cameras")) {
         argv++; argc--; input_cameras_name = *argv;
+      }
+      else if (!strcmp(*argv, "-lights")) {
+        argv++; argc--; input_lights_name = *argv;
       }
       else if (!strcmp(*argv, "-background")) {
         argv++; argc--; background_color[0] = atof(*argv);
@@ -1165,6 +1264,10 @@ int main(int argc, char **argv)
     cameras = ReadCameras(input_cameras_name);
     if (!cameras) exit(-1);
   }
+
+  // Read/create lights
+  if (input_lights_name) { if (!ReadLights(input_lights_name)) exit(-1); }
+  else { scene->CreateDirectionalLights(); headlight = 1; }
 
   // Create viewer
   viewer = CreateBirdsEyeViewer(scene);

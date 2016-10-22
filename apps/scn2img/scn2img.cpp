@@ -25,6 +25,7 @@
 
 static char *input_scene_name = NULL;
 static char *input_cameras_name = NULL;
+static char *input_lights_name = NULL;
 static char *input_categories_name = NULL;
 static char *output_image_directory = NULL;
 
@@ -54,7 +55,8 @@ static int width = 640;
 static int height = 480;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
-static int headlight = 1;
+static double max_vertex_spacing = 0;
+static int headlight = 0;
 static int glut = 1;
 static int mesa = 0;
 
@@ -147,9 +149,6 @@ ReadScene(char *filename)
     return NULL;
   }
 
-  // Remove transformations (makes computing rendered values easier)
-  scene->RemoveTransformations();
-  
   // Print statistics
   if (print_verbose) {
     printf("Read scene from %s ...\n", filename);
@@ -166,6 +165,34 @@ ReadScene(char *filename)
   return scene;
 }
 
+
+
+static int
+ReadLights(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read lights file
+  if (!scene->ReadLightsFile(filename)) return 0;
+
+  // Set default vertex spacing
+  if (max_vertex_spacing == 0) max_vertex_spacing = 0.1;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read lights from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Lights = %d\n", scene->NLights());
+    printf("  Max vertex spacing = %g\n", max_vertex_spacing);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+  
 
 
 static int
@@ -576,6 +603,74 @@ CaptureDepth(R2Grid& image)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Lighting functions
+////////////////////////////////////////////////////////////////////////
+
+static void 
+LoadLights(R3Scene *scene, R3SceneNode *node)
+{
+  // Check if lights were already added for whole scene
+  int max_lights = (headlight) ? 7 : 8;
+  if (scene->NLights() <= max_lights) return;
+
+  // Find best lights based on spheres of influence
+  RNArray<R3Light *> lights;
+  const R3Box& node_bbox = node->BBox();
+  for (int i = 0; i < scene->NLights(); i++) {
+    R3Light *light1 = scene->Light(i);
+    R3Sphere sphere1 = light1->SphereOfInfluence(1E-3);
+    if (!R3Intersects(sphere1, node_bbox)) continue;
+    RNScalar d1 = R3Distance(sphere1.Centroid(), node_bbox);
+    
+    // Find position for light1 in sorted list
+    int index = lights.NEntries();
+    for (int j = 0; j < lights.NEntries(); j++) {
+      R3Light *light2 = lights.Kth(j);
+      R3Sphere sphere2 = light2->SphereOfInfluence(1E-3);
+      RNScalar d2 = R3Distance(sphere2.Centroid(), node_bbox);
+      if (d1 < d2) { index = j; break; }
+    }
+
+    // Insert into sorted array of best lights 
+    if (index < max_lights) {
+      lights.InsertKth(light1, index);
+      lights.Truncate(max_lights);
+    }
+  }
+
+  // Load best lights for node
+  for (int i = 0; i < lights.NEntries(); i++) {
+    R3Light *light = lights.Kth(i);
+    light->Draw(i + headlight);
+  }
+}
+
+
+
+static void 
+LoadLights(R3Scene *scene)
+{
+  // Load ambient light
+  static GLfloat ambient[4];
+  ambient[0] = scene->Ambient().R();
+  ambient[1] = scene->Ambient().G();
+  ambient[2] = scene->Ambient().B();
+  ambient[3] = 1;
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+
+  // Load scene lights
+  int max_lights = (headlight) ? 7 : 8;
+  if (scene->NLights() <= max_lights) {
+    for (int i = 0; i < scene->NLights(); i++) {
+      R3Light *light = scene->Light(i);
+      light->Draw(i + headlight);
+    }
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Draw functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -593,10 +688,11 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       }
     }
   }
-  
+
   // Draw elements
   if ((color_scheme == RGB_COLOR_SCHEME) || (color_scheme == ALBEDO_COLOR_SCHEME)) {
     // Draw colors
+    if (color_scheme == RGB_COLOR_SCHEME) LoadLights(scene, node);
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
       element->Draw(R3_DEFAULT_DRAW_FLAGS);
@@ -724,23 +820,10 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
   glClearColor(background.R(), background.G(), background.B(), 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Set up lighting
+  // Check color scheme
   if (color_scheme == RGB_COLOR_SCHEME) {
-    // Load ambient light
-    static GLfloat ambient[4];
-    ambient[0] = scene->Ambient().R();
-    ambient[1] = scene->Ambient().G();
-    ambient[2] = scene->Ambient().B();
-    ambient[3] = 1;
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-    // Load scene lights
-    for (int i = 0; i < scene->NLights(); i++) {
-      R3Light *light = scene->Light(i);
-      light->Draw(i);
-    }
-
     // Draw scene
+    LoadLights(scene);
     glEnable(GL_LIGHTING);
     R3null_material.Draw();
     DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, roomfiles_only);
@@ -808,15 +891,13 @@ void Redraw(void)
   R3Camera *camera = cameras.Kth(next_image_index);
   next_image_index++;
 
-  // Initialize lighting
+  // Intialize transformations
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  static GLfloat lmodel_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+
+  // Initialize lighting
   glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
   glEnable(GL_NORMALIZE);
-
-  // Initialize headlight
   if (headlight) {
     static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
     static GLfloat light0_position[] = { 0.0, 0.0, 1.0, 0.0 };
@@ -825,8 +906,7 @@ void Redraw(void)
     glEnable(GL_LIGHT0);
   }
 
-  // Initialize graphics modes  
-  // glEnable(GL_CULL_FACE);
+  // Initialize depth test
   glEnable(GL_DEPTH_TEST);
 
   // Load camera and viewport
@@ -1423,6 +1503,26 @@ RenderImagesWithRaycasting(const char *output_image_directory)
 
 
 
+static int
+RenderImages(const char *output_image_directory)
+{
+  // Remove transformations
+  scene->RemoveTransformations();
+  
+  // Subdivide triangles (for lighting)
+  if (max_vertex_spacing > 0) scene->SubdivideTriangles(max_vertex_spacing);
+
+  // Render images
+  if (glut) { if (!RenderImagesWithGlut(output_image_directory)) exit(-1); }
+  else if (mesa) { if (!RenderImagesWithMesa(output_image_directory)) exit(-1); }
+  else { if (!RenderImagesWithRaycasting(output_image_directory)) exit(-1); }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Program argument parsing
 ////////////////////////////////////////////////////////////////////////
@@ -1442,6 +1542,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-raycast")) { mesa = 0; glut = 0; }
+      else if (!strcmp(*argv, "-lights")) { argc--; argv++; input_lights_name = *argv; }
       else if (!strcmp(*argv, "-capture_color_images")) { capture_images = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { capture_images = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_kinect_images")) { capture_images = capture_kinect_images = 1; }
@@ -1464,10 +1565,10 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-kinect_min_reflection")) { argc--; argv++; kinect_min_reflection = atof(*argv); }
       else if (!strcmp(*argv, "-kinect_noise_fraction")) { argc--; argv++; kinect_noise_fraction = atof(*argv); }
       else if (!strcmp(*argv, "-kinect_stereo_baseline")) { argc--; argv++; kinect_stereo_baseline = atof(*argv); }
+      else if (!strcmp(*argv, "-max_vertex_spacing")) { argc--; argv++; max_vertex_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
       else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
       else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
-      else if (!strcmp(*argv, "-no_headlight")) { headlight = 0; }
       else if (!strcmp(*argv, "-headlight")) { headlight = 1; }
       else if (!strcmp(*argv, "-background")) {
         argc--; argv++; background[0] = atof(*argv);
@@ -1533,6 +1634,10 @@ int main(int argc, char **argv)
   // Read cameras 
   if (!ReadCameras(input_cameras_name)) exit(-1);
 
+  // Read/create lights
+  if (input_lights_name) { if (!ReadLights(input_lights_name)) exit(-1); }
+  else { scene->CreateDirectionalLights(); headlight = 1; }
+
   // Read and assign categories
   if (input_categories_name) {
     if (!ReadCategories(input_categories_name)) exit(-1);
@@ -1541,27 +1646,11 @@ int main(int argc, char **argv)
   }
 
   // Render images
-  if (glut) { if (!RenderImagesWithGlut(output_image_directory)) exit(-1); }
-  else if (mesa) { if (!RenderImagesWithMesa(output_image_directory)) exit(-1); }
-  else { if (!RenderImagesWithRaycasting(output_image_directory)) exit(-1); }
+  if (!RenderImages(output_image_directory)) exit(-1);
 
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

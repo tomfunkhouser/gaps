@@ -112,6 +112,7 @@ RNScalar R3PointLight::
 IntensityAtPoint(const R3Point& point) const
 {
     // Return intensity at point
+    if (!IsActive()) return 0.0;
     RNLength d = R3Distance(point, position);
     RNScalar denom = constant_attenuation;
     denom += d * linear_attenuation;
@@ -138,6 +139,7 @@ RadiusOfInfluence(RNScalar intensity_threshhold) const
 {
     // Return distance beyond which intensity is below threshold
     // kq*d^2 + kl*d + (kc - 1/a) = 0 (use quadratic formula)
+    if (!IsActive()) return 0.0;
     if (RNIsZero(Intensity())) return 0.0;
     if (RNIsZero(intensity_threshhold)) return RN_INFINITY;
     RNScalar A = quadratic_attenuation;
@@ -152,7 +154,7 @@ RadiusOfInfluence(RNScalar intensity_threshhold) const
 R3Sphere R3PointLight::
 SphereOfInfluence(RNScalar intensity_threshold) const
 {
-    // Return sphere within which light intensity is below threshhold
+    // Return sphere within which light intensity is above threshhold
     return R3Sphere(Position(), RadiusOfInfluence(intensity_threshold));
 }
 
@@ -255,7 +257,7 @@ void R3PointLight::
 Draw(int i) const
 {
     // Draw light
-    GLenum index = (GLenum) (GL_LIGHT2 + i);
+    GLenum index = (GLenum) (GL_LIGHT0 + i);
     if (index > GL_LIGHT7) return;
     GLfloat buffer[4];
     buffer[0] = Intensity() * Color().R();

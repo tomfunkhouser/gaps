@@ -120,7 +120,7 @@ void R3SpotLight::
 Draw(int i) const
 {
     // Draw light
-    GLenum index = (GLenum) (GL_LIGHT2 + i);
+    GLenum index = (GLenum) (GL_LIGHT0 + i);
     if (index > GL_LIGHT7) return;
     GLfloat buffer[4];
     buffer[0] = Intensity() * Color().R();

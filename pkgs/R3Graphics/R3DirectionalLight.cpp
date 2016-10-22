@@ -79,6 +79,46 @@ SetDirection(const R3Vector& direction)
 
 
 
+RNScalar R3DirectionalLight::
+IntensityAtPoint(const R3Point& point) const
+{
+    // Return intensity at point
+    if (!IsActive()) return 0.0;
+    return Intensity();
+}
+
+
+
+R3Vector R3DirectionalLight::
+DirectionFromPoint(const R3Point& point) const
+{
+    // Return direction to point
+    return -direction;
+}
+
+
+
+RNScalar R3DirectionalLight::
+RadiusOfInfluence(RNScalar intensity_threshold) const
+{
+    // Return distance beyond which intensity is below threshold
+    if (!IsActive()) return 0.0;
+    if (Intensity() > intensity_threshold) return RN_INFINITY;
+    else return 0.0;
+}
+
+
+
+R3Sphere R3DirectionalLight::
+SphereOfInfluence(RNScalar intensity_threshold) const
+{
+    // Return sphere within which light intensity is above threshhold
+    if (Intensity() > intensity_threshold) return R3infinite_sphere;
+    else return R3null_sphere;
+}
+
+
+
 RNRgb R3DirectionalLight::
 DiffuseReflection(const R3Brdf& brdf, 
     const R3Point& point, const R3Vector& normal) const
@@ -176,7 +216,7 @@ void R3DirectionalLight::
 Draw(int i) const
 {
     // Draw light
-    GLenum index = (GLenum) (GL_LIGHT2 + i);
+    GLenum index = (GLenum) (GL_LIGHT0 + i);
     if (index > GL_LIGHT7) return;
     GLfloat buffer[4];
     buffer[0] = Intensity() * Color().R();

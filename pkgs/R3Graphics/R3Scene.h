@@ -63,6 +63,7 @@ public:
   void RemoveHierarchy(void);
   void RemoveTransformations(void);
   void SubdivideTriangles(RNLength max_edge_length);
+  void CreateDirectionalLights(void);
 
   // Query functions
   RNLength Distance(const R3Point& point) const;
@@ -85,6 +86,7 @@ public:
   int ReadSupportHierarchyFile(const char *filename);
   int ReadGrammarHierarchyFile(const char *filename);
   int ReadRectangleFile(const char *filename);
+  int ReadLightsFile(const char *filename);
   int WriteFile(const char *filename) const;
   int WriteObjFile(const char *filename) const;
   int WritePrincetonFile(const char *filename) const;
