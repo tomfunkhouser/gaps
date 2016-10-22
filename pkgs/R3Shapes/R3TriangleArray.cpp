@@ -317,7 +317,7 @@ Subdivide(RNLength max_edge_length)
     }
     else if ((dd12 > max_edge_length_squared) && (dd12 >= dd01) && (dd12 >= dd20)) {
       // Create new vertex at midpoint of edge between v1 and v2
-      R3Point position = 0.5*(p1 + p1);
+      R3Point position = 0.5*(p1 + p2);
       R3Vector normal = 0.5*(v1->Normal() + v2->Normal()); normal.Normalize();
       R3TriangleVertex *v = new R3TriangleVertex(position, normal);
       if (v1->flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG] && v2->flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])
