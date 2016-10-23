@@ -578,10 +578,6 @@ LoadLights(int min_index, int max_index) const
   assert(min_index + lights.NEntries() - 1 <= max_index);
   for (int i = 0; i < lights.NEntries(); i++) {
     R3Light *light = lights.Kth(i);
-    R3PointLight *pl = (R3PointLight *) light;
-    R3Point p = pl->Position();
-    glColor3d(0.0, 1.0, 0.0);
-    R3Sphere(p, 0.1).Outline();
     light->Draw(min_index + i);
   }
   
@@ -601,16 +597,7 @@ Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags) const
   // Draw surfaces
   if (elements.NEntries() > 0) {
     // Load lights
-    if (scene && (scene->NLights() > 7)) {
-      for (int i = 0; i < scene->NLights(); i++) {
-        R3Light *light = scene->Light(i);
-        R3PointLight *pl = (R3PointLight *) light;
-        R3Point p = pl->Position();
-        glColor3d(1.0, 1.0, 0.0);
-        R3Sphere(p, 0.1).Outline();
-      }
-      LoadLights(1, 7);
-    }
+    if (scene && (scene->NLights() > 7)) LoadLights(1, 7);
 
     // Push transformation
     cumulative_transformation.Push();
