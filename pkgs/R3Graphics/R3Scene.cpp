@@ -3163,7 +3163,7 @@ InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *crdsys)
   int status = 0;
   
   // Insert copies of light into sceen
-  if (!strcmp(crdsys, "world") || !strcmp(crdsys, "camera")) {
+  if (!strcmp(crdsys, "world")) {
     // Insert one copy of light 
     R3Light *light = CopyLight(original);
     scene->InsertLight(light);
