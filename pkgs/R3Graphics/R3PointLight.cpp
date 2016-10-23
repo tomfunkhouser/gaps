@@ -108,6 +108,15 @@ SetQuadraticAttenuation(RNScalar qa)
 
 
 
+void R3PointLight::
+Transform(const R3Transformation& transformation)
+{
+  // Transform position
+  position.Transform(transformation);
+}
+
+
+
 RNScalar R3PointLight::
 IntensityAtPoint(const R3Point& point) const
 {

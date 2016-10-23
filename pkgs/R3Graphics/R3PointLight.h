@@ -30,7 +30,8 @@ class R3PointLight : public R3Light {
   	virtual void SetPosition(const R3Point& position);
         virtual void SetConstantAttenuation(RNScalar ca); 
         virtual void SetLinearAttenuation(RNScalar la); 
-        virtual void SetQuadraticAttenuation(RNScalar qa); 
+        virtual void SetQuadraticAttenuation(RNScalar qa);
+        virtual void Transform(const R3Transformation& transformation);
 
 	// Geometry evaluation functions
 	virtual RNScalar IntensityAtPoint(const R3Point& point) const;

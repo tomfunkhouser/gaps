@@ -102,6 +102,16 @@ SetCutOffAngle(RNAngle cutoffangle)
 
 
 
+void R3SpotLight::
+Transform(const R3Transformation& transformation)
+{
+  // Transform position and direction
+  R3PointLight::Transform(transformation);
+  direction.Transform(transformation);
+}
+
+
+
 RNScalar R3SpotLight::
 IntensityAtPoint(const R3Point& point) const
 {

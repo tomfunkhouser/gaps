@@ -79,6 +79,15 @@ SetDirection(const R3Vector& direction)
 
 
 
+void R3DirectionalLight::
+Transform(const R3Transformation& transformation)
+{
+  // Transform direction
+  direction.Transform(transformation);
+}
+
+
+
 RNScalar R3DirectionalLight::
 IntensityAtPoint(const R3Point& point) const
 {

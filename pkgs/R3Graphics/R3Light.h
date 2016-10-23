@@ -32,6 +32,7 @@ class R3Light {
 	virtual void SetActive(RNBoolean active);
   	virtual void SetIntensity(RNScalar intensity);
   	virtual void SetColor(const RNRgb& color);
+        virtual void Transform(const R3Transformation& transformation);
 
 	// Geometry evaluation functions
 	virtual RNRgb IrradianceAtPoint(const R3Point& point) const;

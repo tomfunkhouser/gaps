@@ -24,6 +24,7 @@ class R3DirectionalLight : public R3Light {
 
 	// Manipulation functions/operations
   	virtual void SetDirection(const R3Vector& direction);
+        virtual void Transform(const R3Transformation& transformation);
 
 	// Geometry evaluation functions
 	virtual RNScalar IntensityAtPoint(const R3Point& point) const;

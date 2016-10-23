@@ -30,6 +30,7 @@ class R3SpotLight : public R3PointLight {
   	virtual void SetDirection(const R3Vector& direction);
   	virtual void SetDropOffRate(RNScalar dropoffrate);
   	virtual void SetCutOffAngle(RNAngle cutoffangle);
+        virtual void Transform(const R3Transformation& transformation);
 
 	// Evaluation functions
 	virtual RNScalar IntensityAtPoint(const R3Point& point) const;

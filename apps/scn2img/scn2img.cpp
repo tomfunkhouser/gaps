@@ -603,74 +603,6 @@ CaptureDepth(R2Grid& image)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Lighting functions
-////////////////////////////////////////////////////////////////////////
-
-static void 
-LoadLights(R3Scene *scene, R3SceneNode *node)
-{
-  // Check if lights were already added for whole scene
-  int max_lights = (headlight) ? 7 : 8;
-  if (scene->NLights() <= max_lights) return;
-
-  // Find best lights based on spheres of influence
-  RNArray<R3Light *> lights;
-  const R3Box& node_bbox = node->BBox();
-  for (int i = 0; i < scene->NLights(); i++) {
-    R3Light *light1 = scene->Light(i);
-    R3Sphere sphere1 = light1->SphereOfInfluence(1E-3);
-    if (!R3Intersects(sphere1, node_bbox)) continue;
-    RNScalar d1 = R3Distance(sphere1.Centroid(), node_bbox);
-    
-    // Find position for light1 in sorted list
-    int index = lights.NEntries();
-    for (int j = 0; j < lights.NEntries(); j++) {
-      R3Light *light2 = lights.Kth(j);
-      R3Sphere sphere2 = light2->SphereOfInfluence(1E-3);
-      RNScalar d2 = R3Distance(sphere2.Centroid(), node_bbox);
-      if (d1 < d2) { index = j; break; }
-    }
-
-    // Insert into sorted array of best lights 
-    if (index < max_lights) {
-      lights.InsertKth(light1, index);
-      lights.Truncate(max_lights);
-    }
-  }
-
-  // Load best lights for node
-  for (int i = 0; i < lights.NEntries(); i++) {
-    R3Light *light = lights.Kth(i);
-    light->Draw(i + headlight);
-  }
-}
-
-
-
-static void 
-LoadLights(R3Scene *scene)
-{
-  // Load ambient light
-  static GLfloat ambient[4];
-  ambient[0] = scene->Ambient().R();
-  ambient[1] = scene->Ambient().G();
-  ambient[2] = scene->Ambient().B();
-  ambient[3] = 1;
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-  // Load scene lights
-  int max_lights = (headlight) ? 7 : 8;
-  if (scene->NLights() <= max_lights) {
-    for (int i = 0; i < scene->NLights(); i++) {
-      R3Light *light = scene->Light(i);
-      light->Draw(i + headlight);
-    }
-  }
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Draw functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -691,8 +623,15 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
 
   // Draw elements
   if ((color_scheme == RGB_COLOR_SCHEME) || (color_scheme == ALBEDO_COLOR_SCHEME)) {
-    // Draw colors
-    if (color_scheme == RGB_COLOR_SCHEME) LoadLights(scene, node);
+    // Load lights for node
+    if (color_scheme == RGB_COLOR_SCHEME) {
+      int max_lights = 8 - headlight;
+      if (scene->NLights() > max_lights) {
+        node->LoadLights(headlight);
+      }
+    }
+
+    // Draw shaded
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
       element->Draw(R3_DEFAULT_DRAW_FLAGS);
@@ -823,8 +762,8 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
   // Check color scheme
   if (color_scheme == RGB_COLOR_SCHEME) {
     // Draw scene
-    LoadLights(scene);
     glEnable(GL_LIGHTING);
+    scene->LoadLights(headlight);
     R3null_material.Draw();
     DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, roomfiles_only);
     R3null_material.Draw();

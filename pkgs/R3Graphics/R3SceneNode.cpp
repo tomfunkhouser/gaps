@@ -226,6 +226,28 @@ Centroid(void) const
 
 
 
+R3Affine R3SceneNode::
+CumulativeTransformation(void) const
+{
+  // Initialize cumulative transformation
+  R3Affine cumulative_transformation(R3identity_affine);
+
+  // Concatenate transformations back to the root
+  const R3SceneNode *ancestor = this;
+  while (ancestor) {
+    R3Affine t(R3identity_affine);
+    t.Transform(ancestor->Transformation());
+    t.Transform(cumulative_transformation);
+    cumulative_transformation = t;
+    ancestor = ancestor->Parent();
+  }
+
+  // Return cumulative transformation from root to node (including node's transformation)
+  return cumulative_transformation;
+}
+
+
+
 void R3SceneNode::
 InsertChild(R3SceneNode *node) 
 {
@@ -511,26 +533,103 @@ Intersects(const R3Ray& ray,
 
 
 
-void R3SceneNode::
-Draw(const R3DrawFlags draw_flags) const
+int R3SceneNode::
+LoadLights(int min_index, int max_index) const
 {
-  // Push transformation
-  transformation.Push();
+  // Check if lights cannot be added
+  if (!scene) return 0;
+  int nlights = max_index - min_index + 1;
+  if (nlights <= 0) return 0;
 
-  // Draw elements
-  for (int i = 0; i < elements.NEntries(); i++) {
-    R3SceneElement *element = elements.Kth(i);
-    element->Draw(draw_flags);
+  // Get node bounding box in world coordinates
+  R3Box world_bbox = BBox();
+  R3SceneNode *ancestor = Parent();
+  while (ancestor) {
+    world_bbox.Transform(ancestor->Transformation());
+    ancestor = ancestor->Parent();
+  }
+
+  // Find best lights for node based on spheres of influence
+  RNArray<R3Light *> lights;
+  for (int i = 0; i < scene->NLights(); i++) {
+    R3Light *light1 = scene->Light(i);
+    R3Sphere sphere1 = light1->SphereOfInfluence(1E-3);
+    if (!R3Intersects(sphere1, world_bbox)) continue;
+    RNScalar d1 = R3Distance(sphere1.Centroid(), world_bbox);
+    
+    // Find position for light1 in sorted list
+    int index = lights.NEntries();
+    for (int j = 0; j < lights.NEntries(); j++) {
+      R3Light *light2 = lights.Kth(j);
+      R3Sphere sphere2 = light2->SphereOfInfluence(1E-3);
+      RNScalar d2 = R3Distance(sphere2.Centroid(), world_bbox);
+      if (d1 < d2) { index = j; break; }
+    }
+
+    // Insert into sorted array of best lights 
+    if (index < nlights) {
+      lights.InsertKth(light1, index);
+      lights.Truncate(nlights);
+    }
+  }
+
+  // Load best lights for node
+  // NOTE THAT THESE LIGHTS ARE TRANSFORMED BY MODELVIEW MATRIX
+  assert(min_index + lights.NEntries() - 1 <= max_index);
+  for (int i = 0; i < lights.NEntries(); i++) {
+    R3Light *light = lights.Kth(i);
+    R3PointLight *pl = (R3PointLight *) light;
+    R3Point p = pl->Position();
+    glColor3d(0.0, 1.0, 0.0);
+    R3Sphere(p, 0.1).Outline();
+    light->Draw(min_index + i);
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+void R3SceneNode::
+Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags) const
+{
+  // Update transformation
+  R3Affine cumulative_transformation = parent_transformation;
+  cumulative_transformation.Transform(transformation);
+
+  // Draw surfaces
+  if (elements.NEntries() > 0) {
+    // Load lights
+    if (scene && (scene->NLights() > 7)) {
+      for (int i = 0; i < scene->NLights(); i++) {
+        R3Light *light = scene->Light(i);
+        R3PointLight *pl = (R3PointLight *) light;
+        R3Point p = pl->Position();
+        glColor3d(1.0, 1.0, 0.0);
+        R3Sphere(p, 0.1).Outline();
+      }
+      LoadLights(1, 7);
+    }
+
+    // Push transformation
+    cumulative_transformation.Push();
+    
+    // Draw elements
+    for (int i = 0; i < elements.NEntries(); i++) {
+      R3SceneElement *element = elements.Kth(i);
+      element->Draw(draw_flags);
+    }
+
+    // Pop transformation
+    cumulative_transformation.Pop();
   }
 
   // Draw children
   for (int i = 0; i < children.NEntries(); i++) {
     R3SceneNode *child = children.Kth(i);
-    child->Draw(draw_flags);
+    child->Draw(cumulative_transformation, draw_flags);
   }
-
-  // Pop transformation
-  transformation.Pop();
 }
 
 

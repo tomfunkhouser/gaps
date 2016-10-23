@@ -112,72 +112,7 @@ KthMaterial(int k)
 
 
 
-static void 
-LoadLights(R3Scene *scene, R3SceneNode *node)
-{
-  // Check if lights were already added for whole scene
-  int max_lights = (headlight) ? 7 : 8;
-  if (scene->NLights() <= max_lights) return;
-
-  // Find best lights based on spheres of influence
-  RNArray<R3Light *> lights;
-  const R3Box& node_bbox = node->BBox();
-  for (int i = 0; i < scene->NLights(); i++) {
-    R3Light *light1 = scene->Light(i);
-    R3Sphere sphere1 = light1->SphereOfInfluence(1E-3);
-    if (!R3Intersects(sphere1, node_bbox)) continue;
-    RNScalar d1 = R3Distance(sphere1.Centroid(), node_bbox);
-    
-    // Find position for light1 in sorted list
-    int index = lights.NEntries();
-    for (int j = 0; j < lights.NEntries(); j++) {
-      R3Light *light2 = lights.Kth(j);
-      R3Sphere sphere2 = light2->SphereOfInfluence(1E-3);
-      RNScalar d2 = R3Distance(sphere2.Centroid(), node_bbox);
-      if (d1 < d2) { index = j; break; }
-    }
-
-    // Insert into sorted array of best lights 
-    if (index < max_lights) {
-      lights.InsertKth(light1, index);
-      lights.Truncate(max_lights);
-    }
-  }
-
-  // Load best lights for node
-  for (int i = 0; i < lights.NEntries(); i++) {
-    R3Light *light = lights.Kth(i);
-    light->Draw(i + headlight);
-  }
-}
-
-
-
-static void 
-LoadLights(R3Scene *scene)
-{
-  // Load ambient light
-  static GLfloat ambient[4];
-  ambient[0] = scene->Ambient().R();
-  ambient[1] = scene->Ambient().G();
-  ambient[2] = scene->Ambient().B();
-  ambient[3] = 1;
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-  // Load scene lights
-  int max_lights = (headlight) ? 7 : 8;
-  if (scene->NLights() <= max_lights) {
-    for (int i = 0; i < scene->NLights(); i++) {
-      R3Light *light = scene->Light(i);
-      light->Draw(i + headlight);
-    }
-  }
-}
-
-
-
 #if 0
-
 static void 
 DrawText(const R3Point& p, const char *s)
 {
@@ -185,7 +120,6 @@ DrawText(const R3Point& p, const char *s)
   glRasterPos3d(p[0], p[1], p[2]);
   while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
 }
-  
 #endif
 
 
@@ -307,42 +241,52 @@ DrawLights(R3Scene *scene)
 
 
 static void 
-DrawShapes(R3Scene *scene, R3SceneNode *node, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
+DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformation, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
 {
-  // Load lights
-  LoadLights(scene, node);
-
-  // Push transformation
-  node->Transformation().Push();
+  // Update transformation
+  R3Affine cumulative_transformation = parent_transformation;
+  cumulative_transformation.Transform(node->Transformation());
 
   // Draw elements 
-  for (int i = 0; i < node->NElements(); i++) {
-    R3SceneElement *element = node->Element(i);
-
-    // Set material
-    const R3Material *material = element->Material();
-    static R3Material selection_material(&R3red_brdf, "Selection");
-    if (element == selected_element) selection_material.Draw();
-    else if (show_materials) KthMaterial(material->SceneIndex())->Draw();
-    else if (node == selected_node) selection_material.Draw();
-    else if (material) material->Draw();
-    else R3default_material.Draw();
-
-    // Draw shapes
-    for (int j = 0; j < element->NShapes(); j++) {
-      R3Shape *shape = element->Shape(j);
-      shape->Draw(draw_flags);
+  if (node->NElements() > 0) {
+    // Load lights 
+    int max_lights = 8 - headlight;
+    if (scene->NLights() > max_lights) {
+      node->LoadLights(headlight, 7);
     }
+
+    // Push transformation
+    cumulative_transformation.Push();
+    
+    // Draw surfaces
+    for (int i = 0; i < node->NElements(); i++) {
+      R3SceneElement *element = node->Element(i);
+
+      // Set material
+      const R3Material *material = element->Material();
+      static R3Material selection_material(&R3red_brdf, "Selection");
+      if (element == selected_element) selection_material.Draw();
+      else if (show_materials) KthMaterial(material->SceneIndex())->Draw();
+      else if (node == selected_node) selection_material.Draw();
+      else if (material) material->Draw();
+      else R3default_material.Draw();
+
+      // Draw shapes
+      for (int j = 0; j < element->NShapes(); j++) {
+        R3Shape *shape = element->Shape(j);
+        shape->Draw(draw_flags);
+      }
+    }
+
+    // Pop transformation
+    cumulative_transformation.Pop();
   }
 
   // Draw children
   for (int i = 0; i < node->NChildren(); i++) {
     R3SceneNode *child = node->Child(i);
-    DrawShapes(scene, child, draw_flags);
+    DrawShapes(scene, child, cumulative_transformation, draw_flags);
   }
-
-  // Pop transformation
-  node->Transformation().Pop();
 }
 
 
@@ -350,11 +294,8 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, RNFlags draw_flags = R3_DEFAULT_DR
 static void 
 DrawShapes(R3Scene *scene, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
 {
-  // Load lights
-  LoadLights(scene);
-
   // Draw the scene
-  DrawShapes(scene, scene->Root(), draw_flags);
+  DrawShapes(scene, scene->Root(), R3identity_affine, draw_flags);
 }
 
 
@@ -625,6 +566,7 @@ void GLUTRedraw(void)
   // Draw scene nodes
   if (show_faces) {
     glEnable(GL_LIGHTING);
+    scene->LoadLights(headlight);
     R3null_material.Draw();
     DrawShapes(scene);
     R3null_material.Draw();
@@ -636,7 +578,7 @@ void GLUTRedraw(void)
     R3null_material.Draw();
     glColor3d(0.0, 1.0, 0.0);
     R3null_material.Draw();
-    DrawShapes(scene, scene->Root(), R3_EDGES_DRAW_FLAG);
+    DrawShapes(scene, R3_EDGES_DRAW_FLAG);
     R3null_material.Draw();
   }
 
@@ -1012,7 +954,7 @@ void GLUTMainLoop(void)
   viewer->SetCamera(scene->Camera());
 
   // Remove transformations
-  scene->RemoveTransformations();
+  // scene->RemoveTransformations();
   
   // Subdivide triangles for lighting
   if (max_vertex_spacing > 0) {

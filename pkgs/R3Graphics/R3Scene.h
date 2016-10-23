@@ -98,6 +98,9 @@ public:
   void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
     RNBoolean set_camera = TRUE, RNBoolean set_lights = TRUE) const;
 
+  // Lighting functions
+  int LoadLights(int min_index = 0, int max_index = 7) const;
+
 private:
   R3SceneNode *root;
   RNArray<R3SceneNode *> nodes;
