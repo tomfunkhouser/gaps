@@ -756,10 +756,13 @@ FindClosestFeature(FETFeature *query_feature, const R3Affine& query_transformati
 
   // Temporarily transform query feature
   R3Point saved_query_position = query_feature->position;
+  R3Vector saved_query_direction = query_feature->direction;
   R3Vector saved_query_normal = query_feature->normal;
   query_feature->position.Transform(query_transformation);
+  query_feature->direction.Transform(query_transformation);
   query_feature->normal.Transform(query_transformation);
   query_feature->position.InverseTransform(current_transformation);
+  query_feature->direction.InverseTransform(current_transformation);
   query_feature->normal.InverseTransform(current_transformation);
 
   // Find closest feature
@@ -769,6 +772,7 @@ FindClosestFeature(FETFeature *query_feature, const R3Affine& query_transformati
 
   // Restore query feature
   query_feature->position = saved_query_position;
+  query_feature->direction = saved_query_direction;
   query_feature->normal = saved_query_normal;
 
   // Return closest feature
@@ -798,10 +802,13 @@ FindAllFeatures(FETFeature *query_feature, const R3Affine& query_transformation,
 
   // Temporarily transform query feature
   R3Point saved_query_position = query_feature->position;
+  R3Vector saved_query_direction = query_feature->direction;
   R3Vector saved_query_normal = query_feature->normal;
   query_feature->position.Transform(query_transformation);
+  query_feature->direction.Transform(query_transformation);
   query_feature->normal.Transform(query_transformation);
   query_feature->position.InverseTransform(current_transformation);
+  query_feature->direction.InverseTransform(current_transformation);
   query_feature->normal.InverseTransform(current_transformation);
 
   // Find all features
@@ -812,6 +819,7 @@ FindAllFeatures(FETFeature *query_feature, const R3Affine& query_transformation,
 
   // Restore query feature
   query_feature->position = saved_query_position;
+  query_feature->direction = saved_query_direction;
   query_feature->normal = saved_query_normal;
 
   // Return success
