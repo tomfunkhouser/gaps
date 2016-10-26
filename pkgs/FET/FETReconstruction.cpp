@@ -663,16 +663,32 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
 
   // Compute normal affinity
   RNScalar normal_affinity = 1.0;
+  RNScalar direction_affinity = 1.0;
   if ((max_normal_angle != RN_UNKNOWN) && (max_normal_angle > 0)) {
-    R3Vector normal1 = feature1->normal;
-    R3Vector normal2 = feature2->normal;
-    shape1->Transform(normal1);
-    shape2->Transform(normal2);
-    RNAngle normal_angle = R3InteriorAngle(normal1, normal2);
-    if (normal_angle > max_normal_angle) return 0;
-    normal_affinity = 1.0 - normal_angle / max_normal_angle;
-    affinity *= normal_affinity;
-    if (affinity < min_affinity) return 0;
+    if ((feature1->ShapeType() != LINE_FEATURE_SHAPE) && (feature2->ShapeType() != LINE_FEATURE_SHAPE)) {
+      // Check normal affinity
+      R3Vector normal1 = feature1->normal;
+      R3Vector normal2 = feature2->normal;
+      shape1->Transform(normal1);
+      shape2->Transform(normal2);
+      RNAngle normal_angle = R3InteriorAngle(normal1, normal2);
+      if (normal_angle > max_normal_angle) return 0;
+      normal_affinity = 1.0 - normal_angle / max_normal_angle;
+      affinity *= normal_affinity;
+      if (affinity < min_affinity) return 0;
+    }
+    else if ((feature1->ShapeType() == LINE_FEATURE_SHAPE) && (feature2->ShapeType() == LINE_FEATURE_SHAPE)) {
+      // Check direction affinity
+      R3Vector direction1 = feature1->direction;
+      R3Vector direction2 = feature2->direction;
+      shape1->Transform(direction1);
+      shape2->Transform(direction2);
+      RNAngle direction_angle = R3InteriorAngle(direction1, direction2);
+      if (direction_angle > max_normal_angle) return 0;
+      direction_affinity = 1.0 - direction_angle / max_normal_angle;
+      affinity *= direction_affinity;
+      if (affinity < min_affinity) return 0;
+    }
   }
   
   // Return affinity
