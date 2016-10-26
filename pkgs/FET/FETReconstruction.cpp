@@ -683,7 +683,8 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
       R3Vector direction2 = feature2->direction;
       shape1->Transform(direction1);
       shape2->Transform(direction2);
-      RNAngle direction_angle = R3InteriorAngle(direction1, direction2);
+      RNScalar dot = fabs(direction1.Dot(direction2));
+      RNAngle direction_angle = (dot < 1.0) ? acos(dot) : 0.0;
       if (direction_angle > max_normal_angle) return 0;
       direction_affinity = 1.0 - direction_angle / max_normal_angle;
       affinity *= direction_affinity;
