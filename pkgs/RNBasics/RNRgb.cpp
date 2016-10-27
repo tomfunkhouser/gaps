@@ -12,6 +12,7 @@
 
 RNRgb RNnull_rgb(0.0, 0.0, 0.0);
 RNRgb RNblack_rgb(0.0, 0.0, 0.0);
+RNRgb RNgray_rgb(0.5, 0.5, 0.5);
 RNRgb RNred_rgb(1.0, 0.0, 0.0);
 RNRgb RNgreen_rgb(0.0, 1.0, 0.0);
 RNRgb RNblue_rgb(0.0, 0.0, 1.0);

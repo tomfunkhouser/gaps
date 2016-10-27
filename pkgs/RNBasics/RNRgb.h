@@ -67,6 +67,7 @@ class RNRgb /* : public RNColor */ {
 
 extern RNRgb RNnull_rgb;
 extern RNRgb RNblack_rgb;
+extern RNRgb RNgray_rgb;
 extern RNRgb RNred_rgb;
 extern RNRgb RNgreen_rgb;
 extern RNRgb RNblue_rgb;
