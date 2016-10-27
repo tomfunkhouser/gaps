@@ -576,8 +576,18 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
   FETShape *shape2 = feature2->shape;
   if (!shape1 || !shape2) return 0;
   
-  // Check if features have same generator
-  if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
+  // Check generator types
+  if (((feature1->GeneratorType() == SILHOUETTE_FEATURE_TYPE) && (feature2->GeneratorType() == RIDGE_FEATURE_TYPE)) ||
+      ((feature1->GeneratorType() == RIDGE_FEATURE_TYPE) && (feature2->GeneratorType() == SILHOUETTE_FEATURE_TYPE))) {
+    // For ridge to match silhouette, viewing vectors should be "opposite"
+    R3Vector vector1 = feature1->Position(TRUE) - feature1->Shape()->Viewpoint();
+    R3Vector vector2 = feature2->Position(TRUE) - feature2->Shape()->Viewpoint();
+    if (vector1.Dot(vector2) > 0) return 0;
+  }
+  else {
+    // For other features, must be same generator type
+    if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
+  }
 
   // Initialize affinity
   RNScalar affinity = 1.0;
@@ -623,13 +633,15 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
 #if 0
   // Compute descriptor affinity
   RNScalar descriptor_affinity = 1.0;
-  if ((max_descriptor_distances[feature1->GeneratorType()] != RN_UNKNOWN) && (max_euclidean_distance != RN_UNKNOWN)) {
-    RNScalar descriptor_distance = DescriptorDistance(feature1, feature2, max_euclidean_distance * max_euclidean_distance);
-    if (descriptor_distance == RN_UNKNOWN) return 0;
-    if (descriptor_distance > max_descriptor_distance) return 0;
-    descriptor_affinity = 1.0 - descriptor_distance / max_descriptor_distances[feature1->GeneratorType()];
-    affinity *= descriptor_affinity;
-    if (affinity < min_affinity) return 0;
+  if (feature1->GeneratorType() == feature2->GeneratorType()) {
+    if ((max_descriptor_distances[feature1->GeneratorType()] != RN_UNKNOWN) && (max_euclidean_distance != RN_UNKNOWN)) {
+      RNScalar descriptor_distance = DescriptorDistance(feature1, feature2, max_euclidean_distance * max_euclidean_distance);
+      if (descriptor_distance == RN_UNKNOWN) return 0;
+      if (descriptor_distance > max_descriptor_distance) return 0;
+      descriptor_affinity = 1.0 - descriptor_distance / max_descriptor_distances[feature1->GeneratorType()];
+      affinity *= descriptor_affinity;
+      if (affinity < min_affinity) return 0;
+    }
   }
 #endif
  

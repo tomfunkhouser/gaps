@@ -566,7 +566,17 @@ AreFeaturesCompatible(FETFeature *feature1, FETFeature *feature2, void *data)
   if (feature1->ShapeType() != feature2->ShapeType()) return 0;
 
   // Check generator types
-  if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
+  if (((feature1->GeneratorType() == SILHOUETTE_FEATURE_TYPE) && (feature2->GeneratorType() == RIDGE_FEATURE_TYPE)) ||
+      ((feature1->GeneratorType() == RIDGE_FEATURE_TYPE) && (feature2->GeneratorType() == SILHOUETTE_FEATURE_TYPE))) {
+    // For ridge to match silhouette, viewing vectors should be "opposite"
+    R3Vector vector1 = feature1->Position(TRUE) - feature1->Shape()->Viewpoint();
+    R3Vector vector2 = feature2->Position(TRUE) - feature2->Shape()->Viewpoint();
+    if (vector1.Dot(vector2) > 0) return 0;
+  }
+  else {
+    // For other features, must be same generator type
+    if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
+  }
 
   // Check saliences
   if (compatibility->min_salience != RN_UNKNOWN) {
@@ -587,9 +597,11 @@ AreFeaturesCompatible(FETFeature *feature1, FETFeature *feature2, void *data)
 
   // Check descriptors
   int t = feature1->GeneratorType();
-  if (compatibility->max_descriptor_distance_squared[t] != RN_UNKNOWN) {
-    RNScalar dd = feature1->descriptor.SquaredDistance(feature2->descriptor);
-    if ((dd == RN_UNKNOWN) || (dd > compatibility->max_descriptor_distance_squared[t])) return 0;
+  if (t == feature2->GeneratorType()) {
+    if (compatibility->max_descriptor_distance_squared[t] != RN_UNKNOWN) {
+      RNScalar dd = feature1->descriptor.SquaredDistance(feature2->descriptor);
+      if ((dd == RN_UNKNOWN) || (dd > compatibility->max_descriptor_distance_squared[t])) return 0;
+    }
   }
 
 #if 0
