@@ -12,6 +12,9 @@ RNClassID R3Intersects(const R3Point& point, const R3Span& span,
     RNScalar *hit_t = NULL); 
 RNClassID R3Intersects(const R3Point& point, const R3Plane& plane); 
 RNClassID R3Intersects(const R3Point& point, const R3Triangle& triangle); 
+RNClassID R3Intersects(const R3Point& point, const R3Circle& circle); 
+RNClassID R3Intersects(const R3Point& point, const R3Ellipse& ellipse); 
+RNClassID R3Intersects(const R3Point& point, const R3Rectangle& rectangle); 
 RNClassID R3Intersects(const R3Point& point, const R3Halfspace& halfspace); 
 RNClassID R3Intersects(const R3Point& point, const R3Box& box); 
 RNClassID R3Intersects(const R3Point& point, const R3OrientedBox& box); 
@@ -58,6 +61,10 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Triangle& triangle,
 RNClassID R3Intersects(const R3Ray& ray, const R3TriangleArray& array, 
     R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Ray& ray, const R3Circle& circle, 
+    R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
+RNClassID R3Intersects(const R3Ray& ray, const R3Ellipse& ellipse, 
+    R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
+RNClassID R3Intersects(const R3Ray& ray, const R3Rectangle& rectangle, 
     R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Ray& ray, const R3Box& box, 
     R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);

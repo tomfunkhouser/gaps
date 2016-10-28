@@ -240,9 +240,9 @@ Area(void) const
 
     // Return surface area of box
     RNScalar area = 0;
-    area += 2*4*Radius(0)*Radius(0);
-    area += 2*4*Radius(1)*Radius(1);
-    area += 2*4*Radius(2)*Radius(2);
+    area += 2*4*Radius(0)*Radius(1);
+    area += 2*4*Radius(1)*Radius(2);
+    area += 2*4*Radius(2)*Radius(0);
     return area;
 }
 

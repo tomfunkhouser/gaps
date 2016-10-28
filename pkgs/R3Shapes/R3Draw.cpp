@@ -547,6 +547,52 @@ Draw(const R3DrawFlags draw_flags) const
 
 
 
+void R3Rectangle::
+Draw(const R3DrawFlags draw_flags) const
+{
+    // Check if box is empty
+    if (IsEmpty()) return;
+
+    /* Get texture coordinates */
+    static R2Point texcoords[4] = {
+	R2Point(0.0, 0.0),
+	R2Point(1.0, 0.0),
+	R2Point(1.0, 1.0),
+	R2Point(0.0, 1.0)
+    };
+
+    /* Get box corner points */
+    R3Point corners[4];
+    corners[0] = Corner(RN_NN_QUADRANT);
+    corners[1] = Corner(RN_PN_QUADRANT);
+    corners[2] = Corner(RN_PP_QUADRANT);
+    corners[3] = Corner(RN_NP_QUADRANT);
+
+    // Draw surface
+    if (draw_flags[R3_SURFACES_DRAW_FLAG]) {
+        if (draw_flags[R3_SURFACE_NORMALS_DRAW_FLAG]) 
+            R3LoadNormal(Normal());
+
+        R3BeginPolygon();
+        for (int j = 0; j < 4; j++) {
+            if (draw_flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])
+                R3LoadTextureCoords(texcoords[j]);
+	    R3LoadPoint(corners[j]);
+        }
+        R3EndPolygon();
+    }
+
+    // Draw edges
+    if (draw_flags[R3_EDGES_DRAW_FLAG]) {
+	R3BeginLoop();
+	for (int i = 0; i < 4; i++)
+	    R3LoadPoint(corners[i]);
+	R3EndLoop();
+    }    
+}
+
+
+
 void R3Box::
 Draw(const R3DrawFlags draw_flags) const
 {

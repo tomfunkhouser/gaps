@@ -122,6 +122,18 @@ Remove(int k)
 
 
 
+void R3MeshPropertySet::
+Reset(R3Mesh *mesh)
+{
+  // Empty array of properties
+  properties.Empty();
+
+  // Set mesh
+  this->mesh = mesh;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Input/output functions
 ////////////////////////////////////////////////////////////////////////
@@ -129,6 +141,12 @@ Remove(int k)
 int R3MeshPropertySet::
 Read(const char *filename)
 {
+  // Check mesh
+  if (!mesh) {
+    fprintf(stderr, "Property set must be associated with mesh before file can be read: %s\n", filename);
+    return 0;
+  }
+  
   // Parse input filename extension
   const char *extension;
   if (!(extension = strrchr(filename, '.'))) {
@@ -349,6 +367,12 @@ ReadProperty(const char *filename)
 int R3MeshPropertySet::
 Write(const char *filename) const
 {
+  // Check mesh
+  if (!mesh) {
+    fprintf(stderr, "Property set must be associated with mesh before file can be written: %s\n", filename);
+    return 0;
+  }
+  
   // Parse input filename extension
   const char *extension;
   if (!(extension = strrchr(filename, '.'))) {

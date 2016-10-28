@@ -100,6 +100,51 @@ RNClassID R3Intersects(const R3Point& point, const R3Triangle& triangle)
 
 
 
+RNClassID R3Intersects(const R3Point& point, const R3Circle& circle)
+{
+    // Check if circle contains point
+    if (R3Contains(circle, point)) {
+	// Point lies on circle
+	return R3_POINT_CLASS_ID;
+    }
+    else {
+	// Point is not on circle
+	return RN_NULL_CLASS_ID;
+    }
+}
+
+
+
+RNClassID R3Intersects(const R3Point& point, const R3Ellipse& ellipse)
+{
+    // Check if ellipse contains point
+    if (R3Contains(ellipse, point)) {
+	// Point lies on ellipse
+	return R3_POINT_CLASS_ID;
+    }
+    else {
+	// Point is not on ellipse
+	return RN_NULL_CLASS_ID;
+    }
+}
+
+
+
+RNClassID R3Intersects(const R3Point& point, const R3Rectangle& rectangle)
+{
+    // Check if rectangle contains point
+    if (R3Contains(rectangle, point)) {
+	// Point lies on rectangle
+	return R3_POINT_CLASS_ID;
+    }
+    else {
+	// Point is not on rectangle
+	return RN_NULL_CLASS_ID;
+    }
+}
+
+
+
 RNClassID R3Intersects(const R3Point& point, const R3Halfspace& halfspace)
 {
     // Check whether halfspace contains point
@@ -865,6 +910,92 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Circle& circle,
     case R3_RAY_CLASS_ID: 
 	// Ray lies in circle plane 
 	// Intersect ray and circle in 2D
+        // RNAbort("Case not implemented");
+	return R3_SPAN_CLASS_ID;
+
+    default:
+	RNAbort("Invalid intersection result");
+	break;
+    }
+
+    // Should never get here
+    RNAbort("Should never get here");
+    return RN_NULL_CLASS_ID;
+}
+
+
+
+RNClassID R3Intersects(const R3Ray& ray, const R3Ellipse& ellipse, 
+    R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_t)
+{
+    // Check for empty ellipse
+    if (ellipse.IsEmpty()) return RN_NULL_CLASS_ID;
+    
+    // Find intersection of ray and plane
+    R3Point p1;
+    RNScalar t1;
+    switch (R3Intersects(ray, ellipse.Plane(), &p1, &t1)) {
+    case RN_NULL_CLASS_ID:
+	// Ray does not intersect ellipse plane
+	return RN_NULL_CLASS_ID;
+	
+    case R3_POINT_CLASS_ID:
+    {
+	// Ray intersects ellipse plane in a single point
+	// Check whether ellipse contains intersection point
+        if (!R3Contains(ellipse, p1)) return RN_NULL_CLASS_ID;
+  	if (hit_point) *hit_point = p1;
+	if (hit_normal) *hit_normal = ellipse.Normal();
+	if (hit_t) *hit_t = t1;
+	return R3_POINT_CLASS_ID;
+    }
+
+    case R3_RAY_CLASS_ID: 
+	// Ray lies in ellipse plane 
+	// Intersect ray and ellipse in 2D
+        // RNAbort("Case not implemented");
+	return R3_SPAN_CLASS_ID;
+
+    default:
+	RNAbort("Invalid intersection result");
+	break;
+    }
+
+    // Should never get here
+    RNAbort("Should never get here");
+    return RN_NULL_CLASS_ID;
+}
+
+
+
+RNClassID R3Intersects(const R3Ray& ray, const R3Rectangle& rectangle, 
+    R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_t)
+{
+    // Check for empty rectangle
+    if (rectangle.IsEmpty()) return RN_NULL_CLASS_ID;
+    
+    // Find intersection of ray and plane
+    R3Point p1;
+    RNScalar t1;
+    switch (R3Intersects(ray, rectangle.Plane(), &p1, &t1)) {
+    case RN_NULL_CLASS_ID:
+	// Ray does not intersect rectangle plane
+	return RN_NULL_CLASS_ID;
+	
+    case R3_POINT_CLASS_ID:
+    {
+	// Ray intersects rectangle plane in a single point
+	// Check whether rectangle contains intersection point
+        if (!R3Contains(rectangle, p1)) return RN_NULL_CLASS_ID;
+  	if (hit_point) *hit_point = p1;
+	if (hit_normal) *hit_normal = rectangle.Normal();
+	if (hit_t) *hit_t = t1;
+	return R3_POINT_CLASS_ID;
+    }
+
+    case R3_RAY_CLASS_ID: 
+	// Ray lies in rectangle plane 
+	// Intersect ray and rectangle in 2D
         // RNAbort("Case not implemented");
 	return R3_SPAN_CLASS_ID;
 

@@ -39,6 +39,7 @@ class R3Triangle;
 class R3TriangleArray;
 class R3Circle;
 class R3Ellipse;
+class R3Rectangle;
 class R3Mesh;
 class R3Curve;
 class R3Polyline;
@@ -97,6 +98,7 @@ class R3Grid;
 #include "R3Shapes/R3TriangleArray.h"
 #include "R3Shapes/R3Circle.h"
 #include "R3Shapes/R3Ellipse.h"
+#include "R3Shapes/R3Rectangle.h"
 #include "R3Shapes/R3Mesh.h"
 #include "R3Shapes/R3PlanarGrid.h"        
 

@@ -53,6 +53,49 @@ RNBoolean R3Contains(const R3Point& point, const R3Span& span)
 
 
 
+RNBoolean R3Contains(const R3Point& point, const R3Triangle& triangle)
+{
+    // Get triangle vertices
+    R3TriangleVertex *v0 = triangle.V0();
+    R3TriangleVertex *v1 = triangle.V1();
+    R3TriangleVertex *v2 = triangle.V2();
+    if (!v0 || !v1 || !v2) return FALSE;
+
+    // Return whether point contains triangle's vertices
+    return (R3Contains(point, v0->Position()) &&
+            R3Contains(point, v1->Position()) &&
+            R3Contains(point, v2->Position())); 
+}
+
+
+
+RNBoolean R3Contains(const R3Point& point, const R3Circle& circle)
+{
+    // Check circle radius and center
+    if (RNIsPositive(circle.Radius())) return FALSE;
+    return R3Contains(point, circle.Center());
+}
+
+
+
+RNBoolean R3Contains(const R3Point& point, const R3Ellipse& ellipse)
+{
+    // Check ellipse radii and center
+    if (RNIsPositive(ellipse.Radius(0)) || RNIsPositive(ellipse.Radius(1))) return FALSE;
+    return R3Contains(point, ellipse.Center());
+}
+
+
+
+RNBoolean R3Contains(const R3Point& point, const R3Rectangle& rectangle)
+{
+    // Check rectangle radii and center
+    if (RNIsPositive(rectangle.Radius(0)) || RNIsPositive(rectangle.Radius(1))) return FALSE;
+    return R3Contains(point, rectangle.Center());
+}
+
+
+
 RNBoolean R3Contains(const R3Point& /*point*/, const R3Plane& /*plane*/)
 {
     // Impossible
@@ -616,6 +659,70 @@ RNBoolean R3Contains(const R3Triangle& triangle, const R3Shape& shape)
     // return shape.Inside(triangle);
     RNAbort("Not implemented");
     return FALSE;
+}
+
+
+
+RNBoolean R3Contains(const R3Circle& circle, const R3Point& point)
+{
+    // Check whether ellipse is empty
+    if (circle.IsEmpty()) return FALSE;
+
+    // Check whether circle plane contains point
+    if (!R3Contains(circle.Plane(), point)) return FALSE;
+
+    // Check whether point is within radius of center
+    RNScalar dd = R3SquaredDistance(circle.Center(), point);
+    if (dd > circle.Radius() * circle.Radius()) return FALSE;
+
+    // Circle contains point
+    return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Ellipse& ellipse, const R3Point& point)
+{
+    // Check whether ellipse is empty
+    if (ellipse.IsEmpty()) return FALSE;
+    if (!RNIsPositive(ellipse.Radius(0))) return FALSE;
+    if (!RNIsPositive(ellipse.Radius(1))) return FALSE;
+
+    // Check whether ellipse plane contains point
+    if (!R3Contains(ellipse.Plane(), point)) return FALSE;
+
+    // Check whether point is within radius of center
+    R3Vector v = point - ellipse.Center();
+    RNScalar d0 = v.Dot(ellipse.Axis(0)) / ellipse.Radius(0);
+    RNScalar d1 = v.Dot(ellipse.Axis(1)) / ellipse.Radius(1);
+    RNScalar dd = d0*d0 + d1*d1;
+    if (dd > 1.0) return FALSE;
+
+    // Ellipse contains point
+    return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Rectangle& rectangle, const R3Point& point)
+{
+    // Check whether rectangle is empty
+    if (rectangle.IsEmpty()) return FALSE;
+    if (!RNIsPositive(rectangle.Radius(0))) return FALSE;
+    if (!RNIsPositive(rectangle.Radius(1))) return FALSE;
+
+    // Check whether rectangle plane contains point
+    if (!R3Contains(rectangle.Plane(), point)) return FALSE;
+
+    // Check whether point is within radius of center
+    R3Vector v = point - rectangle.Center();
+    RNScalar d0 = fabs(v.Dot(rectangle.Axis(0)));
+    if (d0 > rectangle.Radius(0)) return FALSE;
+    RNScalar d1 = fabs(v.Dot(rectangle.Axis(1)));
+    if (d1 > rectangle.Radius(1)) return FALSE;
+
+    // Rectangle contains point
+    return TRUE;
 }
 
 

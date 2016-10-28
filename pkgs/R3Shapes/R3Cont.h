@@ -18,6 +18,10 @@ RNBoolean R3Contains(const R3Point& point, const R3Line& line);
 RNBoolean R3Contains(const R3Point& point, const R3Ray& ray);
 RNBoolean R3Contains(const R3Point& point, const R3Span& span);
 RNBoolean R3Contains(const R3Point& point, const R3Plane& plane);
+RNBoolean R3Contains(const R3Point& point, const R3Triangle& triangle);
+RNBoolean R3Contains(const R3Point& point, const R3Circle& circle);
+RNBoolean R3Contains(const R3Point& point, const R3Ellipse& ellipse);
+RNBoolean R3Contains(const R3Point& point, const R3Rectangle& rectangle);
 RNBoolean R3Contains(const R3Point& point, const R3Halfspace& halfspace);
 RNBoolean R3Contains(const R3Point& point, const R3Box& box);
 RNBoolean R3Contains(const R3Point& point, const R3OrientedBox& box);
@@ -80,6 +84,12 @@ RNBoolean R3Contains(const R3Triangle& triangle, const R3Box& box);
 RNBoolean R3Contains(const R3Triangle& triangle, const R3OrientedBox& box);
 RNBoolean R3Contains(const R3Triangle& triangle, const R3Sphere& sphere);
 RNBoolean R3Contains(const R3Triangle& triangle, const R3Shape& shape);
+
+RNBoolean R3Contains(const R3Circle& circle, const R3Point& point);
+
+RNBoolean R3Contains(const R3Ellipse& ellipse, const R3Point& point);
+
+RNBoolean R3Contains(const R3Rectangle& rectangle, const R3Point& point);
 
 RNBoolean R3Contains(const R3Halfspace& halfspace, const R3Point& point);
 RNBoolean R3Contains(const R3Halfspace& halfspace, const R3Line& line);

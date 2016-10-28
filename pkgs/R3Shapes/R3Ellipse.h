@@ -20,9 +20,13 @@ class R3Ellipse : public R3Surface {
 
         // Ellipse property functions/operators
         const R3Point& Center(void) const;
+        const R3Triad& Axes(void) const;
+        const R3Vector& Axis(RNDimension dim) const;
         const R2Vector& Radii(void) const;
-	const R3Plane Plane(void) const;
 	const R3Vector& Normal(void) const;
+	const R3Plane Plane(void) const;
+        const R3CoordSystem& CoordSystem(void) const;
+        const RNLength Radius(int dim) const;
 	const RNBoolean IsEmpty(void) const;
 	const RNBoolean IsFinite(void) const;
 
@@ -70,11 +74,39 @@ class R3Ellipse : public R3Surface {
 
 /* Inline functions */
 
-inline const R3Plane R3Ellipse::
-Plane(void) const
+inline const R3Point& R3Ellipse::
+Center(void) const
 {
-    // Return plane for coordinate system
-    return R3Plane(cs.Origin(), cs.Axes().Axis(RN_Z));
+    // Return ellipse center
+    return cs.Origin();
+}
+
+
+
+inline const R3Triad& R3Ellipse::
+Axes(void) const
+{
+    // Return triad
+    return cs.Axes();
+}
+
+
+
+inline const R3CoordSystem& R3Ellipse::
+CoordSystem(void) const
+{
+    // Return coordinate system
+    return cs;
+}
+
+
+
+inline const R3Vector& R3Ellipse::
+Axis(RNDimension dim) const
+{
+    // Return ellipse axis
+    assert((dim >= 0) && (dim <= 1));
+    return cs.Axes().Axis(dim);
 }
 
 
@@ -88,11 +120,11 @@ Normal(void) const
 
 
 
-inline const R3Point& R3Ellipse::
-Center(void) const
+inline const R3Plane R3Ellipse::
+Plane(void) const
 {
-    // Return ellipse center
-    return cs.Origin();
+    // Return plane for coordinate system
+    return R3Plane(Center(), Normal());
 }
 
 
@@ -102,6 +134,15 @@ Radii(void) const
 {
     // Return ellipse radii
     return radii;
+}
+
+
+
+inline const RNLength R3Ellipse::
+Radius(int dim) const
+{
+    // Return ellipse radius in dimension
+    return radii[dim];
 }
 
 
