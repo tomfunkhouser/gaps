@@ -38,6 +38,8 @@ public:
   R3SceneNode *Child(int k) const;
   int NElements(void) const;
   R3SceneElement *Element(int k) const;
+  int NLights(void) const;
+  R3Light *Light(int k) const;
   const R3Affine& Transformation(void) const;
   R3Affine CumulativeTransformation(void) const;
 
@@ -67,11 +69,13 @@ public:
 
 public:
   // Internal update functions
-  void InvalidateBBox(void);
   void UpdateBBox(void);
+  void InvalidateBBox(void);
 
   // Internal light loading functions
-  int LoadLights(int min_index = 0, int max_index = 7) const;  
+  int LoadLights(int min_index = 0, int max_index = 7) const;
+  void UpdateLights(int max_lights = 8);
+  void InvalidateLights(void);
 
 private:
   friend class R3Scene;
@@ -81,6 +85,7 @@ private:
   int parent_index;
   RNArray<R3SceneNode *> children;
   RNArray<R3SceneElement *> elements;
+  RNArray<R3Light *> lights;
   R3Affine transformation;
   R3Box bbox;
   char *name;

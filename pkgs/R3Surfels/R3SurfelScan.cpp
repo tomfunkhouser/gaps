@@ -137,7 +137,7 @@ RenderImage(R2Image *color_image, R2Grid *depth_image,
 
           // Get image index
           int ix, iy;
-          int image_index = surfel->ID();
+          int image_index = surfel->ID() - 1;
           if (image_index < 0) continue;
           if (image_index >= tmp_image.NEntries()) continue;
           tmp_image.IndexToIndices(image_index, ix, iy);

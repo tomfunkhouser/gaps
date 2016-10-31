@@ -50,7 +50,10 @@ R3Mesh(const R3Mesh& mesh)
   for (int i = 0; i < mesh.NVertices(); i++) {
     R3MeshVertex *vertex = mesh.Vertex(i);
     const R3Point& position = mesh.VertexPosition(vertex);
-    R3MeshVertex *copy_vertex = this->CreateVertex(position, &vertex_block[i] );
+    const R3Vector& normal = mesh.VertexNormal(vertex);
+    const RNRgb& color = mesh.VertexColor(vertex);
+    const R2Point& texcoords = mesh.VertexTextureCoords(vertex);
+    R3MeshVertex *copy_vertex = this->CreateVertex(position, normal, color, texcoords, &vertex_block[i] );
     if (this->VertexID(copy_vertex) != i) RNAbort("Mismatching vertex id"); 
   }
 
@@ -627,8 +630,9 @@ SetVertexPosition(R3MeshVertex *v, const R3Point& position)
   // Set vertex position
   v->position = position;
 
-  // Mark vertex in need of update to normal
+  // Mark vertex in need of update to normal and curvature
   v->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
+  v->flags.Remove(R3_MESH_VERTEX_CURVATURE_UPTODATE);
 
   // Mark edges/faces in need of update
   for (int i = 0; i < v->edges.NEntries(); i++) {
@@ -636,6 +640,7 @@ SetVertexPosition(R3MeshVertex *v, const R3Point& position)
     e->flags.Remove(R3_MESH_EDGE_LENGTH_UPTODATE);
     R3MeshVertex *neighbor = VertexAcrossEdge(e, v);
     neighbor->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
+    neighbor->flags.Remove(R3_MESH_VERTEX_CURVATURE_UPTODATE);
     R3MeshFace *f0 = e->face[0];
     if (f0) f0->flags.Remove(R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
     R3MeshFace *f1 = e->face[1];
@@ -1089,6 +1094,33 @@ CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color
   SetVertexPosition(v, position);
   SetVertexNormal(v, normal);
   SetVertexColor(v, color);
+
+  // Set ID of new vertex
+  v->id = vertices.NEntries();
+
+  // Insert vertex into array
+  vertices.Insert(v);
+
+  // Return vertex
+  return v;
+}
+
+
+
+R3MeshVertex *R3Mesh::
+CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, const R2Point& texcoords, R3MeshVertex *v)
+{
+  // Create vertex
+  if (!v) {
+    v = new R3MeshVertex();
+    v->flags.Add(R3_MESH_VERTEX_ALLOCATED);
+  }
+
+  // Set position/normal of new vertex
+  SetVertexPosition(v, position);
+  SetVertexNormal(v, normal);
+  SetVertexColor(v, color);
+  SetVertexTextureCoords(v, texcoords);
 
   // Set ID of new vertex
   v->id = vertices.NEntries();
@@ -1643,6 +1675,16 @@ CollapseEdge(R3MeshEdge *edge, const R3Point& point)
     }
   }
 
+  // Update vertex properties
+  RNScalar d0 = R3Distance(point, VertexPosition(v[0]));
+  RNScalar d1 = R3Distance(point, VertexPosition(v[1]));
+  RNScalar dsum = d0 + d1;
+  if (RNIsPositive(dsum)) {
+    d0 /= dsum;  d1 /= dsum;
+    SetVertexTextureCoords(v[0], d1*VertexTextureCoords(v[0]) + d0*VertexTextureCoords(v[1])); 
+    SetVertexColor(v[0], d1*VertexColor(v[0]) + d0*VertexColor(v[1])); 
+  }
+
   // Deallocate faces 
   if (f[0]) DeallocateFace(f[0]);
   if (f[1]) DeallocateFace(f[1]);
@@ -1823,6 +1865,16 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
     SetFaceSegment(f11, s[1]);
   }
 
+  // Interpolate vertex properties
+  RNScalar d0 = R3Distance(point, VertexPosition(v[0]));
+  RNScalar d1 = R3Distance(point, VertexPosition(v[1]));
+  RNScalar dsum = d0 + d1;
+  if (RNIsPositive(dsum)) {
+    d0 /= dsum;  d1 /= dsum;
+    SetVertexTextureCoords(vertex, d1*VertexTextureCoords(v[0]) + d0*VertexTextureCoords(v[1])); 
+    SetVertexColor(vertex, d1*VertexColor(v[0]) + d0*VertexColor(v[1])); 
+  }
+
   // Set vertex position (also marks things in need of update)
   SetVertexPosition(vertex, point);
 
@@ -1899,6 +1951,17 @@ SplitFace(R3MeshFace *f, const R3Point& point, R3MeshFace **f0, R3MeshFace **f1,
   SetFaceSegment(t0, s);
   SetFaceSegment(t1, s);
   SetFaceSegment(t2, s);
+
+  // Interpolate vertex properties
+  RNScalar d0 = R3Distance(point, VertexPosition(v0));
+  RNScalar d1 = R3Distance(point, VertexPosition(v1));
+  RNScalar d2 = R3Distance(point, VertexPosition(v2));
+  RNScalar dsum = d0 + d1 + d2;
+  if (RNIsPositive(dsum)) {
+    RNScalar t0 = (d1+d2)/dsum;   RNScalar t1 = (d0+d2)/dsum;  RNScalar t2 = (d0+d1)/dsum;
+    SetVertexTextureCoords(vertex, t0*VertexTextureCoords(v0) + t1*VertexTextureCoords(v1) + t2*VertexTextureCoords(v2)); 
+    SetVertexColor(vertex, t0*VertexColor(v0) + t1*VertexColor(v1) + t2*VertexColor(v2)); 
+  }
 
   // Return created faces
   if (f0) *f0 = t0;
@@ -2173,8 +2236,7 @@ SubdivideFaces(void)
   // Create vertex at midpoint of every edge
   for (int i = 0; i < nedges; i++) {
     R3MeshEdge *edge = Edge(i);
-    R3Point midpoint = EdgeMidpoint(edge);
-    CreateVertex(midpoint);
+    SplitEdge(edge, EdgeMidpoint(edge));
   }
 
   // Delete all edges and faces
@@ -3955,6 +4017,8 @@ ReadObjFile(const char *filename)
   char buffer[1024];
   int line_count = 0;
   int triangle_count = 0;
+  RNArray<R2Point *> texture_coords;
+  RNArray<R3MeshVertex *> verts;
   RNArray<R3MeshVertex *> degenerate_triangle_vertices;
   while (fgets(buffer, 1023, fp)) {
     // Increment line counter
@@ -3985,7 +4049,20 @@ ReadObjFile(const char *filename)
       }
 
       // Create vertex
-      CreateVertex(R3Point(x, y, z));
+      R3MeshVertex *v = CreateVertex(R3Point(x, y, z));
+      verts.Insert(v);
+    }
+    else if (!strcmp(keyword, "vt")) {
+      // Read texture coordinates
+      double u, v;
+      if (sscanf(bufferp, "%s%lf%lf", keyword, &u, &v) != 3) {
+        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        return 0;
+      }
+
+      // Create texture coordinates
+      R2Point *vt = new R2Point(u, v);
+      texture_coords.Insert(vt);
     }
     else if (!strcmp(keyword, "f")) {
       // Read vertex indices
@@ -4000,20 +4077,37 @@ ReadObjFile(const char *filename)
       }
 
       // Parse vertex indices
-      int i1, i2, i3, i4 = -1;
-      char *p1 = strchr(s1, '/'); if (p1) *p1 = 0; i1 = atoi(s1);
-      char *p2 = strchr(s2, '/'); if (p2) *p2 = 0; i2 = atoi(s2);
-      char *p3 = strchr(s3, '/'); if (p3) *p3 = 0; i3 = atoi(s3);
+      int vi1 = -1, vi2 = -1, vi3 = -1, vi4 = -1;
+      int ti1 = -1, ti2 = -1, ti3 = -1, ti4 = -1;
+      char *p1 = strchr(s1, '/'); 
+      if (p1) { *p1 = 0; vi1 = atoi(s1); p1++; if (*p1) ti1 = atoi(p1); }
+      else { vi1 = atoi(s1); ti1 = vi1; }
+      char *p2 = strchr(s2, '/'); 
+      if (p2) { *p2 = 0; vi2 = atoi(s2); p2++; if (*p2) ti2 = atoi(p2); }
+      else { vi2 = atoi(s2); ti2 = vi2; }
+      char *p3 = strchr(s3, '/'); 
+      if (p3) { *p3 = 0; vi3 = atoi(s3); p3++; if (*p3) ti3 = atoi(p3); }
+      else { vi3 = atoi(s3); ti3 = vi3; }
       if (quad) {
-        char *p4 = strchr(s4, '/'); if (p4) *p4 = 0; i4 = atoi(s4);
+        char *p4 = strchr(s4, '/'); 
+        if (p4) { *p4 = 0; vi4 = atoi(s4); p4++; if (*p4) ti4 = atoi(p4); }
+        else { vi4 = atoi(s4); ti4 = vi4; }
       }
 
       // Get vertices
-      R3MeshVertex *v1 = vertices.Kth(i1-1);
-      R3MeshVertex *v2 = vertices.Kth(i2-1);
-      R3MeshVertex *v3 = vertices.Kth(i3-1);
-      R3MeshVertex *v4 = (quad) ? vertices.Kth(i4-1) : NULL;
+      R3MeshVertex *v1 = verts.Kth(vi1-1);
+      R3MeshVertex *v2 = verts.Kth(vi2-1);
+      R3MeshVertex *v3 = verts.Kth(vi3-1);
+      R3MeshVertex *v4 = (quad) ? verts.Kth(vi4-1) : NULL;
       
+      // Assign texture coordinates
+      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) v1->texcoords = *(texture_coords.Kth(ti1-1));
+      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) v2->texcoords = *(texture_coords.Kth(ti2-1));
+      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) v3->texcoords = *(texture_coords.Kth(ti3-1));
+      if (quad) {
+        if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) v4->texcoords = *(texture_coords.Kth(ti4-1));
+      }
+
       // Check vertices
       if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
       if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
@@ -5980,6 +6074,7 @@ R3MeshVertex::
 R3MeshVertex(void) 
   : position(0.0, 0.0, 0.0),
     normal(0.0, 0.0, 0.0),
+    texcoords(0.0, 0.0),
     color(0.0, 0.0, 0.0),
     curvature(0),
     id(-1),

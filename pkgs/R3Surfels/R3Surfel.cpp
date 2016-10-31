@@ -12,7 +12,7 @@
 
 R3Surfel::
 R3Surfel(void)
-  : id(-1),
+  : id(0),
     radius(0),
     flags(0)
 {
@@ -34,7 +34,7 @@ R3Surfel::
 R3Surfel(float x, float y, float z, 
   unsigned char r, unsigned char g, unsigned char b, 
   RNBoolean aerial)
-  : id(-1),
+  : id(0),
     radius(0),
     flags(0)
 {
@@ -57,7 +57,7 @@ R3Surfel::
 R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   float radius, unsigned char r, unsigned char g, unsigned char b, 
   unsigned char flags)
-  : id(-1),
+  : id(0),
     flags(flags)
 {
   // Set everything

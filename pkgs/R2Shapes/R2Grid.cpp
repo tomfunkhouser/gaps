@@ -1988,7 +1988,23 @@ Resample(int xresolution, int yresolution)
 
 
 void R2Grid::
-RasterizeGridPoint(RNScalar x, RNScalar y, RNScalar value)
+RasterizeGridValue(int ix, int iy, RNScalar value, int operation)
+{
+  // Check if within bounds
+  if ((ix < 0) || (ix > grid_resolution[0]-1)) return;
+  if ((iy < 0) || (iy > grid_resolution[1]-1)) return;
+
+  // Update grid based on operation
+  if (operation == R2_GRID_ADD_OPERATION) AddGridValue(ix, iy, value);
+  else if (operation == R2_GRID_SUBTRACT_OPERATION) AddGridValue(ix, iy, -value);
+  else if (operation == R2_GRID_REPLACE_OPERATION) SetGridValue(ix, iy, value);
+  else RNAbort("Unrecognized grid rasterization operation\n");
+}
+
+
+
+void R2Grid::
+RasterizeGridPoint(RNScalar x, RNScalar y, RNScalar value, int operation)
 {
   // Check if within bounds
   if ((x < 0) || (x > grid_resolution[0]-1)) return;
@@ -2003,16 +2019,16 @@ RasterizeGridPoint(RNScalar x, RNScalar y, RNScalar value)
   if (iy2 >= grid_resolution[1]) iy2 = iy1;
   RNScalar dx = x - ix1;
   RNScalar dy = y - iy1;
-  AddGridValue(ix1, iy1, value * (1.0-dx) * (1.0-dy));
-  AddGridValue(ix1, iy2, value * (1.0-dx) * dy);
-  AddGridValue(ix2, iy1, value * dx * (1.0-dy));
-  AddGridValue(ix2, iy2, value * dx * dy);
+  RasterizeGridValue(ix1, iy1, value * (1.0-dx) * (1.0-dy), operation);
+  RasterizeGridValue(ix1, iy2, value * (1.0-dx) * dy, operation);
+  RasterizeGridValue(ix2, iy1, value * dx * (1.0-dy), operation);
+  RasterizeGridValue(ix2, iy2, value * dx * dy, operation);
 }
 
 
 
 void R2Grid::
-RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar value2)
+RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar value2, int operation)
 {
   // Resolve values
   if (value1 == R2_GRID_UNKNOWN_VALUE) return;
@@ -2042,7 +2058,7 @@ RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar va
   if(dd[i1]==0){
     // Span is a point - rasterize it
     RNScalar value = 0.5 * (value1 + value2);
-    AddGridValue(p[0], p[1], value);
+    RasterizeGridValue(p[0], p[1], value, operation);
   }
   else {
     // Step along span
@@ -2050,7 +2066,7 @@ RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar va
     RNScalar value = value1;
     RNScalar dvalue = (value2 - value1) / dd[i1];
     for (int i = 0; i <= dd[i1]; i++) {
-      AddGridValue(p[0], p[1], value);
+      RasterizeGridValue(p[0], p[1], value, operation);
       off[i2]+=dd[i2];
       p[i1]+=s[i1];
       p[i2]+=s[i2]*off[i2]/dd[i1];
@@ -2063,7 +2079,7 @@ RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar va
 
 
 void R2Grid::
-RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value)
+RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value, int operation)
 {
   // Check value
   if (value == R2_GRID_UNKNOWN_VALUE) return;
@@ -2085,7 +2101,7 @@ RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value)
   // Rasterize box
   for (int ix = x1; ix <= x2; ix++) {
     for (int iy = y1; iy <= y2; iy++) {
-      AddGridValue(ix, iy, value);
+      RasterizeGridValue(ix, iy, value, operation);
     }
   }
 }
@@ -2093,7 +2109,7 @@ RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value)
 
 
 void R2Grid::
-RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScalar valueA, RNScalar valueB, RNScalar valueC)
+RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScalar valueA, RNScalar valueB, RNScalar valueC, int operation)
 {
   // Resolve values
   if (valueA == R2_GRID_UNKNOWN_VALUE) return;
@@ -2171,7 +2187,7 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
     double value_step = (valueb - valuea) / nxsteps;
     double value = valuea;
     for (int ix = ixa; ix <= ixb; ix++) {
-      AddGridValue(ix, iy, value);
+      RasterizeGridValue(ix, iy, value, operation);
       value += value_step;
     }
     valuea += valuea_step;
@@ -2198,7 +2214,7 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
     double value_step = (valueb - valuea) / nxsteps;
     double value = valuea;
     for (int ix = ixa; ix <= ixb; ix++) {
-      AddGridValue(ix, iy, value);
+      RasterizeGridValue(ix, iy, value, operation);
       value += value_step;
     }
     valuea += valuea_step;
@@ -2211,7 +2227,7 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
 
 
 void R2Grid::
-RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value)
+RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value, int operation)
 {
   // Figure out the min and max in each dimension
   int mn[2], mx[2];
@@ -2240,7 +2256,7 @@ RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value)
     if (x1 < mn[0]) x1 = mn[0];
     if (x2 > mx[0]) x2 = mx[0];
     for (int i = x1; i <= x2; i++) {
-      AddGridValue(i, j, value);
+      RasterizeGridValue(i, j, value, operation);
     }
   }
 }
@@ -2266,7 +2282,7 @@ static int CompareScanLineCrossings(const void *data1, const void *data2)
 
 
 void R2Grid::
-RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value) 
+RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value, int operation) 
 {
   // Clip polygon to grid bounding box
   R2Polygon clipped_polygon(polygon);
@@ -2275,13 +2291,13 @@ RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value)
 
   // Check if only one point
   if (clipped_polygon.NPoints() == 1) { 
-    RasterizeGridPoint(clipped_polygon.Point(0), value); 
+    RasterizeGridPoint(clipped_polygon.Point(0), value, operation); 
     return; 
   }
 
   // Check if only two points
   if (clipped_polygon.NPoints() == 2) { 
-    RasterizeGridSpan(clipped_polygon.Point(0), clipped_polygon.Point(1), value); 
+    RasterizeGridSpan(clipped_polygon.Point(0), clipped_polygon.Point(1), value, operation); 
     return; 
   }
 
@@ -2335,7 +2351,7 @@ RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value)
       int ix1 = (int) (crossing1->x + 0.5);
       int ix2 = (int) (crossing2->x + 0.5);
       for (int ix = ix1; ix <= ix2; ix++) {
-        AddGridValue(ix, iy, value);
+        RasterizeGridValue(ix, iy, value, operation);
       }
     }
   }
@@ -2347,12 +2363,12 @@ RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value)
 
 
 void R2Grid::
-RasterizeWorldPolygon(const R2Polygon& polygon, RNScalar value) 
+RasterizeWorldPolygon(const R2Polygon& polygon, RNScalar value, int operation) 
 {
   // Rasterize polygon into grid coordinates
   R2Polygon transformed_polygon(polygon);
   transformed_polygon.Transform(WorldToGridTransformation());
-  RasterizeGridPolygon(transformed_polygon, value);
+  RasterizeGridPolygon(transformed_polygon, value, operation);
 }
 
 

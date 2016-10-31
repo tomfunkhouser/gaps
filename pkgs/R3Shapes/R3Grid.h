@@ -115,21 +115,22 @@ public:
   R3Grid& operator/=(const R3Grid& grid);
 
   // Rasterization functions
-  void RasterizeGridPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value);
-  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value);
-  void RasterizeGridPoint(const R3Point& point, RNScalar value);
-  void RasterizeWorldPoint(const R3Point& point, RNScalar value);
-  void RasterizeGridSpan(const int p1[3], const int p2[3], RNScalar value);
-  void RasterizeGridSpan(const R3Point& p1, const R3Point& p2, RNScalar value);
-  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value);
-  void RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScalar value);
-  void RasterizeGridTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value);
-  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value);
-  void RasterizeGridPlane(const R3Plane& plane, RNScalar value);
-  void RasterizeWorldPlane(const R3Plane& plane, RNScalar value);
-  void RasterizeGridBox(const R3Box& box, RNScalar value);
-  void RasterizeGridSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid = TRUE);
-  void RasterizeWorldSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid = TRUE);
+  void RasterizeGridValue(int ix, int iy, int iz, RNScalar value, int operation = 0);
+  void RasterizeGridPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, int operation = 0);
+  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, int operation = 0);
+  void RasterizeGridPoint(const R3Point& point, RNScalar value, int operation = 0);
+  void RasterizeWorldPoint(const R3Point& point, RNScalar value, int operation = 0);
+  void RasterizeGridSpan(const int p1[3], const int p2[3], RNScalar value, int operation = 0);
+  void RasterizeGridSpan(const R3Point& p1, const R3Point& p2, RNScalar value, int operation = 0);
+  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value, int operation = 0);
+  void RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScalar value, int operation = 0);
+  void RasterizeGridTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value, int operation = 0);
+  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value, int operation = 0);
+  void RasterizeGridPlane(const R3Plane& plane, RNScalar value, int operation = 0);
+  void RasterizeWorldPlane(const R3Plane& plane, RNScalar value, int operation = 0);
+  void RasterizeGridBox(const R3Box& box, RNScalar value, int operation = 0);
+  void RasterizeGridSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid = TRUE, int operation = 0);
+  void RasterizeWorldSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid = TRUE, int operation = 0);
 
   // Relationship functions
   RNScalar Dot(const R3Grid& grid) const;
@@ -185,8 +186,8 @@ public:
   // Gaussian filtering
   RNScalar GridValue(RNCoord x, RNCoord y, RNCoord z, RNLength sigma) const;
   RNScalar WorldValue(RNCoord x, RNCoord y, RNCoord z, RNLength sigma) const;
-  void RasterizeGridPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma);
-  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma);
+  void RasterizeGridPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma, int operation = 0);
+  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma, int operation = 0);
 
 private:
   R3Affine grid_to_world_transform;
@@ -205,6 +206,10 @@ private:
 // Useful constants
 
 extern const float R3_GRID_KEEP_VALUE;
+
+const int R3_GRID_ADD_OPERATION = 0;
+const int R3_GRID_SUBTRACT_OPERATION = 1;
+const int R3_GRID_REPLACE_OPERATION = 2;
 
 
 
@@ -617,99 +622,99 @@ AddGridValue(int i, int j, int k, RNScalar value)
 
 
 inline void R3Grid::
-RasterizeGridPoint(const R3Point& point, RNScalar value)
+RasterizeGridPoint(const R3Point& point, RNScalar value, int operation)
 {
   // Splat value at grid point
-  RasterizeGridPoint(point[0], point[1], point[2], value);
+  RasterizeGridPoint(point[0], point[1], point[2], value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value)
+RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, int operation)
 {
   // Splat value at world point
-  RasterizeGridPoint(GridPosition(x, y, z), value);
+  RasterizeGridPoint(GridPosition(x, y, z), value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldPoint(const R3Point& world_point, RNScalar value)
+RasterizeWorldPoint(const R3Point& world_point, RNScalar value, int operation)
 {
   // Splat value at world point
-  RasterizeGridPoint(GridPosition(world_point), value);
+  RasterizeGridPoint(GridPosition(world_point), value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNScalar sigma)
+RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNScalar sigma, int operation)
 {
   // Splat value at world point with Gaussian filtering
   R3Point p = GridPosition(x, y, z);
-  RasterizeGridPoint(p[0], p[1], p[2], value, sigma * WorldToGridScaleFactor());
+  RasterizeGridPoint(p[0], p[1], p[2], value, sigma * WorldToGridScaleFactor(), operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeGridSpan(const R3Point& p1, const R3Point& p2, RNScalar value)
+RasterizeGridSpan(const R3Point& p1, const R3Point& p2, RNScalar value, int operation)
 {
   // Splat value everywhere inside grid triangle
   int i1[3] = { (int) (p1[0] + 0.5), (int) (p1[1] + 0.5), (int) (p1[2] + 0.5) };
   int i2[3] = { (int) (p2[0] + 0.5), (int) (p2[1] + 0.5), (int) (p2[2] + 0.5) };
-  RasterizeGridSpan(i1, i2, value);
+  RasterizeGridSpan(i1, i2, value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value)
+RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value, int operation)
 {
   // Splat value everywhere inside world triangle
-  RasterizeGridSpan(GridPosition(p1), GridPosition(p2), value);
+  RasterizeGridSpan(GridPosition(p1), GridPosition(p2), value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeGridTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value)
+RasterizeGridTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value, int operation)
 {
   // Splat value everywhere inside grid triangle
   int i1[3] = { (int) (p1[0] + 0.5), (int) (p1[1] + 0.5), (int) (p1[2] + 0.5) };
   int i2[3] = { (int) (p2[0] + 0.5), (int) (p2[1] + 0.5), (int) (p2[2] + 0.5) };
   int i3[3] = { (int) (p3[0] + 0.5), (int) (p3[1] + 0.5), (int) (p3[2] + 0.5) };
-  RasterizeGridTriangle(i1, i2, i3, value);
+  RasterizeGridTriangle(i1, i2, i3, value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value)
+RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value, int operation)
 {
   // Splat value everywhere inside world triangle
-  RasterizeGridTriangle(GridPosition(p1), GridPosition(p2), GridPosition(p3), value);
+  RasterizeGridTriangle(GridPosition(p1), GridPosition(p2), GridPosition(p3), value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldPlane(const R3Plane& world_plane, RNScalar value)
+RasterizeWorldPlane(const R3Plane& world_plane, RNScalar value, int operation)
 {
   // Splat value everywhere inside world triangle
   R3Plane grid_plane(world_plane);
   grid_plane.Transform(world_to_grid_transform);
-  RasterizeGridPlane(grid_plane, value);
+  RasterizeGridPlane(grid_plane, value, operation);
 }
 
 
 
 inline void R3Grid::
-RasterizeWorldSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid)
+RasterizeWorldSphere(const R3Point& center, RNLength radius, RNScalar value, RNBoolean solid, int operation)
 {
   // Splat value everywhere inside world sphere
-  RasterizeGridSphere(GridPosition(center), radius * WorldToGridScaleFactor(), value, solid);
+  RasterizeGridSphere(GridPosition(center), radius * WorldToGridScaleFactor(), value, solid, operation);
 }
 
 

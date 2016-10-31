@@ -53,6 +53,7 @@ static int show_face_names = 0;
 static int show_edge_names = 0;
 static int show_vertex_colors = 0;
 static int show_vertex_normals = 0;
+static int show_vertex_texcoords = 0;
 static int show_vertex_names = 0;
 static int show_material_names = 0;
 static int show_segment_names = 0;
@@ -120,6 +121,7 @@ void GLUTRedraw(void)
     // Draw faces
     if (show_faces) {
       if (show_vertex_colors) glDisable(GL_LIGHTING);
+      else if (show_vertex_texcoords) glDisable(GL_LIGHTING);
       else { glEnable(GL_LIGHTING); glColor3d(0.8, 0.8, 0.8); }
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
@@ -131,6 +133,7 @@ void GLUTRedraw(void)
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
           if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
+          else if (show_vertex_texcoords) R3LoadRgb(mesh->VertexTextureCoords(vertex).X(), mesh->VertexTextureCoords(vertex).Y(), 0.0);
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
@@ -488,7 +491,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'T':
   case 't':
-    show_boundaries = !show_boundaries;
+    show_vertex_texcoords = !show_vertex_texcoords;
     break;
 
   case 'V':
@@ -497,6 +500,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'v':
     show_vertices = !show_vertices;
+    break;
+
+  case 'X':
+  case 'x':
+    show_boundaries = !show_boundaries;
     break;
 
   case ' ': {

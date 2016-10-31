@@ -76,6 +76,10 @@ public:
   RNBoolean IsSurfelMarked(int surfel_index) const;
   RNBoolean IsSurfelAerial(int surfel_index) const;
   RNBoolean IsSurfelTerrestrial(int surfel_index) const;
+  RNBoolean IsSurfelOnSilhouetteBoundary(int surfel_index) const;
+  RNBoolean IsSurfelOnShadowBoundary(int surfel_index) const;
+  RNBoolean IsSurfelOnBorderBoundary(int surfel_index) const;
+  RNBoolean IsSurfelOnBoundary(int surfel_index) const;
 
 
   //////////////////////////////////////////
@@ -421,6 +425,42 @@ IsSurfelTerrestrial(int surfel_index) const
 {
   // Return whether kth surfel is aerial
   return surfels[surfel_index].IsTerrestrial();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
+IsSurfelOnSilhouetteBoundary(int surfel_index) const
+{
+  // Return whether kth surfel is on silhouette boundary
+  return surfels[surfel_index].IsOnSilhouetteBoundary();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
+IsSurfelOnShadowBoundary(int surfel_index) const
+{
+  // Return whether kth surfel is on shadow boundary
+  return surfels[surfel_index].IsOnShadowBoundary();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
+IsSurfelOnBorderBoundary(int surfel_index) const
+{
+  // Return whether kth surfel is on border boundary
+  return surfels[surfel_index].IsOnBorderBoundary();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
+IsSurfelOnBoundary(int surfel_index) const
+{
+  // Return whether kth surfel is on  boundary
+  return surfels[surfel_index].IsOnBoundary();
 }
 
 

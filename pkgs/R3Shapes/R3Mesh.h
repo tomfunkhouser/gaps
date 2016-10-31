@@ -32,6 +32,7 @@ class R3MeshVertex {
     RNArray<R3MeshEdge *> edges;
     R3Point position;
     R3Vector normal;
+    R2Point texcoords;
     RNRgb color;
     RNScalar curvature;
     int id;
@@ -161,6 +162,8 @@ class R3Mesh {
       // Returns the normal of the surface at the vertex
     const RNRgb& VertexColor(const R3MeshVertex *vertex) const;
       // Returns the color of the surface at the vertex
+    const R2Point& VertexTextureCoords(const R3MeshVertex *vertex) const;
+      // Returns the texture coordinates at the vertex
     RNArea VertexArea(const R3MeshVertex *vertex) const;
       // Returns the area of the surface associated with this vertex
     R3Plane VertexTangentPlane(const R3MeshVertex *vertex) const;
@@ -263,6 +266,8 @@ class R3Mesh {
       // Set new normal for vertex
     void SetVertexColor(R3MeshVertex *vertex, const RNRgb& color);
       // Set new color for vertex
+    void SetVertexTextureCoords(R3MeshVertex *vertex, const R2Point& texcoords);
+      // Set new texture coordinates for vertex
     void SetVertexValue(R3MeshVertex *vertex, RNScalar value);
       // Set the value stored with a vertex
     void SetVertexMark(R3MeshVertex *vertex, RNMark mark);
@@ -413,6 +418,8 @@ class R3Mesh {
       // Create a new vertex at a position with a given normal
     virtual R3MeshVertex *CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, R3MeshVertex *vertex = NULL);
       // Create a new vertex at a position with a given normal and color
+    virtual R3MeshVertex *CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, const R2Point& texcoords, R3MeshVertex *vertex = NULL);
+      // Create a new vertex at a position with a given normal and color and texture coordinates
     virtual R3MeshEdge *CreateEdge(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshEdge *edge = NULL);
       // Create a new edge between two vertices
     virtual R3MeshFace *CreateFace(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3, R3MeshFace *face = NULL);
@@ -788,6 +795,15 @@ VertexColor(const R3MeshVertex *v) const
 
 
 
+inline const R2Point& R3Mesh::
+VertexTextureCoords(const R3MeshVertex *v) const
+{
+  // Return the texture coordinates at the vertex
+  return v->texcoords;
+}
+
+
+
 inline R3Plane R3Mesh::
 VertexTangentPlane(const R3MeshVertex *v) const
 {
@@ -1111,6 +1127,15 @@ SetVertexColor(R3MeshVertex *v, const RNRgb& color)
 {
   // Set new color for vertex
   v->color = color;
+}
+
+
+
+inline void R3Mesh:: 
+SetVertexTextureCoords(R3MeshVertex *v, const R2Point& texcoords)
+{
+  // Set new texture coordinates for vertex
+  v->texcoords = texcoords;
 }
 
 
