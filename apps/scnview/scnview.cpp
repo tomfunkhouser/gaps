@@ -951,7 +951,7 @@ void GLUTMainLoop(void)
   center = scene->BBox().Centroid();
 
   // Initialize camera
-  viewer->SetCamera(scene->Camera());
+  // viewer->SetCamera(scene->Camera());
 
   // Remove transformations
   // scene->RemoveTransformations();
