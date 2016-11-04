@@ -152,6 +152,17 @@ IsZero(void) const
 
 
 RNBoolean RNPolynomial::
+IsOne(void) const
+{
+  // Return whether polynomial is definitely zero
+  if (NTerms() != 1) return FALSE;
+  RNPolynomialTerm *term = Term(0);
+  return term->IsOne();
+}
+
+
+
+RNBoolean RNPolynomial::
 IsConstant(void) const
 {
   // Check if no terms
@@ -759,6 +770,16 @@ IsZero(void) const
 {
   // Return whether term is zero for all possible evaluations
   if (c == 0) return TRUE;
+  return FALSE;
+}
+
+
+
+RNBoolean RNPolynomialTerm::
+IsOne(void) const
+{
+  // Return whether term is one for all possible evaluations
+  if ((c == 1) && (n == 0)) return TRUE;
   return FALSE;
 }
 

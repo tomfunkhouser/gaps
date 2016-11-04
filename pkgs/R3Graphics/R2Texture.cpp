@@ -232,11 +232,11 @@ Load(void) const
       (min_filter == R2_NEAREST_MIPMAP_LINEAR_TEXTURE_FILTER) ||
       (min_filter == R2_LINEAR_MIPMAP_NEAREST_TEXTURE_FILTER) ||
       (min_filter == R2_LINEAR_MIPMAP_LINEAR_TEXTURE_FILTER)) {
-    gluBuild2DMipmaps(GL_TEXTURE_2D, image->Depth(), image->Width(), image->Height(),
+    gluBuild2DMipmaps(GL_TEXTURE_2D, format, image->Width(), image->Height(),
       format, GL_UNSIGNED_BYTE, (const unsigned char *) image->Pixels());
   }
   else {
-    glTexImage2D(GL_TEXTURE_2D, 0, image->Depth(), image->Width(), image->Height(),
+    glTexImage2D(GL_TEXTURE_2D, 0, format, image->Width(), image->Height(),
       0, format, GL_UNSIGNED_BYTE, (const unsigned char *) image->Pixels());
   }
 

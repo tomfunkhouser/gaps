@@ -208,6 +208,149 @@ RNAlgebraic(int op, RNScalar operand1, RNScalar operand2)
   operands[0] = NULL;
   operands[1] = NULL;
 
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNScalar operand1, RNPolynomial *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNScalar operand1, RNAlgebraic *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNPolynomial *operand1, RNScalar operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNPolynomial *operand1, RNPolynomial *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNPolynomial *operand1, RNAlgebraic *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNAlgebraic *operand1, RNScalar operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNAlgebraic *operand1, RNPolynomial *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+RNAlgebraic(int op, RNAlgebraic *operand1, RNAlgebraic *operand2)
+  : operation(RN_ZERO_OPERATION),
+    polynomial(NULL)
+{
+  // Initialize operands
+  operands[0] = NULL;
+  operands[1] = NULL;
+
+  // Construct 
+  Construct(op, operand1, operand2);
+}
+
+
+
+RNAlgebraic::
+~RNAlgebraic(void)
+{
+  // Just checking
+  assert(IsValid());
+
+  // Delete everything
+  if (polynomial) delete polynomial;
+  if (operands[0]) delete operands[0];
+  if (operands[1]) delete operands[1];
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNScalar operand1, RNScalar operand2, RNBoolean force)
+{
   // Condense scalars based on operation
   switch(op) {
   case RN_ZERO_OPERATION:
@@ -271,142 +414,439 @@ RNAlgebraic(int op, RNScalar operand1, RNScalar operand2)
 
 
 
-RNAlgebraic::
-RNAlgebraic(int op, RNScalar operand1, RNPolynomial *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
+void RNAlgebraic::
+Construct(int op, RNScalar operand1, RNPolynomial *operand2, RNBoolean force)
 {
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERAND2
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+  assert(operand2);
 
-  // Construct 
-  Construct(op, new RNAlgebraic(operand1, 0), new RNAlgebraic(operand2));
-}
+  // Check type of operand2
+  if (!force && (operand2->NTerms() == 1) && (operand2->Term(0)->Degree() == 0)) {
+    Construct(op, operand1, operand2->Term(0)->Coefficient());
+    delete operand2;
+  }
+  else {
+    switch(op) {
+    case RN_ZERO_OPERATION:
+      break;
 
+    case RN_ADD_OPERATION: 
+      if ((operand1 == 0) && (operand2->IsZero())) {
+        delete operand2;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand2;
+        this->polynomial->Add(operand1);
+      }
+      break; 
 
+    case RN_SUBTRACT_OPERATION: 
+      if ((operand1 == 0) && (operand2->IsZero())) {
+        delete operand2;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand2;
+        this->polynomial->Negate();
+        this->polynomial->Add(operand1);
+      }
+      break; 
 
-RNAlgebraic::
-RNAlgebraic(int op, RNScalar operand1, RNAlgebraic *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
+    case RN_MULTIPLY_OPERATION: 
+      if ((operand1 == 0) || (operand2->IsZero())) {
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(operand1, 0);
+        delete operand2;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand2;
+        this->polynomial->Multiply(operand1);
+      }
+      break; 
 
-  // Construct 
-  Construct(op, new RNAlgebraic(operand1, 0), operand2);
-}
+    case RN_DIVIDE_OPERATION:
+      if (operand1 == 0) {
+        delete operand2;
+      }
+      else if (operand2->IsZero()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(RN_INFINITY, 0);
+        delete operand2;
+      }  
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(operand1, 0);
+        delete operand2;
+      }
+      else {      
+        Construct(op, new RNAlgebraic(operand1, 0), new RNAlgebraic(operand2), TRUE);
+      }
+      break;
 
+    case RN_POW_OPERATION:
+      if (operand1 == 0) {
+        delete operand2;
+      }
+      else if (operand2->IsZero()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(1.0, 0);
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(operand1, 0);
+        delete operand2;
+      }
+      else {      
+        Construct(op, new RNAlgebraic(operand1, 0), new RNAlgebraic(operand2), TRUE);
+      }
+      break;
 
+    default:
+      RNAbort("Invalid operation %d\n", op);
+      break;
+    }
+  }
 
-RNAlgebraic::
-RNAlgebraic(int op, RNPolynomial *operand1, RNScalar operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2, 0));
-}
-
-
-
-RNAlgebraic::
-RNAlgebraic(int op, RNPolynomial *operand1, RNPolynomial *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2));
-}
-
-
-
-RNAlgebraic::
-RNAlgebraic(int op, RNPolynomial *operand1, RNAlgebraic *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, new RNAlgebraic(operand1), operand2);
-}
-
-
-
-RNAlgebraic::
-RNAlgebraic(int op, RNAlgebraic *operand1, RNScalar operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, operand1, new RNAlgebraic(operand2, 0));
-}
-
-
-
-RNAlgebraic::
-RNAlgebraic(int op, RNAlgebraic *operand1, RNPolynomial *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, operand1, new RNAlgebraic(operand2));
-}
-
-
-
-RNAlgebraic::
-RNAlgebraic(int op, RNAlgebraic *operand1, RNAlgebraic *operand2)
-  : operation(RN_ZERO_OPERATION),
-    polynomial(NULL)
-{
-  // Initialize operands
-  operands[0] = NULL;
-  operands[1] = NULL;
-
-  // Construct 
-  Construct(op, operand1, operand2);
-}
-
-
-
-RNAlgebraic::
-~RNAlgebraic(void)
-{
   // Just checking
   assert(IsValid());
-
-  // Delete everything
-  if (polynomial) delete polynomial;
-  if (operands[0]) delete operands[0];
-  if (operands[1]) delete operands[1];
 }
 
 
 
 void RNAlgebraic::
-Construct(int op, RNAlgebraic *operand1, RNAlgebraic *operand2)
+Construct(int op, RNScalar operand1, RNAlgebraic *operand2, RNBoolean force)
+{
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERAND2
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+  assert(operand2);
+  assert(operand2->IsValid());
+
+  // Check type of operand2
+  if (!force && (operand2->operation == RN_POLYNOMIAL_OPERATION)) {
+    // Construct with polynomial
+    Construct(op, operand1, operand2->polynomial);
+    operand2->operation = RN_ZERO_OPERATION;
+    operand2->operands[0] = NULL;
+    operand2->operands[1] = NULL;
+    operand2->polynomial = NULL;
+    delete operand2;
+  }
+  else {
+    // Construct with algebraic
+    Construct(op, new RNAlgebraic(operand1, 0), operand2, TRUE);
+  }
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNPolynomial *operand1, RNScalar operand2, RNBoolean force)
+{
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERAND1
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+  assert(operand1);
+
+  // Check type of operand1
+  if (!force && (operand1->NTerms() == 1) && (operand1->Term(0)->Degree() == 0)) {
+    Construct(op, operand1->Term(0)->Coefficient(), operand2);
+    delete operand1;
+  }
+  else {
+    switch(op) {
+    case RN_ZERO_OPERATION:
+      break;
+
+    case RN_ADD_OPERATION:
+      if ((operand1->IsZero()) && (operand2 == 0)) {
+        delete operand1;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Add(operand2);
+      }
+      break; 
+
+    case RN_SUBTRACT_OPERATION: 
+      if ((operand1->IsZero()) && (operand2 == 0)) {
+        delete operand1;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Subtract(operand2);
+      }
+      break; 
+
+    case RN_MULTIPLY_OPERATION: 
+      if ((operand1->IsZero()) || (operand2 == 0)) {
+        delete operand1;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Multiply(operand2);
+      }
+      break; 
+
+    case RN_DIVIDE_OPERATION:
+      if (operand1->IsZero()) {
+        delete operand1;
+      }
+      else if (operand2 == 0) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(RN_INFINITY, 0);
+        delete operand1;
+      }  
+      else if (operand1->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(operand2, 0);
+        delete operand1;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Divide(operand2);
+      }
+      break;
+
+    case RN_POW_OPERATION:
+      if (operand1->IsZero()) {
+        delete operand1;
+      }
+      else if (operand2 == 0) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(1.0, 0);
+        delete operand1;
+      }
+      else if (operand2 == 1.0) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+      }
+      else {      
+        Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2, 0), TRUE);
+      }
+      break;
+
+    default:
+      RNAbort("Invalid operation %d\n", op);
+      break;
+    }
+  }
+
+  // Just checking
+  assert(IsValid());
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNPolynomial *operand1, RNPolynomial *operand2, RNBoolean force)
+{
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERANDS
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+  assert(operand1 && operand2);
+
+  // Check types of operands
+  if (!force && (operand1->NTerms() == 1) && (operand1->Term(0)->Degree() == 0)) {
+    Construct(op, operand1->Term(0)->Coefficient(), operand2);
+    delete operand1;
+  }
+  else if (!force && (operand2->NTerms() == 1) && (operand2->Term(0)->Degree() == 0)) {
+    Construct(op, operand1, operand2->Term(0)->Coefficient());
+    delete operand2;
+  }
+  else {
+    switch(op) {
+    case RN_ZERO_OPERATION:
+      break;
+
+    case RN_ADD_OPERATION: 
+      if (operand1->IsZero() && operand2->IsZero()) {
+        delete operand1;
+        delete operand2;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Add(*operand2);
+        delete operand2;
+      }
+      break; 
+
+    case RN_SUBTRACT_OPERATION: 
+      if (operand1->IsZero() && operand2->IsZero()) {
+        delete operand1;
+        delete operand2;
+      }
+      else {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Subtract(*operand2);
+        delete operand2;
+      }
+      break; 
+
+    case RN_MULTIPLY_OPERATION: 
+      if (operand1->IsZero() || operand2->IsZero()) {
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand1->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand2;
+        delete operand1;
+      }
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        delete operand2;
+      }
+      else if ((operand1->NTerms() == 1) && (operand2->NTerms() == 1)) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        this->polynomial->Multiply(*operand2);
+        delete operand2;
+      }
+      else {
+        Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2), TRUE);
+      }
+      break; 
+
+    case RN_DIVIDE_OPERATION:
+      if (operand1->IsZero()) {
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsZero()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(RN_INFINITY, 0);
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = operand1;
+        delete operand2;
+      }
+      else {
+        Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2), TRUE);
+      }
+      break;
+
+    case RN_POW_OPERATION:
+      if (operand1->IsZero()) {
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsZero()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = new RNPolynomial(1.0, 0);
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        this->polynomial = operand1;
+        delete operand2;
+      }
+      else {      
+        Construct(op, new RNAlgebraic(operand1), new RNAlgebraic(operand2), TRUE);
+      }
+      break;
+
+    default:
+      RNAbort("Invalid operation %d\n", op);
+      break;
+    }
+  }
+  
+  // Just checking
+  assert(IsValid());
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNPolynomial *operand1, RNAlgebraic *operand2, RNBoolean force)
+{
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERANDS
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+
+  // Check types of operands
+  if (!force && (operand2->operation == RN_POLYNOMIAL_OPERATION)) {
+    Construct(op, operand1, operand2->polynomial);
+    operand2->operation = RN_ZERO_OPERATION;
+    operand2->operands[0] = NULL;
+    operand2->operands[1] = NULL;
+    operand2->polynomial = NULL;
+    delete operand2;
+  }
+  else if (!force && (operand1->NTerms() == 1) && (operand1->Term(0)->Degree() == 0)) {
+    Construct(op, operand1->Term(0)->Coefficient(), operand2);
+    delete operand1;
+  }
+  else {
+    Construct(op, new RNAlgebraic(operand1), operand2, TRUE);
+  }
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNAlgebraic *operand1, RNScalar operand2, RNBoolean force)
+{
+  // Check type of operand1
+  if (!force && (operand1->operation == RN_POLYNOMIAL_OPERATION)) {
+    Construct(op, operand1->polynomial, operand2);
+    operand1->operation = RN_ZERO_OPERATION;
+    operand1->operands[0] = NULL;
+    operand1->operands[1] = NULL;
+    operand1->polynomial = NULL;
+    delete operand1;
+  }
+  else {
+    Construct(op, operand1, new RNAlgebraic(operand2, 0), TRUE);
+  }
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNAlgebraic *operand1, RNPolynomial *operand2, RNBoolean force)
+{
+  // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERANDS
+  // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
+
+  // Check types of operands
+  if (!force && (operand1->operation == RN_POLYNOMIAL_OPERATION)) {
+    Construct(op, operand1->polynomial, operand2);
+    operand1->operation = RN_ZERO_OPERATION;
+    operand1->operands[0] = NULL;
+    operand1->operands[1] = NULL;
+    operand1->polynomial = NULL;
+    delete operand1;
+  }
+  else if (!force && (operand2->NTerms() == 1) && (operand2->Term(0)->Degree() == 0)) {
+    Construct(op, operand1, operand2->Term(0)->Coefficient());
+    delete operand2;
+  }
+  else {
+    Construct(op, operand1, new RNAlgebraic(operand2), TRUE);
+  }
+}
+
+
+
+void RNAlgebraic::
+Construct(int op, RNAlgebraic *operand1, RNAlgebraic *operand2, RNBoolean force)
 {
   // NOTE: THIS TAKES OVER MANAGEMENT OF MEMORY FOR OPERANDS
   // SPECIFICALLY, OPERANDS WILL BE DELETED WHEN ALGEBRAIC IS DECONSTRUCTED
@@ -414,32 +854,95 @@ Construct(int op, RNAlgebraic *operand1, RNAlgebraic *operand2)
   assert(operand1->IsValid());
   assert(operand2->IsValid());
 
-#if 0
-  operation = op;
-  operands[0] = operand1;
-  operands[1] = operand2;
-#else
-  switch(op) {
-  case RN_ZERO_OPERATION:
+  // Check types of operands
+  if (!force && (operand1->operation == RN_POLYNOMIAL_OPERATION)) {
+    Construct(op, operand1->polynomial, operand2);
+    operand1->operation = RN_ZERO_OPERATION;
+    operand1->operands[0] = NULL;
+    operand1->operands[1] = NULL;
+    operand1->polynomial = NULL;
     delete operand1;
+  }
+  else if (!force && (operand2->operation == RN_POLYNOMIAL_OPERATION)) {
+    Construct(op, operand1, operand2->polynomial);
+    operand2->operation = RN_ZERO_OPERATION;
+    operand2->operands[0] = NULL;
+    operand2->operands[1] = NULL;
+    operand2->polynomial = NULL;
     delete operand2;
-    break;
+  }
+  else {
+    switch(op) {
+    case RN_ZERO_OPERATION:
+      delete operand1;
+      delete operand2;
+      break;
 
-  case RN_ADD_OPERATION:
-  case RN_SUBTRACT_OPERATION:
-    if (operand1->IsZero()) {
-      if (operand2->IsZero()) {
-        // Both operands are zero -- delete both 
+    case RN_ADD_OPERATION:
+    case RN_SUBTRACT_OPERATION:
+      if (operand1->IsZero()) {
+        if (operand2->IsZero()) {
+          // Both operands are zero -- delete both 
+          delete operand1;
+          delete operand2;
+        }
+        else {
+          // Operand1 is zero - copy stuff from operand2
+          operation = operand2->operation;
+          polynomial = operand2->polynomial;
+          operands[0] = operand2->operands[0];
+          operands[1] = operand2->operands[1];
+          if (op == RN_SUBTRACT_OPERATION) Negate();
+        
+          // Delete operands
+          operand2->operation = RN_ZERO_OPERATION;
+          operand2->operands[0] = NULL;
+          operand2->operands[1] = NULL;
+          operand2->polynomial = NULL;
+          delete operand1;
+          delete operand2;
+        }
+      }
+      else if (operand2->IsZero()) {
+        // Operand2 is zero - copy stuff from operand1
+        operation = operand1->operation;
+        polynomial = operand1->polynomial;
+        operands[0] = operand1->operands[0];
+        operands[1] = operand1->operands[1];
+      
+        // Delete operands
+        operand1->operation = RN_ZERO_OPERATION;
+        operand1->operands[0] = NULL;
+        operand1->operands[1] = NULL;
+        operand1->polynomial = NULL;
         delete operand1;
         delete operand2;
       }
       else {
-        // Operand1 is zero - copy stuff from operand2
+        // Initialize binary operation
+        operation = op;
+        operands[0] = operand1;
+        operands[1] = operand2;
+      }
+      break;
+
+    case RN_MULTIPLY_OPERATION:
+      if ((operand1->IsZero()) || (operand2->IsZero())) {
+        delete operand1;
+        delete operand2;
+      }
+      else if ((operand1->IsOne()) && (operand2->IsOne())) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(1.0, 0);
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand1->IsOne()) {
+        // Operand1 is one - copy stuff from operand2
         operation = operand2->operation;
         polynomial = operand2->polynomial;
         operands[0] = operand2->operands[0];
         operands[1] = operand2->operands[1];
-        if (op == RN_SUBTRACT_OPERATION) Negate();
         
         // Delete operands
         operand2->operation = RN_ZERO_OPERATION;
@@ -449,92 +952,106 @@ Construct(int op, RNAlgebraic *operand1, RNAlgebraic *operand2)
         delete operand1;
         delete operand2;
       }
-    }
-    else if (operand2->IsZero()) {
-      // Operand2 is zero - copy stuff from operand1
-      operation = operand1->operation;
-      polynomial = operand1->polynomial;
-      operands[0] = operand1->operands[0];
-      operands[1] = operand1->operands[1];
-      
-      // Delete operands
-      operand1->operation = RN_ZERO_OPERATION;
-      operand1->operands[0] = NULL;
-      operand1->operands[1] = NULL;
-      operand1->polynomial = NULL;
-      delete operand1;
-      delete operand2;
-    }
-    else {
-      // Initialize binary operation
-      operation = op;
-      operands[0] = operand1;
-      operands[1] = operand2;
-    }
-    break;
+      else if (operand2->IsOne()) {
+        // Operand2 is one - copy stuff from operand1
+        operation = operand1->operation;
+        polynomial = operand1->polynomial;
+        operands[0] = operand1->operands[0];
+        operands[1] = operand1->operands[1];
+        
+        // Delete operands
+        operand1->operation = RN_ZERO_OPERATION;
+        operand1->operands[0] = NULL;
+        operand1->operands[1] = NULL;
+        operand1->polynomial = NULL;
+        delete operand1;
+        delete operand2;
+      }
+      else {
+        // Initialize binary operation
+        operation = op;
+        operands[0] = operand1;
+        operands[1] = operand2;
+      }
+      break;
 
-  case RN_MULTIPLY_OPERATION:
-    if ((operand1->IsZero()) || (operand2->IsZero())) {
-      // An operand is zero
-      delete operand1;
-      delete operand2;
-    }
-    else {
-      // Initialize binary operation
-      operation = op;
-      operands[0] = operand1;
-      operands[1] = operand2;
-    }
-    break;
+    case RN_DIVIDE_OPERATION:
+      if (operand1->IsZero()) {
+        // Numerator is zero
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsZero()) {
+        // Denominator is zero
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(RN_INFINITY, 0);
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        // Operand2 is one - copy stuff from operand1
+        operation = operand1->operation;
+        polynomial = operand1->polynomial;
+        operands[0] = operand1->operands[0];
+        operands[1] = operand1->operands[1];
+        
+        // Delete operands
+        operand1->operation = RN_ZERO_OPERATION;
+        operand1->operands[0] = NULL;
+        operand1->operands[1] = NULL;
+        operand1->polynomial = NULL;
+        delete operand1;
+        delete operand2;
+      }
+      else {
+        // Initialize binary operation
+        operation = op;
+        operands[0] = operand1;
+        operands[1] = operand2;
+      }
+      break;
 
-  case RN_DIVIDE_OPERATION:
-    if (operand1->IsZero()) {
-      // Numerator is zero
-      delete operand1;
-      delete operand2;
-    }
-    else if (operand2->IsZero()) {
-      // Denominator is zero
-      operation = RN_POLYNOMIAL_OPERATION;
-      polynomial = new RNPolynomial(RN_INFINITY, 0);
-      delete operand1;
-      delete operand2;
-    }
-    else {
-      // Initialize binary operation
-      operation = op;
-      operands[0] = operand1;
-      operands[1] = operand2;
-    }
-    break;
+    case RN_POW_OPERATION:
+      if (operand1->IsZero()) {
+        // Base is zero
+        delete operand1;
+        delete operand2;
+      }
+      else if ((operand1->IsOne()) || (operand2->IsZero())) {
+        operation = RN_POLYNOMIAL_OPERATION;
+        polynomial = new RNPolynomial(1.0, 0);
+        delete operand1;
+        delete operand2;
+      }
+      else if (operand2->IsOne()) {
+        // Operand2 is one - copy stuff from operand1
+        operation = operand1->operation;
+        polynomial = operand1->polynomial;
+        operands[0] = operand1->operands[0];
+        operands[1] = operand1->operands[1];
+        
+        // Delete operands
+        operand1->operation = RN_ZERO_OPERATION;
+        operand1->operands[0] = NULL;
+        operand1->operands[1] = NULL;
+        operand1->polynomial = NULL;
+        delete operand1;
+        delete operand2;
+      }
+      else {
+        // Initialize binary operation
+        operation = op;
+        operands[0] = operand1;
+        operands[1] = operand2;
+      }
+      break;
 
-  case RN_POW_OPERATION:
-    if (operand1->IsZero()) {
-      // Base is zero
-      delete operand1;
-      delete operand2;
+    default:
+      RNAbort("Invalid operation %d\n", op);
+      break;
     }
-    else if (operand2->IsZero()) {
-      // Exponent is zero
-      operation = RN_POLYNOMIAL_OPERATION;
-      polynomial = new RNPolynomial(1.0, 0);
-      delete operand1;
-      delete operand2;
-    }
-    else {
-      // Initialize binary operation
-      operation = op;
-      operands[0] = operand1;
-      operands[1] = operand2;
-    }
-    break;
-
-  default:
-    RNAbort("Invalid operation %d\n", op);
-    break;
   }
-#endif
-
+  
   // Just checking
   assert(IsValid());
 }
@@ -564,6 +1081,41 @@ IsZero(void) const
 
   case RN_POW_OPERATION:
     return (operands[0]->IsZero());
+  }
+
+  // Should never get here
+  RNAbort("Unrecognized operation %d in algebraic");
+  return FALSE;
+}
+
+
+
+RNBoolean RNAlgebraic::
+IsOne(void) const
+{
+  // Return if algebraic algebraic is constant
+  switch(operation) {
+  case RN_ZERO_OPERATION:
+    return FALSE;
+
+  case RN_POLYNOMIAL_OPERATION:
+    return polynomial->IsOne();
+
+  case RN_ADD_OPERATION:
+    return ((operands[0]->IsOne() && operands[1]->IsZero()) ||
+            (operands[1]->IsOne() && operands[0]->IsZero()));
+
+  case RN_SUBTRACT_OPERATION:
+    return (operands[0]->IsOne() && operands[1]->IsZero());
+
+  case RN_MULTIPLY_OPERATION:
+  case RN_DIVIDE_OPERATION:
+    return (operands[0]->IsOne() && operands[1]->IsOne());
+
+  case RN_POW_OPERATION:
+    if (operands[0]->IsOne()) return TRUE;
+    if (operands[1]->IsZero()) return TRUE;
+    return FALSE;
   }
 
   // Should never get here
@@ -940,7 +1492,7 @@ Multiply(RNScalar factor)
   if (factor == 0.0) {
     Empty();
   }
-  else {
+  else if (factor != 1.0) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -978,7 +1530,7 @@ Divide(RNScalar factor)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else {
+  else if (factor != 1.0) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -1072,7 +1624,7 @@ Multiply(const RNPolynomial& factor)
   if (factor.IsZero()) {
     Empty();
   }
-  else {
+  else if (!factor.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -1119,7 +1671,7 @@ Divide(const RNPolynomial& factor)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else {
+  else if (!factor.IsOne()){
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -1233,7 +1785,7 @@ Multiply(const RNAlgebraic& algebraic)
   if (algebraic.IsZero()) {
     Empty();
   }
-  else {
+  else if (!algebraic.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -1288,7 +1840,7 @@ Divide(const RNAlgebraic& algebraic)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else {
+  else if (!algebraic.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;

@@ -24,15 +24,16 @@ public:
   ~RNPolynomial(void);
 
   // Property functions
+  int NVariables(void) const;
+  int NPartialDerivatives(void) const;
   RNBoolean IsZero(void) const;
+  RNBoolean IsOne(void) const;
   RNBoolean IsConstant(void) const;
   RNBoolean IsLinear(void) const;
   RNBoolean IsQuadratic(void) const;
   RNBoolean IsPolynomial(void) const;
   RNBoolean IsAlgebraic(void) const;
   RNBoolean HasVariable(int v) const;
-  int NVariables(void) const;
-  int NPartialDerivatives(void) const;
   RNScalar Degree(void) const;
 
   // Access functions
@@ -124,13 +125,14 @@ public:
   ~RNPolynomialTerm(void);
 
   // Property functions
+  int NVariables(void) const;
+  int NPartialDerivatives(void) const;
   RNBoolean IsZero(void) const;
+  RNBoolean IsOne(void) const;
   RNBoolean IsConstant(void) const;
   RNBoolean IsLinear(void) const;
   RNBoolean IsQuadratic(void) const;
   RNBoolean HasVariable(int v) const;
-  int NVariables(void) const;
-  int NPartialDerivatives(void) const;
   RNScalar Degree(void) const;
 
   // Access functions

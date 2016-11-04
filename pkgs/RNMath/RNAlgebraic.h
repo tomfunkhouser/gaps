@@ -31,6 +31,7 @@ public:
   int NVariables(void) const;
   int NPartialDerivatives(void) const;
   RNBoolean IsZero(void) const;
+  RNBoolean IsOne(void) const;
   RNBoolean IsConstant(void) const;
   RNBoolean IsLinear(void) const;
   RNBoolean IsQuadratic(void) const;
@@ -116,7 +117,15 @@ public:
 
 public:
   // Internal functions (for constructors)
-  void Construct(int op, RNAlgebraic *operand1, RNAlgebraic *operand2);
+  void Construct(int op, RNScalar      operand1, RNScalar      operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNScalar      operand1, RNPolynomial *operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNScalar      operand1, RNAlgebraic  *operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNPolynomial *operand1, RNScalar      operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNPolynomial *operand1, RNPolynomial *operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNPolynomial *operand1, RNAlgebraic  *operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNAlgebraic  *operand1, RNScalar      operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNAlgebraic  *operand1, RNPolynomial *operand2,  RNBoolean force = FALSE);
+  void Construct(int op, RNAlgebraic  *operand1, RNAlgebraic  *operand2,  RNBoolean force = FALSE);
 
   // Internal functions (for CERES)
   RNScalar Evaluate(double const* const* x) const;
