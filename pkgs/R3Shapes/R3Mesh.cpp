@@ -4100,6 +4100,10 @@ ReadObjFile(const char *filename)
       R3MeshVertex *v3 = verts.Kth(vi3-1);
       R3MeshVertex *v4 = (quad) ? verts.Kth(vi4-1) : NULL;
       
+      // Check vertices
+      if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
+      if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
+
       // Assign texture coordinates
       if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) v1->texcoords = *(texture_coords.Kth(ti1-1));
       if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) v2->texcoords = *(texture_coords.Kth(ti2-1));
@@ -4107,10 +4111,6 @@ ReadObjFile(const char *filename)
       if (quad) {
         if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) v4->texcoords = *(texture_coords.Kth(ti4-1));
       }
-
-      // Check vertices
-      if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
-      if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
 
       // Create face
       if (!CreateFace(v1, v2, v3)) {
