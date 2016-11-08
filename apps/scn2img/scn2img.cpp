@@ -694,7 +694,8 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
           R3TriangleArray *triangles = (R3TriangleArray *) shape;
           for (int k = 0; k < triangles->NTriangles(); k++) {
             R3Triangle *triangle = triangles->Triangle(k);
-            const R3Vector& normal = triangle->Normal();
+            R3Vector normal = triangle->Normal();
+            if (R3SignedDistance(triangle->Plane(), camera.Origin()) < 0) normal.Flip();
             RNScalar value = 0;
             if (color_scheme == ANGLE_COLOR_SCHEME) value = (RN_PI - acos(normal.Z())) / RN_PI;
             else value = 0.5*normal[color_scheme - XNORMAL_COLOR_SCHEME] + 0.5;
