@@ -858,11 +858,14 @@ void Redraw(void)
     printf("  Rendering %s ...\n", name);
     fflush(stdout);
   }
+
+  // Allocate image for capturing
+  R2Grid image(width, height);
   
   // Draw, capture, and write depth image 
   if (capture_depth_images) {
     if (DrawSceneWithOpenGL(*camera, scene, NO_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureDepth(image)) {
         image.Multiply(1000);
         char output_image_filename[1024];
@@ -876,7 +879,7 @@ void Redraw(void)
   // Draw, capture, and write depth image in a second way
   if (capture_depth_images) {
     if (DrawSceneWithOpenGL(*camera, scene, DEPTH_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureScalar(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_depth2.png", output_image_directory, name);
@@ -889,7 +892,7 @@ void Redraw(void)
   // Capture and write height image 
   if (capture_height_images) {
     if (DrawSceneWithOpenGL(*camera, scene, HEIGHT_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureScalar(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_height.png", output_image_directory, name);
@@ -901,7 +904,7 @@ void Redraw(void)
   // Capture and write angle image 
   if (capture_angle_images) {
     if (DrawSceneWithOpenGL(*camera, scene, ANGLE_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_angle.pfm", output_image_directory, name);
@@ -913,7 +916,7 @@ void Redraw(void)
   // Capture and write ndotv image 
   if (capture_ndotv_images) {
     if (DrawSceneWithOpenGL(*camera, scene, NDOTV_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         image.Multiply(65535.0/255.0);
         char output_image_filename[1024];
@@ -926,11 +929,11 @@ void Redraw(void)
   // Draw, capture, and write albedo image 
   if (capture_albedo_images) {
     if (DrawSceneWithOpenGL(*camera, scene, ALBEDO_COLOR_SCHEME)) {
-      R2Image image(width, height, 3);
-      if (CaptureColor(image)) {
+      R2Image albedo_image(width, height, 3);
+      if (CaptureColor(albedo_image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_albedo.jpg", output_image_directory, name);
-        image.Write(output_image_filename);
+        albedo_image.Write(output_image_filename);
       }
     }
   }
@@ -938,11 +941,11 @@ void Redraw(void)
   // Draw, capture, and write brdf image 
   if (capture_brdf_images) {
     if (DrawSceneWithOpenGL(*camera, scene, BRDF_COLOR_SCHEME)) {
-      R2Image image(width, height, 3);
-      if (CaptureColor(image)) {
+      R2Image brdf_image(width, height, 3);
+      if (CaptureColor(brdf_image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_brdf.jpg", output_image_directory, name);
-        image.Write(output_image_filename);
+        brdf_image.Write(output_image_filename);
       }
     }
   }
@@ -950,7 +953,7 @@ void Redraw(void)
   // Capture and write material image 
   if (capture_material_images) {
     if (DrawSceneWithOpenGL(*camera, scene, MATERIAL_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_material.png", output_image_directory, name);
@@ -962,7 +965,7 @@ void Redraw(void)
   // Capture and write node image 
   if (capture_node_images) {
     if (DrawSceneWithOpenGL(*camera, scene, NODE_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_node.png", output_image_directory, name);
@@ -974,7 +977,7 @@ void Redraw(void)
   // Capture and write category image 
   if (capture_category_images) {
     if (DrawSceneWithOpenGL(*camera, scene, CATEGORY_COLOR_SCHEME)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_category.png", output_image_directory, name);
@@ -986,7 +989,7 @@ void Redraw(void)
   // Capture and write room_surface image 
   if (capture_room_surface_images) {
     if (DrawSceneWithOpenGL(*camera, scene, ROOM_SURFACE_COLOR_SCHEME, TRUE)) {
-      R2Grid image(width, height);
+      image.Clear(0);
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_room_surface.png", output_image_directory, name);
@@ -997,26 +1000,24 @@ void Redraw(void)
 
   // Draw, capture, and write normal images
   if (capture_normal_images) {
-    R2Grid grid(width, height);
-    R2Image image(width, height);
     char output_image_filename[1024];
     sprintf(output_image_filename, "%s/%s_xnormal.png", output_image_directory, name);
     DrawSceneWithOpenGL(*camera, scene, XNORMAL_COLOR_SCHEME);
-    if (!CaptureInteger(grid)) return;
-    grid.WriteFile(output_image_filename);
+    if (!CaptureInteger(image)) return;
+    image.WriteFile(output_image_filename);
     sprintf(output_image_filename, "%s/%s_ynormal.png", output_image_directory, name);
     DrawSceneWithOpenGL(*camera, scene, YNORMAL_COLOR_SCHEME);
-    if (!CaptureInteger(grid)) return;
-    grid.WriteFile(output_image_filename);
+    if (!CaptureInteger(image)) return;
+    image.WriteFile(output_image_filename);
     sprintf(output_image_filename, "%s/%s_znormal.png", output_image_directory, name);
     DrawSceneWithOpenGL(*camera, scene, ZNORMAL_COLOR_SCHEME);
-    if (!CaptureInteger(grid)) return;
-    grid.WriteFile(output_image_filename);
+    if (!CaptureInteger(image)) return;
+    image.WriteFile(output_image_filename);
   }
   
   // Capture and write boundary image 
   if (capture_boundary_images) {
-    R2Grid image(width, height);
+    image.Clear(0);
     R2Grid node_image(width, height);
     R2Grid depth_image(width, height);
     R2Grid xnormal_image(width, height), ynormal_image(width, height), znormal_image(width, height);
@@ -1038,7 +1039,7 @@ void Redraw(void)
 
   // Capture and write room boundary image 
   if (capture_room_boundary_images) {
-    R2Grid image(width, height);
+    image.Clear(0);
     R2Grid node_image(width, height);
     R2Grid depth_image(width, height);
     R2Grid xnormal_image(width, height), ynormal_image(width, height), znormal_image(width, height);
@@ -1151,11 +1152,11 @@ void Redraw(void)
   // Draw, capture, and write color image 
   if (capture_color_images) {
     if (DrawSceneWithOpenGL(*camera, scene, RGB_COLOR_SCHEME)) {
-      R2Image image(width, height, 3);
-      if (CaptureColor(image)) {
+      R2Image color_image(width, height, 3);
+      if (CaptureColor(color_image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
-        image.Write(output_image_filename);
+        color_image.Write(output_image_filename);
       }
     }
   }
