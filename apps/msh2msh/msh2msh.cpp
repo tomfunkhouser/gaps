@@ -15,7 +15,7 @@ char *output_name = NULL;
 int flip_faces = 0;
 int clean = 0;
 int smooth = 0;
-R3Affine xform = R3identity_affine;
+R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1));
 RNLength min_edge_length = 0;
 RNLength max_edge_length = 0;
 char *xform_name = NULL;
@@ -142,7 +142,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-smooth")) smooth = 1;
       else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
       else if (!strcmp(*argv, "-scale_by_area")) scale_by_area = 1;
-      else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform.Scale(atof(*argv)); }
+      else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform = R3identity_affine; xform.Scale(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-tx")) { argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-ty")) { argv++; argc--; xform = R3identity_affine; xform.YTranslate(atof(*argv)); xform.Transform(prev_xform);}
       else if (!strcmp(*argv, "-tz")) { argv++; argc--; xform = R3identity_affine; xform.ZTranslate(atof(*argv)); xform.Transform(prev_xform);}
