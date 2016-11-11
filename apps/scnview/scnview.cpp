@@ -526,6 +526,7 @@ void GLUTRedraw(void)
   if (show_cameras) {
     glDisable(GL_LIGHTING);
     glLineWidth(5);
+    glColor3d(0.0, 0.8, 0.0);
     DrawCameras(scene, cameras);
     glLineWidth(1);
   }
