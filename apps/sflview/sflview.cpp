@@ -12,9 +12,6 @@
 #include "fglut/fglut.h" 
 #include "align.h"
 #include "debug.h"
-#ifdef USE_MESA
-#  include "GL/osmesa.h"
-#endif
 
 
 
@@ -29,7 +26,6 @@ static char *database_name = NULL;
 static char *model_name = NULL;
 static char *output_image_name = NULL;
 static int print_verbose = 0;
-static int mesa = 0;
 
 
 // Application variables
@@ -472,66 +468,6 @@ void GLUTMainLoop(void)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Mesa rendering
-////////////////////////////////////////////////////////////////////////
-
-static int
-RenderImageWithMesa(const char *filename)
-{
-#ifdef USE_MESA
-  // Check filename
-  if (!filename) {
-    fprintf(stderr, "You must supply an output image name for rendering with mesa\n");
-    return 0;
-  }
-  
-  // Print message
-  if (print_verbose) {
-    printf("Rendering image with mesa to %s\n", filename);
-    fflush(stdout);
-  }
-
-  // Create mesa context
-  OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 32, 0, 0, NULL);
-  if (!ctx) {
-    fprintf(stderr, "Unable to create mesa context\n");
-    return 0;
-  }
-
-  // Create frame buffer
-  void *frame_buffer = malloc(GLUTwindow_width * GLUTwindow_height * 4 * sizeof(GLubyte) );
-  if (!frame_buffer) {
-    fprintf(stderr, "Unable to allocate mesa frame buffer\n");
-    return 0;
-  }
-
-  // Assign mesa context
-  if (!OSMesaMakeCurrent(ctx, frame_buffer, GL_UNSIGNED_BYTE, GLUTwindow_width, GLUTwindow_height)) {
-    fprintf(stderr, "Unable to make mesa context current\n");
-    return 0;
-  }
-
-  // Draw image
-  GLUTRedraw();
-  
-  // Delete mesa context
-  OSMesaDestroyContext(ctx);
-
-  // Delete frame buffer
-  free(frame_buffer);
-
-  // Return success
-  return 1;
-#else
-  // Not supported
-  RNAbort("Program was not compiled with mesa.  Recompile with make mesa.\n");
-  return 0;
-#endif
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Argument Parsing Functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -543,7 +479,6 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-mesa"))  mesa = 1; 
       else if (!strcmp(*argv, "-image")) { 
         argc--; argv++; output_image_name = *argv; 
       }
@@ -628,18 +563,11 @@ int main(int argc, char **argv)
   viewer = new R3SurfelViewer(scene);
   if (!viewer) exit(-1);
 
-  // Check whether capturing image with mesa
-  if (mesa) {
-    // Capture single image with mesa
-    RenderImageWithMesa(output_image_name);
-  }
-  else {
-    // Initialize GLUT
-    GLUTInit(&argc, argv);
- 
-    // Run GLUT interface
-    GLUTMainLoop();
-  }
+  // Initialize GLUT
+  GLUTInit(&argc, argv);
+
+  // Run GLUT interface
+  GLUTMainLoop();
 
   // Return success 
   return 0;
