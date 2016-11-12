@@ -9,13 +9,11 @@
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "R3SurfelViewer.h"
+#include "fglut/fglut.h" 
 #include "align.h"
 #include "debug.h"
 #ifdef USE_MESA
 #  include "GL/osmesa.h"
-#else
-#  include "fglut/fglut.h" 
-#  define USE_GLUT
 #endif
 
 
