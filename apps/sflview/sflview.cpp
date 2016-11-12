@@ -499,20 +499,20 @@ RenderImageWithMesa(const char *filename)
   }
 
   // Create frame buffer
-  void *frame_buffer = malloc(GLUTwidth * GLUTheight * 4 * sizeof(GLubyte) );
+  void *frame_buffer = malloc(GLUTwindow_width * GLUTwindow_height * 4 * sizeof(GLubyte) );
   if (!frame_buffer) {
     fprintf(stderr, "Unable to allocate mesa frame buffer\n");
     return 0;
   }
 
   // Assign mesa context
-  if (!OSMesaMakeCurrent(ctx, frame_buffer, GL_UNSIGNED_BYTE, GLUTwidth, GLUTheight)) {
+  if (!OSMesaMakeCurrent(ctx, frame_buffer, GL_UNSIGNED_BYTE, GLUTwindow_width, GLUTwindow_height)) {
     fprintf(stderr, "Unable to make mesa context current\n");
     return 0;
   }
 
   // Draw image
-  Redraw();
+  GLUTRedraw();
   
   // Delete mesa context
   OSMesaDestroyContext(ctx);
