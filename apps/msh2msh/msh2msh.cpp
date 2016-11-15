@@ -10,8 +10,9 @@
 
 // Program arguments
 
-char *input_name = NULL;
-char *output_name = NULL;
+const char *input_name = NULL;
+const char *output_name = NULL;
+const char *color_name = NULL;
 int flip_faces = 0;
 int clean = 0;
 int smooth = 0;
@@ -30,7 +31,7 @@ int print_verbose = 0;
 ////////////////////////////////////////////////////////////////////////
 
 static R3Mesh *
-ReadMesh(char *mesh_name)
+ReadMesh(const char *mesh_name)
 {
   // Start statistics
   RNTime start_time;
@@ -66,7 +67,7 @@ ReadMesh(char *mesh_name)
 
 
 static int
-WriteMesh(R3Mesh *mesh, char *filename)
+WriteMesh(R3Mesh *mesh, const char *filename)
 {
   // Start statistics
   RNTime start_time;
@@ -120,6 +121,53 @@ ReadMatrix(R4Matrix& m, const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// PROCESSING STUFF
+////////////////////////////////////////////////////////////////////////
+
+static int
+CopyColors(R3Mesh *mesh, const char *source_mesh_name)
+{
+  // Read source mesh
+  R3Mesh source_mesh;
+  if (!source_mesh.ReadFile(source_mesh_name)) return 0;
+
+  // Create kdtree
+  R3MeshSearchTree kdtree(&source_mesh);
+  
+  // Copy colors
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    R3MeshVertex *vertex = mesh->Vertex(i);
+    mesh->SetVertexColor(vertex, RNblack_rgb);
+    const R3Point& position = mesh->VertexPosition(vertex);
+
+    // Search kdtree
+    R3MeshIntersection closest;
+    kdtree.FindClosest(position, closest);
+    if (closest.type == R3_MESH_VERTEX_TYPE) {
+      mesh->SetVertexColor(vertex, source_mesh.VertexColor(closest.vertex));
+    }
+    else if (closest.type == R3_MESH_EDGE_TYPE) {
+      R3Span span = mesh->EdgeSpan(closest.edge);
+      RNScalar t = span.T(position);
+      int k = (t < 0.5 * span.Length()) ?  0 : 1;
+      R3MeshVertex *source_vertex = source_mesh.VertexOnEdge(closest.edge, k);
+      mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
+    }
+    else if (closest.type == R3_MESH_FACE_TYPE) {
+      R3Point b = source_mesh.FaceBarycentric(closest.face, position);
+      int k = b.Vector().MaxDimension();
+      R3MeshVertex *source_vertex = source_mesh.VertexOnFace(closest.face, k);
+      mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROGRAM ARGUMENT PARSING
 ////////////////////////////////////////////////////////////////////////
 
@@ -155,6 +203,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-xform")) { argv++; argc--; R4Matrix m;  if (ReadMatrix(m, *argv)) { xform = R3identity_affine; xform.Transform(R3Affine(m)); xform.Transform(prev_xform);} } 
       else if (!strcmp(*argv, "-min_edge_length")) { argv++; argc--; min_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
+      else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -242,6 +291,11 @@ int main(int argc, char **argv)
     if (area > 0) xform.Scale(1 / sqrt(area));
   }
 
+  // Transfer colors
+  if (color_name) {
+    CopyColors(mesh, color_name);
+  }
+  
   // Write mesh
   if (!WriteMesh(mesh, output_name)) exit(-1);
 
