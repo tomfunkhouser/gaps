@@ -33,8 +33,10 @@ R3Scene(void)
     materials(),
     brdfs(),
     textures(),
+    referenced_scenes(),
     ambient(0, 0, 0),
-    background(0, 0, 0)
+    background(0, 0, 0),
+    filename(NULL)
 {
   // Create root node
   root = new R3SceneNode(this);
@@ -51,6 +53,9 @@ R3Scene::
 {
   // Delete everything
   // ???
+
+  // Delete filename
+  if (filename) free(filename);
 }
 
 
@@ -130,6 +135,22 @@ Texture(const char *name) const
   }
 
   // Texture not found
+  return NULL;
+}
+
+
+
+R3Scene *R3Scene::
+ReferencedScene(const char *filename) const
+{
+  // Search textures for matching name
+  for (int i = 0; i < NReferencedScenes(); i++) {
+    R3Scene *referenced_scene = ReferencedScene(i);
+    if (!referenced_scene->Filename()) continue;
+    if (!strcmp(referenced_scene->Filename(), filename)) return referenced_scene;
+  }
+
+  // Referenced scene not found
   return NULL;
 }
 
@@ -286,6 +307,24 @@ RemoveTexture(R2Texture *texture)
   textures.RemoveTail();
   texture->scene_index = -1;
   texture->scene = NULL;
+}
+
+
+
+void R3Scene::
+InsertReferencedScene(R3Scene *referenced_scene) 
+{
+  // Insert referenced scene
+  referenced_scenes.Insert(referenced_scene);
+}
+
+
+
+void R3Scene::
+RemoveReferencedScene(R3Scene *referenced_scene) 
+{
+  // Remove referenced scene
+  referenced_scenes.Remove(referenced_scene);
 }
 
 
@@ -501,6 +540,22 @@ Intersects(const R3Ray& ray,
 
 
 void R3Scene::
+Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *materials) const
+{
+  // Draw null material
+  R3null_material.Draw();
+
+  // Draw nodes
+  root->Draw(R3identity_affine, draw_flags, materials);
+
+  // Draw null material
+  R3null_material.Draw();
+}
+
+
+
+
+void R3Scene::
 Draw(const R3DrawFlags draw_flags, RNBoolean set_camera, RNBoolean set_lights) const
 {
   // Set camera
@@ -549,7 +604,187 @@ LoadLights(int min_index, int max_index) const
 
 
 ////////////////////////////////////////////////////////////////////////
-// I/O FUNCTIONS
+// LIGHT I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+static int
+FindNodesWithinCategory(R3Scene *scene, const char *category_name, RNArray<R3SceneNode *>& nodes)
+{
+  // Find nodes matching category name
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    const char *node_name = node->Name();
+    if (!node_name) continue;
+    int node_name_length = strlen(node_name);
+    const char *node_category_name = NULL;
+    const char *p = node_name + node_name_length;
+    while (p-- > node_name+3) {
+      if (isalnum(*(p-2)) && (*(p-1) == '_') && isalnum(*(p))) { node_category_name = p; break; }
+    }
+    if (!node_category_name) continue;
+    if (strcmp(node_category_name, category_name)) continue;
+    nodes.Insert(node);
+  }
+
+  // Return whether found any nodes
+  return (nodes.IsEmpty()) ? 0 : 1;
+}
+      
+
+
+static R3Light *
+CopyLight(R3Light *original)
+{
+  // Return copy of light
+  R3Light *copy = NULL;
+  if (original->ClassID() == R3DirectionalLight::CLASS_ID()) copy = new R3DirectionalLight(*((R3DirectionalLight *) original));
+  else if (original->ClassID() == R3PointLight::CLASS_ID()) copy = new R3PointLight(*((R3PointLight *) original));
+  else if (original->ClassID() == R3SpotLight::CLASS_ID()) copy = new R3SpotLight(*((R3SpotLight *) original));
+  else if (original->ClassID() == R3AreaLight::CLASS_ID()) copy = new R3AreaLight(*((R3AreaLight *) original));
+  else return NULL;
+  return copy;
+}
+
+
+
+static int
+InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *crdsys)
+{
+  // Iniitalize return status
+  int status = 0;
+  
+  // Insert copies of light into sceen
+  if (!strcmp(crdsys, "world")) {
+    // Insert one copy of light 
+    R3Light *light = CopyLight(original);
+    scene->InsertLight(light);
+    status++;
+  }
+  else {
+    // Find nodes indicated by crdsys
+    RNArray<R3SceneNode *> nodes;
+    if (nodes.IsEmpty()) { R3SceneNode *node = scene->Node(crdsys); if (node) nodes.Insert(node); }
+    if (nodes.IsEmpty()) { FindNodesWithinCategory(scene, crdsys, nodes); }
+    if (nodes.IsEmpty()) return 0;
+          
+    // Insert copy of light for each node
+    for (int i = 0; i < nodes.NEntries(); i++) {
+      R3SceneNode *node = nodes.Kth(i);
+      R3Light *light = CopyLight(original);
+      R3Affine transformation_to_world = node->CumulativeTransformation();
+      light->Transform(node->CumulativeTransformation());
+      scene->InsertLight(light);
+      status++;
+    }
+  }
+
+  // Return whether inserted any lights
+  return status;
+}
+
+
+
+int R3Scene::
+ReadLightsFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open lights file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  char buffer[4096];
+  int line_number = 0;
+  while (fgets(buffer, 4096, fp)) {
+    line_number++;
+    char cmd[1024], crdsys[1024];
+    if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
+    if (cmd[0] == '#') continue;
+
+    // Check cmd
+    if (!strcmp(cmd, "directional_light")) {
+      // Parse directional light info
+      double intensity, r, g, b, dx, dy, dz;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,
+        &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
+        fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create directional light
+      RNRgb color(r, g, b);
+      R3Vector direction(dx, dy, dz);
+      R3DirectionalLight light(direction, color, intensity);
+      InsertCopiesOfLight(this, &light, crdsys);
+    }
+    else if (!strcmp(cmd, "point_light")) {
+      // Parse point light info
+      double intensity, r, g, b, px, py, pz, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+        &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
+        fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create point light
+      RNRgb color(r, g, b);
+      R3Point position(px, py, pz);
+      R3PointLight light(position, color, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, crdsys);
+    }
+    else if (!strcmp(cmd, "spot_light")) {
+      // Parse spot light info
+      double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+        &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
+        fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create spot light
+      RNRgb color(r, g, b);
+      R3Point position(px, py, pz);
+      R3Vector direction(dx, dy, dz);
+      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, crdsys);
+    }
+    else if (!strcmp(cmd, "line_light")) {
+      // Parse spot light info
+      double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+        &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
+        fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create spot light
+      RNRgb color(r, g, b);
+      R3Point position1(px1, py1, pz1);
+      R3Point position2(px2, py2, pz2);
+      R3Point position = 0.5 * (position1 + position2);
+      R3Vector direction(dx, dy, dz);
+      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, crdsys);
+    }
+    else {
+      fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
+      return 0;
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+  
+
+
+////////////////////////////////////////////////////////////////////////
+// SCENE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
@@ -588,7 +823,12 @@ ReadFile(const char *filename)
     if (!ReadRectangleFile(filename)) return 0;
   }
   else if (!strncmp(extension, ".json", 5)) {
-    if (!ReadPlanner5DFile(filename)) return 0;
+    if (strstr(filename, "project.json")) {
+      if (!ReadPlanner5DFile(filename)) return 0;
+    }
+    else {
+      if (!ReadSUNCGFile(filename)) return 0;
+    }
   }
   else {
     fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
@@ -605,6 +845,9 @@ ReadFile(const char *filename)
     R3Camera camera(eye, towards, up, 0.25, 0.25, 0.01 * scene_radius, 100 * scene_radius);
     SetCamera(camera);
   }
+
+  // Set filename
+  SetFilename(filename);
 
   // Return success
   return 1;
@@ -1033,11 +1276,27 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       R3TriangleVertex *v4 = (quad) ? verts.Kth(vi4-1) : NULL;
       
       // Assign texture coordinates
-      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) v1->SetTextureCoords(*(texture_coords.Kth(ti1-1)));
-      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) v2->SetTextureCoords(*(texture_coords.Kth(ti2-1)));
-      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) v3->SetTextureCoords(*(texture_coords.Kth(ti3-1)));
+      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) {
+        R2Point texcoords = *(texture_coords.Kth(ti1-1));
+        if (!(v1->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v1->SetTextureCoords(texcoords);
+        else if (!R2Contains(texcoords, v1->TextureCoords())) { v1 = new R3TriangleVertex(v1->Position(), v1->Normal(), texcoords); }
+      }
+      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) {
+        R2Point texcoords = *(texture_coords.Kth(ti2-1));
+        if (!(v2->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v2->SetTextureCoords(texcoords);
+        else if (!R2Contains(texcoords, v2->TextureCoords())) { v2 = new R3TriangleVertex(v2->Position(), v2->Normal(), texcoords); }
+      }
+      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) {
+        R2Point texcoords = *(texture_coords.Kth(ti3-1));
+        if (!(v3->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v3->SetTextureCoords(texcoords);
+        else if (!R2Contains(texcoords, v3->TextureCoords())) { v3 = new R3TriangleVertex(v3->Position(), v3->Normal(), texcoords); }
+      }
       if (quad) {
-        if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) v4->SetTextureCoords(*(texture_coords.Kth(ti4-1)));
+        if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) {
+          R2Point texcoords = *(texture_coords.Kth(ti4-1));
+          if (!(v4->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v4->SetTextureCoords(texcoords);
+          else if (!R2Contains(texcoords, v4->TextureCoords())) { v4 = new R3TriangleVertex(v4->Position(), v4->Normal(), texcoords); }
+        }
       }
 
       // Check vertices
@@ -1240,10 +1499,9 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
       const R2Texture *texture = material->Texture();
 
       // Check if texture has a filename associated with it 
-      if (texture->Name()) {
+      if (texture->Filename()) {
         // Write texture command to material file (USE SAME FILE AS READ WITHOUT RE-WRITING IT)
-        // fprintf(fp, "map_Ka %s\n", texture->Name());
-        fprintf(fp, "map_Kd %s\n", texture->Name());
+        fprintf(fp, "map_Kd %s\n", texture->Filename());
       }
       else {
         // Get texture filename
@@ -1251,13 +1509,13 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
         const char *texture_extension = "jpg";
         if (dirname) sprintf(texture_filename, "%s/%s.%s", dirname, material->Name(), texture_extension);
         else sprintf(texture_filename, "%s.%s", material->Name(), texture_extension);
+        ((R2Texture *) texture)->SetFilename(texture_filename);
         
         // Write texture file
         const R2Image *texture_image = texture->Image();
         texture_image->Write(texture_filename);
         
         // Write texture command to material file
-        // fprintf(fp, "map_Ka %s.%s\n", material->Name(), texture_extension);
         fprintf(fp, "map_Kd %s.%s\n", material->Name(), texture_extension);
       }
     }
@@ -2807,6 +3065,466 @@ ReadRectangleFile(const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// SUNCG PARSING FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+#include "json.h"
+
+static int
+GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, int expected_type = 0)
+{
+  // Check object type
+  if (object->type() != Json::objectValue) {
+    // fprintf(stderr, "P5D: not an object\n");
+    return 0;
+  }
+
+  // Check object member
+  if (!object->isMember(str)) {
+    // fprintf(stderr, "P5D object has no member named %s\n", str);
+    return 0;
+  }
+
+  // Get object member
+  result = &((*object)[str]);
+  if (result->type() == Json::nullValue) {
+    // fprintf(stderr, "P5D object has null member named %s\n", str);
+    return 0;
+  }
+
+  // Check member type
+  if (expected_type > 0) {
+    if (result->type() != expected_type) {
+      // fprintf(stderr, "P5D object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
+      return 0;
+    }
+  }
+  
+  // Check for empty strings
+  if (result->type() == Json::stringValue) {
+    if (result->asString().length() == 0) {
+      // fprintf(stderr, "P5D object has zero length string named %s\n", str);
+      return 0;
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int expected_type = -1)
+{
+  // Check array type
+  if (array->type() != Json::arrayValue) {
+    fprintf(stderr, "P5D: not an array\n");
+    return 0;
+  }
+
+  // Check array size
+  if (array->size() <= k) {
+    // fprintf(stderr, "P5D array has no member %d\n", k);
+    return 0;
+  }
+
+  // Get entry
+  result = &((*array)[k]);
+  if (result->type() == Json::nullValue) {
+    // fprintf(stderr, "P5D array has null member %d\n", k);
+    return 0;
+  }
+
+  // Check entry type
+  if (expected_type > 0) {
+    if (result->type() != expected_type) {
+      // fprintf(stderr, "P5D array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
+      return 0;
+    }
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+static int
+CreateBox(R3Scene *scene, R3SceneNode *node,
+  RNScalar dimensions[3],
+  const RNArray<R3Material *>& materials)
+{
+  // Create six sides of box
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      int dim1 = (dim+1)%3;
+      int dim2 = (dim+2)%3;
+
+      // Compute radii
+      RNScalar d0 = dimensions[dim];
+      RNScalar d1 = dimensions[dim1];
+      RNScalar d2 = dimensions[dim2];
+      RNScalar r0 = (dir == 0) ? -50*d0 :  50*d0;
+      RNScalar r1 = (dir == 0) ? -50*d1 : 50*d1;
+      RNScalar r2 = 50*d2;
+
+      // Compute axes
+      R3Vector axis0 = r0 * R3xyz_triad.Axis(dim);
+      R3Vector axis1 = r1 * R3xyz_triad.Axis(dim1);
+      R3Vector axis2 = r2 * R3xyz_triad.Axis(dim2);
+
+      // Compute vertex positions
+      R3Point center(0, 0, 0);
+      R3Point p00 = center + axis0 - axis1 - axis2;
+      R3Point p10 = center + axis0 + axis1 - axis2;
+      R3Point p11 = center + axis0 + axis1 + axis2;
+      R3Point p01 = center + axis0 - axis1 + axis2;
+
+      // Compute texture coordinates
+      R2Point t00(0, 0);
+      R2Point t10(d1, 0);
+      R2Point t11(d1, d2);
+      R2Point t01(0, d2);
+
+      // Create two triangles
+      RNArray<R3TriangleVertex *> vertices;
+      R3TriangleVertex *v00 = new R3TriangleVertex(p00, t00); vertices.Insert(v00);
+      R3TriangleVertex *v10 = new R3TriangleVertex(p10, t10); vertices.Insert(v10);
+      R3TriangleVertex *v11 = new R3TriangleVertex(p11, t11); vertices.Insert(v11);
+      R3TriangleVertex *v01 = new R3TriangleVertex(p01, t01); vertices.Insert(v01);
+      RNArray<R3Triangle *> triangles;
+      R3Triangle *tri0 = new R3Triangle(v00, v10, v11); triangles.Insert(tri0);
+      R3Triangle *tri1 = new R3Triangle(v00, v11, v01); triangles.Insert(tri1);
+      R3TriangleArray *shape = new R3TriangleArray(vertices, triangles);
+
+      // Create scene element
+      int material_index = dir*3 + dim;
+      R3Material *material = (materials.NEntries() > material_index) ? materials[material_index] : &R3default_material;
+      R3SceneElement *element = new R3SceneElement(material);
+      element->InsertShape(shape);
+      node->InsertElement(element);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3Scene::
+ReadSUNCGFile(const char *filename)
+{
+  // Data directory
+  const char *input_data_directory = "../..";
+  
+  // Open file
+  FILE* fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open SUNCG file %s\n", filename);
+    return 0;
+  }
+
+  // Read file 
+  std::string text;
+  fseek(fp, 0, SEEK_END);
+  long const size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  char* buffer = new char[size + 1];
+  unsigned long const usize = static_cast<unsigned long const>(size);
+  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  else { buffer[size] = 0; text = buffer; }
+  delete[] buffer;
+
+  // Close file
+  fclose(fp);
+
+  // Digest file
+  Json::Value json_root;
+  Json::Reader json_reader;
+  Json::Value *json_items, *json_item, *json_value;
+  if (!json_reader.parse(text, json_root, false)) {
+    fprintf(stderr, "Unable to parse %s\n", filename);
+    return 0;
+  }
+
+  // Get/check version
+  char version[1024];
+  strncpy(version, "suncg@1.0.0", 1024);
+  if (GetJsonObjectMember(json_value, &json_root, "version", Json::stringValue)) {
+    strncpy(version, json_value->asString().c_str(), 1024);
+    if (strcmp(version, "suncg@1.0.0")) {
+      fprintf(stderr, "Unrecognized version %s in SUNCG file %s\n", version, filename);
+      return 0;
+    }
+  }
+  
+  // Get scene id
+  char scene_id[1024];
+  strncpy(scene_id, "NoName", 1024);
+  if (GetJsonObjectMember(json_value, &json_root, "id", Json::stringValue)) {
+    strncpy(scene_id, json_value->asString().c_str(), 1024);
+  }
+  
+  // Get scene up direction
+  R3Vector scene_up(0, 1, 0);
+  if (GetJsonObjectMember(json_items, &json_root, "up", Json::arrayValue)) {
+    if (json_items->size() >= 3) {
+      if (GetJsonArrayEntry(json_item, json_items, 0))
+        scene_up[0] = json_item->asDouble();
+      if (GetJsonArrayEntry(json_item, json_items, 1))
+        scene_up[1] = json_item->asDouble();
+      if (GetJsonArrayEntry(json_item, json_items, 2))
+        scene_up[2] = json_item->asDouble();
+      scene_up.Normalize();
+    }
+  }
+
+  // Get scene front direction
+  R3Vector scene_front(0, 0, 1);
+  if (GetJsonObjectMember(json_items, &json_root, "front", Json::arrayValue)) {
+    if (json_items->size() >= 3) {
+      if (GetJsonArrayEntry(json_item, json_items, 0))
+        scene_front[0] = json_item->asDouble();
+      if (GetJsonArrayEntry(json_item, json_items, 1))
+        scene_front[1] = json_item->asDouble();
+      if (GetJsonArrayEntry(json_item, json_items, 2))
+        scene_front[2] = json_item->asDouble();
+      scene_front.Normalize();
+    }
+  }
+
+  // Get scene scale factor (to convert to meters)
+  double scaleToMeters = 1.0;
+  if (GetJsonObjectMember(json_value, &json_root, "scaleToMeters")) {
+    scaleToMeters = json_value->asDouble();
+  }
+  
+  // Create scene node 
+  R3SceneNode *scene_node = Root();
+  scene_node->SetName(scene_id);
+
+  // Set scene transformation
+  R3Affine scene_transformation = R3identity_affine;
+  // Set up and front directions
+  scene_transformation.Scale(scaleToMeters);
+  scene_node->SetTransformation(scene_transformation);
+
+  // Parse floors
+  Json::Value *json_floors, *json_floor;
+  if (!GetJsonObjectMember(json_floors, &json_root, "floors", Json::arrayValue)) return 0;
+  for (Json::ArrayIndex index = 0; index < json_floors->size(); index++) {
+    if (!GetJsonArrayEntry(json_floor, json_floors, index)) return 0;
+    if (json_floor->type() != Json::objectValue) continue;
+           
+    // Parse floor attributes
+    int floor_id = 0;
+    // double floor_height = 2.7;
+    if (GetJsonObjectMember(json_value, json_floor, "valid"))
+      if (!json_value->asString().compare(std::string("0")))  continue;
+    if (GetJsonObjectMember(json_value, json_floor, "id"))
+      floor_id = atoi(json_value->asString().c_str());
+    // if (GetJsonObjectMember(json_value, json_floor, "height"))
+    //  floor_height = json_value->asDouble();
+
+    // Create floor node
+    char floor_name[1024];
+    sprintf(floor_name, "Floor#%d", floor_id);
+    R3SceneNode *floor_node = new R3SceneNode(this);
+    floor_node->SetName(floor_name);
+    scene_node->InsertChild(floor_node);
+
+    // Set floor transformation
+    // R3Affine floor_transformation(R3identity_affine);
+    // floor_node->SetTransformation(floor_transformation);
+
+    // Parse nodes
+    Json::Value *json_nodes, *json_node;
+    if (GetJsonObjectMember(json_nodes, json_floor, "nodes", Json::arrayValue)) {
+      for (Json::ArrayIndex index = 0; index < json_nodes->size(); index++) {
+        if (!GetJsonArrayEntry(json_node, json_nodes, index)) continue; 
+        if (json_node->type() != Json::objectValue) continue;
+ 
+        // Parse node attributes
+        char node_id[1024] = { '\0' };;
+        char modelId[1024] = { '\0' };;
+        char node_type[1024] = { '\0' };
+        int invertNormals = 0;
+        int hideCeiling = 0, hideFloor = 0, hideWalls = 0;
+        if (GetJsonObjectMember(json_value, json_node, "valid"))
+          if (!json_value->asString().compare(std::string("0")))  continue;
+        if (GetJsonObjectMember(json_value, json_node, "id"))
+          strncpy(node_id, json_value->asString().c_str(), 1024);
+        if (GetJsonObjectMember(json_value, json_node, "type")) 
+          strncpy(node_type, json_value->asString().c_str(), 1024);
+        if (GetJsonObjectMember(json_value, json_node, "modelId"))
+          strncpy(modelId, json_value->asString().c_str(), 1024);
+        if (GetJsonObjectMember(json_value, json_node, "invertNormals")) 
+          if (!json_value->asString().compare(std::string("1"))) invertNormals = 1;
+        if (GetJsonObjectMember(json_value, json_node, "hideCeiling")) 
+          if (!json_value->asString().compare(std::string("1"))) hideCeiling = 1;
+        if (GetJsonObjectMember(json_value, json_node, "hideFloor")) 
+          if (!json_value->asString().compare(std::string("1"))) hideFloor = 1;
+        if (GetJsonObjectMember(json_value, json_node, "hideWalls")) 
+          if (!json_value->asString().compare(std::string("1"))) hideWalls = 1;
+
+        // Parse node transformation
+        R3Affine transformation = R3identity_affine;
+        if (GetJsonObjectMember(json_items, json_node, "transform", Json::arrayValue)) {
+          if (json_items->size() >= 16) {
+            R4Matrix matrix = R4identity_matrix;
+            for (Json::ArrayIndex index = 0; index < json_items->size(); index++) {
+              if (!GetJsonArrayEntry(json_item, json_items, index)) continue;
+              matrix[index%4][index/4] = json_item->asDouble();
+            }
+            transformation.Reset(matrix, invertNormals);
+          }
+        }
+
+        // Parse node materials
+        RNArray<R3Material *> materials;
+        Json::Value *json_materials, *json_material;
+        if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
+          for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
+            char material_name[1024] = { '\0' };
+            char texture_name[1024] = { '\0' };
+            char diffuse_string[1024] = { '\0' };
+            if (!GetJsonArrayEntry(json_material, json_materials, index)) continue; 
+            if (json_material->type() != Json::objectValue) continue;
+            if (GetJsonObjectMember(json_value, json_material, "name"))
+              strncpy(material_name, json_value->asString().c_str(), 1024);
+            if (GetJsonObjectMember(json_value, json_material, "texture")) 
+              strncpy(texture_name, json_value->asString().c_str(), 1024);
+            if (GetJsonObjectMember(json_value, json_material, "diffuse")) 
+              strncpy(diffuse_string, json_value->asString().c_str(), 1024);
+
+            // Create material
+            R3Material *material = new R3Material(material_name);
+            materials.Insert(material);
+
+            // Set diffuse color
+            RNRgb diffuse_rgb(0.5, 0.5, 0.5);
+            if (*diffuse_string) {
+              long int r = strtol(&diffuse_string[1], NULL, 16); diffuse_string[1] = '\0';
+              long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
+              long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
+              diffuse_rgb.Reset(r / 255.0, g / 255.0, b / 255.0);
+              R3Brdf *brdf = new R3Brdf(diffuse_rgb);
+              material->SetBrdf(brdf);
+            }
+
+            // Set diffuse texture
+            if (*texture_name) {
+              // Get texture filename
+              char texture_filename[1024];
+              const char *texture_directory = "../../texture";
+              sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
+              if (!RNFileExists(texture_filename)) 
+                sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
+              R2Image *image = new R2Image();
+              if (!image->Read(texture_filename)) return 0;
+              R2Texture *texture = new R2Texture(image, R2_REPEAT_TEXTURE_WRAP, R2_REPEAT_TEXTURE_WRAP);
+              texture->SetFilename(texture_filename);
+              texture->SetName(texture_name);
+              material->SetTexture(texture);
+            }
+          }
+        }
+
+        // Create scene node(s) based on type
+        char obj_name[4096], node_name[4096];
+        if (!strcmp(node_type, "Ground")) {
+          // Create node for ground
+          sprintf(obj_name, "%s/Room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
+          if (!hideFloor) {
+            R3SceneNode *node = new R3SceneNode(this);
+            sprintf(node_name, "Ground#%s", node_id);
+            node->SetName(node_name);
+            if (!ReadObj(this, node, obj_name)) return 0;
+            floor_node->InsertChild(node);
+          }
+        }
+        else if (!strcmp(node_type, "Room")) {
+          // Create node for floor
+          sprintf(obj_name, "%s/Room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
+          if (!hideFloor) {
+            R3SceneNode *node = new R3SceneNode(this);
+            sprintf(node_name, "Floor#%s", node_id);
+            node->SetName(node_name);
+            if (!ReadObj(this, node, obj_name)) return 0;
+            floor_node->InsertChild(node);
+          }
+
+          // Create node for ceiling
+          sprintf(obj_name, "%s/Room/%s/%sc.obj", input_data_directory, scene_id, modelId); 
+          if (!hideCeiling) {
+            R3SceneNode *node = new R3SceneNode(this);
+            sprintf(node_name, "Ceiling#%s", node_id);
+            node->SetName(node_name);
+            if (!ReadObj(this, node, obj_name)) return 0;
+            floor_node->InsertChild(node);
+          }
+
+          // Create node for walls
+          sprintf(obj_name, "%s/Room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
+          if (!hideWalls) {
+            R3SceneNode *node = new R3SceneNode(this);
+            sprintf(node_name, "Walls#%s", node_id);
+            node->SetName(node_name);
+            if (!ReadObj(this, node, obj_name)) return 0;
+            floor_node->InsertChild(node);
+          }        
+        }
+        else if (!strcmp(node_type, "Object")) {
+          // Read model 
+          sprintf(obj_name, "%s/Object/%s/%s.obj", input_data_directory, modelId, modelId); 
+          // R3Scene *model = new R3Scene();
+          // if (!ReadObj(model, model->Root(), obj_name)) return 0;
+          // model->SetFilename(obj_name);
+
+          // Create node with reference to model
+          R3SceneNode *node = new R3SceneNode(this);
+          sprintf(node_name, "Object#%s", node_id);
+          if (!ReadObj(this, node, obj_name)) return 0;
+          node->SetName(node_name);
+          // node->InsertReference(new R3SceneReference(model, &materials);
+          node->SetTransformation(transformation);
+          floor_node->InsertChild(node);
+        }
+        else if (!strcmp(node_type, "Box")) {
+          // Parse box dimensions
+          RNScalar box_dimensions[3] = { 1, 1, 1 };
+          if (GetJsonObjectMember(json_items, json_node, "dimensions", Json::arrayValue)) {
+            if (json_items->size() >= 3) {
+              if (GetJsonArrayEntry(json_item, json_items, 0))
+                box_dimensions[0] = json_item->asDouble();
+              if (GetJsonArrayEntry(json_item, json_items, 1))
+                box_dimensions[1] = json_item->asDouble();
+              if (GetJsonArrayEntry(json_item, json_items, 2))
+                box_dimensions[2] = json_item->asDouble();
+            }
+          }
+
+          // Create node for box
+          R3SceneNode *node = new R3SceneNode(this);
+          sprintf(node_name, "Box#%s", node_id);
+          node->SetName(node_name);
+          node->SetTransformation(transformation);
+          if (!CreateBox(this, node, box_dimensions, materials)) return 0;
+          floor_node->InsertChild(node);
+        }
+      }
+    }
+  }
+    
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PLANNER5D FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -2852,25 +3570,8 @@ static int
 ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname,
   const RNArray<R3Material *>& materials, P5DObject *object)
 {
-#if 0
-  // Determine directory name (for texture image files)
-  char dirname[1024] = { '.', '/', '\0' };
-  if (objname) {
-    // Get base directory name
-    strncpy(dirname, objname, 1024);
-    for (int i = 0; i < 3; i++) {
-      char *endp = strrchr(dirname, '/');
-      if (!endp) endp = strrchr(dirname, '\\');
-      if (!endp) { strcpy(dirname, "."); break; }
-      else *endp = '\0';
-    }
-
-    // Get texture directory
-    strncat(dirname, "/texture", 1024);
-  }
-#else
+  // Get texture directory name
   const char *dirname = "../../texture";
-#endif
   
   // Process every material associated with object
   for (unsigned int i = 0; i < object->materials.size(); i++) {
@@ -2929,6 +3630,123 @@ ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname
 }
   
 
+
+
+#if 0
+static int
+CreateP5DObjectReference(R3Scene *scene, R3SceneNode *node, P5DObject *object, const char *filename)
+{
+}
+#endif
+
+
+
+static int
+CreateP5DBox(R3Scene *scene, R3SceneNode *node, P5DPrimitive *primitive)
+{
+  // Get texture directory name
+  const char *dirname = "../../texture";
+
+  // Create six sides of box
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      // Compute center
+      R3Point center(0, 0, 0);
+
+      // Compute size
+      RNScalar r0 = (dir == 0) ? -0.5 : 0.5;
+      RNScalar r1 = (dir == 0) ? -0.5 : 0.5;
+      RNScalar r2 = 0.5;
+
+      // Compute axes
+      R3Vector axis0 = r0 * R3xyz_triad.Axis(dim);
+      R3Vector axis1 = r1 * R3xyz_triad.Axis((dim+1)%3);
+      R3Vector axis2 = r2 * R3xyz_triad.Axis((dim+2)%3);
+
+      // Compute vertex positions
+      R3Point p00 = center + axis0 - axis1 - axis2;
+      R3Point p10 = center + axis0 + axis1 - axis2;
+      R3Point p11 = center + axis0 + axis1 + axis2;
+      R3Point p01 = center + axis0 - axis1 + axis2;
+
+      // Compute texture coordinates
+      RNScalar d1 = 1, d2 = 1;
+      if (dim == 0) { d1 = primitive->sZ; d2 = primitive->sY; }
+      else if (dim == 1) { d1 = primitive->sY; d2 = primitive->sX; }
+      else if (dim == 2) { d1 = primitive->sX; d2 = primitive->sZ; }
+      R2Point t00(0, 0);
+      R2Point t10(d1, 0);
+      R2Point t11(d1, d2);
+      R2Point t01(0, d2);
+
+      // Create two triangles
+      RNArray<R3TriangleVertex *> vertices;
+      R3TriangleVertex *v00 = new R3TriangleVertex(p00, t00); vertices.Insert(v00);
+      R3TriangleVertex *v10 = new R3TriangleVertex(p10, t10); vertices.Insert(v10);
+      R3TriangleVertex *v11 = new R3TriangleVertex(p11, t11); vertices.Insert(v11);
+      R3TriangleVertex *v01 = new R3TriangleVertex(p01, t01); vertices.Insert(v01);
+      RNArray<R3Triangle *> triangles;
+      R3Triangle *tri0 = new R3Triangle(v00, v10, v11); triangles.Insert(tri0);
+      R3Triangle *tri1 = new R3Triangle(v00, v11, v01); triangles.Insert(tri1);
+      R3TriangleArray *shape = new R3TriangleArray(vertices, triangles);
+
+      // Create material for side of box
+      R3Material *material = new R3Material();
+      scene->InsertMaterial(material);
+      R3Brdf *brdf = new R3Brdf(0.5, 0.5, 0.5);
+      scene->InsertBrdf(brdf);
+      material->SetBrdf(brdf);
+
+      // Apply P5D material properties
+      static const int p5d_material_indices[2][3] = { { 2, 1, 5 }, { 3, 0, 4 } };
+      unsigned int p5d_material_index = p5d_material_indices[dir][dim];
+      P5DMaterial *p5d_material = (p5d_material_index < primitive->materials.size()) ? primitive->materials[p5d_material_index] : NULL;
+      if (p5d_material) {
+        // Set brdf
+        if (p5d_material->tcolor) {
+          RNRgb rgb(0.5, 0.5, 0.5);
+          if (ParseP5DColor(p5d_material->tcolor, rgb)) {
+            brdf->SetAmbient(rgb);
+            brdf->SetDiffuse(rgb); 
+            material->Update();
+          }
+        }
+      
+        // Set texture
+        if (p5d_material->texture_name) {
+          // Read texture
+          char texture_filename[1024];
+          if (dirname) sprintf(texture_filename, "%s/%s.jpg", dirname, p5d_material->texture_name);
+          else sprintf(texture_filename, "%s.jpg", p5d_material->texture_name);
+          if (!RNFileExists(texture_filename)) {
+            if (dirname) sprintf(texture_filename, "%s/%s.png", dirname, p5d_material->texture_name);
+            else sprintf(texture_filename, "%s.png", p5d_material->texture_name);
+          }
+          if (!RNFileExists(texture_filename)) {
+            if (dirname) sprintf(texture_filename, "%s/s/%s.jpg", dirname, p5d_material->texture_name);
+          }
+        
+          // Set texture
+          R2Image *image = new R2Image();
+          if (image->Read(texture_filename)) {
+            R2Texture *texture = new R2Texture(image);
+            texture->SetName(texture_filename);
+            scene->InsertTexture(texture);
+            material->SetTexture(texture);
+          }
+        }
+      }
+
+      // Create scene element for side of box
+      R3SceneElement *element = new R3SceneElement(material);
+      element->InsertShape(shape);
+      node->InsertElement(element);
+    }
+  }
+
+  // Return success
+  return 1;
+}
 
 
 
@@ -2991,12 +3809,17 @@ ReadPlanner5DFile(const char *filename)
   root_node->SetData(project);
 
   // Mirror the world to compensate for swap of Y and Z axes in code than generates the json and obj files
-  R4Matrix xmirror_matrix(-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
-  R3Affine xmirror_transformation(xmirror_matrix, TRUE);
-  root_node->SetTransformation(xmirror_transformation);
+  // R4Matrix xmirror_matrix(-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+  // R3Affine xmirror_transformation(xmirror_matrix, TRUE);
+  // root_node->SetTransformation(xmirror_transformation);
   
+  // Rotate the scene from y up to z up 
+  // R3Affine scene_rotation(R3identity_affine);
+  // scene_rotation.XRotate(-RN_PI_OVER_TWO);
+  // root_node->SetTransformation(scene_rotation);
+
   // Create nodes for floors
-  RNScalar floor_z = 0;
+  RNScalar floor_y = 0;
   for (int i = 0; i < project->NFloors(); i++) {
     P5DFloor *floor = project->Floor(i);
 
@@ -3011,9 +3834,9 @@ ReadPlanner5DFile(const char *filename)
 
     // Set floor transformation
     R3Affine floor_transformation(R3identity_affine);
-    floor_transformation.Translate(R3Vector(0, 0, floor_z));
+    floor_transformation.Translate(R3Vector(0, floor_y, 0));
     floor_node->SetTransformation(floor_transformation);
-    floor_z += floor->h;
+    floor_y += floor->h;
 
     // Create nodes for rooms
     for (int j = 0; j < floor->NRooms(); j++) {
@@ -3032,7 +3855,7 @@ ReadPlanner5DFile(const char *filename)
       if (!strcmp(room->className, "Room")) {
         // Read walls
         char rm_name[4096], node_name[4096];
-        sprintf(rm_name, "%s/roomfiles/%s/fr_%drm_%d.obj", input_data_directory, project->name, i+1, room->idx_index+1); 
+        sprintf(rm_name, "%s/roomfiles_yup/%s/fr_%drm_%d.obj", input_data_directory, project->name, i, room->idx_index); 
         if (RNFileExists(rm_name)) {
           R3SceneNode *wall_node = new R3SceneNode(this);
           sprintf(node_name, "Walls#%d_%d_%d", i+1, j+1, room->idx_index+1);
@@ -3042,7 +3865,7 @@ ReadPlanner5DFile(const char *filename)
         }
 
         // Read floor
-        sprintf(rm_name, "%s/roomfiles/%s/fr_%drm_%df.obj", input_data_directory, project->name, i+1, room->idx_index+1); 
+        sprintf(rm_name, "%s/roomfiles_yup/%s/fr_%drm_%df.obj", input_data_directory, project->name, i, room->idx_index); 
         if (RNFileExists(rm_name)) {
           R3SceneNode *rmfloor_node = new R3SceneNode(this);
           sprintf(node_name, "Floors#%d_%d_%d", i+1, j+1, room->idx_index+1);
@@ -3050,9 +3873,12 @@ ReadPlanner5DFile(const char *filename)
           if (!ReadObj(this, rmfloor_node, rm_name)) return 0;
           room_node->InsertChild(rmfloor_node);
         }
+        else {
+          fprintf(stderr, "%s\n", rm_name);
+        }
         
         // Read ceiling
-        sprintf(rm_name, "%s/roomfiles/%s/fr_%drm_%dc.obj", input_data_directory, project->name, i+1, room->idx_index+1); 
+        sprintf(rm_name, "%s/roomfiles_yup/%s/fr_%drm_%dc.obj", input_data_directory, project->name, i, room->idx_index); 
         if (RNFileExists(rm_name)) {
           R3SceneNode *rmceil_node = new R3SceneNode(this);
           sprintf(node_name, "Ceilings#%d_%d_%d", i+1, j+1, room->idx_index+1);
@@ -3085,24 +3911,64 @@ ReadPlanner5DFile(const char *filename)
 
       // Set object transformation
       R3Affine object_transformation(R3identity_affine);
-      object_transformation.Translate(R3Vector(object->x, object->y, object->z));
-      object_transformation.ZRotate(object->a);
-      object_transformation.Scale(R3Vector(object->sX, object->sY, object->sZ));
-      if (!strcmp(object->className, "Door")) object_transformation.ZRotate(RN_PI_OVER_TWO);
-      else if (!strcmp(object->className, "Window")) object_transformation.ZRotate(RN_PI_OVER_TWO);
-      if (object->fX) object_transformation.XMirror();
-      if (object->fY) object_transformation.YMirror();
+      object_transformation.Translate(R3Vector(object->x, object->z, object->y));
+      object_transformation.YRotate(-1*object->a);
+      if (!strcmp(object->className, "Door")) object_transformation.YRotate(-1*RN_PI_OVER_TWO);
+      else if (!strcmp(object->className, "Window")) object_transformation.YRotate(-1*RN_PI_OVER_TWO);
+      object_transformation.Scale(R3Vector(object->sX, object->sZ, object->sY));
+      if (object->fY) object_transformation.XMirror();
+      if (object->fX) object_transformation.ZMirror(); // yes, it is swapped 
       object_node->SetTransformation(object_transformation);
 
+#if 1
       // Read obj file
       char obj_name[4096];
       RNArray<R3Material *> materials;
-      if (object->aframe) sprintf(obj_name, "%s/objects/%s/%s_0.obj", input_data_directory, object->id, object->id);
-      else sprintf(obj_name, "%s/objects/%s/%s.obj", input_data_directory, object->id, object->id);
+      if (object->aframe) sprintf(obj_name, "%s/objects_obj_yup/%s/%s_0.obj", input_data_directory, object->id, object->id);
+      else sprintf(obj_name, "%s/objects_obj_yup/%s/%s.obj", input_data_directory, object->id, object->id);
       if (!ReadObj(this, object_node, obj_name, &materials)) return 0;
-
-      // Replace materials with ones stored in P5D object
       if (!ReplaceP5DObjectMaterials(this, object_node, obj_name, materials, object)) return 0;
+#else
+      // Read obj file
+      char obj_name[4096];
+      if (object->aframe) sprintf(obj_name, "%s/objects_obj_yup/%s/%s_0.obj", input_data_directory, object->id, object->id);
+      else sprintf(obj_name, "%s/objects_obj_yup/%s/%s.obj", input_data_directory, object->id, object->id);
+      CreateP5DObjectReference(this, object_node, obj_name, object);
+#endif
+    }
+
+    // Create nodes for primitives
+    for (int j = 0; j < floor->NPrimitives(); j++) {
+      P5DPrimitive *primitive = floor->Primitive(j);
+      P5DRoom *room = primitive->room;
+      
+      // Create primitive node
+      char primitive_name[1024];
+      int ri = (room) ? room->floor_index+1 : -1;
+      int oi = (room) ? primitive->room_index+1 : -1;
+      sprintf(primitive_name, "Primitive#%d_%d_%d_%d_%s_%s", i+1, ri, oi, primitive->idx_index+1, primitive->className, primitive->puid);
+      R3SceneNode *primitive_node = new R3SceneNode(this);
+      primitive_node->SetName(primitive_name);
+      primitive_node->SetData(primitive);
+      primitive->data = primitive_node;
+
+      // Insert into room or floor parent node
+      R3SceneNode *parent_node = (primitive->room) ? floor_node->Child(primitive->room->floor_index) : floor_node;
+      parent_node->InsertChild(primitive_node);
+
+      // Set primitive transformation
+      R3Affine primitive_transformation(R3identity_affine);
+      primitive_transformation.Translate(R3Vector(primitive->x, (primitive->z+0.5*primitive->sZ), primitive->y));
+      primitive_transformation.XRotate(primitive->aX);
+      primitive_transformation.YRotate(-1*primitive->aY);
+      primitive_transformation.ZRotate(primitive->aZ);
+      primitive_transformation.Scale(R3Vector(primitive->sX, primitive->sZ, primitive->sY));
+      primitive_node->SetTransformation(primitive_transformation);
+
+      // Create primitive
+      if (!strcmp(primitive->t, "box")) {
+        if (!CreateP5DBox(this, primitive_node, primitive)) return 0;
+      }
     }
   }
     
@@ -3110,185 +3976,5 @@ ReadPlanner5DFile(const char *filename)
   return 1;
 }
 
-
-
-////////////////////////////////////////////////////////////////////////
-// LIGHT I/O FUNCTIONS
-////////////////////////////////////////////////////////////////////////
-
-static int
-FindNodesWithinCategory(R3Scene *scene, const char *category_name, RNArray<R3SceneNode *>& nodes)
-{
-  // Find nodes matching category name
-  for (int i = 0; i < scene->NNodes(); i++) {
-    R3SceneNode *node = scene->Node(i);
-    const char *node_name = node->Name();
-    if (!node_name) continue;
-    int node_name_length = strlen(node_name);
-    const char *node_category_name = NULL;
-    const char *p = node_name + node_name_length;
-    while (p-- > node_name+3) {
-      if (isalnum(*(p-2)) && (*(p-1) == '_') && isalnum(*(p))) { node_category_name = p; break; }
-    }
-    if (!node_category_name) continue;
-    if (strcmp(node_category_name, category_name)) continue;
-    nodes.Insert(node);
-  }
-
-  // Return whether found any nodes
-  return (nodes.IsEmpty()) ? 0 : 1;
-}
-      
-
-
-static R3Light *
-CopyLight(R3Light *original)
-{
-  // Return copy of light
-  R3Light *copy = NULL;
-  if (original->ClassID() == R3DirectionalLight::CLASS_ID()) copy = new R3DirectionalLight(*((R3DirectionalLight *) original));
-  else if (original->ClassID() == R3PointLight::CLASS_ID()) copy = new R3PointLight(*((R3PointLight *) original));
-  else if (original->ClassID() == R3SpotLight::CLASS_ID()) copy = new R3SpotLight(*((R3SpotLight *) original));
-  else if (original->ClassID() == R3AreaLight::CLASS_ID()) copy = new R3AreaLight(*((R3AreaLight *) original));
-  else return NULL;
-  return copy;
-}
-
-
-
-static int
-InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *crdsys)
-{
-  // Iniitalize return status
-  int status = 0;
-  
-  // Insert copies of light into sceen
-  if (!strcmp(crdsys, "world")) {
-    // Insert one copy of light 
-    R3Light *light = CopyLight(original);
-    scene->InsertLight(light);
-    status++;
-  }
-  else {
-    // Find nodes indicated by crdsys
-    RNArray<R3SceneNode *> nodes;
-    if (nodes.IsEmpty()) { R3SceneNode *node = scene->Node(crdsys); if (node) nodes.Insert(node); }
-    if (nodes.IsEmpty()) { FindNodesWithinCategory(scene, crdsys, nodes); }
-    if (nodes.IsEmpty()) return 0;
-          
-    // Insert copy of light for each node
-    for (int i = 0; i < nodes.NEntries(); i++) {
-      R3SceneNode *node = nodes.Kth(i);
-      R3Light *light = CopyLight(original);
-      R3Affine transformation_to_world = node->CumulativeTransformation();
-      light->Transform(node->CumulativeTransformation());
-      scene->InsertLight(light);
-      status++;
-    }
-  }
-
-  // Return whether inserted any lights
-  return status;
-}
-
-
-
-int R3Scene::
-ReadLightsFile(const char *filename)
-{
-  // Open file
-  FILE *fp = fopen(filename, "r");
-  if (!fp) {
-    fprintf(stderr, "Unable to open lights file %s\n", filename);
-    return 0;
-  }
-
-  // Read file
-  char buffer[4096];
-  int line_number = 0;
-  while (fgets(buffer, 4096, fp)) {
-    line_number++;
-    char cmd[1024], crdsys[1024];
-    if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
-    if (cmd[0] == '#') continue;
-
-    // Check cmd
-    if (!strcmp(cmd, "directional_light")) {
-      // Parse directional light info
-      double intensity, r, g, b, dx, dy, dz;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,
-        &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
-        fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create directional light
-      RNRgb color(r, g, b);
-      R3Vector direction(dx, dy, dz);
-      R3DirectionalLight light(direction, color, intensity);
-      InsertCopiesOfLight(this, &light, crdsys);
-    }
-    else if (!strcmp(cmd, "point_light")) {
-      // Parse point light info
-      double intensity, r, g, b, px, py, pz, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
-        &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
-        fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create point light
-      RNRgb color(r, g, b);
-      R3Point position(px, py, pz);
-      R3PointLight light(position, color, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
-    }
-    else if (!strcmp(cmd, "spot_light")) {
-      // Parse spot light info
-      double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
-        &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
-        fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create spot light
-      RNRgb color(r, g, b);
-      R3Point position(px, py, pz);
-      R3Vector direction(dx, dy, dz);
-      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
-    }
-    else if (!strcmp(cmd, "line_light")) {
-      // Parse spot light info
-      double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
-        &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
-        fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create spot light
-      RNRgb color(r, g, b);
-      R3Point position1(px1, py1, pz1);
-      R3Point position2(px2, py2, pz2);
-      R3Point position = 0.5 * (position1 + position2);
-      R3Vector direction(dx, dy, dz);
-      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
-    }
-    else {
-      fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
-      return 0;
-    }
-  }
-
-  // Close file
-  fclose(fp);
-
-  // Return success
-  return 1;
-}
-  
 
 

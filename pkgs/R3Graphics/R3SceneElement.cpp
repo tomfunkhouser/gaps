@@ -1,4 +1,4 @@
-/* Source file for the R3 shape class */
+/* Source file for the R3 scene element class */
 
 
 
@@ -245,7 +245,7 @@ Intersects(const R3Ray& ray, R3Shape **hit_shape,
 
 
 void R3SceneElement::
-Draw(const R3DrawFlags draw_flags) const
+Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *materials) const
 {
   // Check shapes
   if (NShapes() == 0) return;
@@ -253,7 +253,9 @@ Draw(const R3DrawFlags draw_flags) const
   // Draw material
   if (material) {
     if ((draw_flags != R3_EDGES_DRAW_FLAG) && (draw_flags != R3_SURFACES_DRAW_FLAG)) {
-      material->Draw();
+      int material_index = material->SceneIndex();
+      if (materials && (material_index >= 0) && (material_index < materials->NEntries())) materials->Kth(material_index)->Draw();
+      else material->Draw();
     }
   }
 

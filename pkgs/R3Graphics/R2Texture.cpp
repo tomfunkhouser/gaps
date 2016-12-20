@@ -37,6 +37,7 @@ R2Texture(const char *name)
   : scene(NULL),
     scene_index(-1),
     name(NULL),
+    filename(NULL),
     image(NULL),
     s_wrap(R2_NO_TEXTURE_WRAP),
     t_wrap(R2_NO_TEXTURE_WRAP),
@@ -57,6 +58,7 @@ R2Texture(const R2Texture& texture, const char *name)
   : scene(NULL),
     scene_index(-1),
     name(NULL),
+    filename((texture.filename) ? strdup(texture.filename) : NULL),
     image(texture.image),
     s_wrap(texture.s_wrap),
     t_wrap(texture.t_wrap),
@@ -84,6 +86,7 @@ R2Texture(const R2Image *image,
   : scene(NULL),
     scene_index(-1),
     name(NULL),
+    filename(NULL),
     image(image),
     s_wrap(s_wrap),
     t_wrap(t_wrap),
@@ -112,6 +115,7 @@ R2Texture(const char *filename,
   : scene(NULL),
     scene_index(-1),
     name(NULL),
+    filename((filename) ? strdup(filename) : NULL),
     image(NULL),
     s_wrap(s_wrap),
     t_wrap(t_wrap),
@@ -146,6 +150,9 @@ R2Texture::
 
   // Free name
   if (name) free(name);
+
+  // Free filename
+  if (filename) free(filename);
 }
 
 
@@ -157,6 +164,17 @@ SetName(const char *name)
   if (this->name) free(this->name);
   if (name) this->name = strdup(name);
   else this->name = NULL;
+}
+
+
+  
+void R2Texture::
+SetFilename(const char *filename)
+{
+  // Set filename
+  if (this->filename) free(this->filename);
+  if (filename) this->filename = strdup(filename);
+  else this->filename = NULL;
 }
 
 

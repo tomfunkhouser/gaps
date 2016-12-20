@@ -19,7 +19,12 @@ public:
 
   // Property functions
   const R3Box& BBox(void) const;
-  R3Point Centroid(void) const;
+  const R3Point Centroid(void) const;
+  const RNInterval NFacets(void) const;
+  const RNLength Length(void) const;
+  const RNArea Area(void) const;
+  const RNVolume Volume(void) const;
+  const R3Point ClosestPoint(const R3Point& point) const;
 
   // Access functions
   int NNodes(void) const;
@@ -38,11 +43,15 @@ public:
   int NTextures(void) const;
   R2Texture *Texture(int k) const;
   R2Texture *Texture(const char *name) const;
+  int NReferencedScenes(void) const;
+  R3Scene *ReferencedScene(int k) const;
+  R3Scene *ReferencedScene(const char *filename) const;
   const R3Camera& Camera(void) const;
   const R2Viewport& Viewport(void) const;
   const R3Viewer& Viewer(void) const;
   const RNRgb& Ambient(void) const;
   const RNRgb& Background(void) const;
+  const char *Filename(void) const;
 
   // Manipulation functions
   void InsertNode(R3SceneNode *node);
@@ -55,11 +64,14 @@ public:
   void RemoveBrdf(R3Brdf *brdf);
   void InsertTexture(R2Texture *texture);
   void RemoveTexture(R2Texture *texture);
+  void InsertReferencedScene(R3Scene *referenced_scene);
+  void RemoveReferencedScene(R3Scene *referenced_scene);
   void SetCamera(const R3Camera& viewer);
   void SetViewport(const R2Viewport& viewport);
   void SetViewer(const R3Viewer& viewer);
   void SetAmbient(const RNRgb& ambient);
   void SetBackground(const RNRgb& background);
+  void SetFilename(const char *filename);
   void RemoveHierarchy(void);
   void RemoveTransformations(void);
   void SubdivideTriangles(RNLength max_edge_length);
@@ -80,6 +92,7 @@ public:
   int ReadFile(const char *filename);
   int ReadObjFile(const char *filename);
   int ReadMeshFile(const char *filename);
+  int ReadSUNCGFile(const char *filename);
   int ReadPlanner5DFile(const char *filename);
   int ReadPrincetonFile(const char *filename);
   int ReadParseFile(const char *filename);
@@ -96,8 +109,10 @@ public:
 
   // Draw functions
   void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
+    const RNArray<R3Material *> *materials = NULL) const;
+  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
     RNBoolean set_camera = TRUE, RNBoolean set_lights = TRUE) const;
-
+  
   // Lighting functions
   int LoadLights(int min_index = 0, int max_index = 7) const;
 
@@ -108,9 +123,11 @@ private:
   RNArray<R3Material *> materials;
   RNArray<R3Brdf *> brdfs;
   RNArray<R2Texture *> textures;
+  RNArray<R3Scene *> referenced_scenes;
   R3Viewer viewer;
   RNRgb ambient;
   RNRgb background;
+  char *filename;
 };
 
 
@@ -132,11 +149,56 @@ BBox(void) const
 
 
 
-inline R3Point R3Scene::
+inline const R3Point R3Scene::
 Centroid(void) const
 {
   // Return centroid of root node
   return root->Centroid();
+}
+
+
+
+inline const RNInterval R3Scene::
+NFacets(void) const
+{
+  // Return the range of how many facets can be drawn for scene
+  return root->NFacets();
+}
+
+
+
+inline const RNLength R3Scene::
+Length(void) const
+{
+  // Return total perimeter of all facets 
+  return root->Length();
+}
+
+
+
+inline const RNArea R3Scene::
+Area(void) const
+{
+  // Return surface area of scene
+  return root->Area();
+}
+
+
+
+inline const RNVolume R3Scene::
+Volume(void) const
+{
+  // Return volume of scene
+  return root->Volume();
+}
+
+
+
+inline const R3Point R3Scene::
+ClosestPoint(const R3Point& point) const
+{
+  // Return closest point on surface of scene
+  return root->ClosestPoint(point);
 }
 
 
@@ -240,6 +302,24 @@ Texture(int k) const
 
 
 
+inline int R3Scene::
+NReferencedScenes(void) const
+{
+  // Return number of referenced scenes
+  return referenced_scenes.NEntries();
+}
+
+
+
+inline R3Scene *R3Scene::
+ReferencedScene(int k) const
+{
+  // Return kth referenced scene
+  return referenced_scenes.Kth(k);
+}
+
+
+
 inline const R3Camera& R3Scene::
 Camera(void) const
 {
@@ -282,6 +362,15 @@ Background(void) const
 
 
 
+inline const char *R3Scene::
+Filename(void) const
+{
+  // Return filename
+  return filename;
+}
+
+
+
 inline void R3Scene::
 SetAmbient(const RNRgb& ambient) 
 {
@@ -300,3 +389,14 @@ SetBackground(const RNRgb& background)
 
 
 
+inline void R3Scene::
+SetFilename(const char *filename)
+{
+  // Set filename
+  if (this->filename) free(this->filename);
+  if (filename) this->filename = strdup(filename);
+  else this->filename = NULL;
+}
+
+
+  

@@ -742,6 +742,7 @@ void GLUTMouse(int button, int state, int x, int y)
           RNRgb specular = (brdf) ? brdf->Specular() : RNblack_rgb;
           RNRgb transmission = (brdf) ? brdf->Transmission() : RNblack_rgb;
           RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
+          RNScalar shininess = (brdf) ? brdf->Shininess() : 0;
           const R2Texture *texture = (material) ? material->Texture() : NULL;
           const char *texture_name = (texture) ? texture->Name() : "-";
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
@@ -749,7 +750,7 @@ void GLUTMouse(int button, int state, int x, int y)
           printf("  Material %s : brdf %s  kd=(%g %g %g) ks=(%g %g %g) kt=(%g %g %g) ke=(%g %g %g) ns=%g : texture %s\n", material_name,
             brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
             transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
-            brdf->Shininess(), texture_name);
+            shininess, texture_name);
         }
       }
     }

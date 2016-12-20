@@ -40,7 +40,8 @@ public:
     RNScalar min_t = 0.0, RNScalar max_t = RN_INFINITY) const;
 
   // Draw functions
-  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
+  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
+    const RNArray<R3Material *> *materials = NULL) const;
 
 public:
   // Internal update functions

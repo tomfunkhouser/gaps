@@ -44,6 +44,7 @@ R3SceneNode(R3Scene *scene)
     parent_index(-1),
     children(),
     elements(),
+    references(),
     lights(),
     transformation(R3identity_affine),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
@@ -65,6 +66,12 @@ R3SceneNode::
   for (int i = 0; i < elements.NEntries(); i++) {
     R3SceneElement *element = elements.Kth(i);
     RemoveElement(element);
+  }
+
+  // Remove references
+  for (int i = 0; i < references.NEntries(); i++) {
+    R3SceneReference *reference = references.Kth(i);
+    RemoveReference(reference);
   }
 
   // Remove children
@@ -101,6 +108,13 @@ NFacets(void) const
     nfacets += element->NFacets();
   }
   
+  // Add facets from references
+  for (int i = 0; i < NReferences(); i++) {
+    R3SceneReference *reference = Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) nfacets += referenced_scene->NFacets();
+  }
+  
   // Add facets from children
   for (int i = 0; i < NChildren(); i++) {
     R3SceneNode *child = Child(i);
@@ -123,6 +137,13 @@ Length(void) const
   for (int i = 0; i < NElements(); i++) {
     R3SceneElement *element = Element(i);
     length += element->Length();
+  }
+  
+  // Add length from references
+  for (int i = 0; i < NReferences(); i++) {
+    R3SceneReference *reference = Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) length += referenced_scene->Length();
   }
   
   // Add length from children
@@ -149,6 +170,13 @@ Area(void) const
     area += element->Area();
   }
   
+  // Add area from references
+  for (int i = 0; i < NReferences(); i++) {
+    R3SceneReference *reference = Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) area += referenced_scene->Area();
+  }
+  
   // Add area from children
   for (int i = 0; i < NChildren(); i++) {
     R3SceneNode *child = Child(i);
@@ -171,6 +199,13 @@ Volume(void) const
   for (int i = 0; i < NElements(); i++) {
     R3SceneElement *element = Element(i);
     volume += element->Volume();
+  }
+  
+  // Add volume from references
+  for (int i = 0; i < NReferences(); i++) {
+    R3SceneReference *reference = Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) volume += referenced_scene->Volume();
   }
   
   // Add volume from children
@@ -344,6 +379,30 @@ RemoveElement(R3SceneElement *element)
 
 
 void R3SceneNode::
+InsertReference(R3SceneReference *reference) 
+{
+  // Insert reference
+  references.Insert(reference);
+
+  // Invalidate bounding box
+  InvalidateBBox();
+}
+
+
+
+void R3SceneNode::
+RemoveReference(R3SceneReference *reference) 
+{
+  // Remove reference
+  references.Remove(reference);
+
+  // Invalidate bounding box
+  InvalidateBBox();
+}
+
+
+
+void R3SceneNode::
 SetTransformation(const R3Affine& transformation)
 {
   // Set transformation
@@ -436,6 +495,21 @@ FindClosest(const R3Point& point,
     }
   }
 
+  // Find closest reference 
+  for (int i = 0; i < references.NEntries(); i++) {
+    R3SceneReference *reference = references.Kth(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) {
+      if (referenced_scene->FindClosest(node_point, hit_node, hit_element, hit_shape, hit_point, hit_normal, &d, min_d, max_d)) {
+        if ((d >= min_d) && (d <= max_d)) {
+          if (hit_d) *hit_d = d;
+          found = TRUE;
+          max_d = d;
+        }
+      }
+    }
+  }
+
   // Find closest node
   for (int i = 0; i < children.NEntries(); i++) {
     R3SceneNode *child = children.Kth(i);
@@ -493,13 +567,13 @@ Intersects(const R3Ray& ray,
   // Apply inverse transform to min_t and closest_t
   RNScalar scale = 1.0;
   R3Vector v(ray.Vector());
-  transformation.Apply(v);
+  v.InverseTransform(transformation);
   RNScalar length = v.Length();
   if (RNIsNegativeOrZero(length)) return FALSE;
   if (RNIsNotEqual(length, 1.0)) {
     scale = length;
-    min_t /= scale;
-    closest_t /= scale;
+    min_t *= scale;
+    closest_t *= scale;
   }
 
   // Find closest element intersection
@@ -514,6 +588,25 @@ Intersects(const R3Ray& ray,
         closest_node = (R3SceneNode *) this;
         closest_point = point;
         closest_t = t;
+      }
+    }
+  }
+
+  // Find closest reference intersection
+  for (int i = 0; i < references.NEntries(); i++) {
+    R3SceneReference *reference = references.Kth(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene) {
+      if (referenced_scene->Intersects(node_ray, &node, &element, &shape, &point, &normal, &t, min_t, closest_t)) {
+        if ((t >= min_t) && (t <= closest_t)) {
+          if (hit_node) *hit_node = node;
+          if (hit_element) *hit_element = element;
+          if (hit_shape) *hit_shape = shape; 
+          if (hit_normal) *hit_normal = normal; 
+          closest_node = (R3SceneNode *) this;
+          closest_point = point;
+          closest_t = t;
+        }
       }
     }
   }
@@ -541,7 +634,7 @@ Intersects(const R3Ray& ray,
   if (hit_t || hit_point) {
     closest_point.Transform(transformation); 
     if (hit_point) *hit_point = closest_point;
-    if (hit_t) *hit_t = scale * closest_t; 
+    if (hit_t) *hit_t = closest_t / scale; 
   }
 
   // Transform hit normal into parent's coordinate system
@@ -557,7 +650,7 @@ Intersects(const R3Ray& ray,
 
 
 void R3SceneNode::
-Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags) const
+Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags, const RNArray<R3Material *> *materials) const
 {
   // Update transformation
   R3Affine cumulative_transformation = parent_transformation;
@@ -574,7 +667,13 @@ Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags) const
     // Draw elements
     for (int i = 0; i < elements.NEntries(); i++) {
       R3SceneElement *element = elements.Kth(i);
-      element->Draw(draw_flags);
+      element->Draw(draw_flags, materials);
+    }
+
+    // Draw references
+    for (int i = 0; i < references.NEntries(); i++) {
+      R3SceneReference *reference = references.Kth(i);
+      reference->Draw(draw_flags);
     }
 
     // Pop transformation
@@ -584,7 +683,7 @@ Draw(const R3Affine& parent_transformation, const R3DrawFlags draw_flags) const
   // Draw children
   for (int i = 0; i < children.NEntries(); i++) {
     R3SceneNode *child = children.Kth(i);
-    child->Draw(cumulative_transformation, draw_flags);
+    child->Draw(cumulative_transformation, draw_flags, materials);
   }
 }
 
@@ -602,6 +701,16 @@ UpdateBBox(void)
     R3Box element_bbox = element->BBox();
     element_bbox.Transform(transformation);
     bbox.Union(element_bbox);
+  }
+    
+  // Add bounding box of references
+  for (int i = 0; i < references.NEntries(); i++) {
+    R3SceneReference *reference = references.Kth(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (!referenced_scene) continue;
+    R3Box reference_bbox = referenced_scene->BBox();
+    reference_bbox.Transform(transformation);
+    bbox.Union(reference_bbox);
   }
     
   // Add bounding box of children nodes

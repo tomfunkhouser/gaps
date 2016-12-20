@@ -51,8 +51,8 @@ public:
             R2TextureBlend blend = R2_MODULATE_TEXTURE_BLEND,
             const char *name = NULL);
   R2Texture(const char *filename,
-            R2TextureWrap s_wrap = R2_CLAMP_TEXTURE_WRAP,
-            R2TextureWrap t_wrap = R2_CLAMP_TEXTURE_WRAP,
+            R2TextureWrap s_wrap = R2_REPEAT_TEXTURE_WRAP,
+            R2TextureWrap t_wrap = R2_REPEAT_TEXTURE_WRAP,
             R2TextureFilter min_filter = R2_LINEAR_MIPMAP_LINEAR_TEXTURE_FILTER,
             R2TextureFilter mag_filter = R2_LINEAR_TEXTURE_FILTER,
             R2TextureBlend blend = R2_MODULATE_TEXTURE_BLEND,
@@ -63,6 +63,7 @@ public:
   R3Scene *Scene(void) const;
   int SceneIndex(void) const;
   const char *Name(void) const;
+  const char *Filename(void) const;
   const R2Image *Image(void) const;
   const R2TextureWrap SWrap(void) const;
   const R2TextureWrap TWrap(void) const;
@@ -76,8 +77,9 @@ public:
 
   // Manipulation functions/operations
   void SetName(const char *name);
+  void SetFilename(const char *filename);
   void SetImage(const R2Image *image);
-
+  
   // Draw functions/operations
   void Load(void) const;
   void Unload(void) const;
@@ -93,6 +95,7 @@ private:
   R3Scene *scene;
   int scene_index;
   char *name;
+  char *filename;
   const R2Image *image;
   R2TextureWrap s_wrap, t_wrap;
   R2TextureFilter min_filter, mag_filter;
@@ -142,6 +145,15 @@ Name(void) const
 {
   // Return name
   return name;
+}
+
+
+
+inline const char *R2Texture::
+Filename(void) const
+{
+  // Return filename
+  return filename;
 }
 
 

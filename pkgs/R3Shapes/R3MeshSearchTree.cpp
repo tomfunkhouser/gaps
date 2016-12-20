@@ -606,6 +606,9 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
     closest.vertex = NULL; 
     closest.edge = NULL; 
   }
+
+  // Just checking
+  assert((closest.type == R3_MESH_NULL_TYPE) || (RNIsZero(R3SquaredDistance(closest.point, mesh->ClosestPointOnFace(closest.face, closest.point)), RN_SMALL_EPSILON)));
 }
 
 

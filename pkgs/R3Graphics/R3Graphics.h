@@ -48,6 +48,7 @@ class R3SceneElement;
 
 /* Scene include files */
 
+#include "R3Graphics/R3SceneReference.h"
 #include "R3Graphics/R3SceneElement.h"
 #include "R3Graphics/R3SceneNode.h"
 #include "R3Graphics/R3Scene.h"

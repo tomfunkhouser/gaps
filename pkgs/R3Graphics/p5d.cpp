@@ -18,20 +18,13 @@
 ////////////////////////////////////////////////////////////////////////
 
 P5DMaterial::
-P5DMaterial(P5DObject *object)
-  : object(object),
-    object_index(-1),
-    name(NULL),
+P5DMaterial(void)
+  : name(NULL),
     texture_name(NULL),
     color(NULL),
     tcolor(NULL),
     data(NULL)
 {
-  // Insert material into object
-  if (object) {
-    this->object_index = object->NMaterials();
-    object->materials.push_back(this);
-  }
 }
 
 
@@ -98,6 +91,69 @@ Print(FILE *fp) const
   fprintf(fp, "      x2 = %g\n", x2);
   fprintf(fp, "      y2 = %g\n", y2);
   fprintf(fp, "      z2 = %g\n", z2);
+  fprintf(fp, "\n");
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Primitive functions
+////////////////////////////////////////////////////////////////////////
+
+P5DPrimitive::
+P5DPrimitive(P5DFloor *floor)
+  : floor(floor),
+    floor_index(-1),
+    room(NULL),
+    room_index(-1),
+    materials(),
+    className(NULL),
+    t(NULL),
+    puid(NULL),
+    tm(0),
+    x(0), y(0), z(0),
+    sX(1), sY(1), sZ(1),
+    aX(0), aY(0), aZ(0),
+    idx_index(-1),
+    data(NULL)
+{
+  // Insert primitive into floor
+  if (floor) {
+    this->floor_index = floor->NPrimitives();
+    floor->primitives.push_back(this);
+  }
+}
+
+
+
+P5DPrimitive::
+~P5DPrimitive(void)
+{
+}
+
+
+
+void P5DPrimitive::
+Print(FILE *fp) const
+{
+  // Resolve output file
+  if (!fp) fp = stdout;
+  
+  // Print attributes
+  fprintf(fp, "    Primitive\n");
+  fprintf(fp, "    className = %s\n", (className) ? className : "None");
+  fprintf(fp, "    t = %s\n", (t) ? t : "None");
+  fprintf(fp, "    puid = %s\n", (puid) ? puid : "None");
+  fprintf(fp, "    tm = %g\n", tm);
+  fprintf(fp, "    x = %g\n", x);
+  fprintf(fp, "    y = %g\n", y);
+  fprintf(fp, "    z = %g\n", z);
+  fprintf(fp, "    sX = %g\n", sX);
+  fprintf(fp, "    sY = %g\n", sY);
+  fprintf(fp, "    sZ = %g\n", sZ);
+  fprintf(fp, "    aX = %g\n", aX);
+  fprintf(fp, "    aY = %g\n", aY);
+  fprintf(fp, "    aZ = %g\n", aZ);
   fprintf(fp, "\n");
 }
 
@@ -279,6 +335,12 @@ Print(FILE *fp) const
   for (int i = 0; i < NObjects(); i++) {
     P5DObject *object = Object(i);
     object->Print(fp);
+  }
+
+  // Print primitives
+  for (int i = 0; i < NPrimitives(); i++) {
+    P5DPrimitive *primitive = Primitive(i);
+    primitive->Print(fp);
   }
 }
 
@@ -473,7 +535,7 @@ ParseObject(P5DObject *object, Json::Value *json_object, int idx_index)
     for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
       if (!GetJsonArrayEntry(json_material, json_materials, index)) continue;
       if (json_material->type() != Json::objectValue) continue;
-      P5DMaterial *material = new P5DMaterial(object);
+      P5DMaterial *material = new P5DMaterial();
       if (GetJsonObjectMember(json_value, json_material, "name", Json::stringValue)) 
         material->name = strdup(json_value->asString().c_str());
       if (GetJsonObjectMember(json_value, json_material, "texture", Json::stringValue)) 
@@ -482,6 +544,65 @@ ParseObject(P5DObject *object, Json::Value *json_object, int idx_index)
         material->color = strdup(json_value->asString().c_str());
       if (GetJsonObjectMember(json_value, json_material, "tcolor")) 
         material->tcolor = strdup(json_value->asString().c_str());
+      object->materials.push_back(material);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int 
+ParsePrimitive(P5DPrimitive *primitive, Json::Value *json_primitive, int idx_index)
+{
+  // Parse attributes
+  Json::Value *json_value;
+  if (GetJsonObjectMember(json_value, json_primitive, "className", Json::stringValue)) 
+    primitive->className = strdup(json_value->asString().c_str());
+  if (GetJsonObjectMember(json_value, json_primitive, "t", Json::stringValue)) 
+    primitive->t = strdup(json_value->asString().c_str());
+  if (GetJsonObjectMember(json_value, json_primitive, "puid", Json::stringValue)) 
+    primitive->puid = strdup(json_value->asString().c_str());
+  if (GetJsonObjectMember(json_value, json_primitive, "tm")) 
+    primitive->tm = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "x")) 
+    primitive->x = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "y")) 
+    primitive->y = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "z")) 
+    primitive->z = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "sX")) 
+    primitive->sX = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "sY")) 
+    primitive->sY = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "sZ")) 
+    primitive->sZ = 0.01 * json_value->asDouble();
+  if (GetJsonObjectMember(json_value, json_primitive, "aX")) 
+    primitive->aX = 3.14159265358979323846 * json_value->asDouble() / 180.0;
+  if (GetJsonObjectMember(json_value, json_primitive, "aY")) 
+    primitive->aY = 3.14159265358979323846 * json_value->asDouble() / 180.0;
+  if (GetJsonObjectMember(json_value, json_primitive, "aZ")) 
+    primitive->aZ = 3.14159265358979323846 * json_value->asDouble() / 180.0;
+  primitive->idx_index = idx_index;
+  
+  // Parse materials
+  Json::Value *json_materials, *json_material;
+  if (GetJsonObjectMember(json_materials, json_primitive, "materials", Json::arrayValue)) {
+    for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
+      if (!GetJsonArrayEntry(json_material, json_materials, index)) continue;
+      if (json_material->type() != Json::objectValue) continue;
+      P5DMaterial *material = new P5DMaterial();
+      if (GetJsonObjectMember(json_value, json_material, "name", Json::stringValue)) 
+        material->name = strdup(json_value->asString().c_str());
+      if (GetJsonObjectMember(json_value, json_material, "texture", Json::stringValue)) 
+        material->texture_name = strdup(json_value->asString().c_str());
+      if (GetJsonObjectMember(json_value, json_material, "color")) 
+        material->color = strdup(json_value->asString().c_str());
+      if (GetJsonObjectMember(json_value, json_material, "tcolor")) 
+        material->tcolor = strdup(json_value->asString().c_str());
+      primitive->materials.push_back(material);
     }
   }
 
@@ -585,44 +706,46 @@ ParseFloor(P5DFloor *floor, Json::Value *json_floor, int idx_index)
     floor->h = 0.01 * json_value->asDouble();
   floor->idx_index = idx_index;
   
-  // Check/fix stuff
-  if (floor->h <= 0) floor->h = 2.7;
-
   // Parse rooms
   std::vector<P5DRoom *> tmp_rooms;
   std::vector<P5DObject *> tmp_objects;
+  std::vector<P5DPrimitive *> tmp_primitives;
   Json::Value *json_items, *json_item, *json_className;
   if (!GetJsonObjectMember(json_items, json_floor, "items", Json::arrayValue)) return 0;
   for (Json::ArrayIndex index = 0; index < json_items->size(); index++) {
-    if (!GetJsonArrayEntry(json_item, json_items, index)) continue; // return 0;
+    tmp_objects.push_back(NULL); tmp_primitives.push_back(NULL);
+    if (!GetJsonArrayEntry(json_item, json_items, index)) continue; 
     if (json_item->type() != Json::objectValue) continue;
-    if (!GetJsonObjectMember(json_className, json_item, "className", Json::stringValue)) continue; // return 0;
+    if (!GetJsonObjectMember(json_className, json_item, "className", Json::stringValue)) continue; 
     if (!json_className->asString().compare(std::string("Ground"))) {
       P5DRoom *room = new P5DRoom(floor);
       if (ParseRoom(room, json_item, index)) tmp_rooms.push_back(room);
-      tmp_objects.push_back(NULL);
     }
     else if (!json_className->asString().compare(std::string("Room"))) {
       P5DRoom *room = new P5DRoom(floor);
       if (ParseRoom(room, json_item, index)) tmp_rooms.push_back(room);
-      tmp_objects.push_back(NULL);
+      if (room->h > floor->h) floor->h = room->h;
     }
     else if (!json_className->asString().compare(std::string("Door"))) {
       P5DObject *object = new P5DObject(floor);
-      if (ParseObject(object, json_item, index)) tmp_objects.push_back(object);
-      else tmp_objects.push_back(NULL);
+      if (ParseObject(object, json_item, index)) tmp_objects[index] = object;
     }
     else if (!json_className->asString().compare(std::string("Window"))) {
       P5DObject *object = new P5DObject(floor);
-      if (ParseObject(object, json_item, index)) tmp_objects.push_back(object);
-      else tmp_objects.push_back(NULL);
+      if (ParseObject(object, json_item, index)) tmp_objects[index] = object;
     }
     else if (!json_className->asString().compare(std::string("Ns"))) {
       P5DObject *object = new P5DObject(floor);
-      if (ParseObject(object, json_item, index)) tmp_objects.push_back(object);
-      else tmp_objects.push_back(NULL);
+      if (ParseObject(object, json_item, index)) tmp_objects[index] = object;
+    }
+    else if (!json_className->asString().compare(std::string("Pr"))) {
+      P5DPrimitive *primitive = new P5DPrimitive(floor);
+      if (ParsePrimitive(primitive, json_item, index)) tmp_primitives[index] = primitive;
     }
   }
+
+  // Check/fix stuff
+  if (floor->h <= 0) floor->h = 2.7;
 
   // Parse which objects are in which rooms
   Json::Value *array_items = NULL, *array_item = NULL;
@@ -633,7 +756,7 @@ ParseFloor(P5DFloor *floor, Json::Value *json_floor, int idx_index)
       if (array_items->isArray()) {
         for (Json::ArrayIndex array_index = 0; array_index < array_items->size(); array_index++) {
           GetJsonArrayEntry(array_item, array_items, array_index);
-          if (array_item->isNumeric()) {
+          if (array_item->isNumeric()) { // XXX ASK SHURAN XXX
             int object_index = array_item->asInt() - 1;
             if ((object_index >= 0) && ((unsigned int) object_index < tmp_objects.size())) {
               P5DRoom *room = tmp_rooms[room_index];
@@ -644,6 +767,18 @@ ParseFloor(P5DFloor *floor, Json::Value *json_floor, int idx_index)
                 room->objects.push_back(object);
               }
             }
+          }
+        }
+      }
+      else{ // single object in the room 
+        int object_index = array_items->asInt() - 1;
+        if ((object_index >= 0) && ((unsigned int) object_index < tmp_objects.size())) {
+          P5DRoom *room = tmp_rooms[room_index];
+          P5DObject *object = tmp_objects[object_index];
+          if (object && !object->room) {
+            object->room = room;
+            object->room_index = room->objects.size();
+            room->objects.push_back(object);
           }
         }
       }
