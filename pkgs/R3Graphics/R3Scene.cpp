@@ -412,26 +412,27 @@ R3SceneRemoveTransformations(R3Scene *scene, R3SceneNode *node, const R3Affine& 
   R3Affine transformation = R3identity_affine;
   transformation.Transform(parent_transformation);
   transformation.Transform(node->Transformation());
+
+  // Check if node has references
+  if (node->NReferences() > 0) {
+    node->SetTransformation(transformation);
+    return;
+  }
+
+  // Transform elements
+  for (int i = 0; i < node->NElements(); i++) {
+    R3SceneElement *element = node->Element(i);
+    element->Transform(transformation);
+  }
+
+  // Recurse to children
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    R3SceneRemoveTransformations(scene, child, transformation);
+  }
+
+  // Remove transformation
   node->SetTransformation(R3identity_affine);
-
-  // Check if leaf
-  if (node->NChildren() == 0) {
-    // Transform shapes
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      element->Transform(transformation);
-    }
-  }
-  else {
-    // Recurse to children
-    for (int i = 0; i < node->NChildren(); i++) {
-      R3SceneNode *child = node->Child(i);
-      R3SceneRemoveTransformations(scene, child, transformation);
-    }
-  }
-
-  // Remember that should update node bounding box
-  node->InvalidateBBox();
 }
 
 
@@ -455,7 +456,7 @@ R3SceneSubdivideTriangles(R3Scene *scene, R3SceneNode *node, RNLength max_edge_l
   RNScalar scale = node->Transformation().ScaleFactor();
   if (RNIsNotZero(scale)) max_edge_length /= scale;
 
-  // Subdivide triangles
+  // Subdivide triangles in elements
   for (int i = 0; i < node->NElements(); i++) {
     R3SceneElement *element = node->Element(i);
     for (int j = 0; j < element->NShapes(); j++) {
@@ -467,7 +468,14 @@ R3SceneSubdivideTriangles(R3Scene *scene, R3SceneNode *node, RNLength max_edge_l
     }
   }
 
-  // Subdivide children
+  // Subdivide triangles in references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    R3SceneSubdivideTriangles(referenced_scene, referenced_scene->Root(), max_edge_length);
+  }
+
+  // Recurse to children
   for (int i = 0; i < node->NChildren(); i++) {
     R3SceneNode *child = node->Child(i);
     R3SceneSubdivideTriangles(scene, child, max_edge_length);
@@ -3199,7 +3207,8 @@ CreateBox(R3Scene *scene, R3SceneNode *node,
       R3TriangleArray *shape = new R3TriangleArray(vertices, triangles);
 
       // Create scene element
-      int material_index = dir*3 + dim;
+      static const int material_indices[2][3] = { { 2, 1, 5 }, { 3, 0, 4 } };
+      int material_index = material_indices[dir][dim];
       R3Material *material = (materials.NEntries() > material_index) ? materials[material_index] : &R3default_material;
       R3SceneElement *element = new R3SceneElement(material);
       element->InsertShape(shape);
@@ -3479,16 +3488,17 @@ ReadSUNCGFile(const char *filename)
         else if (!strcmp(node_type, "Object")) {
           // Read model 
           sprintf(obj_name, "%s/Object/%s/%s.obj", input_data_directory, modelId, modelId); 
-          // R3Scene *model = new R3Scene();
-          // if (!ReadObj(model, model->Root(), obj_name)) return 0;
-          // model->SetFilename(obj_name);
+          R3Scene *model = new R3Scene();
+          if (!ReadObj(model, model->Root(), obj_name)) return 0;
+          model->Root()->SetName(modelId);
+          model->SetFilename(obj_name);
+          InsertReferencedScene(model);
 
           // Create node with reference to model
           R3SceneNode *node = new R3SceneNode(this);
           sprintf(node_name, "Object#%s", node_id);
-          if (!ReadObj(this, node, obj_name)) return 0;
+          node->InsertReference(new R3SceneReference(model, &materials));
           node->SetName(node_name);
-          // node->InsertReference(new R3SceneReference(model, &materials);
           node->SetTransformation(transformation);
           floor_node->InsertChild(node);
         }
