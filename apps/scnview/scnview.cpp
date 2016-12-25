@@ -5,9 +5,7 @@
 // Include files 
 
 #include "R3Graphics/R3Graphics.h"
-#include "R3Graphics/p5d.h"
 #include "fglut/fglut.h"
-#include "debug.h"
 
 
 
@@ -62,9 +60,7 @@ static int show_materials = 0;
 static int show_bboxes = 0;
 static int show_axes = 0;
 static int show_rays = 0;
-static int show_walls = 0;
 static int show_closest = 0;
-static int show_debug = 0;
 static int show_frame_rate = 0;
 static int show_backfacing = 0;
 
@@ -190,6 +186,7 @@ DrawCameras(R3Scene *scene, const RNArray<R3Camera *> *cameras = NULL)
 }
 
 
+
 static void 
 DrawLights(R3Scene *scene)
 {
@@ -258,7 +255,7 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformat
     // Push transformation
     cumulative_transformation.Push();
     
-    // Draw surfaces
+    // Draw elements
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
 
@@ -280,6 +277,13 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformat
 
     // Pop transformation
     cumulative_transformation.Pop();
+  }
+
+  // Draw references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    DrawShapes(referenced_scene, referenced_scene->Root(), cumulative_transformation, draw_flags);
   }
 
   // Draw children
@@ -399,97 +403,6 @@ DrawClosest(R3Scene *scene)
 
 
 
-static void
-DrawPlanner5DWalls(R3Scene *scene)
-{
-  // Get project
-  if (!scene->Root()) return;
-  P5DProject *project = (P5DProject *) scene->Root()->Data();
-  if (!project) return;
-
-  // Set root transformation -- mirror the world across x to compensate for swap of Y and Z axes 
-  R4Matrix xmirror_matrix(-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
-  R3Affine root_transformation(xmirror_matrix, TRUE);
-  root_transformation.Push();
-  
-  // Draw floors
-  RNScalar floor_z = 0;
-  for (int i = 0; i < project->NFloors(); i++) {
-    P5DFloor *floor = project->Floor(i);
-
-    // Set floor transformation
-    R3Affine floor_transformation(R3identity_affine);
-    floor_transformation.Translate(R3Vector(0, 0, floor_z));
-    floor_transformation.Push();
-    floor_z += floor->h;
-
-    // Draw rooms
-    for (int j = 0; j < floor->NRooms(); j++) {
-      P5DRoom *room = floor->Room(j);
-      if (strcmp(room->className, "Room")) continue;
-      
-      // Set room transformation
-      R3Affine room_transformation(R3identity_affine);
-      room_transformation.Translate(R3Vector(room->x, room->y, 0));
-      room_transformation.Push();
-      
-      // Draw walls
-      glColor3d(0,1,1);
-      glBegin(GL_QUADS);
-      for (int k = 0; k < room->NWalls(); k++) {
-        P5DWall *wall = room->Wall(k);
-        if (wall->hidden) continue;
-        R3Point p1(wall->x1, wall->y1, wall->z1);
-        R3Point p2(wall->x2, wall->y2, wall->z2);
-        if (R3Contains(p1, p2)) continue;
-        R3Vector direction = p2 - p1;
-        direction.Normalize();
-        R3Vector normal = direction;
-        normal.ZRotate(RN_PI_OVER_TWO);
-        // for (int side = -1; side <= 1; side += 2) {
-        for (int side = 1; side <= 1; side += 2) {
-          R3LoadPoint(p1 + 0.5*wall->w*direction + side*0.5*wall->w*normal);
-          R3LoadPoint(p2 - 0.5*wall->w*direction + side*0.5*wall->w*normal);
-          R3LoadPoint(p2 - 0.5*wall->w*direction + side*0.5*wall->w*normal + room->h*R3posz_vector);
-          R3LoadPoint(p1 + 0.5*wall->w*direction + side*0.5*wall->w*normal + room->h*R3posz_vector);
-        }
-      }
-      glEnd();
-      
-      // Draw floor
-      glColor3d(1,0,1);
-      glBegin(GL_TRIANGLE_FAN);
-      for (int k = 0; k < room->NWalls(); k++) {
-        P5DWall *wall = room->Wall(k);
-        R3LoadPoint(wall->x1, wall->y1, wall->z1 + room->h);
-      }
-      glEnd();
-
-      // Draw ceiling
-      if (room->h > 2) {
-        glColor3d(0,0,1);
-        glBegin(GL_TRIANGLE_FAN);
-        for (int k = 0; k < room->NWalls(); k++) {
-          P5DWall *wall = room->Wall(k);
-          R3LoadPoint(wall->x1, wall->y1, wall->z1 + room->h);
-        }
-        glEnd();
-      }
-
-      // Pop the room transformation
-      room_transformation.Pop();
-    }
-
-    // Pop the floor transformation 
-    floor_transformation.Pop();
-  }
-
-  // Pop the root transformation
-  root_transformation.Pop();
-}
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // GLUT user interface functions
 ////////////////////////////////////////////////////////////////////////
@@ -546,14 +459,6 @@ void GLUTRedraw(void)
     glColor3d(0.0, 1.0, 0.0);
     glLineWidth(3);
     DrawRays(scene);
-    glLineWidth(1);
-  }
-
-  // Draw walls
-  if (show_walls) {
-    glDisable(GL_LIGHTING);
-    glLineWidth(3);
-    DrawPlanner5DWalls(scene);
     glLineWidth(1);
   }
 
@@ -626,13 +531,6 @@ void GLUTRedraw(void)
       DrawText(R2Point(100, 100), buffer);
     }
   }  
-
-  // Draw debug
-  if (show_debug) {
-    glEnable(GL_LIGHTING);
-    R3null_material.Draw();
-    DrawDebug(scene, viewer, selected_node);
-  }
 
   // Capture image and exit
   if (output_image_name) {
@@ -734,23 +632,23 @@ void GLUTMouse(int button, int state, int x, int y)
         selected_element = NULL;
         R3Ray ray = viewer->WorldRay(x, y);
         if (scene->Intersects(ray, &selected_node, &selected_element, NULL, &position, &normal)) {
-          const R3Material *material = selected_element->Material();
-          const char *material_name = (material) ? material->Name() : "-";
-          const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
-          const char *brdf_name = (brdf) ? brdf->Name() : "-";
-          RNRgb diffuse = (brdf) ? brdf->Diffuse() : RNblack_rgb;
-          RNRgb specular = (brdf) ? brdf->Specular() : RNblack_rgb;
-          RNRgb transmission = (brdf) ? brdf->Transmission() : RNblack_rgb;
-          RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
-          RNScalar shininess = (brdf) ? brdf->Shininess() : 0;
-          const R2Texture *texture = (material) ? material->Texture() : NULL;
-          const char *texture_name = (texture) ? texture->Name() : "-";
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z());
-          printf("  Material %s : brdf %s  kd=(%g %g %g) ks=(%g %g %g) kt=(%g %g %g) ke=(%g %g %g) ns=%g : texture %s\n", material_name,
-            brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
-            transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
-            shininess, texture_name);
+          // const R3Material *material = selected_element->Material();
+          // const char *material_name = (material) ? material->Name() : "-";
+          // const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
+          // const char *brdf_name = (brdf) ? brdf->Name() : "-";
+          // RNRgb diffuse = (brdf) ? brdf->Diffuse() : RNblack_rgb;
+          // RNRgb specular = (brdf) ? brdf->Specular() : RNblack_rgb;
+          // RNRgb transmission = (brdf) ? brdf->Transmission() : RNblack_rgb;
+          // RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
+          // RNScalar shininess = (brdf) ? brdf->Shininess() : 0;
+          // const R2Texture *texture = (material) ? material->Texture() : NULL;
+          // const char *texture_name = (texture) ? texture->Name() : "-";
+          // printf("  Material %s : brdf %s  kd=(%g %g %g) ks=(%g %g %g) kt=(%g %g %g) ke=(%g %g %g) ns=%g : texture %s\n", material_name,
+          //  brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
+          //  transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
+          //  shininess, texture_name);
         }
       }
     }
@@ -852,11 +750,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_frame_rate = !show_frame_rate;
     break;
 
-  case 'W':
-  case 'w':
-    show_walls = !show_walls;
-    break;
-
   case 'V':
   case 'v':
     // Set camera
@@ -889,10 +782,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
            camera.XFOV(), camera.YFOV());
     break; }
     
-  case '@':
-    show_debug = !show_debug;
-    break;
-
   case 27: // ESCAPE
     GLUTStop();
     break;
