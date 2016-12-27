@@ -3159,6 +3159,84 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 
 
 static int
+ParseSUNCGMaterials(R3Scene *scene,
+  const RNArray<R3Material *>& input_materials,
+  RNArray<R3Material *>& output_materials,
+  Json::Value *json_materials)
+{
+  // Parse node materials
+  Json::Value *json_material, *json_value;
+  for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
+    char material_name[1024] = { '\0' };
+    char texture_name[1024] = { '\0' };
+    char diffuse_string[1024] = { '\0' };
+    if (!GetJsonArrayEntry(json_material, json_materials, index)) continue; 
+    if (json_material->type() != Json::objectValue) continue;
+    if (GetJsonObjectMember(json_value, json_material, "name"))
+      strncpy(material_name, json_value->asString().c_str(), 1024);
+    if (GetJsonObjectMember(json_value, json_material, "texture")) 
+      strncpy(texture_name, json_value->asString().c_str(), 1024);
+    if (GetJsonObjectMember(json_value, json_material, "diffuse")) 
+      strncpy(diffuse_string, json_value->asString().c_str(), 1024);
+
+    // Get input material information
+    R3Material *input_material = (input_materials.NEntries() > (int) index) ? input_materials.Kth(index) : NULL;
+    const R3Brdf *input_brdf = (input_material) ? input_material->Brdf() : NULL;
+    const R2Texture *input_texture = (input_material) ? input_material->Texture() : NULL;
+    
+    // Get/create output brdf
+    R3Brdf *output_brdf = (R3Brdf *) input_brdf;
+    if (*diffuse_string) {
+      long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
+      long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
+      long int r = strtol(&diffuse_string[1], NULL, 16); diffuse_string[1] = '\0';
+      RNRgb diffuse_rgb(r / 255.0, g / 255.0, b / 255.0);
+      if (!output_brdf || (diffuse_rgb != output_brdf->Diffuse())) {
+        if (output_brdf) output_brdf = new R3Brdf(*output_brdf);
+        else output_brdf = new R3Brdf();
+        output_brdf->SetDiffuse(diffuse_rgb);
+        scene->InsertBrdf(output_brdf);
+      }
+    }
+
+    // Get/create output texture
+    R2Texture *output_texture = (R2Texture *) input_texture;
+    if (*texture_name) {
+      // Get texture filename
+      char texture_filename[1024];
+      const char *texture_directory = "../../texture";
+      sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
+      if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
+      if (!output_texture || strcmp(texture_filename, output_texture->Filename())) {
+        if (output_texture) output_texture = new R2Texture(*output_texture);
+        else output_texture = new R2Texture();
+        R2Image *image = new R2Image();
+        if (!image->Read(texture_filename)) return 0;
+        output_texture->SetImage(image);
+        output_texture->SetFilename(texture_filename);
+        output_texture->SetName(texture_name);
+        scene->InsertTexture(output_texture);
+      }
+    }
+
+    // Get/create output material
+    R3Material *output_material = input_material;
+    if ((output_brdf != input_brdf) || (output_texture != input_texture)) {
+      output_material = new R3Material(output_brdf, output_texture);
+      scene->InsertMaterial(output_material);
+    }
+
+    // Insert material into result
+    output_materials.Insert(output_material);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 CreateBox(R3Scene *scene, R3SceneNode *node,
   RNScalar dimensions[3],
   const RNArray<R3Material *>& materials)
@@ -3349,7 +3427,7 @@ ReadSUNCGFile(const char *filename)
     // floor_node->SetTransformation(floor_transformation);
 
     // Parse nodes
-    Json::Value *json_nodes, *json_node;
+    Json::Value *json_nodes, *json_node, *json_materials;
     if (GetJsonObjectMember(json_nodes, json_floor, "nodes", Json::arrayValue)) {
       for (Json::ArrayIndex index = 0; index < json_nodes->size(); index++) {
         if (!GetJsonArrayEntry(json_node, json_nodes, index)) continue; 
@@ -3388,56 +3466,6 @@ ReadSUNCGFile(const char *filename)
               matrix[index%4][index/4] = json_item->asDouble();
             }
             transformation.Reset(matrix, invertNormals);
-          }
-        }
-
-        // Parse node materials
-        RNArray<R3Material *> materials;
-        Json::Value *json_materials, *json_material;
-        if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
-          for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
-            char material_name[1024] = { '\0' };
-            char texture_name[1024] = { '\0' };
-            char diffuse_string[1024] = { '\0' };
-            if (!GetJsonArrayEntry(json_material, json_materials, index)) continue; 
-            if (json_material->type() != Json::objectValue) continue;
-            if (GetJsonObjectMember(json_value, json_material, "name"))
-              strncpy(material_name, json_value->asString().c_str(), 1024);
-            if (GetJsonObjectMember(json_value, json_material, "texture")) 
-              strncpy(texture_name, json_value->asString().c_str(), 1024);
-            if (GetJsonObjectMember(json_value, json_material, "diffuse")) 
-              strncpy(diffuse_string, json_value->asString().c_str(), 1024);
-
-            // Create material
-            R3Material *material = new R3Material(material_name);
-            materials.Insert(material);
-
-            // Set diffuse color
-            RNRgb diffuse_rgb(0.5, 0.5, 0.5);
-            if (*diffuse_string) {
-              long int r = strtol(&diffuse_string[1], NULL, 16); diffuse_string[1] = '\0';
-              long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
-              long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
-              diffuse_rgb.Reset(r / 255.0, g / 255.0, b / 255.0);
-              R3Brdf *brdf = new R3Brdf(diffuse_rgb);
-              material->SetBrdf(brdf);
-            }
-
-            // Set diffuse texture
-            if (*texture_name) {
-              // Get texture filename
-              char texture_filename[1024];
-              const char *texture_directory = "../../texture";
-              sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
-              if (!RNFileExists(texture_filename)) 
-                sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
-              R2Image *image = new R2Image();
-              if (!image->Read(texture_filename)) return 0;
-              R2Texture *texture = new R2Texture(image, R2_REPEAT_TEXTURE_WRAP, R2_REPEAT_TEXTURE_WRAP);
-              texture->SetFilename(texture_filename);
-              texture->SetName(texture_name);
-              material->SetTexture(texture);
-            }
           }
         }
 
@@ -3494,10 +3522,16 @@ ReadSUNCGFile(const char *filename)
           model->SetFilename(obj_name);
           InsertReferencedScene(model);
 
+          // Read materials
+          RNArray<R3Material *> materials;
+          if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
+            if (!ParseSUNCGMaterials(this, materials, materials, json_materials)) return 0;
+          }
+
           // Create node with reference to model
           R3SceneNode *node = new R3SceneNode(this);
           sprintf(node_name, "Object#%s", node_id);
-          node->InsertReference(new R3SceneReference(model, &materials));
+          node->InsertReference(new R3SceneReference(model, materials));
           node->SetName(node_name);
           node->SetTransformation(transformation);
           floor_node->InsertChild(node);
@@ -3514,6 +3548,12 @@ ReadSUNCGFile(const char *filename)
               if (GetJsonArrayEntry(json_item, json_items, 2))
                 box_dimensions[2] = json_item->asDouble();
             }
+          }
+
+          // Read materials
+          RNArray<R3Material *> materials;
+          if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
+            if (!ParseSUNCGMaterials(this, materials, materials, json_materials)) return 0;
           }
 
           // Create node for box

@@ -41,7 +41,7 @@ typedef enum {
 class R2Texture {
 public:
   // Constructor functions
-  R2Texture(const char *name = NULL);
+  R2Texture(void);
   R2Texture(const R2Texture& texture, const char *name = NULL);
   R2Texture(const R2Image *image,
             R2TextureWrap s_wrap = R2_REPEAT_TEXTURE_WRAP,

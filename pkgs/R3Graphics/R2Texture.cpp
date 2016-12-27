@@ -33,7 +33,7 @@ R2StopTexture()
 
 
 R2Texture::
-R2Texture(const char *name)
+R2Texture(void)
   : scene(NULL),
     scene_index(-1),
     name(NULL),
@@ -47,8 +47,6 @@ R2Texture(const char *name)
     flags(0),
     id(0)
 {
-    // Set name
-    if (name) this->name = strdup(name);
 }
 
 
