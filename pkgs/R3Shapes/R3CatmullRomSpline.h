@@ -23,7 +23,7 @@ public:
   // Point access
   R3Point PointPosition(RNScalar u) const;
   R3Vector PointDerivative(RNScalar u) const;
-  
+
   // Draw functions
   virtual void Outline(const R3DrawFlags flags = R3_DEFAULT_DRAW_FLAGS) const;
   virtual void Outline(RNScalar sample_spacing) const;

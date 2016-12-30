@@ -32,6 +32,31 @@ R3StopShape()
 
 
 
+R3Shape *R3Shape::
+Copy(void) const
+{
+  // Return copy of appropriate type
+  if (ClassID() == R3Box::CLASS_ID()) return new R3Box(*((R3Box *) this));
+  else if (ClassID() == R3OrientedBox::CLASS_ID()) return new R3OrientedBox(*((R3OrientedBox *) this));
+  else if (ClassID() == R3Cylinder::CLASS_ID()) return new R3Cylinder(*((R3Cylinder *) this));
+  else if (ClassID() == R3Cone::CLASS_ID()) return new R3Cone(*((R3Cone *) this));
+  else if (ClassID() == R3Ellipsoid::CLASS_ID()) return new R3Ellipsoid(*((R3Ellipsoid *) this));
+  else if (ClassID() == R3Sphere::CLASS_ID()) return new R3Sphere(*((R3Sphere *) this));
+  else if (ClassID() == R3Triangle::CLASS_ID()) return new R3Triangle(*((R3Triangle *) this));
+  else if (ClassID() == R3TriangleArray::CLASS_ID()) return new R3TriangleArray(*((R3TriangleArray *) this));
+  else if (ClassID() == R3Circle::CLASS_ID()) return new R3Circle(*((R3Circle *) this));
+  else if (ClassID() == R3Ellipse::CLASS_ID()) return new R3Ellipse(*((R3Ellipse *) this));
+  else if (ClassID() == R3Rectangle::CLASS_ID()) return new R3Rectangle(*((R3Rectangle *) this));
+  else if (ClassID() == R3Polyline::CLASS_ID()) return new R3Polyline(*((R3Polyline *) this));
+  else if (ClassID() == R3CatmullRomSpline::CLASS_ID()) return new R3CatmullRomSpline(*((R3CatmullRomSpline *) this));
+
+  // Should never get here
+  RNAbort("Unrecognized shape class id: %d\n", ClassID());
+  return NULL;
+}
+
+
+
 const RNBoolean R3Shape::
 IsPoint(void) const
 {

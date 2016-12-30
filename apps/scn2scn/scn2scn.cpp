@@ -13,6 +13,7 @@
 static const char *input_name = NULL;
 static const char *output_name = NULL;
 static R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0);
+static int remove_references = 0;
 static int remove_hierarchy = 0;
 static int remove_transformations = 0;
 static RNLength max_edge_length = 0;
@@ -131,6 +132,7 @@ ParseArgs(int argc, char **argv)
     if ((*argv)[0] == '-') {
       R3Affine prev_xform = xform;
       if (!strcmp(*argv, "-v")) print_verbose = 1;
+      else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
       else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform.Scale(atof(*argv)); }
@@ -191,6 +193,7 @@ int main(int argc, char **argv)
   }
 
   // Apply processing operations
+  if (remove_references) scene->RemoveReferences();
   if (remove_hierarchy) scene->RemoveHierarchy();
   if (remove_transformations) scene->RemoveTransformations();
   if (max_edge_length > 0) scene->SubdivideTriangles(max_edge_length);

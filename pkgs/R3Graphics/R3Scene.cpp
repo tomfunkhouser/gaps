@@ -357,6 +357,143 @@ SetViewer(const R3Viewer& viewer)
 
 
 static void
+CopyScene(R3Scene *src_scene, R3Scene *dst_scene,
+  R3SceneNode *dst_root_node = NULL, const RNArray<R3Material *> *materials = NULL)
+{
+  // Get/check inputs
+  if (!src_scene || !dst_scene) return;
+  if (!dst_root_node) dst_root_node = dst_scene->Root();
+  
+  // Copy lights
+  RNArray<R3Light *> dst_lights;
+  for (int i = 0; i < src_scene->NLights(); i++) {
+    R3Light *src_light = src_scene->Light(i);
+    R3Light *dst_light = src_light->Copy();
+    dst_scene->InsertLight(dst_light);
+    dst_lights.Insert(dst_light);
+  }
+
+  // Copy textures
+  RNArray<R2Texture *> dst_textures;
+  for (int i = 0; i < src_scene->NTextures(); i++) {
+    R2Texture *src_texture = src_scene->Texture(i);
+    R2Texture *dst_texture = new R2Texture(*src_texture);
+    dst_textures.Insert(dst_texture);
+    dst_scene->InsertTexture(dst_texture);
+  }
+
+  // Copy brdfs
+  RNArray<R3Brdf *> dst_brdfs;
+  for (int i = 0; i < src_scene->NBrdfs(); i++) {
+    R3Brdf *src_brdf = src_scene->Brdf(i);
+    R3Brdf *dst_brdf = new R3Brdf(*src_brdf);
+    dst_brdfs.Insert(dst_brdf);
+    dst_scene->InsertBrdf(dst_brdf);
+  }
+
+  // Copy materials
+  RNArray<R3Material *> dst_materials;
+  for (int i = 0; i < src_scene->NMaterials(); i++) {
+    R3Material *dst_material = (i < materials->NEntries()) ? materials->Kth(i) : NULL;
+    if (!dst_material) {
+      R3Material *src_material = src_scene->Material(i);
+      R3Brdf *dst_brdf = (src_material->Brdf()) ? dst_brdfs[src_material->Brdf()->SceneIndex()] : NULL;
+      R2Texture *dst_texture = (src_material->Texture()) ? dst_textures[src_material->Texture()->SceneIndex()] : NULL;
+      dst_material = new R3Material(dst_brdf, dst_texture, src_material->Name());
+      dst_scene->InsertMaterial(dst_material);
+    }
+    dst_materials.Insert(dst_material);
+  }
+
+  // Copy nodes 
+  RNArray<R3SceneNode *> dst_nodes;
+  for (int i = 0; i < src_scene->NNodes(); i++) {
+    R3SceneNode *src_node = src_scene->Node(i);
+    R3SceneNode *dst_node = new R3SceneNode(dst_scene);
+    dst_nodes.Insert(dst_node);
+
+    // Copy node stuff
+    dst_node->SetName(src_node->Name());
+    dst_node->SetTransformation(src_node->Transformation());
+    
+    // Copy elements
+    for (int i = 0; i < src_node->NElements(); i++) {
+      R3SceneElement *src_element = src_node->Element(i);
+      R3Material *src_material = src_element->Material();
+      R3Material *dst_material = (src_material) ? dst_materials[src_material->SceneIndex()] : NULL;
+      R3SceneElement *dst_element = new R3SceneElement(dst_material);
+      dst_node->InsertElement(dst_element);
+      for (int j = 0; j < src_element->NShapes(); j++) {
+        R3Shape *src_shape = src_element->Shape(j);
+        R3Shape *dst_shape = src_shape->Copy();
+        dst_element->InsertShape(dst_shape);
+      }
+    }
+
+    // Copy references
+    for (int i = 0; i < src_node->NReferences(); i++) {
+      R3SceneReference *src_reference = src_node->Reference(i);
+      R3Scene *src_referenced_scene = src_reference->ReferencedScene();
+      RNArray<R3Material *> dst_reference_materials;
+      for (int j = 0; j < src_reference->NMaterials(); j++) {
+        R3Material *src_material = src_reference->Material(j);
+        R3Material *dst_material = dst_materials[src_material->SceneIndex()];
+        dst_scene->InsertMaterial(dst_material);
+      }
+      CopyScene(src_referenced_scene, dst_scene, dst_node, &dst_reference_materials);
+    }
+  }
+  
+  // Copy node hierarchy
+  for (int i = 0; i < src_scene->NNodes(); i++) {
+    R3SceneNode *src_node = src_scene->Node(i);
+    R3SceneNode *dst_node = dst_nodes.Kth(i);
+    R3SceneNode *src_parent = src_node->Parent();
+    R3SceneNode *dst_parent = (src_parent) ? dst_nodes[src_parent->SceneIndex()] : dst_root_node;
+    dst_parent->InsertChild(dst_node);
+  }
+}
+
+  
+
+static void
+R3SceneRemoveReferences(R3Scene *scene, R3SceneNode *node)
+{
+  // Recurse to children
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    R3SceneRemoveReferences(scene, child);
+  }
+
+  // Insert copy of all referenced scenes
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    CopyScene(referenced_scene, scene, node, &(reference->Materials()));
+  }
+
+  // Remove references
+  while (node->NReferences() > 0) {
+    R3SceneReference *reference = node->Reference(0);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    scene->RemoveReferencedScene(referenced_scene);
+    node->RemoveReference(reference);
+    delete reference;
+  }
+}
+
+
+
+void R3Scene::
+RemoveReferences(void)
+{
+  // Replace all references with copies of referenced scenes
+  R3SceneRemoveReferences(this, root);
+}
+
+
+
+static void
 R3SceneRemoveHierarchy(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformation)
 {
   // Compute transformation
@@ -1173,6 +1310,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
           if (!image->Read(texture_filename)) return 0;
           texture = new R2Texture(image);
           texture_symbol_table[texture_filename] = texture;
+          texture->SetFilename(texture_filename);
           texture->SetName(texture_filename);
           scene->InsertTexture(texture);
         }
@@ -3705,6 +3843,7 @@ ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname
       if (!image) { image = new R2Image(); texture->SetImage(image); }
       if (!image->Read(texture_filename)) return 0; 
       texture->SetName(texture_filename);
+      texture->SetFilename(texture_filename);
       texture->SetImage(image);
     }
 
@@ -3818,6 +3957,7 @@ CreateP5DBox(R3Scene *scene, R3SceneNode *node, P5DPrimitive *primitive)
           if (image->Read(texture_filename)) {
             R2Texture *texture = new R2Texture(image);
             texture->SetName(texture_filename);
+            texture->SetFilename(texture_filename);
             scene->InsertTexture(texture);
             material->SetTexture(texture);
           }

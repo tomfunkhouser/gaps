@@ -8,7 +8,7 @@
 
 
 
-// Program variables
+// Program arguments
 
 static char *input_scene_name = NULL;
 static int print_nodes = 0;
@@ -18,6 +18,9 @@ static int print_lights = 0;
 static int print_brdfs = 0;
 static int print_textures = 0;
 static int print_materials = 0;
+static int remove_references = 0;
+static int remove_hierarchy = 0;
+static int remove_transformations = 0;
 
 
 
@@ -364,6 +367,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-brdfs")) print_brdfs = 1; 
       else if (!strcmp(*argv, "-textures")) print_textures = 1; 
       else if (!strcmp(*argv, "-materials")) print_materials = 1; 
+      else if (!strcmp(*argv, "-remove_references")) remove_references = 1; 
+      else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1; 
+      else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1; 
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -395,6 +401,11 @@ int main(int argc, char **argv)
   R3Scene *scene = ReadScene(input_scene_name);
   if (!scene) exit(-1);
 
+  // Process scene
+  if (remove_references) scene->RemoveReferences();
+  if (remove_transformations) scene->RemoveTransformations();
+  if (remove_hierarchy) scene->RemoveHierarchy();
+  
   // Print scene
   if (!PrintScene(scene)) exit(-1);
 

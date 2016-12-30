@@ -36,6 +36,7 @@ class R3Shape /* : public R3Base */ {
 	virtual const R3Shape& BShape(void) const;
 	virtual const R3Box BBox(void) const;
 	virtual const R3Sphere BSphere(void) const;
+        virtual R3Shape *Copy(void) const;
 
 	// Manipulation functions/operators
 	virtual void Transform(const R3Transformation& transformation);

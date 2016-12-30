@@ -105,6 +105,22 @@ R3Light::
 
 
 
+R3Light *R3Light::
+Copy(void) const
+{
+  // Return copy of appropriate type
+  if (ClassID() == R3DirectionalLight::CLASS_ID()) return new R3DirectionalLight(*((R3DirectionalLight *) this));
+  else if (ClassID() == R3PointLight::CLASS_ID()) return new R3PointLight(*((R3PointLight *) this));
+  else if (ClassID() == R3SpotLight::CLASS_ID()) return new R3SpotLight(*((R3SpotLight *) this));
+  else if (ClassID() == R3AreaLight::CLASS_ID()) return new R3AreaLight(*((R3AreaLight *) this));
+
+  // Should never get here
+  RNAbort("Unrecognized light class id: %d\n", ClassID());
+  return NULL;
+}
+
+
+
 void R3Light::
 SetName(const char *name)
 {

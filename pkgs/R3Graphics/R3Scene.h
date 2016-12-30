@@ -72,6 +72,7 @@ public:
   void SetAmbient(const RNRgb& ambient);
   void SetBackground(const RNRgb& background);
   void SetFilename(const char *filename);
+  void RemoveReferences(void);
   void RemoveHierarchy(void);
   void RemoveTransformations(void);
   void SubdivideTriangles(RNLength max_edge_length);
