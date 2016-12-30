@@ -661,7 +661,7 @@ InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *crdsys)
   // Iniitalize return status
   int status = 0;
   
-  // Insert copies of light into sceen
+  // Insert copies of light into scene
   if (!strcmp(crdsys, "world")) {
     // Insert one copy of light 
     R3Light *light = CopyLight(original);
@@ -3083,27 +3083,27 @@ GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, 
 {
   // Check object type
   if (object->type() != Json::objectValue) {
-    // fprintf(stderr, "P5D: not an object\n");
+    // fprintf(stderr, "JSON: not an object\n");
     return 0;
   }
 
   // Check object member
   if (!object->isMember(str)) {
-    // fprintf(stderr, "P5D object has no member named %s\n", str);
+    // fprintf(stderr, "JSON object has no member named %s\n", str);
     return 0;
   }
 
   // Get object member
   result = &((*object)[str]);
   if (result->type() == Json::nullValue) {
-    // fprintf(stderr, "P5D object has null member named %s\n", str);
+    // fprintf(stderr, "JSON object has null member named %s\n", str);
     return 0;
   }
 
   // Check member type
   if (expected_type > 0) {
     if (result->type() != expected_type) {
-      // fprintf(stderr, "P5D object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
+      // fprintf(stderr, "JSON object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
       return 0;
     }
   }
@@ -3111,7 +3111,7 @@ GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, 
   // Check for empty strings
   if (result->type() == Json::stringValue) {
     if (result->asString().length() == 0) {
-      // fprintf(stderr, "P5D object has zero length string named %s\n", str);
+      // fprintf(stderr, "JSON object has zero length string named %s\n", str);
       return 0;
     }
   }
@@ -3127,27 +3127,27 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 {
   // Check array type
   if (array->type() != Json::arrayValue) {
-    fprintf(stderr, "P5D: not an array\n");
+    fprintf(stderr, "JSON: not an array\n");
     return 0;
   }
 
   // Check array size
   if (array->size() <= k) {
-    // fprintf(stderr, "P5D array has no member %d\n", k);
+    // fprintf(stderr, "JSON array has no member %d\n", k);
     return 0;
   }
 
   // Get entry
   result = &((*array)[k]);
   if (result->type() == Json::nullValue) {
-    // fprintf(stderr, "P5D array has null member %d\n", k);
+    // fprintf(stderr, "JSON array has null member %d\n", k);
     return 0;
   }
 
   // Check entry type
   if (expected_type > 0) {
     if (result->type() != expected_type) {
-      // fprintf(stderr, "P5D array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
+      // fprintf(stderr, "JSON array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
       return 0;
     }
   }
@@ -3164,7 +3164,7 @@ ParseSUNCGMaterials(R3Scene *scene,
   RNArray<R3Material *>& output_materials,
   Json::Value *json_materials)
 {
-  // Parse node materials
+  // Parse JSON array of materials
   Json::Value *json_material, *json_value;
   for (Json::ArrayIndex index = 0; index < json_materials->size(); index++) {
     char material_name[1024] = { '\0' };
@@ -3251,9 +3251,9 @@ CreateBox(R3Scene *scene, R3SceneNode *node,
       RNScalar d0 = dimensions[dim];
       RNScalar d1 = dimensions[dim1];
       RNScalar d2 = dimensions[dim2];
-      RNScalar r0 = (dir == 0) ? -50*d0 :  50*d0;
-      RNScalar r1 = (dir == 0) ? -50*d1 : 50*d1;
-      RNScalar r2 = 50*d2;
+      RNScalar r0 = (dir == 0) ? -0.5*d0 :  0.5*d0;
+      RNScalar r1 = (dir == 0) ? -0.5*d1 : 0.5*d1;
+      RNScalar r2 = 0.5*d2;
 
       // Compute axes
       R3Vector axis0 = r0 * R3xyz_triad.Axis(dim);
@@ -3406,14 +3406,11 @@ ReadSUNCGFile(const char *filename)
     if (json_floor->type() != Json::objectValue) continue;
            
     // Parse floor attributes
-    int floor_id = 0;
-    // double floor_height = 2.7;
+    int floor_id = index;
     if (GetJsonObjectMember(json_value, json_floor, "valid"))
       if (!json_value->asString().compare(std::string("0")))  continue;
     if (GetJsonObjectMember(json_value, json_floor, "id"))
       floor_id = atoi(json_value->asString().c_str());
-    // if (GetJsonObjectMember(json_value, json_floor, "height"))
-    //  floor_height = json_value->asDouble();
 
     // Create floor node
     char floor_name[1024];
@@ -3422,13 +3419,12 @@ ReadSUNCGFile(const char *filename)
     floor_node->SetName(floor_name);
     scene_node->InsertChild(floor_node);
 
-    // Set floor transformation
-    // R3Affine floor_transformation(R3identity_affine);
-    // floor_node->SetTransformation(floor_transformation);
-
     // Parse nodes
     Json::Value *json_nodes, *json_node, *json_materials;
     if (GetJsonObjectMember(json_nodes, json_floor, "nodes", Json::arrayValue)) {
+      if (json_nodes->size() == 0) continue;
+      R3SceneNode **created_nodes = new R3SceneNode * [ json_nodes->size() ];
+      for (unsigned int i = 0; i < json_nodes->size(); i++) created_nodes[i] = NULL;
       for (Json::ArrayIndex index = 0; index < json_nodes->size(); index++) {
         if (!GetJsonArrayEntry(json_node, json_nodes, index)) continue; 
         if (json_node->type() != Json::objectValue) continue;
@@ -3437,8 +3433,8 @@ ReadSUNCGFile(const char *filename)
         char node_id[1024] = { '\0' };;
         char modelId[1024] = { '\0' };;
         char node_type[1024] = { '\0' };
-        int invertNormals = 0;
         int hideCeiling = 0, hideFloor = 0, hideWalls = 0;
+        int isMirrored = 0, state = 0;
         if (GetJsonObjectMember(json_value, json_node, "valid"))
           if (!json_value->asString().compare(std::string("0")))  continue;
         if (GetJsonObjectMember(json_value, json_node, "id"))
@@ -3447,14 +3443,16 @@ ReadSUNCGFile(const char *filename)
           strncpy(node_type, json_value->asString().c_str(), 1024);
         if (GetJsonObjectMember(json_value, json_node, "modelId"))
           strncpy(modelId, json_value->asString().c_str(), 1024);
-        if (GetJsonObjectMember(json_value, json_node, "invertNormals")) 
-          if (!json_value->asString().compare(std::string("1"))) invertNormals = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideCeiling")) 
           if (!json_value->asString().compare(std::string("1"))) hideCeiling = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideFloor")) 
           if (!json_value->asString().compare(std::string("1"))) hideFloor = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideWalls")) 
           if (!json_value->asString().compare(std::string("1"))) hideWalls = 1;
+        if (GetJsonObjectMember(json_value, json_node, "isMirrored")) 
+          if (!json_value->asString().compare(std::string("1"))) isMirrored = 1;
+        if (GetJsonObjectMember(json_value, json_node, "state")) 
+          if (!json_value->asString().compare(std::string("1"))) state = 1;
 
         // Parse node transformation
         R3Affine transformation = R3identity_affine;
@@ -3465,7 +3463,7 @@ ReadSUNCGFile(const char *filename)
               if (!GetJsonArrayEntry(json_item, json_items, index)) continue;
               matrix[index%4][index/4] = json_item->asDouble();
             }
-            transformation.Reset(matrix, invertNormals);
+            transformation.Reset(matrix, isMirrored);
           }
         }
 
@@ -3480,17 +3478,25 @@ ReadSUNCGFile(const char *filename)
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
             floor_node->InsertChild(node);
+            created_nodes[index] = node;
           }
         }
         else if (!strcmp(node_type, "Room")) {
-          // Create node for floor
+          // Create room node
+          R3SceneNode *room_node = new R3SceneNode(this);
+          sprintf(node_name, "Room#%s", node_id);
+          room_node->SetName(node_name);
+          floor_node->InsertChild(room_node);
+          created_nodes[index] = room_node;
+          
+           // Create node for floor
           sprintf(obj_name, "%s/Room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
           if (!hideFloor) {
             R3SceneNode *node = new R3SceneNode(this);
             sprintf(node_name, "Floor#%s", node_id);
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
-            floor_node->InsertChild(node);
+            room_node->InsertChild(node);
           }
 
           // Create node for ceiling
@@ -3500,7 +3506,7 @@ ReadSUNCGFile(const char *filename)
             sprintf(node_name, "Ceiling#%s", node_id);
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
-            floor_node->InsertChild(node);
+            room_node->InsertChild(node);
           }
 
           // Create node for walls
@@ -3510,12 +3516,13 @@ ReadSUNCGFile(const char *filename)
             sprintf(node_name, "Walls#%s", node_id);
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
-            floor_node->InsertChild(node);
+            room_node->InsertChild(node);
           }        
         }
         else if (!strcmp(node_type, "Object")) {
           // Read model 
-          sprintf(obj_name, "%s/Object/%s/%s.obj", input_data_directory, modelId, modelId); 
+          if (state) sprintf(obj_name, "%s/Object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
+          else sprintf(obj_name, "%s/Object/%s/%s.obj", input_data_directory, modelId, modelId); 
           R3Scene *model = new R3Scene();
           if (!ReadObj(model, model->Root(), obj_name)) return 0;
           model->Root()->SetName(modelId);
@@ -3535,6 +3542,7 @@ ReadSUNCGFile(const char *filename)
           node->SetName(node_name);
           node->SetTransformation(transformation);
           floor_node->InsertChild(node);
+          created_nodes[index] = node;
         }
         else if (!strcmp(node_type, "Box")) {
           // Parse box dimensions
@@ -3563,8 +3571,37 @@ ReadSUNCGFile(const char *filename)
           node->SetTransformation(transformation);
           if (!CreateBox(this, node, box_dimensions, materials)) return 0;
           floor_node->InsertChild(node);
+          created_nodes[index] = node;
         }
       }
+
+      // Move created nodes to be children of room nodes
+      for (Json::ArrayIndex index = 0; index < json_nodes->size(); index++) {
+        if (!GetJsonArrayEntry(json_node, json_nodes, index)) continue; 
+        if (json_node->type() != Json::objectValue) continue;
+        if (!GetJsonObjectMember(json_value, json_node, "type")) continue;
+        if (strcmp(json_value->asString().c_str(), "Room")) continue;
+        R3SceneNode *room_node = created_nodes[index];
+        if (!room_node) continue;
+        if (GetJsonObjectMember(json_items, json_node, "nodeIndices", Json::arrayValue)) {
+          for (Json::ArrayIndex room_index = 0; room_index < json_items->size(); room_index++) {
+            GetJsonArrayEntry(json_item, json_items, room_index);
+            if (json_item->isNumeric()) {
+              int node_index = json_item->asInt();
+              if ((node_index >= 0) && ((unsigned int) node_index < json_nodes->size())) {
+                R3SceneNode *node = created_nodes[node_index];
+                if (node) {
+                  floor_node->RemoveChild(node);
+                  room_node->InsertChild(node); 
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Delete array of created nodes
+      delete [] created_nodes;
     }
   }
     

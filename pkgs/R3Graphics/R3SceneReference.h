@@ -12,9 +12,10 @@ public:
   ~R3SceneReference(void);
 
   // Access functions
-  R3Scene *ReferencedScene(void) const;
   int NMaterials(void) const;
   R3Material *Material(int k) const;
+  const RNArray<R3Material *>& Materials(void) const;
+  R3Scene *ReferencedScene(void) const;
 
   // Manipulation function
   void SetReferencedScene(R3Scene *scene);
@@ -56,6 +57,15 @@ Material(int k) const
 {
   // Return material
   return materials.Kth(k);
+}
+
+
+
+inline const RNArray<R3Material *>& R3SceneReference::
+Materials(void) const
+{
+  // Return materials
+  return materials;
 }
 
 

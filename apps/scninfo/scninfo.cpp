@@ -202,6 +202,14 @@ PrintReference(R3SceneReference *reference, int index, int level)
   if (name) printf("%s  Name = %s\n", indent, name);
   if (filename) printf("%s  Filename = %s\n", indent, filename);
   printf("%s  # Materials = %d\n", indent, reference->NMaterials());
+  for (int i = 0; i < reference->NMaterials(); i++) {
+    R3Material *material = reference->Material(i);
+    const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
+    const R2Texture *texture = (material) ? material->Texture() : NULL;
+    RNRgb diffuse = (brdf) ? brdf->Diffuse() : RNRgb(0.5, 0.5, 0.5);
+    const char *texture_name = (texture) ? texture->Name() : "None";
+    printf("%s    %d (%g %g %g) %s\n", indent, i, diffuse.R(), diffuse.G(), diffuse.B(), texture_name);
+  } 
   printf("\n");
 
   // Return success

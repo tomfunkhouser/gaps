@@ -254,7 +254,7 @@ Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *materials) const
   if (material) {
     if ((draw_flags != R3_EDGES_DRAW_FLAG) && (draw_flags != R3_SURFACES_DRAW_FLAG)) {
       int material_index = material->SceneIndex();
-      if (materials && (material_index >= 0) && (material_index < materials->NEntries())) materials->Kth(material_index)->Draw();
+      if (materials && (material_index >= 0) && (material_index < materials->NEntries()) && materials->Kth(material_index)) materials->Kth(material_index)->Draw();
       else material->Draw();
     }
   }

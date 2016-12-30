@@ -238,7 +238,9 @@ DrawLights(R3Scene *scene)
 
 
 static void 
-DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformation, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
+DrawShapes(R3Scene *scene, R3SceneNode *node,
+  const R3Affine& parent_transformation, const RNArray<R3Material *>& materials,
+  RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
 {
   // Update transformation
   R3Affine cumulative_transformation = parent_transformation;
@@ -265,6 +267,7 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformat
       if (element == selected_element) selection_material.Draw();
       else if (show_materials) KthMaterial(material->SceneIndex())->Draw();
       else if (node == selected_node) selection_material.Draw();
+      else if ((materials.NEntries() > material->SceneIndex()) && (materials[material->SceneIndex()])) materials[material->SceneIndex()]->Draw();
       else if (material) material->Draw();
       else R3default_material.Draw();
 
@@ -283,13 +286,13 @@ DrawShapes(R3Scene *scene, R3SceneNode *node, const R3Affine& parent_transformat
   for (int i = 0; i < node->NReferences(); i++) {
     R3SceneReference *reference = node->Reference(i);
     R3Scene *referenced_scene = reference->ReferencedScene();
-    DrawShapes(referenced_scene, referenced_scene->Root(), cumulative_transformation, draw_flags);
+    DrawShapes(referenced_scene, referenced_scene->Root(), cumulative_transformation, reference->Materials(), draw_flags);
   }
 
   // Draw children
   for (int i = 0; i < node->NChildren(); i++) {
     R3SceneNode *child = node->Child(i);
-    DrawShapes(scene, child, cumulative_transformation, draw_flags);
+    DrawShapes(scene, child, cumulative_transformation, materials, draw_flags);
   }
 }
 
@@ -299,7 +302,8 @@ static void
 DrawShapes(R3Scene *scene, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
 {
   // Draw the scene
-  DrawShapes(scene, scene->Root(), R3identity_affine, draw_flags);
+  RNArray<R3Material *> materials;
+  DrawShapes(scene, scene->Root(), R3identity_affine, materials, draw_flags);
 }
 
 
