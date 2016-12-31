@@ -53,6 +53,9 @@
     <ClCompile Include="R3SceneElement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="R3SceneReference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="p5d.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -101,6 +104,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="R3SceneElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="R3SceneReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="p5d.h">

@@ -39,11 +39,11 @@ R2Texture(void)
     name(NULL),
     filename(NULL),
     image(NULL),
-    s_wrap(R2_NO_TEXTURE_WRAP),
-    t_wrap(R2_NO_TEXTURE_WRAP),
-    min_filter(R2_NO_TEXTURE_FILTER),
-    mag_filter(R2_NO_TEXTURE_FILTER),
-    blend(R2_NO_TEXTURE_BLEND),    
+    s_wrap(R2_REPEAT_TEXTURE_WRAP),
+    t_wrap(R2_REPEAT_TEXTURE_WRAP),
+    min_filter(R2_LINEAR_MIPMAP_LINEAR_TEXTURE_FILTER),
+    mag_filter(R2_LINEAR_TEXTURE_FILTER),
+    blend(R2_MODULATE_TEXTURE_BLEND),    
     flags(0),
     id(0)
 {

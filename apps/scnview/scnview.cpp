@@ -16,10 +16,13 @@ static char *output_image_name = NULL;
 static char *input_cameras_name = NULL;
 static char *input_lights_name = NULL;
 static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
-static R3Vector initial_camera_up(0, 0, 1);
+static R3Vector initial_camera_up(0, 1, 0);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
 static RNRgb background_color(0,0,0);
+static int remove_references = 0;
+static int remove_transformations = 0;
+static int remove_hierarchy = 0;
 static double max_vertex_spacing = 0;
 static int print_verbose = 0;
 
@@ -638,21 +641,23 @@ void GLUTMouse(int button, int state, int x, int y)
         if (scene->Intersects(ray, &selected_node, &selected_element, NULL, &position, &normal)) {
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z());
-          // const R3Material *material = selected_element->Material();
-          // const char *material_name = (material) ? material->Name() : "-";
-          // const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
-          // const char *brdf_name = (brdf) ? brdf->Name() : "-";
-          // RNRgb diffuse = (brdf) ? brdf->Diffuse() : RNblack_rgb;
-          // RNRgb specular = (brdf) ? brdf->Specular() : RNblack_rgb;
-          // RNRgb transmission = (brdf) ? brdf->Transmission() : RNblack_rgb;
-          // RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
-          // RNScalar shininess = (brdf) ? brdf->Shininess() : 0;
-          // const R2Texture *texture = (material) ? material->Texture() : NULL;
-          // const char *texture_name = (texture) ? texture->Name() : "-";
-          // printf("  Material %s : brdf %s  kd=(%g %g %g) ks=(%g %g %g) kt=(%g %g %g) ke=(%g %g %g) ns=%g : texture %s\n", material_name,
-          //  brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
-          //  transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
-          //  shininess, texture_name);
+#if 1
+          const R3Material *material = selected_element->Material();
+          const char *material_name = (material) ? material->Name() : "-";
+          const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
+          const char *brdf_name = (brdf) ? brdf->Name() : "-";
+          RNRgb diffuse = (brdf) ? brdf->Diffuse() : RNblack_rgb;
+          RNRgb specular = (brdf) ? brdf->Specular() : RNblack_rgb;
+          RNRgb transmission = (brdf) ? brdf->Transmission() : RNblack_rgb;
+          RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
+          RNScalar shininess = (brdf) ? brdf->Shininess() : 0;
+          const R2Texture *texture = (material) ? material->Texture() : NULL;
+          const char *texture_name = (texture) ? texture->Name() : "-";
+          printf("  Material %s : brdf %s  kd=(%g %g %g) ks=(%g %g %g) kt=(%g %g %g) ke=(%g %g %g) ns=%g : texture %s\n", material_name,
+            brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
+            transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
+            shininess, texture_name);
+#endif
         }
       }
     }
@@ -848,8 +853,10 @@ void GLUTMainLoop(void)
   // Initialize camera
   // viewer->SetCamera(scene->Camera());
 
-  // Remove transformations
-  // scene->RemoveTransformations();
+  // Remove references, transformations, and/or hierarchy
+  if (remove_references) scene->RemoveReferences();
+  if (remove_transformations) scene->RemoveTransformations();
+  if (remove_hierarchy) scene->RemoveHierarchy();
   
   // Subdivide triangles for lighting
   if (max_vertex_spacing > 0) {
@@ -1025,7 +1032,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1;
       else if (!strcmp(*argv, "-show_rays")) show_rays = 1;
       else if (!strcmp(*argv, "-show_backfaces")) show_backfacing = 1;
-      else if (!strcmp(*argv, "-headlight")) headlight = 1;
+      else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
+      else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
+      else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
       else if (!strcmp(*argv, "-max_vertex_spacing")) {
         argc--; argv++; max_vertex_spacing = atof(*argv);
       }

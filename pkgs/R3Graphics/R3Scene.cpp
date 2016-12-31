@@ -3322,49 +3322,47 @@ ParseSUNCGMaterials(R3Scene *scene,
     const R3Brdf *input_brdf = (input_material) ? input_material->Brdf() : NULL;
     const R2Texture *input_texture = (input_material) ? input_material->Texture() : NULL;
     
-    // Get/create output brdf
-    R3Brdf *output_brdf = (R3Brdf *) input_brdf;
-    if (*diffuse_string) {
-      long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
-      long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
-      long int r = strtol(&diffuse_string[1], NULL, 16); diffuse_string[1] = '\0';
-      RNRgb diffuse_rgb(r / 255.0, g / 255.0, b / 255.0);
-      if (!output_brdf || (diffuse_rgb != output_brdf->Diffuse())) {
-        if (output_brdf) output_brdf = new R3Brdf(*output_brdf);
-        else output_brdf = new R3Brdf();
+    // Get/create output material
+    R3Material *output_material = NULL;
+    if (*diffuse_string || *texture_name) {
+      // Create output brdf
+      R3Brdf *output_brdf = NULL;
+      if (input_brdf) output_brdf = new R3Brdf(*input_brdf);
+      else if (*diffuse_string) output_brdf = new R3Brdf();
+      if (*diffuse_string) {
+        long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
+        long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
+        long int r = strtol(&diffuse_string[1], NULL, 16); diffuse_string[1] = '\0';
+        RNRgb diffuse_rgb(r / 255.0, g / 255.0, b / 255.0);
         output_brdf->SetDiffuse(diffuse_rgb);
-        scene->InsertBrdf(output_brdf);
       }
-    }
 
-    // Get/create output texture
-    R2Texture *output_texture = (R2Texture *) input_texture;
-    if (*texture_name) {
-      // Get texture filename
-      char texture_filename[1024];
-      const char *texture_directory = "../../texture";
-      sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
-      if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
-      if (!output_texture || strcmp(texture_filename, output_texture->Filename())) {
-        if (output_texture) output_texture = new R2Texture(*output_texture);
-        else output_texture = new R2Texture();
+      // Create output texture
+      R2Texture *output_texture = NULL;
+      if (input_texture) output_texture = new R2Texture(*input_texture);
+      else if (*texture_name) output_texture = new R2Texture();
+      if (*texture_name) {
+        char texture_filename[1024];
+        const char *texture_directory = "../../texture";
+        sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
+        if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
         R2Image *image = new R2Image();
         if (!image->Read(texture_filename)) return 0;
         output_texture->SetImage(image);
         output_texture->SetFilename(texture_filename);
         output_texture->SetName(texture_name);
-        scene->InsertTexture(output_texture);
       }
-    }
 
-    // Get/create output material
-    R3Material *output_material = input_material;
-    if ((output_brdf != input_brdf) || (output_texture != input_texture)) {
+      // Create output material
       output_material = new R3Material(output_brdf, output_texture);
-      scene->InsertMaterial(output_material);
+
+      // Insert everything into the scene
+      if (output_brdf) scene->InsertBrdf(output_brdf);
+      if (output_texture) scene->InsertTexture(output_texture);
+      if (output_material) scene->InsertMaterial(output_material);
     }
 
-    // Insert material into result
+    // Insert material into array of results
     output_materials.Insert(output_material);
   }
 
@@ -3536,30 +3534,30 @@ ReadSUNCGFile(const char *filename)
   scene_transformation.Scale(scaleToMeters);
   scene_node->SetTransformation(scene_transformation);
 
-  // Parse floors
-  Json::Value *json_floors, *json_floor;
-  if (!GetJsonObjectMember(json_floors, &json_root, "floors", Json::arrayValue)) return 0;
-  for (Json::ArrayIndex index = 0; index < json_floors->size(); index++) {
-    if (!GetJsonArrayEntry(json_floor, json_floors, index)) return 0;
-    if (json_floor->type() != Json::objectValue) continue;
+  // Parse levels
+  Json::Value *json_levels, *json_level;
+  if (!GetJsonObjectMember(json_levels, &json_root, "levels", Json::arrayValue)) return 0;
+  for (Json::ArrayIndex index = 0; index < json_levels->size(); index++) {
+    if (!GetJsonArrayEntry(json_level, json_levels, index)) return 0;
+    if (json_level->type() != Json::objectValue) continue;
            
-    // Parse floor attributes
-    int floor_id = index;
-    if (GetJsonObjectMember(json_value, json_floor, "valid"))
+    // Parse level attributes
+    int level_id = index;
+    if (GetJsonObjectMember(json_value, json_level, "valid"))
       if (!json_value->asString().compare(std::string("0")))  continue;
-    if (GetJsonObjectMember(json_value, json_floor, "id"))
-      floor_id = atoi(json_value->asString().c_str());
+    if (GetJsonObjectMember(json_value, json_level, "id"))
+      level_id = atoi(json_value->asString().c_str());
 
-    // Create floor node
-    char floor_name[1024];
-    sprintf(floor_name, "Floor#%d", floor_id);
-    R3SceneNode *floor_node = new R3SceneNode(this);
-    floor_node->SetName(floor_name);
-    scene_node->InsertChild(floor_node);
+    // Create level node
+    char level_name[1024];
+    sprintf(level_name, "Level#%d", level_id);
+    R3SceneNode *level_node = new R3SceneNode(this);
+    level_node->SetName(level_name);
+    scene_node->InsertChild(level_node);
 
     // Parse nodes
     Json::Value *json_nodes, *json_node, *json_materials;
-    if (GetJsonObjectMember(json_nodes, json_floor, "nodes", Json::arrayValue)) {
+    if (GetJsonObjectMember(json_nodes, json_level, "nodes", Json::arrayValue)) {
       if (json_nodes->size() == 0) continue;
       R3SceneNode **created_nodes = new R3SceneNode * [ json_nodes->size() ];
       for (unsigned int i = 0; i < json_nodes->size(); i++) created_nodes[i] = NULL;
@@ -3609,13 +3607,13 @@ ReadSUNCGFile(const char *filename)
         char obj_name[4096], node_name[4096];
         if (!strcmp(node_type, "Ground")) {
           // Create node for ground
-          sprintf(obj_name, "%s/Room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
-          if (!hideFloor) {
+          sprintf(obj_name, "%s/room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
+          if (!hideFloor && RNFileExists(obj_name)) {
             R3SceneNode *node = new R3SceneNode(this);
             sprintf(node_name, "Ground#%s", node_id);
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
-            floor_node->InsertChild(node);
+            level_node->InsertChild(node);
             created_nodes[index] = node;
           }
         }
@@ -3624,12 +3622,12 @@ ReadSUNCGFile(const char *filename)
           R3SceneNode *room_node = new R3SceneNode(this);
           sprintf(node_name, "Room#%s", node_id);
           room_node->SetName(node_name);
-          floor_node->InsertChild(room_node);
+          level_node->InsertChild(room_node);
           created_nodes[index] = room_node;
           
            // Create node for floor
-          sprintf(obj_name, "%s/Room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
-          if (!hideFloor) {
+          sprintf(obj_name, "%s/room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
+          if (!hideFloor && RNFileExists(obj_name)) {
             R3SceneNode *node = new R3SceneNode(this);
             sprintf(node_name, "Floor#%s", node_id);
             node->SetName(node_name);
@@ -3638,8 +3636,8 @@ ReadSUNCGFile(const char *filename)
           }
 
           // Create node for ceiling
-          sprintf(obj_name, "%s/Room/%s/%sc.obj", input_data_directory, scene_id, modelId); 
-          if (!hideCeiling) {
+          sprintf(obj_name, "%s/room/%s/%sc.obj", input_data_directory, scene_id, modelId); 
+          if (!hideCeiling && RNFileExists(obj_name)) {
             R3SceneNode *node = new R3SceneNode(this);
             sprintf(node_name, "Ceiling#%s", node_id);
             node->SetName(node_name);
@@ -3648,8 +3646,8 @@ ReadSUNCGFile(const char *filename)
           }
 
           // Create node for walls
-          sprintf(obj_name, "%s/Room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
-          if (!hideWalls) {
+          sprintf(obj_name, "%s/room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
+          if (!hideWalls && RNFileExists(obj_name)) {
             R3SceneNode *node = new R3SceneNode(this);
             sprintf(node_name, "Walls#%s", node_id);
             node->SetName(node_name);
@@ -3659,8 +3657,8 @@ ReadSUNCGFile(const char *filename)
         }
         else if (!strcmp(node_type, "Object")) {
           // Read model 
-          if (state) sprintf(obj_name, "%s/Object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
-          else sprintf(obj_name, "%s/Object/%s/%s.obj", input_data_directory, modelId, modelId); 
+          if (state) sprintf(obj_name, "%s/object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
+          else sprintf(obj_name, "%s/object/%s/%s.obj", input_data_directory, modelId, modelId); 
           R3Scene *model = new R3Scene();
           if (!ReadObj(model, model->Root(), obj_name)) return 0;
           model->Root()->SetName(modelId);
@@ -3670,7 +3668,7 @@ ReadSUNCGFile(const char *filename)
           // Read materials
           RNArray<R3Material *> materials;
           if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
-            if (!ParseSUNCGMaterials(this, materials, materials, json_materials)) return 0;
+            if (!ParseSUNCGMaterials(this, model->materials, materials, json_materials)) return 0;
           }
 
           // Create node with reference to model
@@ -3679,7 +3677,7 @@ ReadSUNCGFile(const char *filename)
           node->InsertReference(new R3SceneReference(model, materials));
           node->SetName(node_name);
           node->SetTransformation(transformation);
-          floor_node->InsertChild(node);
+          level_node->InsertChild(node);
           created_nodes[index] = node;
         }
         else if (!strcmp(node_type, "Box")) {
@@ -3708,7 +3706,7 @@ ReadSUNCGFile(const char *filename)
           node->SetName(node_name);
           node->SetTransformation(transformation);
           if (!CreateBox(this, node, box_dimensions, materials)) return 0;
-          floor_node->InsertChild(node);
+          level_node->InsertChild(node);
           created_nodes[index] = node;
         }
       }
@@ -3729,7 +3727,7 @@ ReadSUNCGFile(const char *filename)
               if ((node_index >= 0) && ((unsigned int) node_index < json_nodes->size())) {
                 R3SceneNode *node = created_nodes[node_index];
                 if (node) {
-                  floor_node->RemoveChild(node);
+                  level_node->RemoveChild(node);
                   room_node->InsertChild(node); 
                 }
               }

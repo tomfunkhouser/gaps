@@ -1447,7 +1447,8 @@ RenderImagesWithRaycasting(const char *output_image_directory)
 static int
 RenderImages(const char *output_image_directory)
 {
-  // Remove transformations
+  // Remove references and transformations
+  scene->RemoveReferences();
   scene->RemoveTransformations();
   
   // Subdivide triangles (for lighting)

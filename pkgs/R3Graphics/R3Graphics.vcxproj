@@ -87,6 +87,7 @@
     <ClCompile Include="R3Light.cpp" />
     <ClCompile Include="R3Material.cpp" />
     <ClCompile Include="R3SceneElement.cpp" />
+    <ClCompile Include="R3SceneReference.cpp" />
     <ClCompile Include="R3PointLight.cpp" />
     <ClCompile Include="R3Scene.cpp" />
     <ClCompile Include="R3SceneNode.cpp" />
@@ -105,6 +106,7 @@
     <ClInclude Include="R3Light.h" />
     <ClInclude Include="R3Material.h" />
     <ClInclude Include="R3SceneElement.h" />
+    <ClInclude Include="R3SceneReference.h" />
     <ClInclude Include="R3PointLight.h" />
     <ClInclude Include="R3Scene.h" />
     <ClInclude Include="R3SceneNode.h" />

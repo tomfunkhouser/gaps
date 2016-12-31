@@ -565,11 +565,19 @@ DrawNodeWithOpenGL(R3Scene *scene, R3SceneNode *node, R3SceneNode *selected_node
     glColor3ubv(color);
   }
   
-  // Draw elements with node index colors
+  // Draw elements
   if (!selected_node || (selected_node == node)) {
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
       element->Draw(draw_flags);
+    }
+  }
+
+  // Draw references 
+  if (!selected_node || (selected_node == node)) {
+    for (int i = 0; i < node->NReferences(); i++) {
+      R3SceneReference *reference = node->Reference(i);
+      reference->Draw(draw_flags);
     }
   }
 
