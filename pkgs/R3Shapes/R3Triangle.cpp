@@ -152,10 +152,13 @@ R3Triangle(const R3Triangle& triangle)
     flags(triangle.flags),
     mark(triangle.mark)
 {
-    // Copy vertices
-    v[0] = triangle.v[0];
-    v[1] = triangle.v[1];
-    v[2] = triangle.v[2];
+    // Copy vertices 
+    if (!triangle.v[0] || triangle.v[0]->Flags()[R3_VERTEX_SHARED_FLAG]) v[0] = triangle.v[0];
+    else v[0] = new R3TriangleVertex(*(triangle.v[0]));
+    if (!triangle.v[1] || triangle.v[1]->Flags()[R3_VERTEX_SHARED_FLAG]) v[1] = triangle.v[1];
+    else v[1] = new R3TriangleVertex(*(triangle.v[1]));
+    if (!triangle.v[2] || triangle.v[2]->Flags()[R3_VERTEX_SHARED_FLAG]) v[2] = triangle.v[2];
+    else v[2] = new R3TriangleVertex(*(triangle.v[2]));
 }
 
 
@@ -167,6 +170,8 @@ R3Triangle(R3TriangleVertex *v0, R3TriangleVertex *v1, R3TriangleVertex *v2)
     flags(0),
     mark(0)
 {
+    // NOTE: The vertices will be deleted when the triangle is deleted if they do not have not been SetSharedFlag
+  
     // Reset triangle
     Reset(v0, v1, v2);
 }
@@ -180,8 +185,21 @@ R3Triangle(R3TriangleVertex *vertices[3])
     flags(0),
     mark(0)
 {
+    // NOTE: The vertices will be deleted when the triangle is deleted if they do not have not been SetSharedFlag
+
     // Reset triangle
     Reset(vertices[0], vertices[1], vertices[2]);
+}
+
+
+
+R3Triangle::
+~R3Triangle(void)
+{
+  // Delete vertices
+  if (v[0] && !v[0]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[0];
+  if (v[1] && !v[1]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[1];
+  if (v[2] && !v[2]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[2];
 }
 
 

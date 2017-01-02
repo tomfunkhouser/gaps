@@ -238,11 +238,6 @@ DrawRays(R3Scene *scene)
   if (istep == 0) istep = 1;
   if (jstep == 0) jstep = 1;
 
-  // Ray drawing variables
-  double radius = 0.005 * scene->BBox().DiagonalRadius();
-  // const R3Point& eye = scene->Camera().Origin();
-  const R3Point& eye = viewer->Camera().Origin();
-
   // Draw intersection point and normal for some rays
   for (int i = istep/2; i < scene->Viewport().Width(); i += istep) {
     for (int j = jstep/2; j < scene->Viewport().Height(); j += jstep) {
@@ -258,12 +253,14 @@ DrawRays(R3Scene *scene)
           color += brdf->Emission();
           for (int k = 0; k < scene->NLights(); k++) {
             R3Light *light = scene->Light(k);
+            const R3Point& eye = viewer->Camera().Origin();
             color += light->Reflection(*brdf, eye, point, normal);
           }
         }
 
         // Draw intersection
         RNLoadRgb(color);
+        double radius = 0.01 * t;
         R3Sphere(point, radius).Draw();
         R3Span(point, point + 2 * radius * normal).Draw();
       }
@@ -582,9 +579,8 @@ void GLUTMouse(int button, int state, int x, int y)
       // Check for double click
       if (double_click) {
         // Set viewing center point 
-        R3Ray ray = viewer->WorldRay(x, y);
         R3Point intersection_point;
-        if (scene->Intersects(ray, NULL, NULL, NULL, &intersection_point)) {
+        if (Pick(scene, x, y, NULL, &intersection_point)) {
           center = intersection_point;
         }
       }
@@ -826,11 +822,6 @@ void GLUTMainLoop(void)
   // Initialize camera
   // viewer->SetCamera(scene->Camera());
 
-  // Remove references, transformations, and/or hierarchy
-  if (remove_references) scene->RemoveReferences();
-  if (remove_transformations) scene->RemoveTransformations();
-  if (remove_hierarchy) scene->RemoveHierarchy();
-  
   // Subdivide triangles for lighting
   if (max_vertex_spacing > 0) {
     scene->SubdivideTriangles(max_vertex_spacing);
@@ -887,6 +878,11 @@ ReadScene(char *filename)
     return NULL;
   }
 
+  // Remove references, transformations, and/or hierarchy
+  if (remove_references) scene->RemoveReferences();
+  if (remove_transformations) scene->RemoveTransformations();
+  if (remove_hierarchy) scene->RemoveHierarchy();
+  
   // Print statistics
   if (print_verbose) {
     printf("Read scene from %s ...\n", filename);

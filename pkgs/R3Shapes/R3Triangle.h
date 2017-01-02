@@ -34,6 +34,7 @@ class R3TriangleVertex {
 	void SetPosition(const R3Point& position);
 	void SetNormal(const R3Vector& normal);
 	void SetTextureCoords(const R2Point& texcoords);
+        void SetSharedFlag(void);
         void SetMark(RNMark mark);
 
     public:
@@ -55,7 +56,8 @@ class R3Triangle : public R3Surface {
         R3Triangle(const R3Triangle& triangle);
         R3Triangle(R3TriangleVertex *v0, R3TriangleVertex *v1, R3TriangleVertex *v2);
         R3Triangle(R3TriangleVertex *vertices[3]);
-
+        virtual ~R3Triangle(void);
+  
 	// Vertex access functions/operators
 	R3TriangleVertex *Vertex(int index) const;
 	R3TriangleVertex *V0(void) const;
@@ -203,6 +205,15 @@ SetTextureCoords(const R2Point& point)
 
 
 inline void R3TriangleVertex::
+SetSharedFlag(void)
+{
+    // Set mark
+    this->flags.Add(R3_VERTEX_SHARED_FLAG);
+}
+
+
+
+inline void R3TriangleVertex::
 SetMark(RNMark mark)
 {
     // Reset vertex mark
@@ -301,17 +312,6 @@ IsDegenerate(void) const
     // Return whether triangle is degenerate (zero area?)
     return IsLinear();
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 

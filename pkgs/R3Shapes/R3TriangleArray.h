@@ -17,7 +17,8 @@ class R3TriangleArray : public R3Surface {
         R3TriangleArray(void);
         R3TriangleArray(const R3TriangleArray& array);
         R3TriangleArray(const RNArray<R3TriangleVertex *>& vertices, const RNArray<R3Triangle *>& triangles);
-
+        virtual ~R3TriangleArray(void);
+  
         // Triangle array properties
         const R3Box& Box(void) const;
 
@@ -111,16 +112,6 @@ Triangle(int k) const
     // Return kth triangle
     return triangles[k];
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

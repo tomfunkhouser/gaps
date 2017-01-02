@@ -25,9 +25,16 @@ public:
   const RNLength Length(void) const;
   const RNArea Area(void) const;
   const RNVolume Volume(void) const;
-  const R3Point ClosestPoint(const R3Point& point) const;
+  const R3Affine& Transformation(void) const;
   const char *Name(void) const;
   void *Data(void) const;
+
+  // More property functions
+  RNBoolean IsAncestor(const R3SceneNode *node) const;
+  RNBoolean IsDecendent(const R3SceneNode *node) const;
+  R3Affine CumulativeTransformation(void) const;
+  R3Affine CumulativeParentTransformation(void) const;
+  R3Point ClosestPoint(const R3Point& point) const;
 
   // Access functions
   R3Scene *Scene(void) const;
@@ -40,9 +47,6 @@ public:
   R3SceneElement *Element(int k) const;
   int NReferences(void) const;
   R3SceneReference *Reference(int k) const;
-  const R3Affine& Transformation(void) const;
-  R3Affine CumulativeTransformation(void) const;
-  R3Affine CumulativeParentTransformation(void) const;
 
   // Manipulation functions
   void InsertChild(R3SceneNode *node);
@@ -209,4 +213,16 @@ Data(void) const
   // Return user-defined data
   return data;
 }
+
+
+
+inline RNBoolean R3SceneNode::
+IsAncestor(const R3SceneNode *node) const
+{
+  // Return whether this is an ancestor of node
+  return node->IsDecendent(this);
+}
+
+
+
 

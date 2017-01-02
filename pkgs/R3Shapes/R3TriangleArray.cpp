@@ -42,10 +42,31 @@ R3TriangleArray(void)
 
 R3TriangleArray::
 R3TriangleArray(const R3TriangleArray& array)
-  : vertices(array.vertices),
-    triangles(array.triangles),
+  : vertices(),
+    triangles(),
     bbox(array.bbox)
 {
+    // Copy vertices
+    for (int i = 0; i < array.vertices.NEntries(); i++) {
+      R3TriangleVertex *oldv = array.vertices.Kth(i);
+      R3TriangleVertex *newv = new R3TriangleVertex(*oldv);
+      vertices.Insert(newv);
+      newv->SetSharedFlag();
+      oldv->SetMark(i);
+    }
+
+    // Copy triangles
+    for (int i = 0; i < array.triangles.NEntries(); i++) {
+      R3Triangle *oldt = array.triangles.Kth(i);
+      R3TriangleVertex *v0 = vertices.Kth(oldt->V0()->Mark());
+      R3TriangleVertex *v1 = vertices.Kth(oldt->V1()->Mark());
+      R3TriangleVertex *v2 = vertices.Kth(oldt->V2()->Mark());
+      R3Triangle *newt = new R3Triangle(v0, v1, v2);
+      triangles.Insert(newt);
+    }
+
+    // Update everything
+    Update();
 }
 
 
@@ -56,8 +77,18 @@ R3TriangleArray(const RNArray<R3TriangleVertex *>& vertices, const RNArray<R3Tri
     triangles(triangles),
     bbox(R3null_box)
 {
-    // Update bounding box
+    // Update everything
     Update();
+}
+
+
+
+R3TriangleArray::
+~R3TriangleArray(void)
+{
+    // Delete triangles and vertices
+    for (int i = 0; i < triangles.NEntries(); i++) delete triangles[i];
+    for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
 }
 
 
@@ -352,6 +383,9 @@ Subdivide(RNLength max_edge_length)
       stack.Insert(t);
     }
   }
+
+  // Update
+  Update();
 }
 
 
@@ -382,6 +416,12 @@ MoveVertex(R3TriangleVertex *vertex, const R3Point& position)
 void R3TriangleArray::
 Update(void)
 {
+    // Mark vertices as shared
+    for (int i = 0; i < vertices.NEntries(); i++) {
+      R3TriangleVertex *v = vertices.Kth(i);
+      v->SetSharedFlag();
+    }
+    
     // Recompute bounding box
     bbox = R3null_box;
     for (int i = 0; i < vertices.NEntries(); i++) {

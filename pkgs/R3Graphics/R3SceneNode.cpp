@@ -219,7 +219,7 @@ Volume(void) const
 
 
 
-const R3Point R3SceneNode::
+R3Point R3SceneNode::
 ClosestPoint(const R3Point& point) const
 {
   // Return closest point
@@ -257,6 +257,22 @@ Centroid(void) const
 {
   // Return centroid of bounding box
   return BBox().Centroid();
+}
+
+
+
+RNBoolean R3SceneNode::
+IsDecendent(const R3SceneNode *node) const
+{
+  // Return whether this is an decendent of node
+  const R3SceneNode *ancestor = this;
+  while (ancestor) {
+    if (ancestor == node) return TRUE;
+    ancestor = ancestor->Parent();
+  }
+
+  // Node not found
+  return FALSE;
 }
 
 

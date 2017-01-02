@@ -478,13 +478,6 @@ R3SceneRemoveReferences(R3Scene *scene, R3SceneNode *node)
     node->RemoveReference(reference);
     delete reference;
   }
-
-  // Remove referenced scenes
-  while (scene->NReferencedScenes() > 0) {
-    R3Scene *referenced_scene = scene->ReferencedScene(0);
-    scene->RemoveReferencedScene(referenced_scene);
-    // delete referenced_scene;
-  }
 }
 
 
@@ -494,6 +487,13 @@ RemoveReferences(void)
 {
   // Replace all references with copies of referenced scenes
   R3SceneRemoveReferences(this, root);
+
+  // Remove/delete referenced scenes
+  while (NReferencedScenes() > 0) {
+    R3Scene *referenced_scene = ReferencedScene(0);
+    RemoveReferencedScene(referenced_scene);
+    delete referenced_scene;
+  }
 }
 
 
@@ -516,19 +516,13 @@ R3SceneRemoveHierarchy(R3Scene *scene, R3SceneNode *node, const R3Affine& parent
   R3SceneNode *root = scene->Root();
   if (node != root) {
     R3SceneNode *parent = node->Parent();
-    if (parent && (parent != root) && (node->NElements() > 0)) {
+    if (parent && (parent != root)) {
       // Assign transformation
       node->SetTransformation(transformation);
 
       // Move node to be child of root
       parent->RemoveChild(node);
       root->InsertChild(node);
-    }
-    else {
-      // Delete node
-      assert(node->NChildren() == 0);
-      parent->RemoveChild(node);
-      delete node;
     }
   }
 }
@@ -3426,11 +3420,7 @@ ParseSUNCGMaterials(R3Scene *scene,
 
       // Create output material
       output_material = new R3Material(output_brdf, output_texture);
-
-      // Insert everything into the scene
-      if (output_brdf) scene->InsertBrdf(output_brdf);
-      if (output_texture) scene->InsertTexture(output_texture);
-      if (output_material) scene->InsertMaterial(output_material);
+      scene->InsertMaterial(output_material);
     }
 
     // Insert material into array of results

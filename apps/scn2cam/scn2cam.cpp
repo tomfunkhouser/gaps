@@ -62,7 +62,7 @@ static int scene_scoring_method = 0;
 static int object_scoring_method = 0;
 static double min_visible_objects = 3;
 static double min_visible_fraction = 0.01;
-static double min_distance_from_obstacle = 0.1;
+static double min_distance_from_obstacle = 0;
 static double min_score = 0;
 
 
@@ -683,7 +683,7 @@ IsObject(R3SceneNode *node)
 {
   // Check name
   if (!node->Name()) return 0;
-  if (strncmp(node->Name(), "Object#", 7)) return 0;  
+  if (strncmp(node->Name(), "Model#", 6)) return 0;
 
   // Check category
   // if (strstr(node->Name(), "Door")) return 0;
@@ -776,7 +776,7 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node)
 
 
 static RNScalar
-SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_node = NULL)
+SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *room_node = NULL)
 {
   // Allocate image for scoring
   R2Grid image(width, height);
@@ -811,6 +811,7 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
     if (!IsObject(node)) continue;
+    // if (room_node && !node->IsDecendent(room_node)) continue;
     if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
     sum += log(node_pixel_counts[i] / min_pixel_count_per_object);
     node_count++;
@@ -833,7 +834,7 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
 ////////////////////////////////////////////////////////////////////////
 
 static void
-RasterizeIntoXYGrid(R2Grid& grid, R3SceneNode *node,
+RasterizeIntoZXGrid(R2Grid& grid, R3SceneNode *node,
   const R3Box& world_bbox)
 {
   // Check bounding box
@@ -855,15 +856,15 @@ RasterizeIntoXYGrid(R2Grid& grid, R3SceneNode *node,
           if (!R3Intersects(world_bbox, triangle_bbox)) continue;
           R3TriangleVertex *v0 = triangle->V0();
           R3Point vp0 = v0->Position();
-          R2Point p0(vp0.X(), vp0.Y());
+          R2Point p0(vp0.Z(), vp0.X());
           if (!R2Contains(grid.WorldBox(), p0)) continue;
           R3TriangleVertex *v1 = triangle->V1();
           R3Point vp1 = v1->Position();
-          R2Point p1(vp1.X(), vp1.Y());
+          R2Point p1(vp1.Z(), vp1.X());
           if (!R2Contains(grid.WorldBox(), p1)) continue;
           R3TriangleVertex *v2 = triangle->V2();
           R3Point vp2 = v2->Position();
-          R2Point p2(vp2.X(), vp2.Y());
+          R2Point p2(vp2.Z(), vp2.X());
           if (!R2Contains(grid.WorldBox(), p2)) continue;
           grid.RasterizeWorldTriangle(p0, p1, p2, 1.0);
         }
@@ -874,7 +875,7 @@ RasterizeIntoXYGrid(R2Grid& grid, R3SceneNode *node,
   // Rasterize children into grid
   for (int j = 0; j < node->NChildren(); j++) {
     R3SceneNode *child = node->Child(j);
-    RasterizeIntoXYGrid(grid, child, world_bbox);
+    RasterizeIntoZXGrid(grid, child, world_bbox);
   }
 }
 
@@ -888,16 +889,16 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   if (!room_node->Name()) return 0;
   if (strncmp(room_node->Name(), "Room#", 5)) return 0;
   if (room_node->NChildren() < 3) return 0;
-  R3SceneNode *wall_node = room_node->Child(0);
-  if (!wall_node->Name()) return 0;
-  if (strncmp(wall_node->Name(), "Walls#", 6)) return 0;
-  R3SceneNode *floor_node = room_node->Child(1);
+  R3SceneNode *floor_node = room_node->Child(0);
   if (!floor_node->Name()) return 0;
   if (strncmp(floor_node->Name(), "Floor#", 6)) return 0;
-  R3SceneNode *ceiling_node = room_node->Child(2);
+  R3SceneNode *ceiling_node = room_node->Child(1);
   if (!ceiling_node->Name()) return 0;
   if (strncmp(ceiling_node->Name(), "Ceiling#", 8)) return 0;
-  
+  R3SceneNode *wall_node = room_node->Child(2);
+  if (!wall_node->Name()) return 0;
+  if (strncmp(wall_node->Name(), "Walls#", 6)) return 0;
+
   // Get bounding boxes in world coordinates
   R3Box room_bbox = room_node->BBox();
   R3Box floor_bbox = floor_node->BBox();
@@ -906,21 +907,19 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   // Get/check grid extent and resolution in world coordinates
   RNScalar grid_sampling_factor = 2;
   RNScalar grid_sample_spacing = min_distance_from_obstacle / grid_sampling_factor;
-  if (grid_sample_spacing == 0) grid_sample_spacing = 0.1;
-  if (grid_sample_spacing > 0.1) grid_sample_spacing = 0.1;
-  R2Box grid_bbox(room_bbox.XMin(), room_bbox.YMin(), room_bbox.XMax(), room_bbox.YMax());
-  int xres = (int) (grid_bbox.XLength() / grid_sample_spacing);
-  int yres = (int) (grid_bbox.XLength() / grid_sample_spacing);
-  if ((xres < 3) || (yres < 3)) return 0;
+  if (grid_sample_spacing == 0) grid_sample_spacing = 0.05;
+  R2Box grid_bbox(room_bbox.ZMin(), room_bbox.XMin(), room_bbox.ZMax(), room_bbox.XMax());
+  int res1 = (int) (grid_bbox.XLength() / grid_sample_spacing);
+  int res2 = (int) (grid_bbox.YLength() / grid_sample_spacing);
+  if ((res1 < 3) || (res2 < 3)) return 0;
 
   // Compute floor mask
-  R2Grid floor_mask = R2Grid(xres, yres, grid_bbox);
-  RasterizeIntoXYGrid(floor_mask, floor_node, floor_bbox);
+  R2Grid floor_mask = R2Grid(res1, res2, grid_bbox);
+  RasterizeIntoZXGrid(floor_mask, floor_node, floor_bbox);
   floor_mask.Threshold(0.5, 0, 1);
-  floor_mask.Erode(grid_sampling_factor);
 
   // Initialize object mask
-  R2Grid object_mask = R2Grid(xres, yres, grid_bbox);
+  R2Grid object_mask = R2Grid(res1, res2, grid_bbox);
   R3Box object_bbox = room_bbox;
   object_bbox[RN_LO][RN_Y] = floor_bbox[RN_HI][RN_Y] + RN_EPSILON;
   object_bbox[RN_HI][RN_Y] = ceiling_bbox[RN_LO][RN_Y] - RN_EPSILON;
@@ -929,19 +928,23 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   for (int i = 0; i < room_node->NChildren(); i++) {
     R3SceneNode *node = room_node->Child(i);
     if ((node == floor_node) || (node == ceiling_node)) continue;
-    RasterizeIntoXYGrid(object_mask, node, object_bbox);
+    RasterizeIntoZXGrid(object_mask, node, object_bbox);
   }
 
   // Rasterize objects associated with no room into object mask
   for (int i = 0; i < room_node->Parent()->NChildren(); i++) {
     R3SceneNode *node = room_node->Parent()->Child(i);
     if (node->NChildren() > 0) continue;
-    RasterizeIntoXYGrid(object_mask, node, object_bbox);
+    RasterizeIntoZXGrid(object_mask, node, object_bbox);
   }
   
-  // Invert and erose object mask to cover viewpoints at least min_distance_from_obstacle
+  // Reverse object mask to by 1 in areas not occupied by objects
   object_mask.Threshold(0.5, 1, 0);
-  object_mask.Erode(grid_sampling_factor);
+
+  // Erode object mask to cover viewpoints at least min_distance_from_obstacle
+  if (min_distance_from_obstacle > 0) {
+    object_mask.Erode(min_distance_from_obstacle / grid_sample_spacing);
+  }
 
   // Combine the two masks
   mask = floor_mask;
@@ -986,7 +989,8 @@ CreateObjectCameras(void)
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
     if (!node->Name()) continue;
-    if (strncmp(node->Name(), "Model#", 6)) continue;
+    if (!IsObject(node)) continue;
+    if (node->NElements() == 0) continue;
     R3Camera best_camera;
 
     // Get node's centroid and radius in world coordinate system
@@ -1010,13 +1014,13 @@ CreateObjectCameras(void)
       R3Point viewpoint = centroid - max_distance * view_direction;
 
       // Project camera viewpoint onto eye height plane (special for planner5d)
-      if (node->Parent()) {
-        if (node->Parent()->Name()) {
-          if (strstr(node->Parent()->Name(), "Room") || strstr(node->Parent()->Name(), "Floor")) {
-            R3Point floor = node->Parent()->Centroid();
-            floor[2] = node->Parent()->BBox().YMin();
-            viewpoint[2] = floor[2] + eye_height;
-            viewpoint[2] += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+      if (node->Parent() && node->Parent()->Parent()) {
+        if (node->Parent()->Parent()->Name()) {
+          if (strstr(node->Parent()->Parent()->Name(), "Room") || strstr(node->Parent()->Parent()->Name(), "Level")) {
+            R3Point floor = node->Parent()->Parent()->Centroid();
+            floor[1] = node->Parent()->Parent()->BBox().YMin();
+            viewpoint[1] = floor[1] + eye_height;
+            viewpoint[1] += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
           }
         }
       }
@@ -1052,8 +1056,12 @@ CreateObjectCameras(void)
 
     // Insert best camera
     if (best_camera.Value() > 0) {
-      if (print_debug) printf("OBJECT %s %g\n", (node->Name()) ? node->Name() : "-", best_camera.Value());
-      Camera *camera = new Camera(best_camera, node->Name());
+      char camera_name[1024];
+      const char *node_name = (node->Name()) ? node->Name() : "-";
+      const char *parent_name = (node->Parent() && node->Parent()->Name()) ? node->Parent()->Name() : "-";
+      sprintf(camera_name, "%s#%s", parent_name, node_name);
+      if (print_debug) printf("%s %g\n", camera_name, best_camera.Value());
+      Camera *camera = new Camera(best_camera, camera_name);
       cameras.Insert(camera);
       camera_count++;
     }
@@ -1090,12 +1098,6 @@ CreateRoomCameras(void)
     if (!room_node->Name()) continue;
     if (strncmp(room_node->Name(), "Room#", 5)) continue;
 
-    // Compute room bounding box
-    R3Box room_bbox = room_node->BBox();
-    RNScalar y = room_bbox.YMin() + eye_height;
-    y += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
-    if (y > room_bbox.YMax()) continue;
-
     // Compute viewpoint mask
     R2Grid viewpoint_mask;
     if (!ComputeViewpointMask(room_node, viewpoint_mask)) continue;
@@ -1108,14 +1110,21 @@ CreateRoomCameras(void)
       R3Camera best_camera;
 
       // Sample positions 
-      for (RNScalar y = room_bbox.YMin(); y <= room_bbox.YMax(); y += position_sampling) {
-        for (RNScalar x = room_bbox.XMin(); x <= room_bbox.XMax(); x += position_sampling) {
+      R3Box room_bbox = room_node->BBox();
+      for (RNScalar z = room_bbox.ZMin(); z < room_bbox.ZMax(); z += position_sampling) {
+        for (RNScalar x = room_bbox.XMin(); x < room_bbox.XMax(); x += position_sampling) {
           // Compute position
-          R2Point position(x + position_sampling*RNRandomScalar(), y + position_sampling*RNRandomScalar());
+          R2Point position(x + position_sampling*RNRandomScalar(), z + position_sampling*RNRandomScalar());
 
           // Check viewpoint mask
-          RNScalar viewpoint_mask_value = viewpoint_mask.WorldValue(position);
+          R2Point viewpoint_mask_position(position[1], position[0]); // ZX          
+          RNScalar viewpoint_mask_value = viewpoint_mask.WorldValue(viewpoint_mask_position);
           if (viewpoint_mask_value < 0.5) continue;
+
+          // Compute height
+          RNScalar y = room_bbox.YMin() + eye_height;
+          y += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+          if (y > room_bbox.YMax()) continue;
 
           // Compute direction
           RNScalar angle = (j+RNRandomScalar()) * angle_spacing;
@@ -1124,7 +1133,7 @@ CreateRoomCameras(void)
           direction.Normalize();
 
           // Compute camera
-          R3Point viewpoint(position.X(), y, position.Y());
+          R3Point viewpoint(position[0], y, position[1]);
           R3Vector towards(direction.X(), -0.2, direction.Y());
           towards.Normalize();
           R3Vector right = towards % R3posy_vector;
