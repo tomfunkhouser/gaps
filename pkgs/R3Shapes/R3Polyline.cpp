@@ -347,11 +347,12 @@ BinarySearchForVertexIndex(const R3Polyline *spline, int min_index, int max_inde
 {
   // Binary search for vertex index
   if (min_index == max_index) return min_index;
+  if (spline->VertexParameter(min_index+1) > u) return min_index;
+  if (spline->VertexParameter(max_index) < u) return max_index;
   int mid_index = (min_index + max_index)/2;
   RNScalar mid_u = spline->VertexParameter(mid_index);
   if (u == mid_u) return mid_index;
   else if (u < mid_u) return BinarySearchForVertexIndex(spline, min_index, mid_index-1, u);
-  else if (mid_index == min_index) return min_index;
   else return BinarySearchForVertexIndex(spline, mid_index, max_index, u);
 }
 

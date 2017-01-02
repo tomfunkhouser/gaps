@@ -131,12 +131,6 @@ private:
 
 
 
-/* Public functions -- a hack for p5dview */
-
-extern int ReadObj(R3Scene *scene, R3SceneNode *node, const char *filename, RNArray<R3Material *> *returned_materials = NULL);
-
-
-
 /* Inline functions */
 
 inline const R3Box& R3Scene::

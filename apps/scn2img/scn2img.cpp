@@ -7,7 +7,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "R3Graphics/R3Graphics.h"
-#include "R3Graphics/p5d.h"
 #ifdef USE_MESA
 #  include "GL/osmesa.h"
 #else
@@ -158,7 +157,7 @@ ReadScene(char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 

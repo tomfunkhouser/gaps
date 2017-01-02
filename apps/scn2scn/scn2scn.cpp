@@ -54,7 +54,7 @@ ReadScene(const char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -83,7 +83,7 @@ WriteScene(R3Scene *scene, const char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 

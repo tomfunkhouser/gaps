@@ -535,7 +535,7 @@ void GLUTMotion(int x, int y)
     if (GLUTbutton[0]) viewer->RotateCamera(camera.Right(), -0.001*dy);
     if (GLUTbutton[0]) viewer->RotateCamera(R3posy_vector, 0.001*dx);
     else if (GLUTbutton[1]) viewer->TranslateCamera((0.01*dx + 0.01*dy)*camera.Towards());
-    else if (GLUTbutton[2]) viewer->TranslateCamera((0.01*dx)*camera.Right() + (0.01*dy)*camera.Up());
+    else if (GLUTbutton[2]) viewer->TranslateCamera((0.01*dx)*camera.Right() + (0.01*dy)*camera.Down());
     if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
   }
   else {
@@ -600,7 +600,6 @@ void GLUTMouse(int button, int state, int x, int y)
         if (scene->Intersects(ray, &selected_node, &selected_material, NULL, &position, &normal)) {
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z());
-#if 0
           const R3Material *material = selected_element->Material();
           const char *material_name = (material) ? material->Name() : "-";
           const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
@@ -616,7 +615,6 @@ void GLUTMouse(int button, int state, int x, int y)
             brdf_name, diffuse.R(), diffuse.G(), diffuse.B(), specular.R(), specular.G(), specular.B(),
             transmission.R(), transmission.G(), transmission.B(), emission.R(), emission.G(), emission.B(),
             shininess, texture_name);
-#endif
         }
 #endif
       }
@@ -819,14 +817,6 @@ void GLUTMainLoop(void)
   // Initialize viewing center
   center = scene->BBox().Centroid();
 
-  // Initialize camera
-  // viewer->SetCamera(scene->Camera());
-
-  // Subdivide triangles for lighting
-  if (max_vertex_spacing > 0) {
-    scene->SubdivideTriangles(max_vertex_spacing);
-  }
-
   // Define headlight
   if (headlight) {
     static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
@@ -878,11 +868,12 @@ ReadScene(char *filename)
     return NULL;
   }
 
-  // Remove references, transformations, and/or hierarchy
+  // Process scene
   if (remove_references) scene->RemoveReferences();
   if (remove_transformations) scene->RemoveTransformations();
   if (remove_hierarchy) scene->RemoveHierarchy();
-  
+  if (max_vertex_spacing > 0) scene->SubdivideTriangles(max_vertex_spacing);
+
   // Print statistics
   if (print_verbose) {
     printf("Read scene from %s ...\n", filename);
@@ -892,7 +883,7 @@ ReadScene(char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -1001,7 +992,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_bboxes")) show_bboxes = 1;
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1;
       else if (!strcmp(*argv, "-show_rays")) show_rays = 1;
-      else if (!strcmp(*argv, "-show_backfaces")) show_backfacing = 1;
+      else if (!strcmp(*argv, "-show_backfacing")) show_backfacing = 1;
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;

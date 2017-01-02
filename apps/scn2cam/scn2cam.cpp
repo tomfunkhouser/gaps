@@ -7,7 +7,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "R3Graphics/R3Graphics.h"
-#include "R3Graphics/p5d.h"
 #ifdef USE_MESA
 #  include "GL/osmesa.h"
 #else
@@ -149,7 +148,7 @@ ReadScene(char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -953,11 +952,11 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
 #if 0
   // Debugging
   char buffer[4096];
-  sprintf(buffer, "%s_floor_mask.grd", room_node->Name());
+  sprintf(buffer, "%s_floor_mask.jpg", room_node->Name());
   floor_mask.WriteFile(buffer);
-  sprintf(buffer, "%s_object_mask.grd", room_node->Name());
+  sprintf(buffer, "%s_object_mask.jpg", room_node->Name());
   object_mask.WriteFile(buffer);
-  sprintf(buffer, "%s_mask.grd", room_node->Name());
+  sprintf(buffer, "%s_mask.jpg", room_node->Name());
   mask.WriteFile(buffer);
 #endif
   

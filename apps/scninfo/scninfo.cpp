@@ -2,15 +2,22 @@
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Include files 
+////////////////////////////////////////////////////////////////////////
 
 #include "R3Graphics/R3Graphics.h"
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Program arguments
+////////////////////////////////////////////////////////////////////////
 
+// Input scene file
 static char *input_scene_name = NULL;
+
+// What to print
 static int print_nodes = 0;
 static int print_elements = 0;
 static int print_references = 0;
@@ -18,11 +25,17 @@ static int print_lights = 0;
 static int print_brdfs = 0;
 static int print_textures = 0;
 static int print_materials = 0;
+
+// Scene processing 
 static int remove_references = 0;
 static int remove_hierarchy = 0;
 static int remove_transformations = 0;
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Input functions
+////////////////////////////////////////////////////////////////////////
 
 static R3Scene *
 ReadScene(char *filename)
@@ -40,11 +53,20 @@ ReadScene(char *filename)
     return NULL;
   }
 
+  // Process scene
+  if (remove_references) scene->RemoveReferences();
+  if (remove_transformations) scene->RemoveTransformations();
+  if (remove_hierarchy) scene->RemoveHierarchy();
+  
   // Return scene
   return scene;
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Printing functions
+////////////////////////////////////////////////////////////////////////
 
 static int
 PrintBrdf(R3Brdf *brdf, int index, int level)
@@ -352,6 +374,10 @@ PrintScene(R3Scene *scene)
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Program argument parsing function
+////////////////////////////////////////////////////////////////////////
+
 static int 
 ParseArgs(int argc, char **argv)
 {
@@ -392,6 +418,10 @@ ParseArgs(int argc, char **argv)
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Main function
+////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char **argv)
 {
   // Parse program arguments
@@ -401,11 +431,6 @@ int main(int argc, char **argv)
   R3Scene *scene = ReadScene(input_scene_name);
   if (!scene) exit(-1);
 
-  // Process scene
-  if (remove_references) scene->RemoveReferences();
-  if (remove_transformations) scene->RemoveTransformations();
-  if (remove_hierarchy) scene->RemoveHierarchy();
-  
   // Print scene
   if (!PrintScene(scene)) exit(-1);
 
