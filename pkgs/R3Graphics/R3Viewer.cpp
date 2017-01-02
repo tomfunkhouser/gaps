@@ -231,7 +231,7 @@ TranslateCamera(RNScalar factor, int, int, int, int)
 void R3Viewer::
 RotateCamera(RNScalar factor, int x, int y, int, int)
 {
-    // Rotate camera based on mouse (x,y)
+    // Rotate camera based on mouse (x,y)                                                                                           
     RNLength vx = (RNLength) ((2 * x) - viewport.Width()) / (RNLength) viewport.Width();
     RNLength vy = (RNLength) ((2 * y) - viewport.Height()) / (RNLength) viewport.Height();
     RNAngle theta = factor * (RN_PI/64.0) * (vx*vx + vy*vy);

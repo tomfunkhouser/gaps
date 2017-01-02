@@ -154,10 +154,11 @@ ReadScene(char *filename)
     printf("Read scene from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
+    printf("  # Lights = %d\n", scene->NLights());
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Lights = %d\n", scene->NLights());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -325,13 +326,13 @@ AssignNodesToCategories(void)
       int category_name_length = strlen(category->name);
       if (category_name_length == 0) continue;
       if (!strcmp(category->name, "Wall")) {
-        if (strncmp(node_name, "Walls#", 5)) continue;
+        if (strncmp(node_name, "Wall", 4)) continue;
       }
       else if (!strcmp(category->name, "Floor")) {
-        if (strncmp(node_name, "Floors#", 7)) continue;
+        if (strncmp(node_name, "Floor#", 6)) continue;
       }
       else if (!strcmp(category->name, "Ceiling")) {
-        if (strncmp(node_name, "Ceilings#", 9)) continue;
+        if (strncmp(node_name, "Ceiling#", 8)) continue;
       }
       else {
         const char *node_category_name = NULL;
@@ -363,40 +364,35 @@ AssignNodesToCategories(void)
 
 
 static RNScalar
-EstimateGroundZ(const R3Camera& camera, R3Scene *scene)
+EstimateGroundY(const R3Camera& camera, R3Scene *scene)
 {
   // Get convenient variables
   if (!scene) return 0;
-  R3SceneNode *root = scene->Root();
-  if (!root) return 0;
 
-  // Check if scene is from P5D and has floors explicitly labeled
-  if (root->Name() && !strncmp(root->Name(), "Project#", 8) && root->Data()) {
-    // Search P5D project for floor containing camera
-    P5DProject *project = (P5DProject *) root->Data();
-    RNScalar floor_z = 0;
-    for (int i = 0; i < project->NFloors(); i++) {
-      P5DFloor *floor = project->Floor(i);
-      if (floor_z + floor->h > camera.Origin().Z()) break;
-      floor_z += floor->h;
+  // Check if scene has a node named "Room#*" containing camera
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    if (node->Name() && !strncmp(node->Name(), "Room#", 5)) {
+      if (R3Contains(node->BBox(), camera.Origin())) {
+        return node->BBox().YMin();
+      }
     }
-    return floor_z;
   }
 
 #if 0
   // Check first intersection with ray cast straight down
   if (R3Contains(scene->BBox(), camera.Origin())) {
-    R3Ray ray(camera.Origin(), R3negz_vector);
+    R3Ray ray(camera.Origin(), R3negy_vector);
     R3Point position;
     R3Vector normal;
     if (scene->Intersects(ray, NULL, NULL, NULL, &position, &normal)) {
-      if (normal.Z() > 0.9) return position.Z();
+      if (normal.Y() > 0.9) return position.Y();
     }
   }
 #endif
   
-  // If all else fails, return bounding box zmin
-  return scene->BBox().ZMin();
+  // If all else fails, return bounding box ymin
+  return scene->BBox().YMin();
 }
 
 
@@ -607,154 +603,143 @@ CaptureDepth(R2Grid& image)
 ////////////////////////////////////////////////////////////////////////
 
 static void 
-DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, int color_scheme, RNBoolean roomfiles_only = FALSE)
+DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, int color_scheme, RNBoolean omit_objects = FALSE)
 {
-  // Check if roomfiles_only
-  if (roomfiles_only) {
-    if (node->NChildren() == 0) {
-      if (!node->Name() || 
-          (strncmp(node->Name(), "Walls#", 6) &&
-           strncmp(node->Name(), "Floors#", 7) &&
-           strncmp(node->Name(), "Ceilings#", 9))) {
-        return;
-      }
-    }
-  }
+  // Check if should omit object
+  if (omit_objects && node->Name() && !strncmp(node->Name(), "Object#", 7)) return;
 
-  // Draw elements
-  if ((color_scheme == RGB_COLOR_SCHEME) || (color_scheme == ALBEDO_COLOR_SCHEME)) {
-    // Load lights for node
-    if (color_scheme == RGB_COLOR_SCHEME) {
-      int max_lights = 8 - headlight;
-      if (scene->NLights() > max_lights) {
-        node->LoadLights(headlight);
-      }
-    }
-
-    // Draw shaded
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      element->Draw(R3_DEFAULT_DRAW_FLAGS);
+  // Check if has elements and/or references
+  if (node->NChildren() > 0) {
+    // Recurse to children
+    for (int i = 0; i < node->NChildren(); i++) {
+      R3SceneNode *child = node->Child(i);
+      DrawNodeWithOpenGL(camera, scene, child, color_scheme, omit_objects);
     }
   }
-  else if ((color_scheme == NODE_COLOR_SCHEME) || (color_scheme == CATEGORY_COLOR_SCHEME) || (color_scheme == ROOM_SURFACE_COLOR_SCHEME)) {
-    // Draw integer values per node
-    if (color_scheme == NODE_COLOR_SCHEME) {
-      LoadInteger(node->SceneIndex() + 1);
-    }
-    else if (color_scheme == CATEGORY_COLOR_SCHEME) {
-      Category *category = (node_category_assignments) ? node_category_assignments[node->SceneIndex()] : NULL;
-      int category_identifier = (category) ? category->identifier : 0;
-      LoadInteger(category_identifier);
-    }
-    else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
-      if (!node->Name()) LoadInteger(0);
-      else if (!strncmp(node->Name(), "Walls#", 6)) LoadInteger(1);
-      else if (!strncmp(node->Name(), "Floors#", 7)) LoadInteger(2);
-      else if (!strncmp(node->Name(), "Ceilings#", 9)) LoadInteger(3);
-      else LoadInteger(0);
-    }
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      element->Draw(R3_SURFACES_DRAW_FLAG);
-    }
-  }
-  else if (color_scheme == MATERIAL_COLOR_SCHEME) {
-    // Draw integer values per element
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      R3Material *material = element->Material();
-      if (!material) LoadInteger(0);
-      else LoadInteger(material->SceneIndex() + 1);
-      element->Draw(R3_SURFACES_DRAW_FLAG);
-    }
-  }
-  else if (color_scheme == BRDF_COLOR_SCHEME) {
-    // Draw color values per element (NOTE: THIS IGNORES TEXTURE)
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      const R3Material *material = element->Material();
-      const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
-      if (!brdf) brdf = &R3default_brdf;
-      RNScalar kd = brdf->Diffuse().Luminance();
-      RNScalar ks = brdf->Specular().Luminance();
-      RNScalar kt = brdf->Transmission().Luminance();
-      RNLoadRgb(kd, ks, kt);
-      element->Draw(R3_SURFACES_DRAW_FLAG);
-    }
-  }
-  else if ((color_scheme == ANGLE_COLOR_SCHEME) || 
-    (color_scheme == XNORMAL_COLOR_SCHEME) || (color_scheme == YNORMAL_COLOR_SCHEME) || (color_scheme == ZNORMAL_COLOR_SCHEME)) {
-    // Draw integer values per triangle
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      for (int j = 0; j < element->NShapes(); j++) {
-        R3Shape *shape = element->Shape(j);
-        if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
-          R3TriangleArray *triangles = (R3TriangleArray *) shape;
-          for (int k = 0; k < triangles->NTriangles(); k++) {
-            R3Triangle *triangle = triangles->Triangle(k);
-            R3Vector normal = triangle->Normal();
-            if (R3SignedDistance(triangle->Plane(), camera.Origin()) < 0) normal.Flip();
-            RNScalar value = 0;
-            if (color_scheme == ANGLE_COLOR_SCHEME) value = (RN_PI - acos(normal.Z())) / RN_PI;
-            else value = 0.5*normal[color_scheme - XNORMAL_COLOR_SCHEME] + 0.5;
-            LoadInteger((int) (65535 * value));
-            triangle->Draw(R3_SURFACES_DRAW_FLAG);
-          }
+  else {
+    // Check color scheme
+    if ((color_scheme == RGB_COLOR_SCHEME) || (color_scheme == ALBEDO_COLOR_SCHEME)) {
+      // Load lights for node
+      if (color_scheme == RGB_COLOR_SCHEME) {
+        int max_lights = 8 - headlight;
+        if (scene->NLights() > max_lights) {
+          scene->LoadLights(node->BBox(), headlight);
         }
       }
+
+      // Draw node with shading
+      node->Draw(R3_DEFAULT_DRAW_FLAGS);
     }
-  }
-  else if ((color_scheme == DEPTH_COLOR_SCHEME) || (color_scheme == NDOTV_COLOR_SCHEME) || (color_scheme == HEIGHT_COLOR_SCHEME)) {
-    // Draw scalar values interpolated between triangle vertices
-    RNScalar ground_z = (color_scheme == HEIGHT_COLOR_SCHEME) ? EstimateGroundZ(camera, scene) : 0;
-    glBegin(GL_TRIANGLES);
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      for (int j = 0; j < element->NShapes(); j++) {
-        R3Shape *shape = element->Shape(j);
-        if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
-          R3TriangleArray *triangles = (R3TriangleArray *) shape;
-          for (int k = 0; k < triangles->NTriangles(); k++) {
-            R3Triangle *triangle = triangles->Triangle(k);
-            for (int m = 0; m < 3; m++) {
-              R3TriangleVertex *vertex = triangle->Vertex(m);
-              const R3Point& position = vertex->Position();
-              if (color_scheme == HEIGHT_COLOR_SCHEME) LoadScalar(position.Z() - ground_z, 6.5535);
-              else if (color_scheme == DEPTH_COLOR_SCHEME) LoadScalar((position - camera.Origin()).Dot(camera.Towards()), 6.5535);
-              else if (color_scheme == NDOTV_COLOR_SCHEME) {
-                R3Vector v = camera.Origin() - position; v.Normalize();
-                R3Vector normal = (vertex->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG]) ? vertex->Normal() : triangle->Normal();
-                LoadScalar(fabs(normal.Dot(v)), 1.0);
-              }
-              R3LoadPoint(position);
+    else if ((color_scheme == NODE_COLOR_SCHEME) || (color_scheme == CATEGORY_COLOR_SCHEME) || (color_scheme == ROOM_SURFACE_COLOR_SCHEME)) {
+      // Draw integer values per node
+      if (color_scheme == NODE_COLOR_SCHEME) {
+        LoadInteger(node->SceneIndex() + 1);
+      }
+      else if (color_scheme == CATEGORY_COLOR_SCHEME) {
+        Category *category = (node_category_assignments) ? node_category_assignments[node->SceneIndex()] : NULL;
+        int category_identifier = (category) ? category->identifier : 0;
+        LoadInteger(category_identifier);
+      }
+      else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
+        if (!node->Name()) LoadInteger(0);
+        else if (!strncmp(node->Name(), "Wall", 4)) LoadInteger(1);
+        else if (!strncmp(node->Name(), "Floor#", 6)) LoadInteger(2);
+        else if (!strncmp(node->Name(), "Ceiling#", 8)) LoadInteger(3);
+        else LoadInteger(0);
+      }
+      node->Draw(R3_SURFACES_DRAW_FLAG);
+    }
+    else if (color_scheme == MATERIAL_COLOR_SCHEME) {
+      // Draw integer values per element
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        R3Material *material = element->Material();
+        if (!material) LoadInteger(0);
+        else LoadInteger(material->SceneIndex() + 1);
+        element->Draw(R3_SURFACES_DRAW_FLAG);
+      }
+    }
+    else if (color_scheme == BRDF_COLOR_SCHEME) {
+      // Draw color values per element (NOTE: THIS IGNORES TEXTURE)
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        const R3Material *material = element->Material();
+        const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
+        if (!brdf) brdf = &R3default_brdf;
+        RNScalar kd = brdf->Diffuse().Luminance();
+        RNScalar ks = brdf->Specular().Luminance();
+        RNScalar kt = brdf->Transmission().Luminance();
+        RNLoadRgb(kd, ks, kt);
+        element->Draw(R3_SURFACES_DRAW_FLAG);
+      }
+    }
+    else if ((color_scheme == ANGLE_COLOR_SCHEME) || 
+      (color_scheme == XNORMAL_COLOR_SCHEME) || (color_scheme == YNORMAL_COLOR_SCHEME) || (color_scheme == ZNORMAL_COLOR_SCHEME)) {
+      // Draw integer values per triangle
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        for (int j = 0; j < element->NShapes(); j++) {
+          R3Shape *shape = element->Shape(j);
+          if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+            R3TriangleArray *triangles = (R3TriangleArray *) shape;
+            for (int k = 0; k < triangles->NTriangles(); k++) {
+              R3Triangle *triangle = triangles->Triangle(k);
+              R3Vector normal = triangle->Normal();
+              if (R3SignedDistance(triangle->Plane(), camera.Origin()) < 0) normal.Flip();
+              RNScalar value = 0;
+              if (color_scheme == ANGLE_COLOR_SCHEME) value = (RN_PI - acos(normal.Y())) / RN_PI;
+              else value = 0.5*normal[color_scheme - XNORMAL_COLOR_SCHEME] + 0.5;
+              LoadInteger((int) (65535 * value));
+              triangle->Draw(R3_SURFACES_DRAW_FLAG);
             }
           }
         }
       }
     }
-    glEnd();
-  }
-  else {
-    // Draw without setting colors
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-      element->Draw(R3_SURFACES_DRAW_FLAG);
+    else if ((color_scheme == DEPTH_COLOR_SCHEME) || (color_scheme == NDOTV_COLOR_SCHEME) || (color_scheme == HEIGHT_COLOR_SCHEME)) {
+      // Draw scalar values interpolated between triangle vertices
+      RNScalar ground_y = (color_scheme == HEIGHT_COLOR_SCHEME) ? EstimateGroundY(camera, scene) : 0;
+      glBegin(GL_TRIANGLES);
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        for (int j = 0; j < element->NShapes(); j++) {
+          R3Shape *shape = element->Shape(j);
+          if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+            R3TriangleArray *triangles = (R3TriangleArray *) shape;
+            for (int k = 0; k < triangles->NTriangles(); k++) {
+              R3Triangle *triangle = triangles->Triangle(k);
+              for (int m = 0; m < 3; m++) {
+                R3TriangleVertex *vertex = triangle->Vertex(m);
+                const R3Point& position = vertex->Position();
+                if (color_scheme == HEIGHT_COLOR_SCHEME) LoadScalar(position.Y() - ground_y, 6.5535);
+                else if (color_scheme == DEPTH_COLOR_SCHEME) LoadScalar((position - camera.Origin()).Dot(camera.Towards()), 6.5535);
+                else if (color_scheme == NDOTV_COLOR_SCHEME) {
+                  R3Vector v = camera.Origin() - position; v.Normalize();
+                  R3Vector normal = (vertex->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG]) ? vertex->Normal() : triangle->Normal();
+                  LoadScalar(fabs(normal.Dot(v)), 1.0);
+                }
+                R3LoadPoint(position);
+              }
+            }
+          }
+        }
+      }
+      glEnd();
     }
-  }
-
-  // Draw children
-  for (int i = 0; i < node->NChildren(); i++) {
-    R3SceneNode *child = node->Child(i);
-    DrawNodeWithOpenGL(camera, scene, child, color_scheme, roomfiles_only);
+    else {
+      // Draw without setting colors
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        element->Draw(R3_SURFACES_DRAW_FLAG);
+      }
+    }
   }
 }
 
 
 
 static int
-DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RNBoolean roomfiles_only = FALSE)
+DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RNBoolean omit_objects = FALSE)
 {
   // Clear window
   glClearColor(background.R(), background.G(), background.B(), 1.0);
@@ -766,7 +751,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     glEnable(GL_LIGHTING);
     scene->LoadLights(headlight);
     R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, roomfiles_only);
+    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
     R3null_material.Draw();
   }
   else if (color_scheme == ALBEDO_COLOR_SCHEME) {
@@ -778,21 +763,41 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     ambient[3] = 1;
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
 
-    // Setup lighting to be only diffuse
+    // Copy diffuse reflections into ambient reflections
+    RNRgb *saved_ambients = NULL;
+    if (scene->NBrdfs() > 0) {
+      saved_ambients = new RNRgb [ scene->NBrdfs() ];
+      for (int i = 0; i < scene->NBrdfs(); i++) {
+        R3Brdf *brdf = scene->Brdf(i);
+        saved_ambients[i] = brdf->Ambient();
+        brdf->SetAmbient(brdf->Diffuse());
+      }
+    }
+
+    // Draw scene with only ambient light
     glColor3d(1.0, 1.0, 1.0);
     glDisable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
     R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, roomfiles_only);
+    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
     R3null_material.Draw();
     glEnable(GL_LIGHT0);
+
+    // Restore ambient reflections
+    if (saved_ambients) {
+      for (int i = 0; i < scene->NBrdfs(); i++) {
+        R3Brdf *brdf = scene->Brdf(i);
+        brdf->SetAmbient(saved_ambients[i]);
+      }
+      delete [] saved_ambients;
+    }
   }
   else {
     // Draw scene
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 1.0);
     R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, roomfiles_only);
+    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
     R3null_material.Draw();
   }
 
@@ -1280,12 +1285,12 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
   }
  
   // Some useful variables
-  RNScalar ground_z = EstimateGroundZ(camera, scene);
+  RNScalar ground_y = EstimateGroundY(camera, scene);
   R2Viewport viewport(0, 0, width, height);
   R3Viewer viewer(camera, viewport);
   char output_image_filename[1024];
   R3SceneNode *node = NULL;
-  R3SceneElement *element = NULL;
+  R3Material *material = NULL;
   R3Shape *shape = NULL;
   R3Point position;
   R3Vector normal;
@@ -1309,13 +1314,13 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
   for (int iy = 0; iy < height; iy++) {
     for (int ix = 0; ix < width; ix++) {
       R3Ray ray = viewer.WorldRay(ix, iy);
-      if (scene->Intersects(ray, &node, &element, &shape, &position, &normal, &t)) {
+      if (scene->Intersects(ray, &node, &material, &shape, &position, &normal, &t)) {
         if (capture_depth_images) {
           RNScalar depth = (position - camera.Origin()).Dot(camera.Towards());
           depth_image.SetGridValue(ix, iy, 1000 * depth);
         }
         if (capture_height_images) {
-          RNScalar height = position.Z() - ground_z;
+          RNScalar height = position.Y() - ground_y;
           height_image.SetGridValue(ix, iy, 1000.0 * height);
         }
         if (capture_angle_images) {
@@ -1335,7 +1340,6 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
           xnormal_image.SetGridValue(ix, iy, 65535.0 * ndotv);
         }
         if (capture_brdf_images) {
-          const R3Material *material = element->Material();
           const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
           if (!brdf) brdf = &R3default_brdf;
           RNScalar kd = brdf->Diffuse().Luminance();
@@ -1344,7 +1348,6 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
           brdf_image.SetPixelRGB(ix, iy, RNRgb(kd, ks, kt));
         }
         if (capture_material_images) {
-          const R3Material *material = element->Material();
           int material_index = (material) ? material->SceneIndex() + 1 : 0;
           material_image.SetGridValue(ix, iy, material_index);
         }

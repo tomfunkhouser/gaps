@@ -50,10 +50,11 @@ ReadScene(const char *filename)
     printf("Read scene from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
+    printf("  # Lights = %d\n", scene->NLights());
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Lights = %d\n", scene->NLights());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -78,10 +79,11 @@ WriteScene(R3Scene *scene, const char *filename)
     printf("Write scene to %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
+    printf("  # Lights = %d\n", scene->NLights());
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Lights = %d\n", scene->NLights());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 

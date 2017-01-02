@@ -35,7 +35,6 @@ static char *output_nodes_filename = NULL;
 // Camera creation variables
 
 static int create_object_cameras = 0;
-static int create_wall_cameras = 0;
 static int create_room_cameras = 0;
 static int create_world_in_hand_cameras = 0;
 static int interpolate_camera_trajectory = 0;
@@ -137,15 +136,20 @@ ReadScene(char *filename)
     return NULL;
   }
 
+  // Remove references and transformations
+  scene->RemoveReferences();
+  scene->RemoveTransformations();
+
   // Print statistics
   if (print_verbose) {
     printf("Read scene from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
+    printf("  # Lights = %d\n", scene->NLights());
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Lights = %d\n", scene->NLights());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -550,9 +554,6 @@ CaptureDepth(R2Grid& image)
 static void 
 DrawNodeWithOpenGL(R3Scene *scene, R3SceneNode *node, R3SceneNode *selected_node, int image_type)
 {
-  // Push transformation
-  node->Transformation().Push();
-
   // Set color based on node index
   RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS;
   if (image_type == NODE_INDEX_IMAGE) {
@@ -586,27 +587,14 @@ DrawNodeWithOpenGL(R3Scene *scene, R3SceneNode *node, R3SceneNode *selected_node
     R3SceneNode *child = node->Child(i);
     DrawNodeWithOpenGL(scene, child, selected_node, image_type);
   }
-
-  // Pop transformation
-  node->Transformation().Pop();
 }
+
 
 
 
 static void 
 RenderImageWithOpenGL(R2Grid& image, const R3Camera& camera, R3Scene *scene, R3SceneNode *root_node, R3SceneNode *selected_node, int image_type)
 {
-  // Get transformation from ancestors of root_node
-  R3Affine ancestor_transformation = R3identity_affine;
-  R3SceneNode *ancestor = root_node->Parent();
-  while (ancestor) {
-    R3Affine tmp = R3identity_affine;
-    tmp.Transform(ancestor->Transformation());
-    tmp.Transform(ancestor_transformation);
-    ancestor_transformation = tmp;
-    ancestor = ancestor->Parent();
-  }
-
   // Clear window
   glClearColor(0.0, 0.0, 0.0, 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -622,16 +610,10 @@ RenderImageWithOpenGL(R2Grid& image, const R3Camera& camera, R3Scene *scene, R3S
   // Initialize graphics modes  
   glEnable(GL_DEPTH_TEST);
 
-  // Push transformation
-  ancestor_transformation.Push();
-
   // Draw scene
   R3null_material.Draw();
   DrawNodeWithOpenGL(scene, root_node, selected_node, image_type);
   R3null_material.Draw();
-
-  // Pop ancestor transformation
-  ancestor_transformation.Pop();
 
   // Read frame buffer into image
   CaptureScalar(image);
@@ -657,22 +639,10 @@ RenderImageWithRayCasting(R2Grid& image, const R3Camera& camera, R3Scene *scene,
   R2Viewport viewport(0, 0, image.XResolution(), image.YResolution());
   R3Viewer viewer(camera, viewport);
 
-  // Get transformation from ancestors of root_node
-  R3Affine ancestor_transformation = R3identity_affine;
-  R3SceneNode *ancestor = root_node->Parent();
-  while (ancestor) {
-    R3Affine tmp = R3identity_affine;
-    tmp.Transform(ancestor->Transformation());
-    tmp.Transform(ancestor_transformation);
-    ancestor_transformation = tmp;
-    ancestor = ancestor->Parent();
-  }
-
   // Render image with ray casting
   for (int iy = 0; iy < image.YResolution(); iy++) {
     for (int ix = 0; ix < image.XResolution(); ix++) {
       R3Ray ray = viewer.WorldRay(ix, iy);
-      ray.InverseTransform(ancestor_transformation);
       R3SceneNode *intersection_node = NULL;
       if (root_node->Intersects(ray, &intersection_node)) {
         if (intersection_node) {
@@ -711,16 +681,13 @@ RenderImage(R2Grid& image, const R3Camera& camera, R3Scene *scene, R3SceneNode *
 static RNBoolean
 IsObject(R3SceneNode *node)
 {
-  // Check children
-  if (node->NChildren() > 0) return 0;
-
   // Check name
-  if (!node->Name()) return 1;
-  if (!strncmp(node->Name(), "Walls#", 6)) return 0;  
-  if (!strncmp(node->Name(), "Floors#", 7)) return 0;  
-  if (!strncmp(node->Name(), "Ceilings#", 9)) return 0;  
-  if (strstr(node->Name(), "Door")) return 0;
-  if (strstr(node->Name(), "Window")) return 0;
+  if (!node->Name()) return 0;
+  if (strncmp(node->Name(), "Object#", 7)) return 0;  
+
+  // Check category
+  // if (strstr(node->Name(), "Door")) return 0;
+  // if (strstr(node->Name(), "Window")) return 0;
 
   // Passed all tests
   return 1;
@@ -744,24 +711,13 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node)
     last_node = node;
     npoints = 0;
 
-    // Get transformation 
-    R3Affine transformation = R3identity_affine;
-    R3SceneNode *ancestor = node;
-    while (ancestor) {
-      R3Affine tmp = R3identity_affine;
-      tmp.Transform(ancestor->Transformation());
-      tmp.Transform(transformation);
-      transformation = tmp;
-      ancestor = ancestor->Parent();
-    }
-
     // Generate points on surface of node
     RNArea total_area = 0;
     for (int j = 0; j < node->NElements(); j++) {
       R3SceneElement *element = node->Element(j);
       for (int k = 0; k < element->NShapes(); k++) {
         R3Shape *shape = element->Shape(k);
-        RNScalar area = transformation.ScaleFactor() * shape->Area();
+        RNScalar area = shape->Area();
         total_area += area;
       }
     }
@@ -778,14 +734,13 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node)
           R3TriangleArray *triangles = (R3TriangleArray *) shape;
           for (int k = 0; k < triangles->NTriangles(); k++) {
             R3Triangle *triangle = triangles->Triangle(k);
-            RNScalar area = transformation.ScaleFactor() * triangle->Area();
+            RNScalar area = triangle->Area();
             RNScalar real_nsamples = target_npoints * area / total_area;
             int nsamples = (int) real_nsamples;
             if (RNRandomScalar() < (real_nsamples - nsamples)) nsamples++;
             for (int m = 0; m < nsamples; m++) {
               if (npoints >= max_npoints) break;
               R3Point point = triangle->RandomPoint();
-              point.Transform(transformation);
               points[npoints++] = point;
             }
           }
@@ -851,40 +806,18 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
   }
 
   // Compute score
-  RNScalar score = 0;
-  if (scene_scoring_method == 0) {
-    // Count nodes and pixels visible on all objects of large enough size
-    int node_count = 0;
-    int pixel_count = 0;
-    for (int i = 0; i < scene->NNodes(); i++) {
-      R3SceneNode *node = scene->Node(i);
-      if (!IsObject(node)) continue;
-      if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
-      pixel_count += node_pixel_counts[i];
-      node_count++;
-    }
-  
-    // Compute score (product of #objects and #objectpixels)
-    if (node_count > min_visible_objects) {
-      score = node_count * pixel_count / (RNScalar) max_pixel_count;
-    }
+  RNScalar sum = 0;
+  int node_count = 0;
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    if (!IsObject(node)) continue;
+    if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
+    sum += log(node_pixel_counts[i] / min_pixel_count_per_object);
+    node_count++;
   }
-  else if (scene_scoring_method == 1) {
-    RNScalar sum = 0;
-    int node_count = 0;
-    for (int i = 0; i < scene->NNodes(); i++) {
-      R3SceneNode *node = scene->Node(i);
-      if (!IsObject(node)) continue;
-      if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
-      sum += log(node_pixel_counts[i] / min_pixel_count_per_object);
-      node_count++;
-    }
 
-    // Compute score (log of product of number of pixels visible in each object)
-    if (node_count > min_visible_objects) {
-      score = sum;
-    }
-  }
+  // Compute score (log of product of number of pixels visible in each object)
+  RNScalar score = (node_count > min_visible_objects) ? sum : 0;
 
   // Delete pixel counts
   delete [] node_pixel_counts;
@@ -901,46 +834,35 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *parent_n
 
 static void
 RasterizeIntoXYGrid(R2Grid& grid, R3SceneNode *node,
-  const R3Affine& parent_transformation,
   const R3Box& world_bbox)
 {
   // Check bounding box
   R3Box node_bbox = node->BBox();
-  node_bbox.Transform(parent_transformation);
   if (!R3Intersects(world_bbox, node_bbox)) return;
   
-  // Update transformation
-  R3Affine transformation = parent_transformation;
-  transformation.Transform(node->Transformation());
-
   // Rasterize elements into grid
   for (int j = 0; j < node->NElements(); j++) {
     R3SceneElement *element = node->Element(j);
     for (int k = 0; k < element->NShapes(); k++) {
       R3Shape *shape = element->Shape(k);
       R3Box shape_bbox = shape->BBox();
-      shape_bbox.Transform(transformation);
       if (!R3Intersects(world_bbox, shape_bbox)) continue;
       if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
         R3TriangleArray *triangles = (R3TriangleArray *) shape;
         for (int m = 0; m < triangles->NTriangles(); m++) {
           R3Triangle *triangle = triangles->Triangle(m);
           R3Box triangle_bbox = triangle->BBox();
-          triangle_bbox.Transform(transformation);
           if (!R3Intersects(world_bbox, triangle_bbox)) continue;
           R3TriangleVertex *v0 = triangle->V0();
           R3Point vp0 = v0->Position();
-          vp0.Transform(transformation);
           R2Point p0(vp0.X(), vp0.Y());
           if (!R2Contains(grid.WorldBox(), p0)) continue;
           R3TriangleVertex *v1 = triangle->V1();
           R3Point vp1 = v1->Position();
-          vp1.Transform(transformation);
           R2Point p1(vp1.X(), vp1.Y());
           if (!R2Contains(grid.WorldBox(), p1)) continue;
           R3TriangleVertex *v2 = triangle->V2();
           R3Point vp2 = v2->Position();
-          vp2.Transform(transformation);
           R2Point p2(vp2.X(), vp2.Y());
           if (!R2Contains(grid.WorldBox(), p2)) continue;
           grid.RasterizeWorldTriangle(p0, p1, p2, 1.0);
@@ -952,7 +874,7 @@ RasterizeIntoXYGrid(R2Grid& grid, R3SceneNode *node,
   // Rasterize children into grid
   for (int j = 0; j < node->NChildren(); j++) {
     R3SceneNode *child = node->Child(j);
-    RasterizeIntoXYGrid(grid, child, transformation, world_bbox);
+    RasterizeIntoXYGrid(grid, child, world_bbox);
   }
 }
 
@@ -971,31 +893,15 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   if (strncmp(wall_node->Name(), "Walls#", 6)) return 0;
   R3SceneNode *floor_node = room_node->Child(1);
   if (!floor_node->Name()) return 0;
-  if (strncmp(floor_node->Name(), "Floors#", 7)) return 0;
+  if (strncmp(floor_node->Name(), "Floor#", 6)) return 0;
   R3SceneNode *ceiling_node = room_node->Child(2);
   if (!ceiling_node->Name()) return 0;
-  if (strncmp(ceiling_node->Name(), "Ceilings#", 9)) return 0;
+  if (strncmp(ceiling_node->Name(), "Ceiling#", 8)) return 0;
   
-  // Get transformation from ancestors of room
-  R3Affine room_transformation = R3identity_affine;
-  R3SceneNode *ancestor = room_node;
-  while (ancestor) {
-    R3Affine tmp = R3identity_affine;
-    tmp.Transform(ancestor->Transformation());
-    tmp.Transform(room_transformation);
-    room_transformation = tmp;
-    ancestor = ancestor->Parent();
-  }
-
   // Get bounding boxes in world coordinates
   R3Box room_bbox = room_node->BBox();
-  room_bbox.Transform(room_transformation);
   R3Box floor_bbox = floor_node->BBox();
-  floor_bbox.Transform(room_node->Transformation());
-  floor_bbox.Transform(room_transformation);
   R3Box ceiling_bbox = ceiling_node->BBox();
-  ceiling_bbox.Transform(room_node->Transformation());
-  ceiling_bbox.Transform(room_transformation);
 
   // Get/check grid extent and resolution in world coordinates
   RNScalar grid_sampling_factor = 2;
@@ -1009,28 +915,28 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
 
   // Compute floor mask
   R2Grid floor_mask = R2Grid(xres, yres, grid_bbox);
-  RasterizeIntoXYGrid(floor_mask, floor_node, room_transformation, floor_bbox);
+  RasterizeIntoXYGrid(floor_mask, floor_node, floor_bbox);
   floor_mask.Threshold(0.5, 0, 1);
   floor_mask.Erode(grid_sampling_factor);
 
   // Initialize object mask
   R2Grid object_mask = R2Grid(xres, yres, grid_bbox);
   R3Box object_bbox = room_bbox;
-  object_bbox[RN_LO][RN_Z] = floor_bbox[RN_HI][RN_Z] + RN_EPSILON;
-  object_bbox[RN_HI][RN_Z] = ceiling_bbox[RN_LO][RN_Z] - RN_EPSILON;
+  object_bbox[RN_LO][RN_Y] = floor_bbox[RN_HI][RN_Y] + RN_EPSILON;
+  object_bbox[RN_HI][RN_Y] = ceiling_bbox[RN_LO][RN_Y] - RN_EPSILON;
 
   // Rasterize objects associated with this room into object mask
   for (int i = 0; i < room_node->NChildren(); i++) {
     R3SceneNode *node = room_node->Child(i);
     if ((node == floor_node) || (node == ceiling_node)) continue;
-    RasterizeIntoXYGrid(object_mask, node, room_transformation, object_bbox);
+    RasterizeIntoXYGrid(object_mask, node, object_bbox);
   }
 
   // Rasterize objects associated with no room into object mask
   for (int i = 0; i < room_node->Parent()->NChildren(); i++) {
     R3SceneNode *node = room_node->Parent()->Child(i);
     if (node->NChildren() > 0) continue;
-    RasterizeIntoXYGrid(object_mask, node, room_transformation, object_bbox);
+    RasterizeIntoXYGrid(object_mask, node, object_bbox);
   }
   
   // Invert and erose object mask to cover viewpoints at least min_distance_from_obstacle
@@ -1079,19 +985,13 @@ CreateObjectCameras(void)
   // Create camera with close up view of each object
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
-    // if (!node->Name()) continue;
-    if (!IsObject(node)) continue;
+    if (!node->Name()) continue;
+    if (strncmp(node->Name(), "Model#", 6)) continue;
     R3Camera best_camera;
 
     // Get node's centroid and radius in world coordinate system
     R3Point centroid = node->BBox().Centroid();
     RNScalar radius = node->BBox().DiagonalRadius();
-    R3SceneNode *ancestor = node->Parent();
-    while (ancestor) {
-      centroid.Transform(ancestor->Transformation());
-      radius *= ancestor->Transformation().ScaleFactor();
-      ancestor = ancestor->Parent();
-    }
 
     // Check lots of directions
     int nangles = (int) (RN_TWO_PI / angle_sampling + 0.5);
@@ -1099,7 +999,7 @@ CreateObjectCameras(void)
     for (int j = 0; j < nangles; j++) {
       // Determine view direction
       R3Vector view_direction(-1, 0, 0); 
-      view_direction.ZRotate((j+RNRandomScalar()) * angle_spacing);
+      view_direction.YRotate((j+RNRandomScalar()) * angle_spacing);
       view_direction.Normalize();
 
       // Determine camera viewpoint
@@ -1114,9 +1014,7 @@ CreateObjectCameras(void)
         if (node->Parent()->Name()) {
           if (strstr(node->Parent()->Name(), "Room") || strstr(node->Parent()->Name(), "Floor")) {
             R3Point floor = node->Parent()->Centroid();
-            floor[2] = node->Parent()->BBox().ZMin();
-            R3SceneNode *ancestor = node->Parent()->Parent();
-            while (ancestor) { floor.Transform(ancestor->Transformation()); ancestor = ancestor->Parent(); }
+            floor[2] = node->Parent()->BBox().YMin();
             viewpoint[2] = floor[2] + eye_height;
             viewpoint[2] += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
           }
@@ -1135,7 +1033,7 @@ CreateObjectCameras(void)
       // Compute camera
       R3Vector towards = centroid - viewpoint;
       towards.Normalize();
-      R3Vector right = towards % R3posz_vector;
+      R3Vector right = towards % R3posy_vector;
       right.Normalize();
       R3Vector up = right % towards;
       up.Normalize();
@@ -1173,134 +1071,6 @@ CreateObjectCameras(void)
 
 
 static void
-CreateWallCameras(void)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-  int camera_count = 0;
-
-  // Get useful variables
-  RNScalar neardist = 0.01 * scene->BBox().DiagonalRadius();
-  RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
-  RNScalar aspect = (RNScalar) height / (RNScalar) width;
-  RNAngle yfov = atan(aspect * tan(xfov));
-
-  // Get P5D project from scene
-  R3SceneNode *rootnode = scene->Root();
-  if (!rootnode) return;
-  if (!rootnode->Name()) return;
-  if (strncmp(rootnode->Name(), "Project#", 8)) return;
-  if (!rootnode->Data()) return;
-  P5DProject *project = (P5DProject *) rootnode->Data();
-
-  // For every floor
-  RNScalar next_z = eye_height;
-  for (int i = 0; i < project->NFloors(); i++) {
-    P5DFloor *floor = project->Floor(i);
-    RNScalar z = next_z; next_z += floor->h;
-
-    // For every room
-    for (int j = 0; j < floor->NRooms(); j++) {
-      P5DRoom *room = floor->Room(j);
-
-      // Get/check scene node
-      R3SceneNode *room_node = (R3SceneNode *) room->data;
-      if (!room_node) continue;
-      if (room_node->NChildren() < 3) continue;
-      R3SceneNode *ceiling_node = room_node->Child(2);
-      if (!ceiling_node->Name()) continue;
-      if (strncmp(ceiling_node->Name(), "Ceilings#", 9)) continue;
-
-      // Compute room bounding box
-      R2Box room_bbox = R2null_box;
-      for (int k = 0; k < room->NWalls(); k++) {
-        P5DWall *wall = room->Wall(k);
-        R2Point p1(room->x + wall->x1, room->y + wall->y1);
-        R2Point p2(room->x + wall->x2, room->y + wall->y2);
-        p1[0] = -p1[0];  p2[0] = -p2[0];
-        room_bbox.Union(p1);        
-        room_bbox.Union(p2);
-      }
-
-      // For every wall
-      for (int k = 0; k < room->NWalls(); k++) {
-        P5DWall *wall = room->Wall(k);
-        R2Point p1(room->x + wall->x1, room->y + wall->y1);
-        R2Point p2(room->x + wall->x2, room->y + wall->y2);
-        p1[0] = -p1[0];  p2[0] = -p2[0];
-        R2Span span(p1, p2);
-
-        // For every location along wall
-        R3Camera best_camera;
-        int npositions = (int) (span.Length() / position_sampling + 0.5);
-        RNScalar position_spacing = (npositions > 1) ? span.Length() / npositions : span.Length();
-        for (RNScalar t = 0.5*position_spacing; t < span.Length(); t += position_spacing) {
-          R2Point position = span.Point(t); 
-          R2Vector normal = span.Normal();
-          R2Vector tocenter = room_bbox.Centroid() - position;
-          if (tocenter.Dot(normal) < 0) normal.Flip();
-          position += (wall->w + min_distance_from_obstacle) * normal;
-          if (!R2Contains(room_bbox, position)) continue;
-                          
-          // For every view direction
-          RNScalar angle_range = RN_PI - 2.0*xfov;
-          int nangles = (int) (angle_range / angle_sampling + 0.5);
-          RNScalar angle_spacing = (nangles > 1) ? angle_range / nangles : angle_range;
-          for (RNAngle a = xfov + 0.5*angle_spacing; a < RN_PI - xfov; a += angle_spacing) {
-            // Determine view direction
-            R2Vector direction = normal;
-            direction.Rotate(a - RN_PI_OVER_TWO);
-            direction.Normalize();
-            
-            // Compute camera
-            RNScalar zcamera = z + 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
-            R3Point viewpoint(position.X(), position.Y(), zcamera);
-            R3Vector towards(direction.X(), direction.Y(), -0.2);
-            towards.Normalize();
-            R3Vector right = towards % R3posz_vector;
-            right.Normalize();
-            R3Vector up = right % towards;
-            up.Normalize();
-            R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
-
-            // Compute score for camera
-            camera.SetValue(SceneCoverageScore(camera, scene, room_node));
-            if (camera.Value() == 0) continue;
-            if (camera.Value() < min_score) continue;
-
-            // Remember best camera
-            if (camera.Value() > best_camera.Value()) {
-              best_camera = camera;
-            }
-          }
-        }
-
-        // Insert best camera
-        if (best_camera.Value() > 0) {
-          if (print_debug) printf("WALL %d %d %d %g\n", i, j, k, best_camera.Value());
-          char name[1024];
-          sprintf(name, "%s_%d\n", room_node->Name(), k);
-          Camera *camera = new Camera(best_camera, name);
-          cameras.Insert(camera);
-          camera_count++;
-        }
-      }
-    }
-  }
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Created wall cameras ...\n");
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Cameras = %d\n", camera_count++);
-    fflush(stdout);
-  }
-}
-
-
-
-static void
 CreateRoomCameras(void)
 {
   // Start statistics
@@ -1320,23 +1090,11 @@ CreateRoomCameras(void)
     if (!room_node->Name()) continue;
     if (strncmp(room_node->Name(), "Room#", 5)) continue;
 
-    // Get transformation from ancestors 
-    R3Affine ancestor_transformation = R3identity_affine;
-    R3SceneNode *ancestor = room_node->Parent();
-    while (ancestor) {
-      R3Affine tmp = R3identity_affine;
-      tmp.Transform(ancestor->Transformation());
-      tmp.Transform(ancestor_transformation);
-      ancestor_transformation = tmp;
-      ancestor = ancestor->Parent();
-    }
-
     // Compute room bounding box
     R3Box room_bbox = room_node->BBox();
-    room_bbox.Transform(ancestor_transformation);
-    RNScalar z = room_bbox.ZMin() + eye_height;
-    z += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
-    if (z > room_bbox.ZMax()) continue;
+    RNScalar y = room_bbox.YMin() + eye_height;
+    y += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+    if (y > room_bbox.YMax()) continue;
 
     // Compute viewpoint mask
     R2Grid viewpoint_mask;
@@ -1366,10 +1124,10 @@ CreateRoomCameras(void)
           direction.Normalize();
 
           // Compute camera
-          R3Point viewpoint(position.X(), position.Y(), z);
-          R3Vector towards(direction.X(), direction.Y(), -0.2);
+          R3Point viewpoint(position.X(), y, position.Y());
+          R3Vector towards(direction.X(), -0.2, direction.Y());
           towards.Normalize();
-          R3Vector right = towards % R3posz_vector;
+          R3Vector right = towards % R3posy_vector;
           right.Normalize();
           R3Vector up = right % towards;
           up.Normalize();
@@ -1449,7 +1207,7 @@ CreateWorldInHandCameras(void)
     // Compute view directions
     R3Vector towards = R3RandomDirection();
     towards.Normalize();
-    R3Vector right = towards % R3posz_vector;
+    R3Vector right = towards % R3posy_vector;
     if (RNIsZero(right.Length())) continue;
     right.Normalize();
     R3Vector up = right % towards;
@@ -1592,7 +1350,6 @@ CreateAndWriteCameras(void)
 {
   // Create cameras
   if (create_object_cameras) CreateObjectCameras();
-  if (create_wall_cameras) CreateWallCameras();
   if (create_room_cameras) CreateRoomCameras();
   if (create_world_in_hand_cameras) CreateWorldInHandCameras();
 
@@ -1730,10 +1487,6 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_object_cameras") || !strcmp(*argv, "-create_leaf_node_cameras")) {
         create_cameras = create_object_cameras = 1;
         angle_sampling = RN_PI / 6.0;
-      }
-      else if (!strcmp(*argv, "-create_wall_cameras") || !strcmp(*argv, "-create_p5d_wall_cameras")) {
-        create_cameras = create_wall_cameras = 1;
-        angle_sampling = RN_PI / 3.0;
       }
       else if (!strcmp(*argv, "-create_room_cameras")) {
         create_cameras = create_room_cameras = 1;

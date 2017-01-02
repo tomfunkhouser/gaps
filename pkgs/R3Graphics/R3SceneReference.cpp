@@ -38,13 +38,13 @@ R3SceneReference::
 
 
 void R3SceneReference::
-Draw(const R3DrawFlags draw_flags) const
+Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *mats) const
 {
   // Check scene
   if (!referenced_scene) return;
   
   // Draw scene with materials
-  referenced_scene->Draw(draw_flags, &materials);
+  referenced_scene->Root()->Draw(draw_flags, &materials);
 }
 
 

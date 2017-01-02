@@ -81,11 +81,11 @@ public:
   // Query functions
   RNLength Distance(const R3Point& point) const;
   RNBoolean FindClosest(const R3Point& point,
-    R3SceneNode **hit_node = NULL, R3SceneElement **hit_element = NULL, R3Shape **hit_shape = NULL,
+    R3SceneNode **hit_node = NULL, R3Material **hit_material = NULL, R3Shape **hit_shape = NULL,
     R3Point *hit_point = NULL, R3Vector *hit_normal = NULL, RNScalar *hit_d = NULL,
     RNScalar min_d = 0.0, RNScalar max_d = RN_INFINITY) const;
   RNBoolean Intersects(const R3Ray& ray,
-    R3SceneNode **hit_node = NULL, R3SceneElement **hit_element = NULL, R3Shape **hit_shape = NULL,
+    R3SceneNode **hit_node = NULL, R3Material **hit_material = NULL, R3Shape **hit_shape = NULL,
     R3Point *hit_point = NULL, R3Vector *hit_normal = NULL, RNScalar *hit_t = NULL,
     RNScalar min_t = 0.0, RNScalar max_t = RN_INFINITY) const;
 
@@ -109,13 +109,11 @@ public:
   int WriteGrammarHierarchyFile(const char *filename) const;
 
   // Draw functions
-  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
-    const RNArray<R3Material *> *materials = NULL) const;
-  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
-    RNBoolean set_camera = TRUE, RNBoolean set_lights = TRUE) const;
+  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
   
   // Lighting functions
   int LoadLights(int min_index = 0, int max_index = 7) const;
+  int LoadLights(const R3Box& world_bbox, int min_index = 0, int max_index = 7) const;
 
 private:
   R3SceneNode *root;

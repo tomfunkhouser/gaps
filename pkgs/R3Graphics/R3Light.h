@@ -26,7 +26,7 @@ class R3Light {
 	const RNBoolean IsActive(void) const;
   	const RNScalar Intensity(void) const;
   	const RNRgb& Color(void) const;
-        virtual R3Light *Copy(void) const;
+        R3Light *Copy(void) const;
 
         // Manipulation functions/operations
         virtual void SetName(const char *name);

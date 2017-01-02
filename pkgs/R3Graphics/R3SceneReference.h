@@ -23,7 +23,8 @@ public:
   void ReplaceMaterial(int k, R3Material *material);
 
   // Draw functions
-  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
+  void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS,
+    const RNArray<R3Material *> *materials = NULL) const;
 
 private:
   R3Scene *referenced_scene;

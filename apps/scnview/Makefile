@@ -3,7 +3,7 @@
 #
 
 NAME=scnview
-CCSRCS=$(NAME).cpp debug.cpp
+CCSRCS=$(NAME).cpp 
 
 
 #

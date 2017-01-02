@@ -475,10 +475,15 @@ R3SceneRemoveReferences(R3Scene *scene, R3SceneNode *node)
   // Remove references
   while (node->NReferences() > 0) {
     R3SceneReference *reference = node->Reference(0);
-    R3Scene *referenced_scene = reference->ReferencedScene();
-    scene->RemoveReferencedScene(referenced_scene);
     node->RemoveReference(reference);
     delete reference;
+  }
+
+  // Remove referenced scenes
+  while (scene->NReferencedScenes() > 0) {
+    R3Scene *referenced_scene = scene->ReferencedScene(0);
+    scene->RemoveReferencedScene(referenced_scene);
+    // delete referenced_scene;
   }
 }
 
@@ -662,63 +667,25 @@ Distance(const R3Point& point) const
 
 RNBoolean R3Scene::
 FindClosest(const R3Point& point,
-  R3SceneNode **hit_node, R3SceneElement **hit_element, R3Shape **hit_shape,
+  R3SceneNode **hit_node, R3Material **hit_material, R3Shape **hit_shape,
   R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_d,
   RNScalar min_d, RNScalar max_d) const
 {
   // Find closest point in root node
-  return root->FindClosest(point, hit_node, hit_element, hit_shape, hit_point, hit_normal, hit_d, min_d, max_d);
+  return root->FindClosest(point, hit_node, hit_material, hit_shape, hit_point, hit_normal, hit_d, min_d, max_d);
 }
 
 
 
 RNBoolean R3Scene::
 Intersects(const R3Ray& ray,
-  R3SceneNode **hit_node, R3SceneElement **hit_element, R3Shape **hit_shape,
+  R3SceneNode **hit_node, R3Material **hit_material, R3Shape **hit_shape,
   R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_t,
   RNScalar min_t, RNScalar max_t) const
 {
   // Intersect with root node
-  return root->Intersects(ray, hit_node, hit_element, hit_shape, hit_point, hit_normal, hit_t, min_t, max_t);
+  return root->Intersects(ray, hit_node, hit_material, hit_shape, hit_point, hit_normal, hit_t, min_t, max_t);
 }
-
-
-
-void R3Scene::
-Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *materials) const
-{
-  // Draw null material
-  R3null_material.Draw();
-
-  // Draw nodes
-  root->Draw(R3identity_affine, draw_flags, materials);
-
-  // Draw null material
-  R3null_material.Draw();
-}
-
-
-
-
-void R3Scene::
-Draw(const R3DrawFlags draw_flags, RNBoolean set_camera, RNBoolean set_lights) const
-{
-  // Set camera
-  if (set_camera) viewer.Camera().Load(); 
-
-   // Set lights
-  if (set_lights) LoadLights();
-
-  // Draw null material
-  R3null_material.Draw();
-
-  // Draw nodes
-  root->Draw(R3identity_affine, draw_flags);
-
-  // Draw null material
-  R3null_material.Draw();
-}
-
 
 
 
@@ -748,74 +715,161 @@ LoadLights(int min_index, int max_index) const
 
 
 
+int R3Scene::
+LoadLights(const R3Box& world_bbox, int min_index, int max_index) const
+{
+  // Determine the maximum number of lights
+  if (NLights() == 0) return 1;
+  int max_lights = max_index - min_index + 1;
+  if (max_lights == 0) return 1;
+
+  // Allocate scores for lights
+  RNScalar *scores = new RNScalar [ NLights() ];
+  for (int i = 0; i < NLights(); i++) scores[i] = 0;
+  
+  // Score lights
+  for (int i = 0; i < NLights(); i++) {
+    R3Light *light = Light(i);
+    R3Sphere sphere = light->SphereOfInfluence(1E-3);
+    if (RNIsZero(sphere.Radius())) continue; 
+    RNScalar d = R3Distance(sphere.Centroid(), world_bbox);
+    if (RNIsZero(d)) d = RN_EPSILON;
+    RNScalar score = sphere.Radius() / d;
+    if (score < 1.0) continue; 
+    scores[i] = score;
+  }
+
+  // Sort lights based on score
+  RNArray<R3Light *> sorted_lights = lights;
+  for (int i = 0; i < sorted_lights.NEntries(); i++) {
+    for (int j = i+1; j < sorted_lights.NEntries(); j++) {
+      if (scores[j] < scores[i]) {
+        sorted_lights.Swap(i, j);
+        RNScalar swap = scores[i];
+        scores[i] = scores[j];
+        scores[j] = swap;
+      }    
+    }
+  }
+
+  // Load top lights
+  sorted_lights.Truncate(max_lights);
+  for (int i = 0; i < sorted_lights.NEntries(); i++) {
+    R3Light *light = sorted_lights.Kth(i);
+    light->Draw(min_index + i);
+  }
+
+  // Delete scores
+  delete [] scores;
+
+  // Return success
+  return 1;
+}
+
+
+
+static void 
+DrawNodeWithLights(const R3Scene *scene, R3SceneNode *node,
+  const R3Affine& parent_transformation, const R3DrawFlags draw_flags,
+  int min_light = 0, int max_light = 7)
+{
+  // Load lights
+  if ((node->NElements() > 0) || (node->NReferences() > 0)) {
+    R3Box world_bbox = node->BBox();
+    world_bbox.Transform(parent_transformation);
+    scene->LoadLights(world_bbox, min_light, max_light);
+  }
+  
+  // Push transformation
+  R3Affine transformation = parent_transformation;
+  transformation.Transform(node->Transformation());
+  transformation.Push();
+
+  // Draw elements
+  for (int i = 0; i < node->NElements(); i++) {
+    R3SceneElement *element = node->Element(i);
+    element->Draw(draw_flags);
+  }
+
+  // Draw references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    reference->Draw(draw_flags);
+  }
+
+  // Pop transformation
+  transformation.Pop();
+
+  // Draw children
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    DrawNodeWithLights(scene, child, transformation, draw_flags, min_light, max_light);
+  }
+}
+
+
+
+void R3Scene::
+Draw(const R3DrawFlags draw_flags) const
+{
+  // Draw null material
+  R3null_material.Draw();
+
+  // Draw nodes recursively
+  if (NLights() > 7) DrawNodeWithLights(this, root, R3identity_affine, draw_flags, 1, 7);
+  else root->Draw(draw_flags);
+
+  // Draw null material
+  R3null_material.Draw();
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // LIGHT I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-static int
-FindNodesWithinCategory(R3Scene *scene, const char *category_name, RNArray<R3SceneNode *>& nodes)
+static RNBoolean
+MatchNodeName(R3SceneNode *node, const char *name)
 {
-  // Find nodes matching category name
-  for (int i = 0; i < scene->NNodes(); i++) {
-    R3SceneNode *node = scene->Node(i);
-    const char *node_name = node->Name();
-    if (!node_name) continue;
-    int node_name_length = strlen(node_name);
-    const char *node_category_name = NULL;
-    const char *p = node_name + node_name_length;
-    while (p-- > node_name+3) {
-      if (isalnum(*(p-2)) && (*(p-1) == '_') && isalnum(*(p))) { node_category_name = p; break; }
+  // Check node name
+  if (node->Name() && !strcmp(node->Name(), name)) return TRUE;
+
+  // Check referenced node names
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene->Root()->Name() && !strcmp(referenced_scene->Root()->Name(), name)) {
+      return TRUE;
     }
-    if (!node_category_name) continue;
-    if (strcmp(node_category_name, category_name)) continue;
-    nodes.Insert(node);
   }
 
-  // Return whether found any nodes
-  return (nodes.IsEmpty()) ? 0 : 1;
-}
-      
-
-
-static R3Light *
-CopyLight(R3Light *original)
-{
-  // Return copy of light
-  R3Light *copy = NULL;
-  if (original->ClassID() == R3DirectionalLight::CLASS_ID()) copy = new R3DirectionalLight(*((R3DirectionalLight *) original));
-  else if (original->ClassID() == R3PointLight::CLASS_ID()) copy = new R3PointLight(*((R3PointLight *) original));
-  else if (original->ClassID() == R3SpotLight::CLASS_ID()) copy = new R3SpotLight(*((R3SpotLight *) original));
-  else if (original->ClassID() == R3AreaLight::CLASS_ID()) copy = new R3AreaLight(*((R3AreaLight *) original));
-  else return NULL;
-  return copy;
+  // No match
+  return FALSE;
 }
 
 
 
 static int
-InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *crdsys)
+InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *reference_frame)
 {
   // Iniitalize return status
   int status = 0;
   
   // Insert copies of light into scene
-  if (!strcmp(crdsys, "world")) {
+  if (!strcmp(reference_frame, "world")) {
     // Insert one copy of light 
-    R3Light *light = CopyLight(original);
+    R3Light *light = original->Copy();
     scene->InsertLight(light);
     status++;
   }
   else {
-    // Find nodes indicated by crdsys
-    RNArray<R3SceneNode *> nodes;
-    if (nodes.IsEmpty()) { R3SceneNode *node = scene->Node(crdsys); if (node) nodes.Insert(node); }
-    if (nodes.IsEmpty()) { FindNodesWithinCategory(scene, crdsys, nodes); }
-    if (nodes.IsEmpty()) return 0;
-          
-    // Insert copy of light for each node
-    for (int i = 0; i < nodes.NEntries(); i++) {
-      R3SceneNode *node = nodes.Kth(i);
-      R3Light *light = CopyLight(original);
+    // Insert copy of light for each matching node with name matching reference frame
+    for (int i = 0; i < scene->NNodes(); i++) {
+      R3SceneNode *node = scene->Node(i);
+      if (!MatchNodeName(node, reference_frame)) continue;
+      R3Light *light = original->Copy();
       R3Affine transformation_to_world = node->CumulativeTransformation();
       light->Transform(node->CumulativeTransformation());
       scene->InsertLight(light);
@@ -844,7 +898,7 @@ ReadLightsFile(const char *filename)
   int line_number = 0;
   while (fgets(buffer, 4096, fp)) {
     line_number++;
-    char cmd[1024], crdsys[1024];
+    char cmd[1024], reference_frame[1024];
     if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
     if (cmd[0] == '#') continue;
 
@@ -852,7 +906,7 @@ ReadLightsFile(const char *filename)
     if (!strcmp(cmd, "directional_light")) {
       // Parse directional light info
       double intensity, r, g, b, dx, dy, dz;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,
         &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
         fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
         return 0;
@@ -862,12 +916,12 @@ ReadLightsFile(const char *filename)
       RNRgb color(r, g, b);
       R3Vector direction(dx, dy, dz);
       R3DirectionalLight light(direction, color, intensity);
-      InsertCopiesOfLight(this, &light, crdsys);
+      InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "point_light")) {
       // Parse point light info
       double intensity, r, g, b, px, py, pz, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
         fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
         return 0;
@@ -877,12 +931,12 @@ ReadLightsFile(const char *filename)
       RNRgb color(r, g, b);
       R3Point position(px, py, pz);
       R3PointLight light(position, color, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
+      InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "spot_light")) {
       // Parse spot light info
       double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
         fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
         return 0;
@@ -893,12 +947,12 @@ ReadLightsFile(const char *filename)
       R3Point position(px, py, pz);
       R3Vector direction(dx, dy, dz);
       R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
+      InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "line_light")) {
       // Parse spot light info
       double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, crdsys,  
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
         fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
         return 0;
@@ -911,7 +965,7 @@ ReadLightsFile(const char *filename)
       R3Point position = 0.5 * (position1 + position2);
       R3Vector direction(dx, dy, dz);
       R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, crdsys);
+      InsertCopiesOfLight(this, &light, reference_frame);
     }
     else {
       fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
@@ -986,7 +1040,7 @@ ReadFile(const char *filename)
     R3Point scene_center = BBox().Centroid();
     R3Vector towards = R3Vector(0, 0, -1);
     R3Vector up = R3Vector(0, 1, 0);
-    R3Point eye = scene_center - 3 * scene_radius * towards;
+    R3Point eye = scene_center;
     R3Camera camera(eye, towards, up, 0.25, 0.25, 0.01 * scene_radius, 100 * scene_radius);
     SetCamera(camera);
   }
@@ -3298,6 +3352,7 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 
 static int
 ParseSUNCGMaterials(R3Scene *scene,
+  std::map<std::string, R2Texture *>& texture_symbol_table,
   const RNArray<R3Material *>& input_materials,
   RNArray<R3Material *>& output_materials,
   Json::Value *json_materials)
@@ -3329,6 +3384,7 @@ ParseSUNCGMaterials(R3Scene *scene,
       R3Brdf *output_brdf = NULL;
       if (input_brdf) output_brdf = new R3Brdf(*input_brdf);
       else if (*diffuse_string) output_brdf = new R3Brdf();
+      scene->InsertBrdf(output_brdf);
       if (*diffuse_string) {
         long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
         long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
@@ -3339,18 +3395,33 @@ ParseSUNCGMaterials(R3Scene *scene,
 
       // Create output texture
       R2Texture *output_texture = NULL;
-      if (input_texture) output_texture = new R2Texture(*input_texture);
-      else if (*texture_name) output_texture = new R2Texture();
-      if (*texture_name) {
+      if (input_texture) {
+        const char *texture_filename = input_texture->Filename();
+        std::map<std::string, R2Texture *>::iterator it = texture_symbol_table.find(texture_filename);
+        output_texture = (it != texture_symbol_table.end()) ? it->second : NULL;
+        if (!output_texture) {  
+          output_texture = new R2Texture(*input_texture);
+          scene->InsertTexture(output_texture);
+          texture_symbol_table[texture_filename] = output_texture;
+        }
+      }
+      else if (*texture_name) {
         char texture_filename[1024];
         const char *texture_directory = "../../texture";
         sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
         if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
-        R2Image *image = new R2Image();
-        if (!image->Read(texture_filename)) return 0;
-        output_texture->SetImage(image);
-        output_texture->SetFilename(texture_filename);
-        output_texture->SetName(texture_name);
+        std::map<std::string, R2Texture *>::iterator it = texture_symbol_table.find(texture_filename);
+        output_texture = (it != texture_symbol_table.end()) ? it->second : NULL;
+        if (!output_texture) {
+          R2Image *image = new R2Image();
+          if (!image->Read(texture_filename)) return 0;
+          output_texture = new R2Texture();
+          output_texture->SetImage(image);
+          output_texture->SetFilename(texture_filename);
+          output_texture->SetName(texture_name);
+          scene->InsertTexture(output_texture);
+          texture_symbol_table[texture_filename] = output_texture;
+        }
       }
 
       // Create output material
@@ -3439,8 +3510,10 @@ CreateBox(R3Scene *scene, R3SceneNode *node,
 int R3Scene::
 ReadSUNCGFile(const char *filename)
 {
-  // Data directory
+  // Useful variables
   const char *input_data_directory = "../..";
+  std::map<std::string, R2Texture *> texture_symbol_table;
+  std::map<std::string, R3Scene *> model_symbol_table;
   
   // Open file
   FILE* fp = fopen(filename, "rb");
@@ -3656,19 +3729,25 @@ ReadSUNCGFile(const char *filename)
           }        
         }
         else if (!strcmp(node_type, "Object")) {
-          // Read model 
+          // Read/get model 
           if (state) sprintf(obj_name, "%s/object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
           else sprintf(obj_name, "%s/object/%s/%s.obj", input_data_directory, modelId, modelId); 
-          R3Scene *model = new R3Scene();
-          if (!ReadObj(model, model->Root(), obj_name)) return 0;
-          model->Root()->SetName(modelId);
-          model->SetFilename(obj_name);
-          InsertReferencedScene(model);
+          std::map<std::string, R3Scene *>::iterator it = model_symbol_table.find(obj_name);
+          R3Scene *model = (it != model_symbol_table.end()) ? it->second : NULL;
+          if (!model) {
+            model = new R3Scene();
+            if (!ReadObj(model, model->Root(), obj_name)) return 0;
+            sprintf(node_name, "Model#%s", modelId);
+            model->Root()->SetName(node_name);
+            model->SetFilename(obj_name);
+            InsertReferencedScene(model);
+            model_symbol_table[obj_name] = model;
+          }
 
           // Read materials
           RNArray<R3Material *> materials;
           if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
-            if (!ParseSUNCGMaterials(this, model->materials, materials, json_materials)) return 0;
+            if (!ParseSUNCGMaterials(this, texture_symbol_table, model->materials, materials, json_materials)) return 0;
           }
 
           // Create node with reference to model
@@ -3697,7 +3776,7 @@ ReadSUNCGFile(const char *filename)
           // Read materials
           RNArray<R3Material *> materials;
           if (GetJsonObjectMember(json_materials, json_node, "materials", Json::arrayValue)) {
-            if (!ParseSUNCGMaterials(this, materials, materials, json_materials)) return 0;
+            if (!ParseSUNCGMaterials(this, texture_symbol_table, materials, materials, json_materials)) return 0;
           }
 
           // Create node for box
@@ -3809,7 +3888,7 @@ ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname
       if (ParseP5DColor(p5d_material->color, rgb)) {
         R3Brdf *brdf = (R3Brdf *) material->Brdf();
         if (!brdf) { brdf = new R3Brdf(rgb); scene->InsertBrdf(brdf); material->SetBrdf(brdf); }
-        else { brdf->SetAmbient(rgb); brdf->SetDiffuse(rgb); }
+        else { brdf->SetDiffuse(rgb); }
       }
     }
     
@@ -3821,7 +3900,7 @@ ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname
         if (ParseP5DColor(p5d_material->tcolor, rgb)) {
           R3Brdf *brdf = (R3Brdf *) material->Brdf();
           if (!brdf) { brdf = new R3Brdf(rgb); scene->InsertBrdf(brdf); material->SetBrdf(brdf); }
-          else { brdf->SetAmbient(rgb); brdf->SetDiffuse(rgb); }
+          else { brdf->SetDiffuse(rgb); }
         }
       }
     
@@ -3853,15 +3932,6 @@ ReplaceP5DObjectMaterials(R3Scene *scene, R3SceneNode *node, const char *objname
   return 1;
 }
   
-
-
-
-#if 0
-static int
-CreateP5DObjectReference(R3Scene *scene, R3SceneNode *node, P5DObject *object, const char *filename)
-{
-}
-#endif
 
 
 
@@ -3930,7 +4000,6 @@ CreateP5DBox(R3Scene *scene, R3SceneNode *node, P5DPrimitive *primitive)
         if (p5d_material->tcolor) {
           RNRgb rgb(0.5, 0.5, 0.5);
           if (ParseP5DColor(p5d_material->tcolor, rgb)) {
-            brdf->SetAmbient(rgb);
             brdf->SetDiffuse(rgb); 
             material->Update();
           }

@@ -16,7 +16,7 @@ static char *output_image_name = NULL;
 static char *input_cameras_name = NULL;
 static char *input_lights_name = NULL;
 static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
-static R3Vector initial_camera_up(0, 1, 0);
+static R3Vector initial_camera_up(0,1,0);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
 static RNRgb background_color(0,0,0);
@@ -45,7 +45,6 @@ static int GLUTmodifiers = 0;
 static R3Scene *scene = NULL;
 static R3Viewer *viewer = NULL;
 static R3SceneNode *selected_node = NULL;
-static R3SceneElement *selected_element = NULL;
 static RNArray<R3Camera *> *cameras = NULL;
 static int selected_camera_index = -1;
 static R3Point center(0, 0, 0);
@@ -63,7 +62,6 @@ static int show_materials = 0;
 static int show_bboxes = 0;
 static int show_axes = 0;
 static int show_rays = 0;
-static int show_closest = 0;
 static int show_frame_rate = 0;
 static int show_backfacing = 0;
 
@@ -72,44 +70,6 @@ static int show_backfacing = 0;
 ////////////////////////////////////////////////////////////////////////
 // Draw functions
 ////////////////////////////////////////////////////////////////////////
-
-static const R3Material *
-KthMaterial(int k)
-{
-  // Make array of colors
-  const int nmaterials = 72;
-  static const R3Material materials[nmaterials] = {
-    R3Material(new R3Brdf(1.0, 1.0, 0.0)), R3Material(new R3Brdf(0.0, 1.0, 0.0)), R3Material(new R3Brdf(0.0, 0.0, 1.0)), 
-    R3Material(new R3Brdf(0.3, 0.6, 0.0)), R3Material(new R3Brdf(0.0, 1.0, 1.0)), R3Material(new R3Brdf(1.0, 0.0, 1.0)), 
-    R3Material(new R3Brdf(1.0, 0.5, 0.0)), R3Material(new R3Brdf(0.0, 1.0, 0.5)), R3Material(new R3Brdf(0.5, 0.0, 1.0)), 
-    R3Material(new R3Brdf(0.5, 1.0, 0.0)), R3Material(new R3Brdf(0.0, 0.5, 1.0)), R3Material(new R3Brdf(1.0, 0.0, 0.5)), 
-    R3Material(new R3Brdf(0.5, 0.0, 0.0)), R3Material(new R3Brdf(0.0, 0.5, 0.0)), R3Material(new R3Brdf(0.0, 0.0, 0.5)), 
-    R3Material(new R3Brdf(0.5, 0.5, 0.0)), R3Material(new R3Brdf(0.0, 0.5, 0.5)), R3Material(new R3Brdf(0.5, 0.0, 0.5)),
-    R3Material(new R3Brdf(0.7, 0.0, 0.0)), R3Material(new R3Brdf(0.0, 0.7, 0.0)), R3Material(new R3Brdf(0.0, 0.0, 0.7)), 
-    R3Material(new R3Brdf(0.7, 0.7, 0.0)), R3Material(new R3Brdf(0.0, 0.7, 0.7)), R3Material(new R3Brdf(0.7, 0.0, 0.7)), 
-    R3Material(new R3Brdf(0.7, 0.3, 0.0)), R3Material(new R3Brdf(0.0, 0.7, 0.3)), R3Material(new R3Brdf(0.3, 0.0, 0.7)), 
-    R3Material(new R3Brdf(0.3, 0.7, 0.0)), R3Material(new R3Brdf(0.0, 0.3, 0.7)), R3Material(new R3Brdf(0.7, 0.0, 0.3)), 
-    R3Material(new R3Brdf(0.3, 0.0, 0.0)), R3Material(new R3Brdf(0.0, 0.3, 0.0)), R3Material(new R3Brdf(0.0, 0.0, 0.3)), 
-    R3Material(new R3Brdf(0.3, 0.3, 0.0)), R3Material(new R3Brdf(0.0, 0.3, 0.3)), R3Material(new R3Brdf(0.3, 0.0, 0.3)),
-    R3Material(new R3Brdf(1.0, 0.3, 0.3)), R3Material(new R3Brdf(0.3, 1.0, 0.3)), R3Material(new R3Brdf(0.3, 0.3, 1.0)), 
-    R3Material(new R3Brdf(1.0, 1.0, 0.3)), R3Material(new R3Brdf(0.3, 1.0, 1.0)), R3Material(new R3Brdf(1.0, 0.3, 1.0)), 
-    R3Material(new R3Brdf(1.0, 0.5, 0.3)), R3Material(new R3Brdf(0.3, 1.0, 0.5)), R3Material(new R3Brdf(0.5, 0.3, 1.0)), 
-    R3Material(new R3Brdf(0.5, 1.0, 0.3)), R3Material(new R3Brdf(0.3, 0.5, 1.0)), R3Material(new R3Brdf(1.0, 0.3, 0.5)), 
-    R3Material(new R3Brdf(0.5, 0.3, 0.3)), R3Material(new R3Brdf(0.3, 0.5, 0.3)), R3Material(new R3Brdf(0.3, 0.3, 0.5)), 
-    R3Material(new R3Brdf(0.5, 0.5, 0.3)), R3Material(new R3Brdf(0.3, 0.5, 0.5)), R3Material(new R3Brdf(0.5, 0.3, 0.5)),
-    R3Material(new R3Brdf(0.3, 0.5, 0.5)), R3Material(new R3Brdf(0.5, 0.3, 0.5)), R3Material(new R3Brdf(0.5, 0.5, 0.3)), 
-    R3Material(new R3Brdf(0.3, 0.3, 0.5)), R3Material(new R3Brdf(0.5, 0.3, 0.3)), R3Material(new R3Brdf(0.3, 0.5, 0.3)), 
-    R3Material(new R3Brdf(0.3, 0.8, 0.5)), R3Material(new R3Brdf(0.5, 0.3, 0.8)), R3Material(new R3Brdf(0.8, 0.5, 0.3)), 
-    R3Material(new R3Brdf(0.8, 0.3, 0.5)), R3Material(new R3Brdf(0.5, 0.8, 0.3)), R3Material(new R3Brdf(0.3, 0.5, 0.8)), 
-    R3Material(new R3Brdf(0.8, 0.5, 0.5)), R3Material(new R3Brdf(0.5, 0.8, 0.5)), R3Material(new R3Brdf(0.5, 0.5, 0.8)), 
-    R3Material(new R3Brdf(0.8, 0.8, 0.5)), R3Material(new R3Brdf(0.5, 0.8, 0.8)), R3Material(new R3Brdf(0.8, 0.5, 0.8))
-  };
-
-  // Return material
-  return (k >= 0) ? &materials[k % nmaterials] : &R3default_material;
-}
-
-
 
 #if 0
 static void 
@@ -241,77 +201,6 @@ DrawLights(R3Scene *scene)
 
 
 static void 
-DrawShapes(R3Scene *scene, R3SceneNode *node,
-  const R3Affine& parent_transformation, const RNArray<R3Material *>& materials,
-  RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
-{
-  // Update transformation
-  R3Affine cumulative_transformation = parent_transformation;
-  cumulative_transformation.Transform(node->Transformation());
-
-  // Draw elements 
-  if (node->NElements() > 0) {
-    // Load lights 
-    int max_lights = 8 - headlight;
-    if (scene->NLights() > max_lights) {
-      node->LoadLights(headlight, 7);
-    }
-
-    // Push transformation
-    cumulative_transformation.Push();
-    
-    // Draw elements
-    for (int i = 0; i < node->NElements(); i++) {
-      R3SceneElement *element = node->Element(i);
-
-      // Set material
-      const R3Material *material = element->Material();
-      static R3Material selection_material(&R3red_brdf, "Selection");
-      if (element == selected_element) selection_material.Draw();
-      else if (show_materials) KthMaterial(material->SceneIndex())->Draw();
-      else if (node == selected_node) selection_material.Draw();
-      else if ((materials.NEntries() > material->SceneIndex()) && (materials[material->SceneIndex()])) materials[material->SceneIndex()]->Draw();
-      else if (material) material->Draw();
-      else R3default_material.Draw();
-
-      // Draw shapes
-      for (int j = 0; j < element->NShapes(); j++) {
-        R3Shape *shape = element->Shape(j);
-        shape->Draw(draw_flags);
-      }
-    }
-
-    // Pop transformation
-    cumulative_transformation.Pop();
-  }
-
-  // Draw references
-  for (int i = 0; i < node->NReferences(); i++) {
-    R3SceneReference *reference = node->Reference(i);
-    R3Scene *referenced_scene = reference->ReferencedScene();
-    DrawShapes(referenced_scene, referenced_scene->Root(), cumulative_transformation, reference->Materials(), draw_flags);
-  }
-
-  // Draw children
-  for (int i = 0; i < node->NChildren(); i++) {
-    R3SceneNode *child = node->Child(i);
-    DrawShapes(scene, child, cumulative_transformation, materials, draw_flags);
-  }
-}
-
-
-
-static void 
-DrawShapes(R3Scene *scene, RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS)
-{
-  // Draw the scene
-  RNArray<R3Material *> materials;
-  DrawShapes(scene, scene->Root(), R3identity_affine, materials, draw_flags);
-}
-
-
-
-static void 
 DrawBBoxes(R3Scene *scene, R3SceneNode *node)
 {
   // Draw node bounding box
@@ -337,7 +226,7 @@ DrawRays(R3Scene *scene)
 {
   // Ray intersection variables
   R3SceneNode *node;
-  R3SceneElement *element;
+  R3Material *material;
   R3Shape *shape;
   R3Point point;
   R3Vector normal;
@@ -359,9 +248,8 @@ DrawRays(R3Scene *scene)
     for (int j = jstep/2; j < scene->Viewport().Height(); j += jstep) {
       // R3Ray ray = scene->Viewer().WorldRay(i, j);
       R3Ray ray = viewer->WorldRay(i, j);
-      if (scene->Intersects(ray, &node, &element, &shape, &point, &normal, &t)) {
+      if (scene->Intersects(ray, &node, &material, &shape, &point, &normal, &t)) {
         // Get intersection information
-        const R3Material *material = (element) ? element->Material() : NULL;
         const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
 
         // Compute color
@@ -385,27 +273,84 @@ DrawRays(R3Scene *scene)
 
 
 
-static void 
-DrawClosest(R3Scene *scene)
+////////////////////////////////////////////////////////////////////////
+// Picking functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+Pick(R3Scene *scene, int x, int y,
+  R3SceneNode **hit_node = NULL, R3Point *hit_position = NULL)
 {
-  // Closest point variables
-  R3SceneNode *node;
-  R3SceneElement *element;
-  R3Shape *shape;
-  R3Point point;
-  R3Vector normal;
-  RNScalar d;
+  // Clear window
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Closest point drawing variables
-  double radius = 0.01 * scene->BBox().DiagonalRadius();
-  // const R3Point& eye = scene->Camera().Origin();
-  const R3Point& eye = viewer->Camera().Origin();
+  // Set viewing transformation
+  viewer->Camera().Load();
 
-  // Draw closest point
-  if (scene->FindClosest(eye, &node, &element, &shape, &point, &normal, &d)) {
-    R3Sphere(point, radius).Draw();
-    R3Span(point, point + 2 * radius * normal).Draw();
+  // Set OpenGL stuff
+  int pick_tolerance = 10;
+  glPointSize(pick_tolerance);
+  glDisable(GL_LIGHTING);
+
+  // Draw leaf nodes with color indicating node index
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    if (node->NChildren() > 0) continue;
+    R3Affine parent_transformation = node->CumulativeParentTransformation();
+    parent_transformation.Push();
+    int index = i + 1;
+    unsigned char rgba[4];
+    rgba[0] = (index >> 16) & 0xFF;
+    rgba[1] = (index >> 8) & 0xFF;
+    rgba[2] = index & 0xFF;
+    rgba[3] = 0xFF;
+    glColor4ubv(rgba);
+    node->Draw(R3_SURFACES_DRAW_FLAG);
+    parent_transformation.Pop();
   }
+
+  // Reset OpenGL stuff
+  glPointSize(1);
+  glFinish();
+
+  // Read color buffer at cursor position
+  unsigned char rgba[4];
+  glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+  if ((rgba[0] == 0) && (rgba[1] == 0) && (rgba[2] == 0)) return 0;
+
+  // Parse color value
+  int r = rgba[0] & 0xFF;
+  int g = rgba[1] & 0xFF;
+  int b = rgba[2] & 0xFF;
+  // int a = rgba[3] & 0xFF;
+  int node_index = ((r << 16) | (g << 8) | b) - 1;
+  if (node_index < 0) return 0;
+  if (node_index >= scene->NNodes()) return 0;
+ 
+  // Return hit node
+  if (hit_node) {
+   *hit_node = scene->Node(node_index);
+  }
+
+  // Return hit position
+  if (hit_position) {
+    GLfloat depth;
+    GLdouble p[3];
+    GLint viewport[4];
+    GLdouble modelview_matrix[16];
+    GLdouble projection_matrix[16];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+    glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+    glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    gluUnProject(x, y, depth, modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
+    R3Point position(p[0], p[1], p[2]);
+    *hit_position = position;
+  }
+  
+  // Return success
+  return 1;
 }
 
 
@@ -469,30 +414,31 @@ void GLUTRedraw(void)
     glLineWidth(1);
   }
 
-  // Draw closest point
-  if (show_closest) {
+  // Draw selected node
+  if (selected_node) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.75, 0.0, 0.75);
-    DrawClosest(scene);
+    static R3Material selection_material(new R3Brdf(1.0, 0.0, 0.0), "Selection");
+    R3Affine transformation = selected_node->CumulativeParentTransformation();
+    transformation.Push();
+    glColor3d(1.0, 0.0, 0.0);
+    glLineWidth(3.0);
+    selected_node->Draw(R3_EDGES_DRAW_FLAG);
+    glLineWidth(3.0);
+    transformation.Pop();
   }
 
-  // Draw scene nodes
+  // Draw faces
   if (show_faces) {
     glEnable(GL_LIGHTING);
     scene->LoadLights(headlight);
-    R3null_material.Draw();
-    DrawShapes(scene);
-    R3null_material.Draw();
+    scene->Draw();
   }
 
-  // Draw scene nodes
+  // Draw edges
   if (show_edges) {
     glDisable(GL_LIGHTING);
-    R3null_material.Draw();
     glColor3d(0.0, 1.0, 0.0);
-    R3null_material.Draw();
-    DrawShapes(scene, R3_EDGES_DRAW_FLAG);
-    R3null_material.Draw();
+    scene->Draw(R3_EDGES_DRAW_FLAG);
   }
 
   // Draw bboxes
@@ -586,11 +532,22 @@ void GLUTMotion(int x, int y)
   // Update mouse drag
   GLUTmouse_drag += dx*dx + dy*dy;
 
-  // World in hand navigation 
-  if (GLUTbutton[0]) viewer->RotateWorld(1.0, center, x, y, dx, dy);
-  else if (GLUTbutton[1]) viewer->ScaleWorld(1.0, center, x, y, dx, dy);
-  else if (GLUTbutton[2]) viewer->TranslateWorld(1.0, center, x, y, dx, dy);
-  if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
+  if (GLUTmodifiers & GLUT_ACTIVE_SHIFT) {
+    // Camera in hand navigation
+    const R3Camera& camera = viewer->Camera();
+    if (GLUTbutton[0]) viewer->RotateCamera(camera.Right(), -0.001*dy);
+    if (GLUTbutton[0]) viewer->RotateCamera(R3posy_vector, 0.001*dx);
+    else if (GLUTbutton[1]) viewer->TranslateCamera((0.01*dx + 0.01*dy)*camera.Towards());
+    else if (GLUTbutton[2]) viewer->TranslateCamera((0.01*dx)*camera.Right() + (0.01*dy)*camera.Up());
+    if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
+  }
+  else {
+    // World in hand navigation
+    if (GLUTbutton[0]) viewer->RotateWorld(1.0, center, x, y, dx, dy);
+    else if (GLUTbutton[1]) viewer->ScaleWorld(1.0, center, x, y, dx, dy);
+    else if (GLUTbutton[2]) viewer->TranslateWorld(1.0, center, x, y, dx, dy);
+    if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
+  }
 
   // Remember mouse position 
   GLUTmouse[0] = x;
@@ -636,12 +593,18 @@ void GLUTMouse(int button, int state, int x, int y)
         R3Point position;
         R3Vector normal;
         selected_node = NULL;;
-        selected_element = NULL;
+#if 1
+        if (Pick(scene, x, y, &selected_node, &position)) {
+          printf("Selected %s    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
+            position.X(), position.Y(), position.Z());
+        }
+#else
         R3Ray ray = viewer->WorldRay(x, y);
-        if (scene->Intersects(ray, &selected_node, &selected_element, NULL, &position, &normal)) {
+        R3Material *selected_material = NULL;
+        if (scene->Intersects(ray, &selected_node, &selected_material, NULL, &position, &normal)) {
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z());
-#if 1
+#if 0
           const R3Material *material = selected_element->Material();
           const char *material_name = (material) ? material->Name() : "-";
           const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
@@ -659,6 +622,7 @@ void GLUTMouse(int button, int state, int x, int y)
             shininess, texture_name);
 #endif
         }
+#endif
       }
     }
   }
@@ -685,7 +649,21 @@ void GLUTSpecial(int key, int x, int y)
   // Invert y coordinate
   y = GLUTwindow_height - y;
 
-  // Process keyboard button event 
+  // Process keyboard button event
+  switch (key) {
+  case GLUT_KEY_LEFT:
+    viewer->TranslateCamera(0.1*viewer->Camera().Left());
+    break;
+  case GLUT_KEY_RIGHT:
+    viewer->TranslateCamera(0.1*viewer->Camera().Right());
+    break;
+  case GLUT_KEY_DOWN:
+    viewer->TranslateCamera(0.1*viewer->Camera().Down());
+    break;
+  case GLUT_KEY_UP:
+    viewer->TranslateCamera(0.1*viewer->Camera().Up());
+    break;
+  }    
 
   // Remember mouse position 
   GLUTmouse[0] = x;
@@ -742,11 +720,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'M':
   case 'm':
     show_materials = !show_materials;
-    break;
-
-  case 'P':
-  case 'p':
-    show_closest = !show_closest;
     break;
 
   case 'R':
@@ -919,10 +892,11 @@ ReadScene(char *filename)
     printf("Read scene from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
+    printf("  # Lights = %d\n", scene->NLights());
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Lights = %d\n", scene->NLights());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
