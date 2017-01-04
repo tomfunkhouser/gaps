@@ -65,6 +65,7 @@
 #include "RNArray.h"
 #include "RNQueue.h"
 #include "RNHeap.h"
+#include "RNMap.h"
 
 
 

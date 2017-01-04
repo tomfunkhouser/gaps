@@ -45,6 +45,7 @@ R3SceneNode(R3Scene *scene)
     children(),
     elements(),
     references(),
+    info(),
     transformation(R3identity_affine),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     name(NULL),
@@ -413,6 +414,33 @@ RemoveReference(R3SceneReference *reference)
 
   // Invalidate bounding box
   InvalidateBBox();
+}
+
+
+
+void R3SceneNode::
+InsertInfo(const char *key, const char *value) 
+{
+  // Insert key-value pair
+  info.Insert(key, value);
+}
+
+
+
+void R3SceneNode::
+ReplaceInfo(const char *key, const char *value) 
+{
+  // Replace key-value pair
+  info.Replace(key, value);
+}
+
+
+
+void R3SceneNode::
+RemoveInfo(const char *key) 
+{
+  // Insert key-value pair
+  info.Remove(key);
 }
 
 

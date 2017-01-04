@@ -13,7 +13,7 @@ NAME=RNBasics
 CCSRCS=$(NAME).cpp \
 	RNTime.cpp \
         RNGrfx.cpp RNRgb.cpp \
-        RNHeap.cpp RNQueue.cpp RNArray.cpp \
+        RNMap.cpp RNHeap.cpp RNQueue.cpp RNArray.cpp \
 	RNSvd.cpp RNIntval.cpp RNScalar.cpp \
  	RNType.cpp \
  	RNFlags.cpp \

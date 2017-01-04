@@ -27,6 +27,7 @@ public:
   const RNVolume Volume(void) const;
   const R3Affine& Transformation(void) const;
   const char *Name(void) const;
+  const char *Info(const char *key) const;
   void *Data(void) const;
 
   // More property functions
@@ -55,6 +56,9 @@ public:
   void RemoveElement(R3SceneElement *element);
   void InsertReference(R3SceneReference *reference);
   void RemoveReference(R3SceneReference *reference);
+  void InsertInfo(const char *key, const char *info);
+  void ReplaceInfo(const char *key, const char *info);
+  void RemoveInfo(const char *key);
   void SetTransformation(const R3Affine& transformation);
   void Transform(const R3Affine& transformation);
   void SetName(const char *name);
@@ -89,6 +93,7 @@ private:
   RNArray<R3SceneNode *> children;
   RNArray<R3SceneElement *> elements;
   RNArray<R3SceneReference *> references;
+  RNSymbolTable<std::string> info;
   R3Affine transformation;
   R3Box bbox;
   char *name;
@@ -203,6 +208,15 @@ Name(void) const
 {
   // Return name
   return name;
+}
+
+
+
+inline const char *R3SceneNode::
+Info(const char *key) const
+{
+  // Return info associated with key
+  return info.Find(key).c_str();
 }
 
 

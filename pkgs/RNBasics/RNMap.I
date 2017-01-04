@@ -1,0 +1,114 @@
+#ifndef __RN_MAP__
+#define __RN_MAP__
+
+
+
+/* Member functions */
+
+template <class KeyType, class ValueType>
+RNMap<KeyType, ValueType>::
+RNMap(void)
+{
+    // Allocate map
+    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >();
+}
+
+
+
+template <class KeyType, class ValueType>
+RNMap<KeyType, ValueType>::
+RNMap(int (*compare_function)(KeyType, KeyType))
+{
+    // Allocate map
+    RNMapComparator<KeyType> c(compare_function);
+    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( c );
+}
+
+
+
+template <class KeyType, class ValueType>
+RNMap<KeyType, ValueType>::
+RNMap(const RNMap<KeyType,ValueType>& src)
+{
+    // Copy map
+    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( *(src.map) );
+}
+
+
+
+template <class KeyType, class ValueType>
+RNMap<KeyType, ValueType>::
+~RNMap(void)
+{
+    // Delete map
+    delete m;
+}
+
+
+
+
+template <class KeyType, class ValueType>
+int RNMap<KeyType, ValueType>::
+NEntries(void) const
+{
+    // Return number of entries in map
+    return (int) m->size();
+}
+
+
+
+
+template <class KeyType, class ValueType>
+ValueType RNMap<KeyType, ValueType>::
+Value(KeyType key) const
+{
+    // Return value associated with key, or NULL if not found
+    typename std::map<KeyType, ValueType, RNMapComparator<KeyType> >::iterator it = m->find(key);
+    return (it != m->end()) ? it->second : NULL;
+}
+
+
+
+template <class KeyType, class ValueType>
+void RNMap<KeyType, ValueType>::
+Empty(void)
+{
+    // Remove all entries
+    m->clear();
+}
+
+
+
+template <class KeyType, class ValueType>
+void RNMap<KeyType, ValueType>::
+Insert(KeyType key, ValueType value)
+{
+    // Insert entry into map
+    (*m)[key] = value;
+}
+
+
+
+template <class KeyType, class ValueType>
+void RNMap<KeyType, ValueType>::
+Replace(KeyType key, ValueType value)
+{
+    // Replace entry in map
+    (*m)[key] = value;
+}
+
+
+
+
+template <class KeyType, class ValueType>
+void RNMap<KeyType, ValueType>::
+Remove(KeyType key)
+{
+    // Remove entry from map
+    typename std::map<KeyType, ValueType, RNMapComparator<KeyType> >::iterator it = m->find(key);
+    if (it != m->end()) m->erase(it);
+}
+
+
+
+#endif

@@ -898,7 +898,7 @@ ReadLightsFile(const char *filename)
 
     // Check cmd
     if (!strcmp(cmd, "directional_light")) {
-      // Parse directional light info
+      // Parse directional light 
       double intensity, r, g, b, dx, dy, dz;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,
         &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
@@ -913,7 +913,7 @@ ReadLightsFile(const char *filename)
       InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "point_light")) {
-      // Parse point light info
+      // Parse point light 
       double intensity, r, g, b, px, py, pz, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
@@ -928,7 +928,7 @@ ReadLightsFile(const char *filename)
       InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "spot_light")) {
-      // Parse spot light info
+      // Parse spot light 
       double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
@@ -944,7 +944,7 @@ ReadLightsFile(const char *filename)
       InsertCopiesOfLight(this, &light, reference_frame);
     }
     else if (!strcmp(cmd, "line_light")) {
-      // Parse spot light info
+      // Parse spot light 
       double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
@@ -1084,9 +1084,6 @@ WriteFile(const char *filename) const
 // OBJ FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-#include <string>
-#include <map>
-
 static int
 InsertSceneElement(R3Scene *scene, R3SceneNode *node, const char *object_name, R3Material *material, 
   const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris)
@@ -1174,7 +1171,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
   int line_count = 0;
   R3Brdf *brdf = NULL;
   R3Material *material = NULL;
-  std::map<std::string, R2Texture *> texture_symbol_table;
+  RNSymbolTable<R2Texture *> texture_symbol_table;
   while (fgets(buffer, 1023, fp)) {
     // Increment line counter
     line_count++;
@@ -1349,13 +1346,12 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
         char texture_filename[1024];
         if (dirname) sprintf(texture_filename, "%s/%s", dirname, texture_name);
         else strncpy(texture_filename, texture_name, 1024);
-        std::map<std::string, R2Texture *>::iterator it = texture_symbol_table.find(texture_filename);
-        R2Texture *texture = (it != texture_symbol_table.end()) ? it->second : NULL;
+        R2Texture *texture = texture_symbol_table.Find(texture_filename);
         if (!texture) {
           R2Image *image = new R2Image();
           if (!image->Read(texture_filename)) return 0;
           texture = new R2Texture(image);
-          texture_symbol_table[texture_filename] = texture;
+          texture_symbol_table.Insert(texture_filename, texture);
           texture->SetFilename(texture_filename);
           texture->SetName(texture_filename);
           scene->InsertTexture(texture);
@@ -1383,7 +1379,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   int line_count = 0;
   char *object_name = NULL;
   R3Material *material = NULL;
-  std::map<std::string, R3Material *> material_symbol_table;
+  RNSymbolTable<R3Material *> material_symbol_table;
   RNArray<R2Point *> texture_coords;
   RNArray<R3TriangleVertex *> verts;
   RNArray<R3Triangle *> tris;
@@ -1527,11 +1523,11 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       if (returned_materials) *returned_materials = parsed_materials;
 
       // Fill symbol table
-      material_symbol_table.clear();
+      material_symbol_table.Empty();
       for (int i = 0; i < parsed_materials.NEntries(); i++) {
         R3Material *material = parsed_materials.Kth(i);
         if (!material->Name()) continue;
-        material_symbol_table[material->Name()] = material;
+        material_symbol_table.Insert(material->Name(), material);
       }
     }
     else if (!strcmp(keyword, "usemtl")) {
@@ -1549,8 +1545,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       }
 
       // Find material
-      std::map<std::string, R3Material *>::iterator it = material_symbol_table.find(mtlname);
-      material = (it != material_symbol_table.end()) ? it->second : NULL;
+      material = material_symbol_table.Find(mtlname);
       if (!material) {
         fprintf(stderr, "Unable to find material %s at on line %d in OBJ file\n", mtlname, line_count);
         return 0;
@@ -2680,7 +2675,7 @@ WritePrincetonFile(const char *filename) const
   // Determine output directory
   const char *output_directory = ".";
 
-  // Write color and camera info
+  // Write color and camera 
   fprintf(fp, "background %g %g %g\n", Background().R(), Background().G(), Background().B());
   fprintf(fp, "ambient %g %g %g\n", Ambient().R(), Ambient().G(), Ambient().B());
   fprintf(fp, "camera %g %g %g  %g %g %g  %g %g %g  %g   %g %g  \n",
@@ -3344,7 +3339,7 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 
 static int
 ParseSUNCGMaterials(R3Scene *scene,
-  std::map<std::string, R2Texture *>& texture_symbol_table,
+  RNSymbolTable<R2Texture *>& texture_symbol_table,
   const RNArray<R3Material *>& input_materials,
   RNArray<R3Material *>& output_materials,
   Json::Value *json_materials)
@@ -3364,7 +3359,7 @@ ParseSUNCGMaterials(R3Scene *scene,
     if (GetJsonObjectMember(json_value, json_material, "diffuse")) 
       strncpy(diffuse_string, json_value->asString().c_str(), 1024);
 
-    // Get input material information
+    // Get input material
     R3Material *input_material = (input_materials.NEntries() > (int) index) ? input_materials.Kth(index) : NULL;
     const R3Brdf *input_brdf = (input_material) ? input_material->Brdf() : NULL;
     const R2Texture *input_texture = (input_material) ? input_material->Texture() : NULL;
@@ -3389,12 +3384,11 @@ ParseSUNCGMaterials(R3Scene *scene,
       R2Texture *output_texture = NULL;
       if (input_texture) {
         const char *texture_filename = input_texture->Filename();
-        std::map<std::string, R2Texture *>::iterator it = texture_symbol_table.find(texture_filename);
-        output_texture = (it != texture_symbol_table.end()) ? it->second : NULL;
+        output_texture = texture_symbol_table.Find(texture_filename);
         if (!output_texture) {  
           output_texture = new R2Texture(*input_texture);
           scene->InsertTexture(output_texture);
-          texture_symbol_table[texture_filename] = output_texture;
+          texture_symbol_table.Insert(texture_filename, output_texture);
         }
       }
       else if (*texture_name) {
@@ -3402,8 +3396,7 @@ ParseSUNCGMaterials(R3Scene *scene,
         const char *texture_directory = "../../texture";
         sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
         if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
-        std::map<std::string, R2Texture *>::iterator it = texture_symbol_table.find(texture_filename);
-        output_texture = (it != texture_symbol_table.end()) ? it->second : NULL;
+        output_texture = texture_symbol_table.Find(texture_filename);
         if (!output_texture) {
           R2Image *image = new R2Image();
           if (!image->Read(texture_filename)) return 0;
@@ -3412,7 +3405,7 @@ ParseSUNCGMaterials(R3Scene *scene,
           output_texture->SetFilename(texture_filename);
           output_texture->SetName(texture_name);
           scene->InsertTexture(output_texture);
-          texture_symbol_table[texture_filename] = output_texture;
+          texture_symbol_table.Insert(texture_filename, output_texture);
         }
       }
 
@@ -3500,8 +3493,8 @@ ReadSUNCGFile(const char *filename)
 {
   // Useful variables
   const char *input_data_directory = "../..";
-  std::map<std::string, R2Texture *> texture_symbol_table;
-  std::map<std::string, R3Scene *> model_symbol_table;
+  RNSymbolTable<R2Texture *> texture_symbol_table;
+  RNSymbolTable<R3Scene *> model_symbol_table;
   
   // Open file
   FILE* fp = fopen(filename, "rb");
@@ -3720,8 +3713,7 @@ ReadSUNCGFile(const char *filename)
           // Read/get model 
           if (state) sprintf(obj_name, "%s/object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
           else sprintf(obj_name, "%s/object/%s/%s.obj", input_data_directory, modelId, modelId); 
-          std::map<std::string, R3Scene *>::iterator it = model_symbol_table.find(obj_name);
-          R3Scene *model = (it != model_symbol_table.end()) ? it->second : NULL;
+          R3Scene *model = model_symbol_table.Find(obj_name);
           if (!model) {
             model = new R3Scene();
             if (!ReadObj(model, model->Root(), obj_name)) return 0;
@@ -3729,7 +3721,7 @@ ReadSUNCGFile(const char *filename)
             model->Root()->SetName(node_name);
             model->SetFilename(obj_name);
             InsertReferencedScene(model);
-            model_symbol_table[obj_name] = model;
+            model_symbol_table.Insert(obj_name, model);
           }
 
           // Read materials
