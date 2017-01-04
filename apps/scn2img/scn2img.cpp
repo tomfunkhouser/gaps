@@ -77,18 +77,8 @@ static int print_debug = 0;
 
 
 ////////////////////////////////////////////////////////////////////////
-// Type definitions
+// Rendering schemes
 ////////////////////////////////////////////////////////////////////////
-
-class Category {
-public:
-  Category(void) : name(NULL), identifier(-1) {};
-  ~Category(void) { if (name) free(name); }
-public:
-  char *name;
-  int identifier;
-};
-
 
 enum {
   NO_COLOR_SCHEME,
@@ -118,8 +108,6 @@ enum {
 
 static R3Scene *scene = NULL;
 static RNArray<R3Camera *> cameras;
-static RNArray<Category *> categories;
-static Category **node_category_assignments = NULL;
 static int next_image_index = 0;
 
 
@@ -148,6 +136,10 @@ ReadScene(char *filename)
     return NULL;
   }
 
+  // Remove references and transformations
+  scene->RemoveReferences();
+  scene->RemoveTransformations();
+  
   // Print statistics
   if (print_verbose) {
     printf("Read scene from %s ...\n", filename);
@@ -193,6 +185,29 @@ ReadLights(const char *filename)
   return 1;
 }
   
+
+
+static int
+ReadCategories(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read file
+  if (!scene->ReadSUNCGModelFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read categories from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+} 
+
 
 
 static int
@@ -247,118 +262,6 @@ ReadCameras(const char *filename)
   // Return success
   return 1;
 }
-
-
-
-static int
-ReadCategories(const char *filename)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-
-  // Open file
-  FILE *fp = fopen(filename, "r");
-  if (!fp) {
-    fprintf(stderr, "Unable to open category file %s\n", filename);
-    return 0;
-  }
-
-  // Read file
-  char category_name[4096];
-  while (fscanf(fp, "%s", category_name) == (unsigned int) 1) {
-    // Create category
-    Category *category = new Category();
-    category->name = strdup(category_name);
-    category->identifier = categories.NEntries();
-    categories.Insert(category);
-  }
-
-  // Close file
-  fclose(fp);
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Read categories from %s ...\n", filename);
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Categories = %d\n", categories.NEntries());
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-} 
-
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Utility functions
-////////////////////////////////////////////////////////////////////////
-
-static Category **
-AssignNodesToCategories(void)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-  int assignment_count = 0;
-
-  // Allocate array of category assignments
-  Category **assignments = new Category * [ scene->NNodes() ];
-  if (!assignments) {
-    fprintf(stderr, "Unable to allocate array of category assignments\n");
-    return NULL;
-  }
-
-  // Initialize category assignments
-  for (int i = 0; i < scene->NNodes(); i++) assignments[i] = NULL;
-
-  // Assign nodes to categories (by matching node_name)
-  for (int i = 0; i < scene->NNodes(); i++) {
-    R3SceneNode *node = scene->Node(i);
-    const char *node_name = node->Name();
-    if (!node_name) continue;
-    int node_name_length = strlen(node_name);
-    for (int j = 0; j < categories.NEntries(); j++) {
-      Category *category = categories.Kth(j);
-      int category_name_length = strlen(category->name);
-      if (category_name_length == 0) continue;
-      if (!strcmp(category->name, "Wall")) {
-        if (strncmp(node_name, "Wall", 4)) continue;
-      }
-      else if (!strcmp(category->name, "Floor")) {
-        if (strncmp(node_name, "Floor#", 6)) continue;
-      }
-      else if (!strcmp(category->name, "Ceiling")) {
-        if (strncmp(node_name, "Ceiling#", 8)) continue;
-      }
-      else {
-        const char *node_category_name = NULL;
-        const char *p = node_name + node_name_length;
-        while (p-- > node_name+3) {
-          if (isalnum(*(p-2)) && (*(p-1) == '_') && isalnum(*(p))) { node_category_name = p; break; }
-        }
-        if (!node_category_name) continue;
-        if (strcmp(node_category_name, category->name)) continue;
-      }
-      assignments[i] = category;
-      assignment_count++;
-      break;
-    }
-  }
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Assigned nodes to categories ...\n");
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Assignments = %d\n", assignment_count);
-    fflush(stdout);
-  }
-
-  // Return array of category assignments
-  return assignments;
-} 
 
 
 
@@ -635,15 +538,17 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
         LoadInteger(node->SceneIndex() + 1);
       }
       else if (color_scheme == CATEGORY_COLOR_SCHEME) {
-        Category *category = (node_category_assignments) ? node_category_assignments[node->SceneIndex()] : NULL;
-        int category_identifier = (category) ? category->identifier : 0;
-        LoadInteger(category_identifier);
+        const char *model_index = NULL;
+        R3SceneNode *ancestor = node;
+        while (!model_index && ancestor) { model_index = ancestor->Info("index"); ancestor = ancestor->Parent(); }
+        if (model_index) LoadInteger(atoi(model_index));
+        else LoadInteger(0);
       }
       else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
         if (!node->Name()) LoadInteger(0);
         else if (!strncmp(node->Name(), "Wall", 4)) LoadInteger(1);
-        else if (!strncmp(node->Name(), "Floor#", 6)) LoadInteger(2);
-        else if (!strncmp(node->Name(), "Ceiling#", 8)) LoadInteger(3);
+        else if (!strncmp(node->Name(), "Ceiling#", 8)) LoadInteger(2);
+        else if (!strncmp(node->Name(), "Floor#", 6)) LoadInteger(3);
         else LoadInteger(0);
       }
       node->Draw(R3_SURFACES_DRAW_FLAG);
@@ -1354,10 +1259,13 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
           int node_index = node->SceneIndex() + 1;
           node_image.SetGridValue(ix, iy, node_index);
         }
-        if (capture_category_images && node_category_assignments) {
-          Category *category = (node_category_assignments) ? node_category_assignments[node->SceneIndex()] : NULL;
-          int category_identifier = (category) ? category->identifier : 64535;
-          category_image.SetGridValue(ix, iy, category_identifier);
+        if (capture_category_images) {
+          const char *model_index = NULL;
+          R3SceneNode *ancestor = node;
+          while (!model_index && ancestor) { model_index = ancestor->Info("index"); ancestor = ancestor->Parent(); }
+          if (model_index) category_image.SetGridValue(ix, iy, atoi(model_index));
+          else category_image.SetGridValue(ix, iy, 0);
+                                                       
         }
       }
     }
@@ -1400,7 +1308,7 @@ RenderImagesWithRaycasting(const R3Camera& camera, R3Scene *scene, const char *o
     sprintf(output_image_filename, "%s/%06d_node.png", output_image_directory, image_index);
     node_image.WriteFile(output_image_filename);
   }
-  if (capture_category_images && node_category_assignments) {
+  if (capture_category_images) {
     sprintf(output_image_filename, "%s/%06d_category.png", output_image_directory, image_index);
     node_image.WriteFile(output_image_filename);
   }
@@ -1449,10 +1357,6 @@ RenderImagesWithRaycasting(const char *output_image_directory)
 static int
 RenderImages(const char *output_image_directory)
 {
-  // Remove references and transformations
-  scene->RemoveReferences();
-  scene->RemoveTransformations();
-  
   // Subdivide triangles (for lighting)
   if (max_vertex_spacing > 0) scene->SubdivideTriangles(max_vertex_spacing);
 
@@ -1585,8 +1489,6 @@ int main(int argc, char **argv)
   // Read and assign categories
   if (input_categories_name) {
     if (!ReadCategories(input_categories_name)) exit(-1);
-    node_category_assignments = AssignNodesToCategories();
-    if (!node_category_assignments) exit(-1);
   }
 
   // Render images

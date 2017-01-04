@@ -45,11 +45,14 @@ class RNMap {
         // Data access functions/operators
         RNBoolean Find(KeyType key, ValueType *value = NULL) const;
 
-        // Manipulation functions/operators
+        // Manipulation functions
         void Empty(void);
         void Insert(KeyType key, ValueType value);
         void Replace(KeyType key, ValueType value);
         void Remove(KeyType key);
+
+        // Manipulation operators
+        RNMap<KeyType, ValueType>& operator=(const RNMap<KeyType,ValueType>& map);
 
     private:
         std::map<KeyType, ValueType, RNMapComparator<KeyType> > *m;

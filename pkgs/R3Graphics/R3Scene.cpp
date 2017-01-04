@@ -465,6 +465,7 @@ CopyScene(R3Scene *src_scene, R3Scene *dst_scene,
     // Copy node stuff
     dst_node->SetName(src_node->Name());
     dst_node->SetTransformation(src_node->Transformation());
+    // dst_node->info = src_node->info;
     
     // Copy elements
     for (int i = 0; i < src_node->NElements(); i++) {
@@ -3875,18 +3876,18 @@ ReadSUNCGModelFile(const char *filename)
       token = strtok(NULL, ",\n");
     }
   }
-      
+
   // Extract index of model_id
-  int model_id_index = -1;
+  int model_id_k = -1;
   for (int i = 0; i < keys.NEntries(); i++) {
     if (!strcmp(keys[i], "model_id")) {
-      model_id_index = i;
+      model_id_k = i;
       break;
     }
   }
 
   // Check if found model_id
-  if (model_id_index < 0) {
+  if (model_id_k < 0) {
     fprintf(stderr, "Did not find \"model_id\" in header on line %d of %s\n", line_number, filename);
     return 0;
   }
@@ -3911,18 +3912,47 @@ ReadSUNCGModelFile(const char *filename)
       return 0;
     }
 
-    // Assign key-value info to referenced scene representing model
-    R3Scene *model = ReferencedScene(values[model_id_index]);
-    if (!model) continue;
-    for (int i = 0; i < keys.NEntries(); i++) {
-      if (!strcmp(keys[i], "model_id")) continue;
-      model->InsertInfo(keys[i], values[i]);
+    // Get model+id
+    const char *model_id = values[model_id_k];
+    if (!model_id) continue;
+    int model_id_length = strlen(model_id);
+    if (model_id_length == 0) continue;
+
+    // Assign key-value info to nodes matching model_id
+    for (int i = 0; i < NNodes(); i++) {
+      R3SceneNode *node = Node(i);
+      if (!node->Name()) continue;
+      char node_name[1024];
+      strncpy(node_name, node->Name(), 1024);
+      char *model_name = strchr(node_name, '#');
+      if (model_name) { *model_name = '\0'; model_name++; }
+      else model_name = node_name;
+      if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
+        for (int j = 0; j < keys.NEntries(); j++) {
+          node->InsertInfo(keys[j], values[j]);
+        }
+      }
+    }
+
+    // Assign key-value info to root node of referenced scenes matching model_id
+    // Note: these will not get copied over by RemoveReferences :)
+    R3Scene *model = ReferencedScene(model_id);
+    if (model) {
+      for (int i = 0; i < keys.NEntries(); i++) {
+        model->Root()->InsertInfo(keys[i], values[i]);
+      }
     }
   }
 
   // Close file
   fclose(fp);
 
+  for (int i = 0; i < NNodes(); i++) {
+    R3SceneNode *node = Node(i);
+    const char *model_index = node->Info("index");
+    if (model_index) printf("%s %s\n", node->Name(), model_index);
+  }
+  
   // Return success
   return 1;
 }

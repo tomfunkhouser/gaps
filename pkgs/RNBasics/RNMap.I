@@ -31,7 +31,7 @@ RNMap<KeyType, ValueType>::
 RNMap(const RNMap<KeyType,ValueType>& src)
 {
     // Copy map
-    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( *(src.map) );
+    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( *(src.m) );
 }
 
 
@@ -109,6 +109,18 @@ Remove(KeyType key)
     // Remove entry from map
     typename std::map<KeyType, ValueType, RNMapComparator<KeyType> >::iterator it = m->find(key);
     if (it != m->end()) m->erase(it);
+}
+
+
+
+template <class KeyType, class ValueType>
+RNMap<KeyType, ValueType>& RNMap<KeyType, ValueType>::
+operator=(const RNMap<KeyType,ValueType>& src)
+{
+    // Replace map
+    delete m;
+    m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( *(src.m) );
+    return *this;
 }
 
 
