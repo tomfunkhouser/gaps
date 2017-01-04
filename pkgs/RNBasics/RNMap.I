@@ -59,12 +59,14 @@ NEntries(void) const
 
 
 template <class KeyType, class ValueType>
-ValueType RNMap<KeyType, ValueType>::
-Value(KeyType key) const
+RNBoolean RNMap<KeyType, ValueType>::
+Find(KeyType key, ValueType *value) const
 {
     // Return value associated with key, or NULL if not found
     typename std::map<KeyType, ValueType, RNMapComparator<KeyType> >::iterator it = m->find(key);
-    return (it != m->end()) ? it->second : NULL;
+    if (it == m->end()) return FALSE;
+    if (value) *value = it->second;
+    return TRUE;
 }
 
 

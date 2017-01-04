@@ -5,13 +5,6 @@
 
 
 
-/* Dependency include files */
-
-#include <string>
-#include <map>
-
-
-
 /* Library initialization functions */
 
 int RNInitMap();
@@ -50,8 +43,7 @@ class RNMap {
         int NEntries(void) const;
   
         // Data access functions/operators
-        ValueType Value(KeyType key) const;
-        ValueType Find(KeyType key) const { return Value(key); };
+        RNBoolean Find(KeyType key, ValueType *value = NULL) const;
 
         // Manipulation functions/operators
         void Empty(void);

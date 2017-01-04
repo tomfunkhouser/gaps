@@ -883,7 +883,7 @@ ReadScene(char *filename)
     printf("  # Materials = %d\n", scene->NMaterials());
     printf("  # Brdfs = %d\n", scene->NBrdfs());
     printf("  # Textures = %d\n", scene->NTextures());
-    printf("  # Referenced models = %d\n", scene->NReferencedScenes());
+    printf("  # Referenced scenes = %d\n", scene->NReferencedScenes());
     fflush(stdout);
   }
 
@@ -959,7 +959,7 @@ ReadLights(const char *filename)
   start_time.Read();
 
   // Read lights file
-  if (!scene->ReadLightsFile(filename)) return 0;
+  if (!scene->ReadSUNCGLightsFile(filename)) return 0;
 
   // Print statistics
   if (print_verbose) {

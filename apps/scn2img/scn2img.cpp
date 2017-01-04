@@ -175,7 +175,7 @@ ReadLights(const char *filename)
   start_time.Read();
 
   // Read lights file
-  if (!scene->ReadLightsFile(filename)) return 0;
+  if (!scene->ReadSUNCGLightsFile(filename)) return 0;
 
   // Set default vertex spacing
   if (max_vertex_spacing == 0) max_vertex_spacing = 0.1;

@@ -216,7 +216,9 @@ inline const char *R3SceneNode::
 Info(const char *key) const
 {
   // Return info associated with key
-  return info.Find(key).c_str();
+  std::string value;
+  if (!info.Find(key, &value)) return NULL;
+  return value.c_str();
 }
 
 

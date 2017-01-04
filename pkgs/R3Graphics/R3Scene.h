@@ -48,7 +48,7 @@ public:
   R2Texture *Texture(const char *name) const;
   int NReferencedScenes(void) const;
   R3Scene *ReferencedScene(int k) const;
-  R3Scene *ReferencedScene(const char *filename) const;
+  R3Scene *ReferencedScene(const char *name) const;
   const R3Camera& Camera(void) const;
   const R2Viewport& Viewport(void) const;
   const R3Viewer& Viewer(void) const;
@@ -108,7 +108,6 @@ public:
   int ReadSupportHierarchyFile(const char *filename);
   int ReadGrammarHierarchyFile(const char *filename);
   int ReadRectangleFile(const char *filename);
-  int ReadLightsFile(const char *filename);
   int WriteFile(const char *filename) const;
   int WriteObjFile(const char *filename) const;
   int WritePrincetonFile(const char *filename) const;
@@ -122,6 +121,10 @@ public:
   // Lighting functions
   int LoadLights(int min_index = 0, int max_index = 7) const;
   int LoadLights(const R3Box& world_bbox, int min_index = 0, int max_index = 7) const;
+
+  // SUNCG utility functions
+  int ReadSUNCGLightsFile(const char *filename);
+  int ReadSUNCGModelFile(const char *filename);
 
 private:
   R3SceneNode *root;
@@ -220,7 +223,9 @@ inline const char *R3Scene::
 Info(const char *key) const
 {
   // Return info associated with key
-  return info.Find(key).c_str();
+  std::string value;
+  if (!info.Find(key, &value)) return NULL;
+  return value.c_str();
 }
 
 

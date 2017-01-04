@@ -2,7 +2,7 @@
 
 
 
-/* Standard dependency include files */
+/* Usual C include files */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +12,13 @@
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+
+
+
+/* Standard library include files */
+
+#include <string>
+#include <map>
 
 
 

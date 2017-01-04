@@ -144,13 +144,13 @@ Texture(const char *name) const
 
 
 R3Scene *R3Scene::
-ReferencedScene(const char *filename) const
+ReferencedScene(const char *name) const
 {
   // Search textures for matching name
   for (int i = 0; i < NReferencedScenes(); i++) {
     R3Scene *referenced_scene = ReferencedScene(i);
-    if (!referenced_scene->Filename()) continue;
-    if (!strcmp(referenced_scene->Filename(), filename)) return referenced_scene;
+    if (!referenced_scene->Name()) continue;
+    if (!strcmp(referenced_scene->Name(), name)) return referenced_scene;
   }
 
   // Referenced scene not found
@@ -871,162 +871,6 @@ Draw(const R3DrawFlags draw_flags) const
 
 
 ////////////////////////////////////////////////////////////////////////
-// LIGHT I/O FUNCTIONS
-////////////////////////////////////////////////////////////////////////
-
-static RNBoolean
-MatchNodeName(R3SceneNode *node, const char *name)
-{
-  // Check node name
-  if (node->Name() && !strcmp(node->Name(), name)) return TRUE;
-
-  // Check referenced node names
-  for (int i = 0; i < node->NReferences(); i++) {
-    R3SceneReference *reference = node->Reference(i);
-    R3Scene *referenced_scene = reference->ReferencedScene();
-    if (referenced_scene->Root()->Name() && !strcmp(referenced_scene->Root()->Name(), name)) {
-      return TRUE;
-    }
-  }
-
-  // No match
-  return FALSE;
-}
-
-
-
-static int
-InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *reference_frame)
-{
-  // Iniitalize return status
-  int status = 0;
-  
-  // Insert copies of light into scene
-  if (!strcmp(reference_frame, "world")) {
-    // Insert one copy of light 
-    R3Light *light = original->Copy();
-    scene->InsertLight(light);
-    status++;
-  }
-  else {
-    // Insert copy of light for each matching node with name matching reference frame
-    for (int i = 0; i < scene->NNodes(); i++) {
-      R3SceneNode *node = scene->Node(i);
-      if (!MatchNodeName(node, reference_frame)) continue;
-      R3Light *light = original->Copy();
-      R3Affine transformation_to_world = node->CumulativeTransformation();
-      light->Transform(node->CumulativeTransformation());
-      scene->InsertLight(light);
-      status++;
-    }
-  }
-
-  // Return whether inserted any lights
-  return status;
-}
-
-
-
-int R3Scene::
-ReadLightsFile(const char *filename)
-{
-  // Open file
-  FILE *fp = fopen(filename, "r");
-  if (!fp) {
-    fprintf(stderr, "Unable to open lights file %s\n", filename);
-    return 0;
-  }
-
-  // Read file
-  char buffer[4096];
-  int line_number = 0;
-  while (fgets(buffer, 4096, fp)) {
-    line_number++;
-    char cmd[1024], reference_frame[1024];
-    if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
-    if (cmd[0] == '#') continue;
-
-    // Check cmd
-    if (!strcmp(cmd, "directional_light")) {
-      // Parse directional light 
-      double intensity, r, g, b, dx, dy, dz;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,
-        &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
-        fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create directional light
-      RNRgb color(r, g, b);
-      R3Vector direction(dx, dy, dz);
-      R3DirectionalLight light(direction, color, intensity);
-      InsertCopiesOfLight(this, &light, reference_frame);
-    }
-    else if (!strcmp(cmd, "point_light")) {
-      // Parse point light 
-      double intensity, r, g, b, px, py, pz, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
-        &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
-        fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create point light
-      RNRgb color(r, g, b);
-      R3Point position(px, py, pz);
-      R3PointLight light(position, color, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, reference_frame);
-    }
-    else if (!strcmp(cmd, "spot_light")) {
-      // Parse spot light 
-      double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
-        &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
-        fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create spot light
-      RNRgb color(r, g, b);
-      R3Point position(px, py, pz);
-      R3Vector direction(dx, dy, dz);
-      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, reference_frame);
-    }
-    else if (!strcmp(cmd, "line_light")) {
-      // Parse spot light 
-      double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
-        &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
-        fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
-        return 0;
-      }
-
-      // Create spot light
-      RNRgb color(r, g, b);
-      R3Point position1(px1, py1, pz1);
-      R3Point position2(px2, py2, pz2);
-      R3Point position = 0.5 * (position1 + position2);
-      R3Vector direction(dx, dy, dz);
-      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
-      InsertCopiesOfLight(this, &light, reference_frame);
-    }
-    else {
-      fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
-      return 0;
-    }
-  }
-
-  // Close file
-  fclose(fp);
-
-  // Return success
-  return 1;
-}
-  
-
-
-////////////////////////////////////////////////////////////////////////
 // SCENE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -1396,8 +1240,8 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
         char texture_filename[1024];
         if (dirname) sprintf(texture_filename, "%s/%s", dirname, texture_name);
         else strncpy(texture_filename, texture_name, 1024);
-        R2Texture *texture = texture_symbol_table.Find(texture_filename);
-        if (!texture) {
+        R2Texture *texture = NULL;
+        if (!texture_symbol_table.Find(texture_filename, &texture)) {
           R2Image *image = new R2Image();
           if (!image->Read(texture_filename)) return 0;
           texture = new R2Texture(image);
@@ -1595,8 +1439,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       }
 
       // Find material
-      material = material_symbol_table.Find(mtlname);
-      if (!material) {
+      if (!material_symbol_table.Find(mtlname, &material)) {
         fprintf(stderr, "Unable to find material %s at on line %d in OBJ file\n", mtlname, line_count);
         return 0;
       }
@@ -3434,8 +3277,7 @@ ParseSUNCGMaterials(R3Scene *scene,
       R2Texture *output_texture = NULL;
       if (input_texture) {
         const char *texture_filename = input_texture->Filename();
-        output_texture = texture_symbol_table.Find(texture_filename);
-        if (!output_texture) {  
+        if (!texture_symbol_table.Find(texture_filename, &output_texture)) {
           output_texture = new R2Texture(*input_texture);
           scene->InsertTexture(output_texture);
           texture_symbol_table.Insert(texture_filename, output_texture);
@@ -3446,8 +3288,7 @@ ParseSUNCGMaterials(R3Scene *scene,
         const char *texture_directory = "../../texture";
         sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
         if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
-        output_texture = texture_symbol_table.Find(texture_filename);
-        if (!output_texture) {
+        if (!texture_symbol_table.Find(texture_filename, &output_texture)) {
           R2Image *image = new R2Image();
           if (!image->Read(texture_filename)) return 0;
           output_texture = new R2Texture();
@@ -3761,14 +3602,14 @@ ReadSUNCGFile(const char *filename)
         }
         else if (!strcmp(node_type, "Object")) {
           // Read/get model 
+          R3Scene *model = NULL;
           if (state) sprintf(obj_name, "%s/object/%s/%s_0.obj", input_data_directory, modelId, modelId); 
           else sprintf(obj_name, "%s/object/%s/%s.obj", input_data_directory, modelId, modelId); 
-          R3Scene *model = model_symbol_table.Find(obj_name);
-          if (!model) {
+          if (!model_symbol_table.Find(obj_name, &model)) {
             model = new R3Scene();
             if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Model#%s", modelId);
-            model->SetName(node_name);
+            model->SetName(modelId);
             model->Root()->SetName(node_name);
             model->SetFilename(obj_name);
             InsertReferencedScene(model);
@@ -3857,3 +3698,231 @@ ReadSUNCGFile(const char *filename)
 
 
 
+////////////////////////////////////////////////////////////////////////
+// SUNCG UTILITY FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+static RNBoolean
+MatchReferencedSceneName(R3SceneNode *node, const char *name)
+{
+  // Check node name
+  if (node->Name() && !strcmp(node->Name(), name)) return TRUE;
+
+  // Check referenced node names
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (referenced_scene->Name() && !strcmp(referenced_scene->Name(), name)) {
+      return TRUE;
+    }
+  }
+
+  // No match
+  return FALSE;
+}
+
+
+
+static int
+InsertCopiesOfLight(R3Scene *scene, R3Light *original, const char *reference_frame)
+{
+  // Iniitalize return status
+  int status = 0;
+  
+  // Insert copies of light into scene
+  if (!strcmp(reference_frame, "world")) {
+    // Insert one copy of light 
+    R3Light *light = original->Copy();
+    scene->InsertLight(light);
+    status++;
+  }
+  else {
+    // Insert copy of light for each matching node with name matching reference frame
+    for (int i = 0; i < scene->NNodes(); i++) {
+      R3SceneNode *node = scene->Node(i);
+      if (!MatchReferencedSceneName(node, reference_frame)) continue;
+      R3Light *light = original->Copy();
+      R3Affine transformation_to_world = node->CumulativeTransformation();
+      light->Transform(node->CumulativeTransformation());
+      scene->InsertLight(light);
+      status++;
+    }
+  }
+
+  // Return whether inserted any lights
+  return status;
+}
+
+
+
+int R3Scene::
+ReadSUNCGLightsFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open lights file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  char buffer[4096];
+  int line_number = 0;
+  while (fgets(buffer, 4096, fp)) {
+    line_number++;
+    char cmd[1024], reference_frame[1024];
+    if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
+    if (cmd[0] == '#') continue;
+
+    // Check cmd
+    if (!strcmp(cmd, "directional_light")) {
+      // Parse directional light 
+      double intensity, r, g, b, dx, dy, dz;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,
+        &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
+        fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create directional light
+      RNRgb color(r, g, b);
+      R3Vector direction(dx, dy, dz);
+      R3DirectionalLight light(direction, color, intensity);
+      InsertCopiesOfLight(this, &light, reference_frame);
+    }
+    else if (!strcmp(cmd, "point_light")) {
+      // Parse point light 
+      double intensity, r, g, b, px, py, pz, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
+        &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
+        fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create point light
+      RNRgb color(r, g, b);
+      R3Point position(px, py, pz);
+      R3PointLight light(position, color, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, reference_frame);
+    }
+    else if (!strcmp(cmd, "spot_light")) {
+      // Parse spot light 
+      double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
+        &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
+        fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create spot light
+      RNRgb color(r, g, b);
+      R3Point position(px, py, pz);
+      R3Vector direction(dx, dy, dz);
+      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, reference_frame);
+    }
+    else if (!strcmp(cmd, "line_light")) {
+      // Parse spot light 
+      double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
+        &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
+        fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create spot light
+      RNRgb color(r, g, b);
+      R3Point position1(px1, py1, pz1);
+      R3Point position2(px2, py2, pz2);
+      R3Point position = 0.5 * (position1 + position2);
+      R3Vector direction(dx, dy, dz);
+      R3SpotLight light(position, direction, color, sd, sc, intensity, TRUE, ca, la, qa);
+      InsertCopiesOfLight(this, &light, reference_frame);
+    }
+    else {
+      fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
+      return 0;
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+  
+
+
+int R3Scene::
+ReadSUNCGModelFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open lights file %s\n", filename);
+    return 0;
+  }
+
+  // Read keys from first line
+  int line_number = 1;
+  char key_buffer[4096];
+  RNArray<char *> keys;
+  if (fgets(key_buffer, 4096, fp)) {
+    char *token = strtok(key_buffer, ",\n");
+    while (token) {
+      keys.Insert(token);
+      token = strtok(NULL, ",\n");
+    }
+  }
+      
+  // Extract index of model_id
+  int model_id_index = -1;
+  for (int i = 0; i < keys.NEntries(); i++) {
+    if (!strcmp(keys[i], "model_id")) {
+      model_id_index = i;
+      break;
+    }
+  }
+
+  // Check if found model_id
+  if (model_id_index < 0) {
+    fprintf(stderr, "Did not find \"model_id\" in header on line %d of %s\n", line_number, filename);
+    return 0;
+  }
+
+  // Read subsequent lines of file
+  char value_buffer[4096];
+  while (fgets(value_buffer, 4096, fp)) {
+    line_number++;
+
+    // Read values
+    RNArray<char *> values;
+    char *token = strtok(value_buffer, ",\n");
+    while (token) {
+      values.Insert(token);
+      token = strtok(NULL, ",\n");
+    }
+
+    // Check number of values
+    if (values.NEntries() == 0) continue;
+    if (values.NEntries() != keys.NEntries()) {
+      fprintf(stderr, "Invalid number of entries at line %d in %s\n", line_number, filename);
+      return 0;
+    }
+
+    // Assign key-value info to referenced scene representing model
+    R3Scene *model = ReferencedScene(values[model_id_index]);
+    if (!model) continue;
+    for (int i = 0; i < keys.NEntries(); i++) {
+      if (!strcmp(keys[i], "model_id")) continue;
+      model->InsertInfo(keys[i], values[i]);
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
