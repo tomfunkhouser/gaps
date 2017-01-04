@@ -18,7 +18,7 @@ template <class KeyType>
 struct RNMapComparator {
     public:
         RNMapComparator(int (*compare_function)(KeyType, KeyType) = NULL) : compare_function(compare_function) {};
-        bool operator()(KeyType a, KeyType b) {
+        bool operator()(KeyType a, KeyType b) const {
             if (compare_function) { return ((*compare_function)(a, b) < 0) ? true: false; }
             else { return a < b; }
         };
