@@ -24,6 +24,7 @@
 
 static char *input_scene_filename = NULL;
 static char *input_cameras_filename = NULL;
+static char *input_categories_filename = NULL;
 static char *output_cameras_filename = NULL;
 static char *output_camera_extrinsics_filename = NULL;
 static char *output_camera_intrinsics_filename = NULL;
@@ -155,6 +156,29 @@ ReadScene(char *filename)
   // Return scene
   return scene;
 }
+
+
+
+static int
+ReadCategories(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read file
+  if (!scene->ReadSUNCGModelFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read categories from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+} 
 
 
 
@@ -684,9 +708,18 @@ IsObject(R3SceneNode *node)
   if (!node->Name()) return 0;
   if (strncmp(node->Name(), "Model#", 6)) return 0;
 
-  // Check category
-  // if (strstr(node->Name(), "Door")) return 0;
-  // if (strstr(node->Name(), "Window")) return 0;
+  // Get category identifier
+  R3SceneNode *ancestor = node;
+  const char *category_identifier = NULL;
+  while (!category_identifier && ancestor) {
+    category_identifier = node->Info("empty_struct_obj");
+    ancestor = ancestor->Parent();
+  }
+
+  // Check category identifier
+  if (category_identifier) {
+    if (strcmp(category_identifier, "2")) return 0;
+  }
 
   // Passed all tests
   return 1;
@@ -896,7 +929,7 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   if (strncmp(ceiling_node->Name(), "Ceiling#", 8)) return 0;
   R3SceneNode *wall_node = room_node->Child(2);
   if (!wall_node->Name()) return 0;
-  if (strncmp(wall_node->Name(), "Walls#", 6)) return 0;
+  if (strncmp(wall_node->Name(), "Wall#", 5)) return 0;
 
   // Get bounding boxes in world coordinates
   R3Box room_bbox = room_node->BBox();
@@ -1473,7 +1506,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-raycast")) { mesa = 0; glut = 0; }
-      else if (!strcmp(*argv, "-input_cameras")) { argc--; argv++; input_cameras_filename = *argv; output = 1; }
+      else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_filename = *argv; }
+      else if (!strcmp(*argv, "-input_cameras")) { argc--; argv++; input_cameras_filename = *argv; }
       else if (!strcmp(*argv, "-output_camera_extrinsics")) { argc--; argv++; output_camera_extrinsics_filename = *argv; output = 1; }
       else if (!strcmp(*argv, "-output_camera_intrinsics")) { argc--; argv++; output_camera_intrinsics_filename = *argv; output = 1; }
       else if (!strcmp(*argv, "-output_camera_names")) { argc--; argv++; output_camera_names_filename = *argv; output = 1; }
@@ -1549,6 +1583,11 @@ int main(int argc, char **argv)
   // Read cameras
   if (input_cameras_filename) {
     if (!ReadCameras(input_cameras_filename)) exit(-1);
+  }
+
+  // Read categories
+  if (input_categories_filename) {
+    if (!ReadCategories(input_categories_filename)) exit(-1);
   }
 
   // Create and write new cameras 

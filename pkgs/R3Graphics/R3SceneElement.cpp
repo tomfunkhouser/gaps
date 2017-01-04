@@ -23,6 +23,18 @@ R3SceneElement(R3Material *material)
 
 
 R3SceneElement::
+R3SceneElement(const R3SceneElement& element)
+  : node(NULL),
+    material(element.material),
+    shapes(),
+    opengl_id(0),
+    bbox(element.bbox)
+{
+}
+
+
+
+R3SceneElement::
 ~R3SceneElement(void)
 {
   // Delete display list

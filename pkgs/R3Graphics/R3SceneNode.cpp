@@ -60,6 +60,25 @@ R3SceneNode(R3Scene *scene)
 
 
 R3SceneNode::
+R3SceneNode(const R3SceneNode& node) 
+  : scene(NULL),
+    scene_index(-1),
+    parent(NULL),
+    parent_index(-1),
+    children(),
+    elements(),
+    references(),
+    info(node.info),
+    transformation(node.transformation),
+    bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    name((node.name) ? strdup(node.name) : NULL),
+    data(NULL)
+{
+}
+
+
+
+R3SceneNode::
 ~R3SceneNode(void)
 {
   // Remove elements

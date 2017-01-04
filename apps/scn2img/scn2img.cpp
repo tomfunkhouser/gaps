@@ -546,7 +546,7 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       }
       else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
         if (!node->Name()) LoadInteger(0);
-        else if (!strncmp(node->Name(), "Wall", 4)) LoadInteger(1);
+        else if (!strncmp(node->Name(), "Wall#", 5)) LoadInteger(1);
         else if (!strncmp(node->Name(), "Ceiling#", 8)) LoadInteger(2);
         else if (!strncmp(node->Name(), "Floor#", 6)) LoadInteger(3);
         else LoadInteger(0);
@@ -1482,14 +1482,14 @@ int main(int argc, char **argv)
   // Read cameras 
   if (!ReadCameras(input_cameras_name)) exit(-1);
 
-  // Read/create lights
-  if (input_lights_name) { if (!ReadLights(input_lights_name)) exit(-1); }
-  else { scene->CreateDirectionalLights(); headlight = 1; }
-
-  // Read and assign categories
+  // Read categories
   if (input_categories_name) {
     if (!ReadCategories(input_categories_name)) exit(-1);
   }
+
+  // Read/create lights
+  if (input_lights_name) { if (!ReadLights(input_lights_name)) exit(-1); }
+  else { scene->CreateDirectionalLights(); headlight = 1; }
 
   // Render images
   if (!RenderImages(output_image_directory)) exit(-1);

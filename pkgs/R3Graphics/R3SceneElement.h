@@ -8,6 +8,7 @@ class R3SceneElement {
 public:
   // Constructor functions
   R3SceneElement(R3Material *material = NULL);
+  R3SceneElement(const R3SceneElement& element);
   ~R3SceneElement(void);
 
   // Property functions

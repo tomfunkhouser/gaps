@@ -459,14 +459,10 @@ CopyScene(R3Scene *src_scene, R3Scene *dst_scene,
   RNArray<R3SceneNode *> dst_nodes;
   for (int i = 0; i < src_scene->NNodes(); i++) {
     R3SceneNode *src_node = src_scene->Node(i);
-    R3SceneNode *dst_node = new R3SceneNode(dst_scene);
+    R3SceneNode *dst_node = new R3SceneNode(*src_node);
+    dst_scene->InsertNode(dst_node);
     dst_nodes.Insert(dst_node);
 
-    // Copy node stuff
-    dst_node->SetName(src_node->Name());
-    dst_node->SetTransformation(src_node->Transformation());
-    // dst_node->info = src_node->info;
-    
     // Copy elements
     for (int i = 0; i < src_node->NElements(); i++) {
       R3SceneElement *src_element = src_node->Element(i);
@@ -3595,7 +3591,7 @@ ReadSUNCGFile(const char *filename)
           sprintf(obj_name, "%s/room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
           if (!hideWalls && RNFileExists(obj_name)) {
             R3SceneNode *node = new R3SceneNode(this);
-            sprintf(node_name, "Walls#%s", node_id);
+            sprintf(node_name, "Wall#%s", node_id);
             node->SetName(node_name);
             if (!ReadObj(this, node, obj_name)) return 0;
             room_node->InsertChild(node);
@@ -3935,7 +3931,6 @@ ReadSUNCGModelFile(const char *filename)
     }
 
     // Assign key-value info to root node of referenced scenes matching model_id
-    // Note: these will not get copied over by RemoveReferences :)
     R3Scene *model = ReferencedScene(model_id);
     if (model) {
       for (int i = 0; i < keys.NEntries(); i++) {
@@ -3947,11 +3942,14 @@ ReadSUNCGModelFile(const char *filename)
   // Close file
   fclose(fp);
 
+#if 0
+  // Print result
   for (int i = 0; i < NNodes(); i++) {
     R3SceneNode *node = Node(i);
     const char *model_index = node->Info("index");
     if (model_index) printf("%s %s\n", node->Name(), model_index);
   }
+#endif
   
   // Return success
   return 1;

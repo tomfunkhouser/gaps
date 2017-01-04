@@ -15,6 +15,7 @@ class R3SceneNode {
 public:
   // Constructor functions
   R3SceneNode(R3Scene *scene = NULL);
+  R3SceneNode(const R3SceneNode& node);
   ~R3SceneNode(void);
 
   // Property functions
