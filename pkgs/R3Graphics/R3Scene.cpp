@@ -34,9 +34,12 @@ R3Scene(void)
     brdfs(),
     textures(),
     referenced_scenes(),
+    info(),
     ambient(0, 0, 0),
     background(0, 0, 0),
-    filename(NULL)
+    filename(NULL),
+    name(NULL),
+    data(NULL)
 {
   // Create root node
   root = new R3SceneNode(this);
@@ -330,6 +333,33 @@ RemoveReferencedScene(R3Scene *referenced_scene)
 
 
 void R3Scene::
+InsertInfo(const char *key, const char *value) 
+{
+  // Insert key-value pair
+  info.Insert(key, value);
+}
+
+
+
+void R3Scene::
+ReplaceInfo(const char *key, const char *value) 
+{
+  // Replace key-value pair
+  info.Replace(key, value);
+}
+
+
+
+void R3Scene::
+RemoveInfo(const char *key) 
+{
+  // Insert key-value pair
+  info.Remove(key);
+}
+
+
+
+void R3Scene::
 SetCamera(const R3Camera& camera) 
 {
   // Remember camera
@@ -352,6 +382,26 @@ SetViewer(const R3Viewer& viewer)
 {
   // Remember viewer
   this->viewer = viewer;
+}
+
+
+
+void R3Scene::
+SetName(const char *name)
+{
+  // Set name
+  if (this->name) free(this->name);
+  if (name) this->name = strdup(name);
+  else this->name = NULL;
+}
+
+
+
+void R3Scene::
+SetData(void *data)
+{
+  // Set data
+  this->data = data;
 }
 
 
@@ -3718,6 +3768,7 @@ ReadSUNCGFile(const char *filename)
             model = new R3Scene();
             if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Model#%s", modelId);
+            model->SetName(node_name);
             model->Root()->SetName(node_name);
             model->SetFilename(obj_name);
             InsertReferencedScene(model);

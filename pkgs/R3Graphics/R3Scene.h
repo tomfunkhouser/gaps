@@ -25,6 +25,9 @@ public:
   const RNArea Area(void) const;
   const RNVolume Volume(void) const;
   const R3Point ClosestPoint(const R3Point& point) const;
+  const char *Name(void) const;
+  const char *Info(const char *key) const;
+  void *Data(void) const;
 
   // Access functions
   int NNodes(void) const;
@@ -66,12 +69,17 @@ public:
   void RemoveTexture(R2Texture *texture);
   void InsertReferencedScene(R3Scene *referenced_scene);
   void RemoveReferencedScene(R3Scene *referenced_scene);
+  void InsertInfo(const char *key, const char *info);
+  void ReplaceInfo(const char *key, const char *info);
+  void RemoveInfo(const char *key);
   void SetCamera(const R3Camera& viewer);
   void SetViewport(const R2Viewport& viewport);
   void SetViewer(const R3Viewer& viewer);
   void SetAmbient(const RNRgb& ambient);
   void SetBackground(const RNRgb& background);
   void SetFilename(const char *filename);
+  void SetName(const char *name);
+  void SetData(void *data);
   void RemoveReferences(void);
   void RemoveHierarchy(void);
   void RemoveTransformations(void);
@@ -123,10 +131,13 @@ private:
   RNArray<R3Brdf *> brdfs;
   RNArray<R2Texture *> textures;
   RNArray<R3Scene *> referenced_scenes;
+  RNSymbolTable<std::string> info;
   R3Viewer viewer;
   RNRgb ambient;
   RNRgb background;
   char *filename;
+  char *name;
+  void *data;
 };
 
 
@@ -192,6 +203,33 @@ ClosestPoint(const R3Point& point) const
 {
   // Return closest point on surface of scene
   return root->ClosestPoint(point);
+}
+
+
+
+inline const char *R3Scene::
+Name(void) const
+{
+  // Return name
+  return name;
+}
+
+
+
+inline const char *R3Scene::
+Info(const char *key) const
+{
+  // Return info associated with key
+  return info.Find(key).c_str();
+}
+
+
+
+inline void *R3Scene::
+Data(void) const
+{
+  // Return user-defined data
+  return data;
 }
 
 
