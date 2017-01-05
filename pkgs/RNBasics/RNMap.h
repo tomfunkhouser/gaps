@@ -63,7 +63,7 @@ class RNMap {
 
 /* Templated member functions */
 
-#include "RNMap.I"
+#include "RNMap.cpp"
 
 
 
