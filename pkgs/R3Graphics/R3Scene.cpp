@@ -872,7 +872,7 @@ Draw(const R3DrawFlags draw_flags) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
-ReadFile(const char *filename)
+ReadFile(const char *filename, R3SceneNode *parent_node)
 {
   // Parse input filename extension
   const char *extension;
@@ -883,31 +883,31 @@ ReadFile(const char *filename)
 
   // Read file of appropriate type
   if (!strncmp(extension, ".scn", 4)) {
-    if (!ReadPrincetonFile(filename)) return 0;
+    if (!ReadPrincetonFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".ssc", 4)) {
-    if (!ReadParseFile(filename)) return 0;
+    if (!ReadParseFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".txt", 4)) {
-    if (!ReadSupportHierarchyFile(filename)) return 0;
+    if (!ReadSupportHierarchyFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".hier", 5)) {
-    if (!ReadGrammarHierarchyFile(filename)) return 0;
+    if (!ReadGrammarHierarchyFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".obj", 4)) {
-    if (!ReadObjFile(filename)) return 0;
+    if (!ReadObjFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".off", 4)) {
-    if (!ReadMeshFile(filename)) return 0;
+    if (!ReadMeshFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".ply", 4)) {
-    if (!ReadMeshFile(filename)) return 0;
+    if (!ReadMeshFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".rct", 4)) {
-    if (!ReadRectangleFile(filename)) return 0;
+    if (!ReadRectangleFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".json", 5)) {
-    if (!ReadSUNCGFile(filename)) return 0;
+    if (!ReadSUNCGFile(filename, parent_node)) return 0;
   }
   else {
     fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
@@ -944,18 +944,9 @@ WriteFile(const char *filename) const
     return 0;
   }
 
-  // TEMPORARY
-  ((R3Scene *) this)->RemoveReferences();
-
   // Write file of appropriate type
-  if (!strncmp(extension, ".txt", 4)) {
-    if (!WriteSupportHierarchyFile(filename)) return 0;
-  }
-  else if (!strncmp(extension, ".scn", 4)) {
+  if (!strncmp(extension, ".scn", 4)) {
     if (!WritePrincetonFile(filename)) return 0;
-  }
-  else if (!strncmp(extension, ".ssc", 4)) {
-    if (!WriteParseFile(filename)) return 0;
   }
   else if (!strncmp(extension, ".obj", 4)) {
     if (!WriteObjFile(filename)) return 0;
@@ -1514,10 +1505,13 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *filename, RNArray<R3Mater
 
 
 int R3Scene::
-ReadObjFile(const char *filename)
+ReadObjFile(const char *filename, R3SceneNode *parent_node)
 {
-  // Read obj file, and put contents in root node
-  return ReadObj(this, root, filename);
+  // Check/set parent node
+  if (!parent_node) parent_node = root;
+  
+  // Read obj file, and put contents in parent node 
+  return ReadObj(this, parent_node, filename);
 }
 
 
@@ -1750,6 +1744,9 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
 int R3Scene::
 WriteObjFile(const char *filename) const
 {
+  // Remove references (note that this changes scene structure :( )
+  ((R3Scene *) this)->RemoveReferences();
+
   // Write obj file
   return WriteObj(this, root, filename);
 }
@@ -1763,6 +1760,7 @@ WriteObjFile(const char *filename) const
 static R3TriangleArray *
 ReadMesh(const char *filename)
 {
+  // Read mesh file
   R3Mesh mesh;
   if (!mesh.ReadFile(filename)) {
     fprintf(stderr, "Unable to read mesh %s\n", filename);
@@ -1814,8 +1812,11 @@ ReadMesh(const char *filename)
  
 
 int R3Scene::
-ReadMeshFile(const char *filename)
+ReadMeshFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Check/set parent node
+  if (!parent_node) parent_node = root;
+
   // Load triangles into scene
   R3TriangleArray *shape = ReadMesh(filename);
   if (!shape) return 0;
@@ -1823,7 +1824,7 @@ ReadMeshFile(const char *filename)
   element->InsertShape(shape);
   R3SceneNode *node = new R3SceneNode(this);
   node->InsertElement(element);
-  root->InsertChild(node);
+  parent_node->InsertChild(node);
   
   // Return success
   return 1;
@@ -1877,9 +1878,12 @@ FindPrincetonMaterialAndElement(R3Scene *scene, R3SceneNode *node,
 
 
 
-static int
-ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
+int R3Scene::
+ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Get/set parent_node
+  if (!parent_node) parent_node = root;
+  
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
@@ -1896,7 +1900,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
   const int max_depth = 1024;
   R3SceneNode *group_nodes[max_depth] = { NULL };
   R3Material *group_materials[max_depth] = { NULL };
-  group_nodes[0] = (node) ? node : scene->Root();
+  group_nodes[0] = parent_node;
   int depth = 0;
 
   // Read body
@@ -1924,7 +1928,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Triangle *triangle = new R3Triangle(v1, v2, v3);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -1950,7 +1954,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Box *box = new R3Box(p1, p2);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -1972,7 +1976,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Sphere *sphere = new R3Sphere(c, r);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -1996,7 +2000,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Cylinder *cylinder = new R3Cylinder(p1, p2, r);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2020,7 +2024,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Cone *cone = new R3Cone(p1, p2, r);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2050,7 +2054,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       if (!mesh) return 0;
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2073,7 +2077,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3Cylinder *cylinder = new R3Cylinder(p1, p2, RN_BIG_EPSILON);
 
       // Get material and element from m
-      if (!FindPrincetonMaterialAndElement(scene, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
         fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2101,7 +2105,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       }
 
       // Create new node
-      R3SceneNode *node = new R3SceneNode(scene);
+      R3SceneNode *node = new R3SceneNode(this);
       node->SetTransformation(R3Affine(R4Matrix(matrix)));
       group_nodes[depth]->InsertChild(node);
 
@@ -2134,7 +2138,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Create brdf
       R3Brdf *brdf = new R3Brdf(ka, kd, ks, kt, e, n, ir);
-      scene->InsertBrdf(brdf);
+      InsertBrdf(brdf);
 
       // Create texture
       R2Texture *texture = NULL;
@@ -2156,12 +2160,12 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
         
         // Create texture
         texture = new R2Texture(image);
-        scene->InsertTexture(texture);
+        InsertTexture(texture);
       }
 
       // Create material
       R3Material *material = new R3Material(brdf, texture);
-      scene->InsertMaterial(material);
+      InsertMaterial(material);
       parsed_materials.Insert(material);
     }
     else if (!strcmp(cmd, "dir_light")) {
@@ -2179,7 +2183,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Create directional light
       R3DirectionalLight *light = new R3DirectionalLight(d, c);
-      scene->InsertLight(light);
+      InsertLight(light);
     }
     else if (!strcmp(cmd, "point_light")) {
       // Read data
@@ -2193,7 +2197,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Create point light
       R3PointLight *light = new R3PointLight(p, c, 1, TRUE, ca, la, qa);
-      scene->InsertLight(light);
+      InsertLight(light);
     }
     else if (!strcmp(cmd, "spot_light")) {
       // Read data
@@ -2212,7 +2216,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Create spot light
       R3SpotLight *light = new R3SpotLight(p, d, c, sd, sc, 1, TRUE, ca, la, qa);
-      scene->InsertLight(light);
+      InsertLight(light);
     }
     else if (!strcmp(cmd, "area_light")) {
       // Read data
@@ -2231,7 +2235,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Create spot light
       R3AreaLight *light = new R3AreaLight(p, radius, d, c, 1, TRUE, ca, la, qa);
-      scene->InsertLight(light);
+      InsertLight(light);
     }
     else if (!strcmp(cmd, "camera")) {
       // Read data
@@ -2245,7 +2249,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
       // Assign camera
       R3Camera camera(e, t, u, xfov, xfov, neardist, fardist);
-      scene->SetCamera(camera);
+      SetCamera(camera);
     }
     else if (!strcmp(cmd, "include")) {
       // Read data
@@ -2264,7 +2268,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       strcat(buffer, scenename);
 
       // Read scene from included file
-      if (!ReadPrinceton(scene, group_nodes[depth], buffer)) {
+      if (!ReadFile(buffer, group_nodes[depth])) {
         fprintf(stderr, "Unable to read included scene: %s\n", buffer);
         return 0;
       }
@@ -2278,7 +2282,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       }
 
       // Assign background color
-      scene->SetBackground(RNRgb(r, g, b));
+      SetBackground(RNRgb(r, g, b));
     }
     else if (!strcmp(cmd, "ambient")) {
       // Read data
@@ -2289,7 +2293,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       }
 
       // Assign ambient color
-      scene->SetAmbient(RNRgb(r, g, b));
+      SetAmbient(RNRgb(r, g, b));
     }
     else {
       fprintf(stderr, "Unrecognized command %d in file %s: %s\n", command_number, filename, cmd);
@@ -2305,15 +2309,6 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
 
   // Return success
   return 1;
-}
-
-
-
-int R3Scene::
-ReadPrincetonFile(const char *filename)
-{
-  // Read princeton file and insert contents into root node
-  return ReadPrinceton(this, root, filename);
 }
 
 
@@ -2342,7 +2337,7 @@ WritePrincetonMaterial(const R3Scene *scene, const R3Material *material, FILE *f
   RNRgb emission = (brdf) ? brdf->Emission() : RNblack_rgb;
   RNScalar shininess = brdf->Shininess();
   RNScalar indexofref = brdf->IndexOfRefraction();
-  const char *texture_name = (texture && texture->Name()) ? texture->Name() : "0";
+  const char *texture_name = (texture && texture->Filename()) ? texture->Filename() : "0";
   fprintf(fp, "material %g %g %g  %g %g %g  %g %g %g  %g %g %g  %g %g %g  %g %g %s\n",
     ambient.R(), ambient.G(), ambient.B(),
     diffuse.R(), diffuse.G(), diffuse.B(),
@@ -2496,6 +2491,30 @@ WritePrincetonElement(const R3Scene *scene, R3SceneElement *element,
 
 
 static int
+WritePrincetonReference(const R3Scene *scene, R3SceneReference *reference,
+  const R3Affine& transformation, FILE *fp, const char *indent)
+{
+  // Get referenced scene
+  R3Scene *referenced_scene = reference->ReferencedScene();
+
+  // Check if referenced scene has a file to reference
+  if (!referenced_scene->Filename()) {
+    // The materials will not be right if simply write referenced scene!!!
+    // So WritePrincetonFile should have removed references 
+    RNAbort("Should never get here");
+    return 0;
+  }
+
+  // Write include statement
+  fprintf(fp, "%sinclude %s\n", indent, referenced_scene->Filename());
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 WritePrincetonNode(const R3Scene *scene, const R3SceneNode *node,
   const R3Transformation& parent_transformation,
   FILE *fp, const char *indent)
@@ -2534,6 +2553,12 @@ WritePrincetonNode(const R3Scene *scene, const R3SceneNode *node,
     if (!WritePrincetonElement(scene, element, transformation, fp, child_indent)) return 0;
   }
 
+  // Write references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    if (!WritePrincetonReference(scene, reference, transformation, fp, child_indent)) return 0;
+  }
+
   // Write children
   for (int i = 0; i < node->NChildren(); i++) {
     R3SceneNode *child = node->Child(i);
@@ -2564,6 +2589,17 @@ WritePrincetonFile(const char *filename) const
 
   // Determine output directory
   const char *output_directory = ".";
+
+  // Determine if need to remove references
+  RNBoolean remove_references = FALSE;
+  for (int i = 0; i < NReferencedScenes(); i++) {
+    R3Scene *referenced_scene = ReferencedScene(i);
+    if (referenced_scene->Filename()) continue;
+    remove_references = TRUE; break;
+  }
+
+  // Remove references if necessary (this will change the scene structure :( )
+  if (remove_references) ((R3Scene *) this)->RemoveReferences();
 
   // Write color and camera 
   fprintf(fp, "background %g %g %g\n", Background().R(), Background().G(), Background().B());
@@ -2611,8 +2647,11 @@ WritePrincetonFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
-ReadSupportHierarchyFile(const char *filename)
+ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Get/set parent node
+  if (!parent_node) parent_node = root;
+  
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
@@ -2657,7 +2696,7 @@ ReadSupportHierarchyFile(const char *filename)
       assert(nodes.NEntries() == model_index);
       R3SceneNode *node = new R3SceneNode(this);
       node->SetName(model_name);
-      root->InsertChild(node);
+      parent_node->InsertChild(node);
       nodes.Insert(node);
 
       // Read obj file
@@ -2736,25 +2775,16 @@ ReadSupportHierarchyFile(const char *filename)
 
 
 
-int R3Scene::
-WriteSupportHierarchyFile(const char *filename) const
-{
-  // Not implemented yet
-  RNAbort("Not implemented");
-
-  // Return success
-  return 1;
-}
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // GRAMMAR HIERARCHY FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
-ReadGrammarHierarchyFile(const char *filename)
+ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Get/set parent node
+  if (!parent_node) parent_node = root;
+
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
@@ -2838,7 +2868,7 @@ ReadGrammarHierarchyFile(const char *filename)
 
       // Insert root of this parse as child of root
       R3SceneNode *node = parsed_nodes.Kth(root_index);
-      root->InsertChild(node);
+      parent_node->InsertChild(node);
     }
     else if (!strcmp(keyword, "parent")) {
       // Read fields
@@ -2913,25 +2943,16 @@ ReadGrammarHierarchyFile(const char *filename)
 
 
 
-int R3Scene::
-WriteGrammarHierarchyFile(const char *filename) const
-{
-  // Not implemented yet
-  RNAbort("Not implemented");
-
-  // Return success
-  return 1;
-}
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // PARSE FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
-ReadParseFile(const char *filename)
+ReadParseFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Get/set parent node
+  if (!parent_node) parent_node = root;
+
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
@@ -2983,7 +3004,7 @@ ReadParseFile(const char *filename)
 
         // Create node
         R3SceneNode *node = new R3SceneNode(this);
-        root->InsertChild(node);
+        parent_node->InsertChild(node);
 
         // Create shape element
         R3Shape *shape = shapes.Kth(model_index);
@@ -3051,25 +3072,16 @@ ReadParseFile(const char *filename)
 
 
 
-int R3Scene::
-WriteParseFile(const char *filename) const
-{
-  // Not implemented yet
-  RNAbort("Not implemented");
-
-  // Return success
-  return 1;
-}
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // RECTANGLE FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 int R3Scene::
-ReadRectangleFile(const char *filename)
+ReadRectangleFile(const char *filename, R3SceneNode *parent_node)
 {
+  // Get/check parent node
+  if (!parent_node) parent_node = root;
+
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
@@ -3100,7 +3112,7 @@ ReadRectangleFile(const char *filename)
 
     // Create node
     R3SceneNode *node = new R3SceneNode(this);
-    root->InsertChild(node);
+    parent_node->InsertChild(node);
 
     // Create shape element
     RNArray<R3Triangle *> triangles;
@@ -3377,12 +3389,13 @@ CreateBox(R3Scene *scene, R3SceneNode *node,
 
 
 int R3Scene::
-ReadSUNCGFile(const char *filename)
+ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
 {
   // Useful variables
   const char *input_data_directory = "../..";
   RNSymbolTable<R2Texture *> texture_symbol_table;
   RNSymbolTable<R3Scene *> model_symbol_table;
+  if (!parent_node) parent_node = root;
   
   // Open file
   FILE* fp = fopen(filename, "rb");
@@ -3467,7 +3480,7 @@ ReadSUNCGFile(const char *filename)
   }
   
   // Create scene node 
-  R3SceneNode *scene_node = Root();
+  R3SceneNode *scene_node = parent_node;
   scene_node->SetName(scene_id);
 
   // Set scene transformation

@@ -98,22 +98,19 @@ public:
     RNScalar min_t = 0.0, RNScalar max_t = RN_INFINITY) const;
 
   // I/O functions
-  int ReadFile(const char *filename);
-  int ReadObjFile(const char *filename);
-  int ReadMeshFile(const char *filename);
-  int ReadSUNCGFile(const char *filename);
-  int ReadPlanner5DFile(const char *filename);
-  int ReadPrincetonFile(const char *filename);
-  int ReadParseFile(const char *filename);
-  int ReadSupportHierarchyFile(const char *filename);
-  int ReadGrammarHierarchyFile(const char *filename);
-  int ReadRectangleFile(const char *filename);
+  int ReadFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadObjFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadMeshFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadSUNCGFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadPlanner5DFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadPrincetonFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadParseFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadRectangleFile(const char *filename, R3SceneNode *parent_node = NULL);
   int WriteFile(const char *filename) const;
   int WriteObjFile(const char *filename) const;
   int WritePrincetonFile(const char *filename) const;
-  int WriteParseFile(const char *filename) const;
-  int WriteSupportHierarchyFile(const char *filename) const;
-  int WriteGrammarHierarchyFile(const char *filename) const;
 
   // Draw functions
   void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
