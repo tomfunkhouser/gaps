@@ -12,6 +12,8 @@ public:
   R3PlanarGrid(const R3Plane& plane, const R3Box& world_bbox, const R3Point& origin, const R3Vector& yaxis, RNLength spacing);
   R3PlanarGrid(const R3Plane& plane, const R3Point& origin, const R3Vector& yaxis, 
     RNLength xradius, RNLength yradius, RNLength offplane_radius, RNLength spacing);
+  R3PlanarGrid(const R3Plane& plane, const R3Affine& world_to_xyplane,
+    int xres, int yres, const R2Box& xybox);
   ~R3PlanarGrid(void);
 
   // Property functions
@@ -104,7 +106,9 @@ public:
   void Reset(const R3Plane& plane, const R3Box& world_bbox, const R3Point& origin, const R3Vector& yaxis, RNLength spacing);
   void Reset(const R3Plane& plane, const R3Point& origin, const R3Vector& yaxis, 
     RNLength xradius, RNLength yradius, RNLength offplane_radius, RNLength spacing);
-
+  void Reset(const R3Plane& plane, const R3Affine& world_to_xyplane,
+    int xres, int yres, const R2Box& xybox);
+  
   // Rasterization functions
   void RasterizeGridPoint(RNCoord x, RNCoord y, RNScalar value);
   void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value);

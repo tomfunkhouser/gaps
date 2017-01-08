@@ -208,21 +208,21 @@ ClosestPoint(const R3Point& point) const
 
 
 inline const char *R3Scene::
-Name(void) const
-{
-  // Return name
-  return name;
-}
-
-
-
-inline const char *R3Scene::
 Info(const char *key) const
 {
   // Return info associated with key
   std::string value;
   if (!info.Find(key, &value)) return NULL;
   return value.c_str();
+}
+
+
+
+inline const char *R3Scene::
+Name(void) const
+{
+  // Return name
+  return name;
 }
 
 

@@ -71,6 +71,21 @@ R3PlanarGrid(const R3Plane& plane,
 
 
 R3PlanarGrid::
+R3PlanarGrid(const R3Plane& plane, 
+  const R3Affine& world_to_xyplane, 
+  int xres, int yres, const R2Box& xyplane_bbox)
+  : plane(plane),
+    transformation(world_to_xyplane),
+    grid(),
+    bbox(R3null_box),
+    texture_id(-1)
+{
+  Reset(plane, world_to_xyplane, xres, yres, xyplane_bbox);
+}
+
+
+
+R3PlanarGrid::
 ~R3PlanarGrid(void)
 {
 }
@@ -211,6 +226,28 @@ Reset(const R3Plane& plane,
 
   // Determine transformation from 2D to grid
   grid.SetWorldToGridTransformation(planar_bbox);
+}
+
+
+
+void R3PlanarGrid::
+Reset(const R3Plane& plane, 
+  const R3Affine& world_to_xyplane, 
+  int xres, int yres, const R2Box& xyplane_bbox)
+{
+  // Update stuff
+  this->plane = plane;
+  this->transformation = world_to_xyplane;
+  this->grid.Resample(xres, yres);
+  this->grid.SetWorldToGridTransformation(xyplane_bbox);
+  
+  // Update world bbox
+  bbox = R3null_box;
+  R2Box xybox = grid.WorldBox();
+  R3Point p00(xybox[0][0], xybox[0][1], 0); p00.InverseTransform(world_to_xyplane); bbox.Union(p00);
+  R3Point p01(xybox[0][0], xybox[1][1], 0); p01.InverseTransform(world_to_xyplane); bbox.Union(p01);
+  R3Point p10(xybox[1][0], xybox[0][1], 0); p10.InverseTransform(world_to_xyplane); bbox.Union(p10);
+  R3Point p11(xybox[1][0], xybox[1][1], 0); p11.InverseTransform(world_to_xyplane); bbox.Union(p11);
 }
 
 

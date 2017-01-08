@@ -59,6 +59,9 @@ R3Scene::
 
   // Delete filename
   if (filename) free(filename);
+
+  // Delete name
+  if (name) free(name);
 }
 
 
