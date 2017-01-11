@@ -1266,6 +1266,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   R3Material *material = NULL;
   RNSymbolTable<R3Material *> material_symbol_table;
   RNArray<R2Point *> texture_coords;
+  RNArray<R3Vector *> normals;
   RNArray<R3TriangleVertex *> verts;
   RNArray<R3Triangle *> tris;
   while (fgets(buffer, 1023, fp)) {
@@ -1312,84 +1313,75 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       R2Point *vt = new R2Point(u, v);
       texture_coords.Insert(vt);
     }
+    else if (!strcmp(keyword, "vn")) {
+      // Read texture coordinates
+      double x, y, z;
+      if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
+        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        return 0;
+      }
+
+      // Create normal
+      R3Vector *vn = new R3Vector(x, y, z);
+      normals.Insert(vn);
+    }
     else if (!strcmp(keyword, "f")) {
       // Read vertex indices
       int quad = 1;
-      char s1[128], s2[128], s3[128], s4[128] = { '\0' };
-      if (sscanf(bufferp, "%s%s%s%s%s", keyword, s1, s2, s3, s4) != 5) {
+      char s[4][128] = { { '\0' }, { '\0' }, { '\0' },{ '\0' } }; 
+      if (sscanf(bufferp, "%s%s%s%s%s", keyword, s[0], s[1], s[2], s[3]) != 5) {
         quad = 0;;
-        if (sscanf(bufferp, "%s%s%s%s", keyword, s1, s2, s3) != 4) {
+        if (sscanf(bufferp, "%s%s%s%s", keyword, s[0], s[1], s[2]) != 4) {
           fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
           return 0;
         }
       }
 
       // Parse vertex indices
-      int vi1 = -1, vi2 = -1, vi3 = -1, vi4 = -1;
-      int ti1 = -1, ti2 = -1, ti3 = -1, ti4 = -1;
-      char *p1 = strchr(s1, '/'); 
-      if (p1) { *p1 = 0; vi1 = atoi(s1); p1++; if (*p1) ti1 = atoi(p1); }
-      else { vi1 = atoi(s1); ti1 = vi1; }
-      char *p2 = strchr(s2, '/'); 
-      if (p2) { *p2 = 0; vi2 = atoi(s2); p2++; if (*p2) ti2 = atoi(p2); }
-      else { vi2 = atoi(s2); ti2 = vi2; }
-      char *p3 = strchr(s3, '/'); 
-      if (p3) { *p3 = 0; vi3 = atoi(s3); p3++; if (*p3) ti3 = atoi(p3); }
-      else { vi3 = atoi(s3); ti3 = vi3; }
-      if (quad) {
-        char *p4 = strchr(s4, '/'); 
-        if (p4) { *p4 = 0; vi4 = atoi(s4); p4++; if (*p4) ti4 = atoi(p4); }
-        else { vi4 = atoi(s4); ti4 = vi4; }
-      }
-
-      // Get vertices
-      R3TriangleVertex *v1 = verts.Kth(vi1-1);
-      R3TriangleVertex *v2 = verts.Kth(vi2-1);
-      R3TriangleVertex *v3 = verts.Kth(vi3-1);
-      R3TriangleVertex *v4 = (quad) ? verts.Kth(vi4-1) : NULL;
-      
-      // Assign texture coordinates
-      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) {
-        R2Point texcoords = *(texture_coords.Kth(ti1-1));
-        if (!(v1->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v1->SetTextureCoords(texcoords);
-        else if (!R2Contains(texcoords, v1->TextureCoords())) { v1 = new R3TriangleVertex(v1->Position(), v1->Normal(), texcoords); }
-      }
-      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) {
-        R2Point texcoords = *(texture_coords.Kth(ti2-1));
-        if (!(v2->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v2->SetTextureCoords(texcoords);
-        else if (!R2Contains(texcoords, v2->TextureCoords())) { v2 = new R3TriangleVertex(v2->Position(), v2->Normal(), texcoords); }
-      }
-      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) {
-        R2Point texcoords = *(texture_coords.Kth(ti3-1));
-        if (!(v3->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v3->SetTextureCoords(texcoords);
-        else if (!R2Contains(texcoords, v3->TextureCoords())) { v3 = new R3TriangleVertex(v3->Position(), v3->Normal(), texcoords); }
-      }
-      if (quad) {
-        if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) {
-          R2Point texcoords = *(texture_coords.Kth(ti4-1));
-          if (!(v4->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v4->SetTextureCoords(texcoords);
-          else if (!R2Contains(texcoords, v4->TextureCoords())) { v4 = new R3TriangleVertex(v4->Position(), v4->Normal(), texcoords); }
+      int n = (quad) ? 4 : 3;
+      R3TriangleVertex *v[4] = { NULL, NULL, NULL, NULL };
+      for (int i = 0; i < n; i++) {
+        char *sv = s[i];
+        char *st = strchr(sv, '/');
+        if (st) *(st++) = 0;
+        char *sn = (st) ? strchr(st, '/') : NULL;
+        if (sn) *(sn++) = 0;
+        if (sn && (strlen(sn) == 0)) sn = NULL; 
+        if (st && (strlen(st) == 0)) st = NULL;
+        int vi = (sv) ? atoi(sv) : 0;
+        int ti = (st) ? atoi(st) : 0;
+        int ni = (sn) ? atoi(sn) : 0;
+        v[i] = verts.Kth(vi-1);
+        if ((ti > 0) && ((ti-1) < texture_coords.NEntries())) {
+          R2Point texcoords = *(texture_coords.Kth(ti-1));
+          if (!(v[i]->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v[i]->SetTextureCoords(texcoords);
+          else if (!R2Contains(texcoords, v[i]->TextureCoords())) { v[i] = new R3TriangleVertex(v[i]->Position(), texcoords); }
+        }
+        if ((ni > 0) && ((ni-1) < normals.NEntries())) {
+          R3Vector normal = *(normals.Kth(ni-1));
+          if (!(v[i]->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG])) v[i]->SetNormal(normal);
+          else if (!R3Contains(normal, v[i]->Normal())) { v[i] = new R3TriangleVertex(v[i]->Position(), normal, v[i]->TextureCoords()); }
         }
       }
 
       // Check vertices
-      if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
-      if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
+      if ((v[0] == v[1]) || (v[1] == v[2]) || (v[0] == v[2])) continue;
+      if ((quad) && ((v[3] == v[0]) || (v[3] == v[1]) || (v[3] == v[2]))) quad = 0;
 
       // Create first triangle
-      if (RNIsPositive(R3Distance(v1->Position(), v2->Position())) &&
-          RNIsPositive(R3Distance(v2->Position(), v3->Position())) &&
-          RNIsPositive(R3Distance(v1->Position(), v3->Position()))) {
-        R3Triangle *triangle = new R3Triangle(v1, v2, v3);
+      if (RNIsPositive(R3Distance(v[0]->Position(), v[1]->Position())) &&
+          RNIsPositive(R3Distance(v[1]->Position(), v[2]->Position())) &&
+          RNIsPositive(R3Distance(v[2]->Position(), v[0]->Position()))) {
+        R3Triangle *triangle = new R3Triangle(v[0], v[1], v[2]);
         tris.Insert(triangle);
       }
 
       // Create second triangle
       if (quad) {
-        if (RNIsPositive(R3Distance(v1->Position(), v3->Position())) &&
-            RNIsPositive(R3Distance(v3->Position(), v4->Position())) &&
-            RNIsPositive(R3Distance(v1->Position(), v4->Position()))) {
-          R3Triangle *triangle = new R3Triangle(v1, v3, v4);
+        if (RNIsPositive(R3Distance(v[0]->Position(), v[2]->Position())) &&
+            RNIsPositive(R3Distance(v[2]->Position(), v[3]->Position())) &&
+            RNIsPositive(R3Distance(v[0]->Position(), v[3]->Position()))) {
+          R3Triangle *triangle = new R3Triangle(v[0], v[2], v[3]);
           tris.Insert(triangle);
         }
       }
@@ -1465,6 +1457,12 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   for (int i = 0; i < texture_coords.NEntries(); i++) {
     R2Point *vt = texture_coords.Kth(i);
     delete vt;
+  }
+
+  // Delete normals
+  for (int i = 0; i < normals.NEntries(); i++) {
+    R3Vector *vn = normals.Kth(i);
+    delete vn;
   }
 
   // Return success
@@ -3287,26 +3285,27 @@ ParseSUNCGMaterials(R3Scene *scene,
 
       // Create output texture
       R2Texture *output_texture = NULL;
-      if (input_texture) {
-        const char *texture_filename = input_texture->Filename();
-        if (!texture_symbol_table.Find(texture_filename, &output_texture)) {
-          output_texture = new R2Texture(*input_texture);
-          scene->InsertTexture(output_texture);
-          texture_symbol_table.Insert(texture_filename, output_texture);
-        }
-      }
-      else if (*texture_name) {
+      if (*texture_name) {
         char texture_filename[1024];
         const char *texture_directory = "../../texture";
         sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
         if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
         if (!texture_symbol_table.Find(texture_filename, &output_texture)) {
+          if (input_texture) output_texture = new R2Texture(*input_texture);
+          else output_texture = new R2Texture();
           R2Image *image = new R2Image();
           if (!image->Read(texture_filename)) return 0;
-          output_texture = new R2Texture();
           output_texture->SetImage(image);
           output_texture->SetFilename(texture_filename);
           output_texture->SetName(texture_name);
+          scene->InsertTexture(output_texture);
+          texture_symbol_table.Insert(texture_filename, output_texture);
+        }
+      }
+      else if (input_texture) {
+        const char *texture_filename = input_texture->Filename();
+        if (!texture_symbol_table.Find(texture_filename, &output_texture)) {
+          output_texture = new R2Texture(*input_texture);
           scene->InsertTexture(output_texture);
           texture_symbol_table.Insert(texture_filename, output_texture);
         }

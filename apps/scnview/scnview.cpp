@@ -596,11 +596,10 @@ void GLUTMouse(int button, int state, int x, int y)
         }
 #else
         R3Ray ray = viewer->WorldRay(x, y);
-        R3Material *selected_material = NULL;
-        if (scene->Intersects(ray, &selected_node, &selected_material, NULL, &position, &normal)) {
+        R3Material *material = NULL;
+        if (scene->Intersects(ray, &selected_node, &material, NULL, &position, &normal)) {
           printf("Selected %s    %g %g %g    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z());
-          const R3Material *material = selected_element->Material();
           const char *material_name = (material) ? material->Name() : "-";
           const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
           const char *brdf_name = (brdf) ? brdf->Name() : "-";

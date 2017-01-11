@@ -916,7 +916,7 @@ RasterizeIntoZXGrid(R2Grid& grid, R3SceneNode *node,
 static int
 ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask) 
 {
-  // Get/check room, wall, floor, and ceiling nodes (depends on P5D parsing in R3Scene)
+  // Get/check room, wall, floor, and ceiling nodes 
   if (!room_node) return 0;
   if (!room_node->Name()) return 0;
   if (strncmp(room_node->Name(), "Room#", 5)) return 0;
