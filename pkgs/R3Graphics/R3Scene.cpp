@@ -1605,8 +1605,8 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
 
 
 
-int
-WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation, int &ngroups, int& nvertices, int& ntexture_coords, FILE *fp)
+static int
+WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation, int &ngroups, int& nvertices, int& nnormals, int& ntexture_coords, FILE *fp)
 {
   // Write group name
   if (node->Name()) fprintf(fp, "g %s\n", node->Name());
@@ -1626,19 +1626,39 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
       R3Shape *shape = element->Shape(j);
       if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
         R3TriangleArray *triangles = (R3TriangleArray *) shape;
+        if (triangles->NVertices() == 0) continue;
+        
+        // Allocate indices for positions, texture coordinates, and normals
+        int *pi = new int [ triangles->NVertices() ];
+        for (int k = 0; k < triangles->NVertices(); k++) pi[k] = -1;
+        int *ni = new int [ triangles->NVertices() ];
+        for (int k = 0; k < triangles->NVertices(); k++) ni[k] = -1;
+        int *ti = new int [ triangles->NVertices() ];
+        for (int k = 0; k < triangles->NVertices(); k++) ti[k] = -1;
 
         // Write vertices
         for (int k = 0; k < triangles->NVertices(); k++) {
           R3TriangleVertex *v = triangles->Vertex(k);
-          R3Point p = v->Position();
-          R2Point t = v->TextureCoords();
-          p.Transform(transformation);
-          fprintf(fp, "v %g %g %g\n", p.X(), p.Y(), p.Z());
-          fprintf(fp, "vt %g %g\n", t.X(), t.Y());
-          v->SetMark(++nvertices); // Store index of this vertex in whole file (starting at index=1)
+          v->SetMark(k);
+          if (TRUE) {
+            R3Point p = v->Position();
+            p.Transform(transformation);
+            fprintf(fp, "v %g %g %g\n", p.X(), p.Y(), p.Z());
+            pi[k] = ++nvertices;
+          }
+          if (v->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG]) {
+            R3Vector n = v->Normal();
+            n.Transform(transformation);
+            fprintf(fp, "vn %g %g %g\n", n.X(), n.Y(), n.Z());
+            ni[k] = ++nnormals;
+          }
+          if (v->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]) {
+            R2Point t = v->TextureCoords();
+            fprintf(fp, "vt %g %g\n", t.X(), t.Y());
+            ti[k] = ++ntexture_coords;
+          }
         }
        
-
         // Write triangles
         for (int k = 0; k < triangles->NTriangles(); k++) {
           R3Triangle *triangle = triangles->Triangle(k);
@@ -1648,15 +1668,28 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
           unsigned int i0 = v0->Mark();
           unsigned int i1 = v1->Mark();
           unsigned int i2 = v2->Mark();
-          if (triangle->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]) {
-            if (transformation.IsMirrored()) fprintf(fp, "f %u/%u %u/%u %u/%u\n", i2, i2, i1, i1, i0, i0);
-            else fprintf(fp, "f %u/%u %u/%u %u/%u\n", i0, i0, i1, i1, i2, i2);
+          if (triangle->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG] && triangle->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG]) {
+            if (transformation.IsMirrored()) fprintf(fp, "f %u/%u/%u %u/%u/%u %u/%u/%u\n", pi[i2], ti[i2], ni[i2], pi[i1], ti[i1], ni[i1], pi[i0], ti[i0], ni[i0]);
+            else fprintf(fp, "f %u/%u/%u %u/%u/%u %u/%u/%u\n", pi[i0], ti[i0], ni[i0], pi[i1], ti[i1], ni[i1], pi[i2], ti[i2], ni[i2]);
+          }
+          else if (triangle->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]) {
+            if (transformation.IsMirrored()) fprintf(fp, "f %u/%u %u/%u %u/%u\n",  pi[i2], ti[i2],  pi[i1], ti[i1],  pi[i0], ti[i0]);
+            else fprintf(fp, "f %u/%u %u/%u %u/%u\n",  pi[i0], ti[i0],  pi[i1], ti[i1],  pi[i2], ti[i2]);
+          }
+          else if (triangle->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG]) {
+            if (transformation.IsMirrored()) fprintf(fp, "f %u//%u %u//%u %u//%u\n",  pi[i2], ni[i2],  pi[i1], ni[i1],  pi[i0], ni[i0]);
+            else fprintf(fp, "f %u//%u %u//%u %u//%u\n",  pi[i0], ni[i0],  pi[i1], ni[i1],  pi[i2], ni[i2]);
           }
           else {
-            if (transformation.IsMirrored()) fprintf(fp, "f %u %u %u\n", i2, i1, i0);
-            else fprintf(fp, "f %u %u %u\n", i0, i1, i2);
+            if (transformation.IsMirrored()) fprintf(fp, "f %u %u %u\n",  pi[i2], pi[i1], pi[i0]);
+            else fprintf(fp, "f %u %u %u\n", pi[i0], pi[i1], pi[i2]);
           }
         }
+
+        // Delete indices for positions, texture coordinates, and normals
+        delete [] pi;
+        delete [] ni;
+        delete [] ti;
       }
     }
   }
@@ -1671,7 +1704,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
     child_transformation.Transform(child->Transformation());
 
     // Write child
-    if (!WriteObj(scene, child, child_transformation, ngroups, nvertices, ntexture_coords, fp)) return 0;
+    if (!WriteObj(scene, child, child_transformation, ngroups, nvertices, nnormals, ntexture_coords, fp)) return 0;
   }
 
   // Return success
@@ -1680,7 +1713,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
 
 
 
-int 
+static int 
 WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename) 
 {
   // Determine directory name (for texture image files)
@@ -1726,8 +1759,9 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   // Write nodes 
   int ngroups = 0;
   int nvertices = 0;
+  int nnormals = 0;
   int ntexture_coords = 0;
-  if (!WriteObj(scene, node, node->Transformation(), ngroups, nvertices, ntexture_coords, fp)) {
+  if (!WriteObj(scene, node, node->Transformation(), ngroups, nvertices, nnormals, ntexture_coords, fp)) {
     fprintf(stderr, "Unable to write OBJ file %s\n", filename);
     fclose(fp);
     return 0;
