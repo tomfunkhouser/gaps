@@ -3308,7 +3308,7 @@ ParseSUNCGMaterials(R3Scene *scene,
       R3Brdf *output_brdf = NULL;
       if (input_brdf) output_brdf = new R3Brdf(*input_brdf);
       else if (*diffuse_string) output_brdf = new R3Brdf();
-      scene->InsertBrdf(output_brdf);
+      if (output_brdf) scene->InsertBrdf(output_brdf);
       if (*diffuse_string) {
         long int b = strtol(&diffuse_string[5], NULL, 16); diffuse_string[5] = '\0';
         long int g = strtol(&diffuse_string[3], NULL, 16); diffuse_string[3] = '\0';
