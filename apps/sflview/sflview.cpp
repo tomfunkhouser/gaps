@@ -219,7 +219,7 @@ void GLUTRedraw(void)
       glEnable(GL_LIGHTING);
       static GLfloat material[] = { 0.0, 0.8, 0.0, 1.0 };
       glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, material); 
-      model->Draw(R3_DEFAULT_DRAW_FLAGS, FALSE, FALSE);
+      model->Draw(R3_DEFAULT_DRAW_FLAGS);
       glDisable(GL_LIGHTING);
     }
 
