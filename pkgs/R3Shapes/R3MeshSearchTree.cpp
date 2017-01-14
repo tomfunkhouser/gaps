@@ -595,8 +595,8 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
   // Update result
   closest.t = sqrt(closest_distance_squared);
   if (closest.type == R3_MESH_VERTEX_TYPE) { 
-    closest.edge = mesh->EdgeOnVertex(closest.vertex); 
-    closest.face = mesh->FaceOnEdge(closest.edge);
+    closest.face = mesh->FaceOnVertex(closest.vertex);
+    closest.edge = mesh->EdgeOnVertex(closest.vertex, closest.face, RN_CCW); 
   }
   else if (closest.type == R3_MESH_EDGE_TYPE) { 
     closest.vertex = NULL; 

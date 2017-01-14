@@ -1346,8 +1346,14 @@ inline R3MeshFace *R3Mesh::
 FaceOnVertex(const R3MeshVertex *v) const
 {
   // Returns any face connected to vertex
-  R3MeshEdge *e = EdgeOnVertex(v);
-  return (e) ? FaceOnEdge(e) : NULL;
+  for (int i = 0; i < VertexValence(v); i++) {
+    R3MeshEdge *e = EdgeOnVertex(v, i);
+    R3MeshFace *f = FaceOnEdge(e);
+    if (f) return f;
+  }
+
+  // No face found
+  return NULL;
 }
 
 
