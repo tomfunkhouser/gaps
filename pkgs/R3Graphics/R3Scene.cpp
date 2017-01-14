@@ -1087,6 +1087,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
 
       // Create new material
       brdf = new R3Brdf(name);
+      brdf->SetDiffuse(RNwhite_rgb);
       scene->InsertBrdf(brdf);
       material = new R3Material(brdf, NULL, name);
       scene->InsertMaterial(material);

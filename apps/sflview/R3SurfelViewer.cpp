@@ -1144,8 +1144,8 @@ SetScene(R3SurfelScene *scene)
   // Set camera and viewport
   R3Box bbox = scene->BBox();
   RNLength r = bbox.DiagonalRadius();
-  static const R3Vector up(0, 0, -1);
-  static const R3Vector towards(0, -1, 0);
+  static const R3Vector up(0, 1, 0);
+  static const R3Vector towards(0, 0, -1);
   R3Point eye = scene->Centroid() - towards * (2 * r); 
   R3Camera camera(eye, towards, up, 0.4, 0.4, 0.01, 100000.0);
   R2Viewport viewport(0, 0, window_width, window_height);
@@ -1465,7 +1465,7 @@ RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy)
   RNLength vx = (RNLength) dx / (RNLength) viewer.Viewport().Width();
   RNLength vy = (RNLength) dy / (RNLength) viewer.Viewport().Height();
   RNAngle theta = -1 * factor * 4.0 * vx;
-  viewer.RotateWorld(origin, R3posy_vector, theta);
+  viewer.RotateWorld(origin, viewer.Camera().Up(), theta);
   RNAngle phi = factor * 4.0 * vy;
   // RNAngle max_phi = R3InteriorAngle(viewer.Camera().Towards(), R3posy_vector) - RN_PI_OVER_TWO;
   // RNAngle min_phi = -1.0 * R3InteriorAngle(viewer.Camera().Towards(), R3negz_vector);

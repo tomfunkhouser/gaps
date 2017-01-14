@@ -1170,6 +1170,59 @@ CreateGrid(R3SurfelScene *scene,
 
 
 R3Grid *
+CreateGrid(R3SurfelScene *scene, const R3Box& bbox,
+  RNLength grid_spacing, int max_resolution)
+{
+  // Compute grid resolution
+  int xres = (int) (bbox.XLength() / grid_spacing + 0.5);
+  int yres = (int) (bbox.YLength() / grid_spacing + 0.5);
+  int zres = (int) (bbox.ZLength() / grid_spacing + 0.5);
+  if (xres > max_resolution) xres = max_resolution;
+  if (yres > max_resolution) yres = max_resolution;
+  if (zres > max_resolution) zres = max_resolution;
+  if (xres < 2) xres = 2;
+  if (yres < 2) yres = 2;
+  if (zres < 2) zres = 2;
+  
+  // Create grid
+  R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
+  if (!grid) {
+    fprintf(stderr, "Unable to allocate grid\n");
+    return NULL;
+  }
+
+  // Rasterize points into grid
+  R3SurfelTree *tree = scene->Tree();
+  R3SurfelDatabase *database = tree->Database();
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    if (!R3Intersects(bbox, node->BBox())) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      if (!R3Intersects(bbox, block->BBox())) continue;
+      const R3Point& origin = block->Origin();
+      database->ReadBlock(block);
+      for (int k = 0; k < block->NSurfels(); k++) {
+        const R3Surfel *surfel = block->Surfel(k);
+        double px = origin.X() + surfel->X();
+        double py = origin.Y() + surfel->Y();
+        double pz = origin.Z() + surfel->Z();
+        R3Point position(px, py, pz);
+        if (!R3Intersects(bbox, position)) continue;
+        grid->RasterizeWorldPoint(position, 1.0);
+      }
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Return grid
+  return grid;
+}
+
+
+
+R3Grid *
 CreateGrid(R3SurfelScene *scene, 
   RNLength grid_spacing, int max_resolution)
 {

@@ -90,6 +90,8 @@ R3Grid *CreateGrid(R3SurfelScene *scene,
   R3SurfelNode *source_node = NULL,
   const R3SurfelConstraint *constraint = NULL, 
   RNLength grid_spacing = 0.1, int max_resolution = 1024);
+R3Grid *CreateGrid(R3SurfelScene *scene, const R3Box& bbox, 
+  RNLength grid_spacing = 0.1, int max_resolution = 1024);
 R3Grid *CreateGrid(R3SurfelScene *scene, 
   RNLength grid_spacing = 0.1, int max_resolution = 1024);
 
