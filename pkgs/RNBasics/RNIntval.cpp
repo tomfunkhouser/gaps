@@ -10,13 +10,14 @@
 
 /* Public variables */
 
+const RNInterval RNnull_interval(FLT_MAX, -FLT_MAX);
 const RNInterval RNzero_interval(0.0, 0.0);
 const RNInterval RNunit_interval(-1.0, 1.0);
-const RNInterval RNpositive_interval(RN_SMALL_EPSILON, RN_INFINITY);
-const RNInterval RNnegative_interval(-RN_INFINITY, -RN_SMALL_EPSILON);
-const RNInterval RNnonpositive_interval(-RN_INFINITY, 0.0);
-const RNInterval RNnonnegative_interval(0.0, RN_INFINITY);
-const RNInterval RNinfinite_interval(-RN_INFINITY, RN_INFINITY);
+const RNInterval RNpositive_interval(RN_SMALL_EPSILON, FLT_MAX);
+const RNInterval RNnegative_interval(-FLT_MAX, -RN_SMALL_EPSILON);
+const RNInterval RNnonpositive_interval(-FLT_MAX, 0.0);
+const RNInterval RNnonnegative_interval(0.0, FLT_MAX);
+const RNInterval RNinfinite_interval(-FLT_MAX, FLT_MAX);
 
 
 

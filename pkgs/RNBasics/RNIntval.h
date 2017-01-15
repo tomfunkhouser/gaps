@@ -112,6 +112,7 @@ class RNInterval {
 
 /* Public variables */
 
+extern const RNInterval RNnull_interval;
 extern const RNInterval RNzero_interval;
 extern const RNInterval RNunit_interval;
 extern const RNInterval RNpositive_interval;
