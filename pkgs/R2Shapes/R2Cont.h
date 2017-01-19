@@ -76,6 +76,16 @@ RNBoolean R2Contains(const R2Circle& circle, const R2Box& box);
 RNBoolean R2Contains(const R2Circle& circle1, const R2Circle& circle2);
 RNBoolean R2Contains(const R2Circle& circle, const R2Shape& shape);
 
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Point& point);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Line& line);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Ray& ray);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Span& span);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Halfspace& halfspace);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Box& box);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Circle& circle);
+RNBoolean R2Contains(const R2Polygon& polygon1, const R2Polygon& polygon2);
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Shape& shape);
+
 RNBoolean R2Contains(const R2Shape& shape, const R2Point& point);
 RNBoolean R2Contains(const R2Shape& shape, const R2Line& line);
 RNBoolean R2Contains(const R2Shape& shape, const R2Ray& ray);

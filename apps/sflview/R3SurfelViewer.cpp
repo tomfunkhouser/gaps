@@ -21,8 +21,9 @@ R3SurfelViewer(R3SurfelScene *scene)
   : scene(NULL),
     resident_nodes(),
     viewer(),
+    viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     center_point(0,0,0),
-    next_scan_index(0),
+    current_scan_index(-1),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -205,6 +206,49 @@ LoadColor(double value)
 
 
 
+static void
+LoadViewingExtent(const R3SurfelViewer *viewer)
+{
+  // Disable all clip planes
+  for (int i = 0; i < 6; i++) {
+    glDisable(GL_CLIP_PLANE0 + i);
+  }
+
+  // Check viewer
+  if (viewer) {
+    // Check extent
+    const R3Box& extent = viewer->ViewingExtent();
+    if (extent.IsEmpty()) return;
+    const R3SurfelScene *scene = viewer->Scene();
+    const R3Box& bbox = scene->BBox();  
+    if (R3Contains(extent, bbox)) return;
+
+    // Load lo clip planes
+    for (int dim = RN_X; dim <= RN_Z; dim++) {
+      if (extent[RN_LO][dim] > bbox[RN_LO][dim]) {
+        GLdouble plane_equation[4] = { 0, 0, 0, 0 };
+        plane_equation[dim] = 1.0;
+        plane_equation[3] = -extent[RN_LO][dim];
+        glClipPlane(GL_CLIP_PLANE0 + dim, plane_equation);
+        glEnable(GL_CLIP_PLANE0 + dim);
+      }
+    }
+
+    // Load hi clip planes
+    for (int dim = RN_X; dim <= RN_Z; dim++) {
+      if (extent[RN_HI][dim] < bbox[RN_HI][dim]) {
+        GLdouble plane_equation[4] = { 0, 0, 0, 0 };
+        plane_equation[dim] = -1.0;
+        plane_equation[3] = extent[RN_HI][dim];
+        glClipPlane(GL_CLIP_PLANE0 + 3 + dim, plane_equation);
+        glEnable(GL_CLIP_PLANE0 + 3 + dim);
+      }
+    }
+  }  
+}
+
+
+
 #if 0
 static void
 DrawSurfelQuad(const R3SurfelViewer *viewer, const R3SurfelBlock *block, const R3Surfel *surfel, unsigned char alpha)
@@ -266,6 +310,9 @@ Redraw(void)
   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
   static GLfloat light1_position[] = { -3.0, -2.0, -3.0, 0.0 };
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
+
+  // Set viewing extent
+  LoadViewingExtent(this);
 
   // Set draw modes
   glDisable(GL_LIGHTING);
@@ -626,6 +673,9 @@ Redraw(void)
     glDisable(GL_LIGHTING);
   }
 
+  // Reset viewing modes
+  LoadViewingExtent(NULL);
+
   // Draw axes
   if (axes_visibility) {
     RNScalar d = 1.0;
@@ -909,11 +959,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case 'v':
-      JumpToNextScanViewpoint();
+      JumpToNextScanViewpoint(1);
       break;
       
     case 'V':
-      SetScanViewpointVisibility(-1);
+      JumpToNextScanViewpoint(-1);
       break;
       
     case 'W':
@@ -929,6 +979,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'X':
     case 'x':
       SetBackgroundVisibility(-1);
+      break;
+      
+    case 'Y':
+    case 'y':
+      SetScanViewpointVisibility(-1);
       break;
       
     case 'Q': 
@@ -994,6 +1049,20 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
       SetFocusRadius(0.9 * FocusRadius());
+      break;
+
+    case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
+      if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
+      if (shift) viewing_extent[RN_LO][RN_Z] += 0.1;
+      else viewing_extent[RN_HI][RN_Z] += 0.1;
+      if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
+      break;
+
+    case R3_SURFEL_VIEWER_PAGE_DOWN_KEY: 
+      if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
+      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.1;
+      else viewing_extent[RN_HI][RN_Z] -= 0.1;
+      if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
       break;
 
     case '-': 
@@ -1073,13 +1142,19 @@ ZoomCamera(RNScalar scale)
 
 
 void R3SurfelViewer::
-JumpToNextScanViewpoint(void)
+JumpToNextScanViewpoint(int delta)
 {
   // Check number of scans
   if (scene->NScans() == 0) return;
 
+  // Update current scan index
+  if (current_scan_index < 0) current_scan_index = 0;
+  else current_scan_index += delta;
+  if (current_scan_index < 0) current_scan_index = 0;
+  if (current_scan_index >= scene->NScans()) current_scan_index = scene->NScans() - 1;
+
   // Set camera
-  R3SurfelScan *scan = scene->Scan(next_scan_index);
+  R3SurfelScan *scan = scene->Scan(current_scan_index);
   viewer.RepositionCamera(scan->Viewpoint());
   viewer.ReorientCamera(scan->Towards(), scan->Up());
 
@@ -1092,12 +1167,6 @@ JumpToNextScanViewpoint(void)
     EmptyWorkingSet();
     center_point = node->Centroid();
     InsertIntoWorkingSet(node, TRUE);
-  }
-
-  // Update next scan index
-  next_scan_index++;
-  if (next_scan_index >= scene->NScans()) {
-    next_scan_index = 0;
   }
 }
 

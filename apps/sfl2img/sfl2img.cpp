@@ -1716,7 +1716,7 @@ WriteHorizontalGrids(R3SurfelScene *scene, const char *directory_name,
   }
 
   // Read zmax grid
-  R2Grid *zmax_grid = ReadGrid(directory_name, "Color", "ZMax");
+  R2Grid *zmax_grid = ReadGrid(directory_name, "Base", "ZMax");
   if (!zmax_grid) return 0;
 
   // Scale parameters (convert from meters to pixels)

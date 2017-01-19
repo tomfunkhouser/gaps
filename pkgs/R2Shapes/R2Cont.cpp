@@ -556,6 +556,96 @@ RNBoolean R2Contains(const R2Circle& circle, const R2Shape& shape)
 
 
 
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Point& point)
+{
+    // Return whether polygon contains point
+    int ncrossings = 0;
+    R2Ray ray(point, R2Vector(0.12345, 0.9923508));
+    for (int i = 0; i < polygon.NPoints(); i++) {
+        const R2Point& p0 = polygon.Point(i);
+        const R2Point& p1 = polygon.Point((i+1)%polygon.NPoints());
+        if (R2Intersects(ray, R2Span(p0, p1))) ncrossings++;
+    }
+
+    // Check odd-crossing rule
+    return (ncrossings % 2) ? TRUE : FALSE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Line& line)
+{
+    // Return whether polygon contains line
+    if (polygon.IsFinite()) return FALSE;
+    return TRUE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Ray& ray)
+{
+    // Return whether polygon contains ray
+    if (polygon.IsFinite()) return FALSE;
+    return TRUE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Span& span)
+{
+    // Return whether polygon contains span (this is not right, because polygon can be concave)
+    if (!R2Contains(polygon, span.Start())) return FALSE;
+    if (!R2Contains(polygon, span.End())) return FALSE;
+    return TRUE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Halfspace& halfspace)
+{
+    // Return whether polygon contains halfspace
+    if (polygon.IsFinite()) return FALSE;
+    return TRUE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Box& box)
+{
+    // Return whether polygon contains box 
+    RNAbort("Not implemented");
+    return FALSE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Circle& circle)
+{
+    // Return whether polygon contains circle 
+    RNAbort("Not implemented");
+    return FALSE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon1, const R2Polygon& polygon2) 
+{
+    // Return whether polygon1 contains polygon2
+    RNAbort("Not implemented");
+    return FALSE;
+}
+
+
+
+RNBoolean R2Contains(const R2Polygon& polygon, const R2Shape& shape)
+{
+    // Return whether polygon contains shape
+    RNAbort("Not implemented");
+    return FALSE;
+}
+
+
+
 RNBoolean R2Contains(const R2Shape& shape, const R2Point& point)
 {
     // Return whether shape contains point

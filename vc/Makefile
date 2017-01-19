@@ -19,6 +19,8 @@ opt:
 
 debug:
 
+mesa:
+
 release:
 	mkdir -p $(RELEASE_DIR)/vc
 	cp vc.sln $(RELEASE_DIR)/vc

@@ -51,6 +51,7 @@ public:
   // Viewing properties
   const R3Camera& Camera(void) const;
   const R2Viewport& Viewport(void) const;
+  const R3Box& ViewingExtent(void) const;
   const R3Point& CenterPoint(void) const;
   RNScalar SurfelSize(void) const;
 
@@ -97,9 +98,10 @@ public:
   void ZoomCamera(RNScalar scale = 10);
   void SetCamera(const R3Camera& camera);
   void SetViewport(const R2Viewport& viewport);
+  void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
   void SetSurfelSize(RNScalar npixels);
-  void JumpToNextScanViewpoint(void);
+  void JumpToNextScanViewpoint(int delta);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
   void SetSurfelVisibility(int visibility);
@@ -181,8 +183,9 @@ protected:
 
   // Viewing properties
   R3Viewer viewer;
+  R3Box viewing_extent;
   R3Point center_point;
-  int next_scan_index;
+  int current_scan_index;
   RNScalar surfel_size;
 
   // Visibility properties
@@ -241,30 +244,32 @@ protected:
 // KEY CONSTANT DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
 
-#define R3_SURFEL_VIEWER_ESC_KEY      27
-#define R3_SURFEL_VIEWER_SPACE_KEY    32
-#define R3_SURFEL_VIEWER_DEL_KEY     127
+#define R3_SURFEL_VIEWER_ESC_KEY           27
+#define R3_SURFEL_VIEWER_SPACE_KEY         32
+#define R3_SURFEL_VIEWER_DEL_KEY          127
 
-#define R3_SURFEL_VIEWER_LEFT_KEY   1024
-#define R3_SURFEL_VIEWER_RIGHT_KEY  1025
-#define R3_SURFEL_VIEWER_DOWN_KEY   1026
-#define R3_SURFEL_VIEWER_UP_KEY     1027
-#define R3_SURFEL_VIEWER_HOME_KEY   1028
-#define R3_SURFEL_VIEWER_END_KEY    1029
-#define R3_SURFEL_VIEWER_INSERT_KEY 1030
+#define R3_SURFEL_VIEWER_LEFT_KEY        1024
+#define R3_SURFEL_VIEWER_RIGHT_KEY       1025
+#define R3_SURFEL_VIEWER_DOWN_KEY        1026
+#define R3_SURFEL_VIEWER_UP_KEY          1027
+#define R3_SURFEL_VIEWER_HOME_KEY        1028
+#define R3_SURFEL_VIEWER_END_KEY         1029
+#define R3_SURFEL_VIEWER_INSERT_KEY      1030
+#define R3_SURFEL_VIEWER_PAGE_DOWN_KEY   1031
+#define R3_SURFEL_VIEWER_PAGE_UP_KEY     1032
 
-#define R3_SURFEL_VIEWER_F1_KEY     1064
-#define R3_SURFEL_VIEWER_F2_KEY     1065
-#define R3_SURFEL_VIEWER_F3_KEY     1066
-#define R3_SURFEL_VIEWER_F4_KEY     1067
-#define R3_SURFEL_VIEWER_F5_KEY     1068
-#define R3_SURFEL_VIEWER_F6_KEY     1069
-#define R3_SURFEL_VIEWER_F7_KEY     1070
-#define R3_SURFEL_VIEWER_F8_KEY     1071
-#define R3_SURFEL_VIEWER_F9_KEY     1072
-#define R3_SURFEL_VIEWER_F10_KEY    1073
-#define R3_SURFEL_VIEWER_F11_KEY    1074
-#define R3_SURFEL_VIEWER_F12_KEY    1075
+#define R3_SURFEL_VIEWER_F1_KEY          1064
+#define R3_SURFEL_VIEWER_F2_KEY          1065
+#define R3_SURFEL_VIEWER_F3_KEY          1066
+#define R3_SURFEL_VIEWER_F4_KEY          1067
+#define R3_SURFEL_VIEWER_F5_KEY          1068
+#define R3_SURFEL_VIEWER_F6_KEY          1069
+#define R3_SURFEL_VIEWER_F7_KEY          1070
+#define R3_SURFEL_VIEWER_F8_KEY          1071
+#define R3_SURFEL_VIEWER_F9_KEY          1072
+#define R3_SURFEL_VIEWER_F10_KEY         1073
+#define R3_SURFEL_VIEWER_F11_KEY         1074
+#define R3_SURFEL_VIEWER_F12_KEY         1075
 
 
 
@@ -307,6 +312,15 @@ Viewport(void) const
 {
   // Return viewport
   return viewer.Viewport();
+}
+
+
+
+inline const R3Box& R3SurfelViewer::
+ViewingExtent(void) const
+{
+  // Return viewing extent
+  return viewing_extent;
 }
 
 
@@ -587,6 +601,15 @@ SetViewport(const R2Viewport& viewport)
 {
   // Set viewport
   viewer.SetViewport(viewport);
+}
+
+
+
+inline void R3SurfelViewer::
+SetViewingExtent(const R3Box& box)
+{
+  // Set viewing extent
+  viewing_extent = box;
 }
 
 
