@@ -44,6 +44,9 @@ opt:
 debug:
 	    $(MAKE) $(LIB) "CFLAGS=$(DEBUG_CFLAGS)" 
 
+mesa:
+	    $(MAKE) $(LIB) "CFLAGS=$(OPT_CFLAGS) -DUSE_MESA" 
+
 $(LIB):     $(CCSRCS) $(CSRCS) $(OSRCS) $(OBJS) $(DEPENDENCIES)
 	    mkdir -p $(LIB_DIR)
 	    rm -f $(LIB)

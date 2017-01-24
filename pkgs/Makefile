@@ -37,7 +37,7 @@ debug:
 	ar ur $(LIB) $(PKG_LIBS)
 
 mesa:
-	$(MAKE) opt
+	$(MAKE) target "TARGET=$@"
 
 clean:
 	$(MAKE) target "TARGET=$@"

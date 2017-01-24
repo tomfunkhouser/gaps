@@ -243,6 +243,11 @@ Load(void) const
   else if (image->Depth() == 4) format = GL_RGBA;
   else RNAbort("Illegal texture image");
 
+#ifdef USE_MESA
+  // For some reason, gluBuild2DMipmaps segfaults in mesa
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image->Width(), image->Height(),
+    0, format, GL_UNSIGNED_BYTE, (const unsigned char *) image->Pixels());
+#else
   // Define texture
   if ((min_filter == R2_NEAREST_MIPMAP_NEAREST_TEXTURE_FILTER) ||
       (min_filter == R2_NEAREST_MIPMAP_LINEAR_TEXTURE_FILTER) ||
@@ -255,6 +260,7 @@ Load(void) const
     glTexImage2D(GL_TEXTURE_2D, 0, format, image->Width(), image->Height(),
       0, format, GL_UNSIGNED_BYTE, (const unsigned char *) image->Pixels());
   }
+#endif
 
   // End texture definition                                                                                       
   glBindTexture(GL_TEXTURE_2D, 0);
