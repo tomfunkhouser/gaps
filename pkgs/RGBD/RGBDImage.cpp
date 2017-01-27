@@ -1,0 +1,1020 @@
+////////////////////////////////////////////////////////////////////////
+// Source file for RGBDImage class
+////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Include files
+////////////////////////////////////////////////////////////////////////
+
+#include "RGBD.h"
+
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Constructors/destructors
+////////////////////////////////////////////////////////////////////////
+
+RGBDImage::
+RGBDImage(void)
+  : configuration(NULL),
+    configuration_index(-1),
+    channels(),
+    width(0), height(0),
+    camera_to_world(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0),
+    intrinsics(1,0,0, 0,1,0, 0,0,1),
+    world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    opengl_texture_id(-1),
+    color_filename(NULL),
+    depth_filename(NULL),
+    color_resident_count(0),
+    depth_resident_count(0)
+{
+}
+
+
+
+RGBDImage::
+RGBDImage(const char *color_filename, const char *depth_filename, const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix)
+  : configuration(NULL),
+    configuration_index(-1),
+    channels(),
+    width(0), height(0),
+    camera_to_world(extrinsics_matrix, 0),
+    intrinsics(intrinsics_matrix),
+    world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    opengl_texture_id(-1),
+    color_filename((color_filename) ? strdup(color_filename) : NULL),
+    depth_filename((depth_filename) ? strdup(depth_filename) : NULL),
+    color_resident_count(0),
+    depth_resident_count(0)
+{
+}
+
+
+
+RGBDImage::
+~RGBDImage(void)
+{
+  // Delete opengl texture
+  if (opengl_texture_id >= 0) {
+    GLuint i = opengl_texture_id;
+    glDeleteTextures(1, &i);
+  }
+  
+  // Remove from configuration
+  if (configuration) {
+    configuration->RemoveImage(this);
+  }
+
+  // Delete channels
+  for (int i = 0; i < channels.NEntries(); i++) {
+    if (channels[i]) delete channels[i];
+  }
+
+  // Delete filenames
+  if (color_filename) free(color_filename);
+  if (depth_filename) free(depth_filename);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Pixel property access functions
+////////////////////////////////////////////////////////////////////////
+
+RNRgb RGBDImage::
+PixelColor(int ix, int iy) const
+{
+  // Return color of pixel
+  if (NChannels() < 3) return RNblack_rgb;
+  RNScalar r = PixelChannelValue(ix, iy, RGBD_RED_CHANNEL);
+  RNScalar g = PixelChannelValue(ix, iy, RGBD_GREEN_CHANNEL);
+  RNScalar b = PixelChannelValue(ix, iy, RGBD_BLUE_CHANNEL);
+  return RNRgb(r, g, b);
+}
+
+
+
+R3Vector RGBDImage::
+PixelWorldNormal(int ix, int iy) const
+{
+  // Allocate buffer of points
+  const int r = 64;
+  R3Point *points = new R3Point[(2*r+1) * (2*r+1)];
+  int npoints = 0;
+  
+  // Fill buffer of points in neighborhood r of (ix, iy)
+  for (int s = -r; s <= r; s++) {
+    int i = ix + s;
+    if ((i < 0) || (i >= width)) continue;
+    for (int t = -r; t <= r; t++) {
+      int j = iy + t;
+      if ((j < 0) || (j >= height)) continue;
+      R3Point camera_position;
+      R2Point image_position(i + 0.5, j + 0.5);
+      if (RGBDTransformImageToCamera(image_position, camera_position, this)) {
+        points[npoints++] = camera_position;
+      }
+    }
+  }
+
+  // Compute normal at pixel
+  if (npoints < 3) return R3zero_vector;
+  R3Point centroid = R3Centroid(npoints, points);
+  R3Triad triad = R3PrincipleAxes(centroid, npoints, points);
+  R3Vector normal = (triad[2].Z() > 0) ? triad[2] : -triad[2];
+
+  // Transform into world coordinates
+  normal.Transform(camera_to_world);
+  normal.Normalize();
+  
+  // Delete buffer of points
+  delete [] points;
+
+  // Return normal in world coordinates
+  return normal;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Point propery access functions
+////////////////////////////////////////////////////////////////////////
+
+RNRgb RGBDImage::
+PixelColor(const R2Point& image_position) const
+{
+  // Return color of pixel
+  if (NChannels() < 3) return RNblack_rgb;
+  RNScalar r = PixelChannelValue(image_position, RGBD_RED_CHANNEL);
+  RNScalar g = PixelChannelValue(image_position, RGBD_GREEN_CHANNEL);
+  RNScalar b = PixelChannelValue(image_position, RGBD_BLUE_CHANNEL);
+  return RNRgb(r, g, b);
+}
+
+
+
+R3Point RGBDImage::
+PixelWorldPosition(const R2Point& image_position) const
+{
+  // Return position of pixel in world coordinates
+  R3Point world_position(0,0,0);
+  RGBDTransformImageToWorld(image_position, world_position, this);
+  return world_position;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Manipulation functions
+////////////////////////////////////////////////////////////////////////
+
+void RGBDImage::
+SetPixelColor(int ix, int iy, const RNRgb& color)
+{
+  // Set pixel red, green, and blue
+  SetPixelChannelValue(ix, iy, RGBD_RED_CHANNEL, color.R());
+  SetPixelChannelValue(ix, iy, RGBD_GREEN_CHANNEL, color.G());
+  SetPixelChannelValue(ix, iy, RGBD_BLUE_CHANNEL, color.B());
+
+  // Invalidate opengl
+  InvalidateOpenGL();
+}
+
+
+
+void RGBDImage::
+SetPixelDepth(int ix, int iy, RNScalar depth)
+{
+  // Set pixel depth
+  SetPixelChannelValue(ix, iy, RGBD_DEPTH_CHANNEL, depth);
+
+  // Update bounding box
+  R3Point world_position;
+  R2Point image_position(ix+0.5, iy+0.5);
+  if (RGBDTransformImageToWorld(image_position, world_position, this)) {
+    world_bbox.Union(world_position);
+  }
+}
+
+
+
+void RGBDImage::
+SetPixelChannelValue(int ix, int iy, int channel_index, RNScalar value)
+{
+  // Check channel
+  if (!channels[channel_index]) {
+    fprintf(stderr, "RGBD channel is not resident in memory -- cannot set value\n");
+    return;
+  }
+  
+  // Set channel value at pixel
+  if ((channel_index < 0) || (channel_index >= channels.NEntries())) return;
+  if ((ix < 0) || (ix >= channels[channel_index]->XResolution())) return;
+  if ((iy < 0) || (ix >= channels[channel_index]->YResolution())) return;
+  channels[channel_index]->SetGridValue(ix, iy, value);
+
+  // Update bounding box
+  if (channel_index == RGBD_DEPTH_CHANNEL) {
+    R3Point world_position;
+    R2Point image_position(ix+0.5, iy+0.5);
+    if (RGBDTransformImageToWorld(image_position, world_position, this)) {
+      world_bbox.Union(world_position);
+    }
+  }
+
+  // Invalidate opengl
+  if ((channel_index >= RGBD_RED_CHANNEL) && (channel_index <= RGBD_BLUE_CHANNEL)) InvalidateOpenGL();
+}
+
+
+
+void RGBDImage::
+SetChannel(int channel_index, const R2Grid& image)
+{
+  // Check channel
+  if (!channels[channel_index]) {
+    fprintf(stderr, "RGBD channel is not resident in memory -- cannot set\n");
+    return;
+  }
+  
+  // Copy channel
+  *(channels[channel_index]) = image;
+  
+  // Set width and height
+  this->width = image.XResolution();
+  this->height = image.YResolution();
+
+  // Invalidate bounding box
+  if (channel_index == RGBD_DEPTH_CHANNEL) InvalidateWorldBBox();
+
+  // Invalidate opengl
+  if ((channel_index >= RGBD_RED_CHANNEL) && (channel_index <= RGBD_BLUE_CHANNEL)) InvalidateOpenGL();
+}
+
+
+
+void RGBDImage::
+SetDepthChannel(const R2Grid& image)
+{
+  // Check if color channels are resident
+  if (depth_resident_count == 0) {
+    fprintf(stderr, "Unable to set depth channel -- it has not been created\n");
+    return;
+  }
+
+  // Set depth channel
+  SetChannel(RGBD_DEPTH_CHANNEL, image);
+}
+
+
+
+void RGBDImage::
+SetColorChannels(const R2Image& image)
+{
+  // Check if color channels are resident
+  if (color_resident_count == 0) {
+    fprintf(stderr, "Unable to set color channels -- they have not been created\n");
+    return;
+  }
+
+  // Copy color values
+  for (int iy = 0; iy < image.Height(); iy++) {
+    for (int ix = 0; ix < image.Width(); ix++) {
+      RNRgb color = image.PixelRGB(ix, iy);
+      channels[RGBD_RED_CHANNEL]->SetGridValue(ix, iy, color.R());      
+      channels[RGBD_GREEN_CHANNEL]->SetGridValue(ix, iy, color.G());      
+      channels[RGBD_BLUE_CHANNEL]->SetGridValue(ix, iy, color.B());
+    }
+  }
+
+  // Set width and height
+  this->width = image.Width();
+  this->height = image.Height();
+
+  // Invalidate opengl
+  InvalidateOpenGL();
+}
+
+
+
+void RGBDImage::
+SetCameraToWorld(const R3Affine& transformation)
+{
+  // Set camera_to_world transformation
+  this->camera_to_world = transformation;
+
+  // Invalidate bounding boxes
+  InvalidateWorldBBox();
+}
+
+
+
+void RGBDImage::
+SetExtrinsics(const R4Matrix& matrix)
+{
+  // Set extrinsics matrix
+  this->camera_to_world.Reset(matrix);
+
+  // Invalidate bounding box
+  InvalidateWorldBBox();
+}
+
+
+
+void RGBDImage::
+SetIntrinsics(const R3Matrix& matrix)
+{
+  // Set intrinsics matrix
+  this->intrinsics = matrix;
+
+  // Invalidate bounding box
+  InvalidateWorldBBox();
+}
+
+
+
+void RGBDImage::
+Transform(const R3Transformation& transformation)
+{
+  // Update camera_to_world transformation
+  R3Affine t = R3identity_affine;
+  t.Transform(transformation);
+  t.Transform(camera_to_world);
+  camera_to_world = t;
+
+  // Invalidate bounding box
+  InvalidateWorldBBox();
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Transformation functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDImage::
+TransformImageToCamera(const R2Point& image_position, R3Point& camera_position) const
+{
+  // Check image position
+  int ix = (int) image_position[0];
+  if ((ix < 0) || (ix >= NPixels(RN_X))) return 0; 
+  int iy = (int) image_position[1];
+  if ((iy < 0) || (iy >= NPixels(RN_Y))) return 0; 
+  
+  // Get/check depth (point sample to avoid interpolation)
+  RNScalar depth = PixelDepth(ix, iy);
+  if ((RNIsZero(depth)) || (depth == R2_GRID_UNKNOWN_VALUE)) return 0;
+
+  // Get/check intrinsics matrix
+  const R3Matrix& intrinsics_matrix = Intrinsics();
+  if (RNIsZero(intrinsics_matrix[0][0])) return 0;
+  if (RNIsZero(intrinsics_matrix[1][1])) return 0;
+  
+  // Transform from position in image coordinates to camera coordinates (where camera is looking down -Z, up is +Y, right is +X)
+  camera_position[0] = (image_position[0] - intrinsics_matrix[0][2]) * depth / intrinsics_matrix[0][0];
+  camera_position[1] = (image_position[1] - intrinsics_matrix[1][2]) * depth / intrinsics_matrix[1][1];
+  camera_position[2] = -depth;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+TransformCameraToImage(const R3Point& camera_position, R2Point& image_position) const
+{
+  // Get/check depth
+  RNScalar depth = -camera_position[2];
+  if ((RNIsZero(depth)) || (depth == R2_GRID_UNKNOWN_VALUE)) return 0;
+
+  // Get/check intrinsics matrix
+  const R3Matrix& intrinsics_matrix = Intrinsics();
+  if (RNIsZero(intrinsics_matrix[0][0])) return 0;
+  if (RNIsZero(intrinsics_matrix[1][1])) return 0;
+  
+  // Transform from position in image coordinates to camera coordinates (where camera is looking down -Z, up is +Y, right is +X)
+  image_position[0] = intrinsics_matrix[0][2] + camera_position[0] * intrinsics_matrix[0][0] / depth;
+  image_position[1] = intrinsics_matrix[1][2] + camera_position[1] * intrinsics_matrix[1][1] / depth;
+
+  // Check image position
+  if ((image_position[0] < 0) || (image_position[0] >= NPixels(RN_X))) return 0; 
+  if ((image_position[1] < 0) || (image_position[1] >= NPixels(RN_Y))) return 0;
+
+  // Check pixel position
+  int image_ix = (int) (image_position.X() + 0.5);
+  if ((image_ix < 0) || (image_ix >= NPixels(RN_X))) return 0;
+  int image_iy = (int) (image_position.Y() + 0.5);
+  if ((image_iy < 0) || (image_iy >= NPixels(RN_Y))) return 0;
+
+  // Check depth
+  RNScalar image_depth = PixelDepth(image_ix, image_iy);
+  if ((image_depth == R2_GRID_UNKNOWN_VALUE) || (image_depth == 0)) return 0;
+
+  // If depth is not within 10% of image depth, then probably not 
+  if (image_depth < 0.9 * depth) return 0;
+  if (image_depth > 1.1 * depth) return 0;
+  
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+TransformCameraToWorld(const R3Point& camera_position, R3Point& world_position) const
+{
+  // Transform from camera coordinates to world coordinates
+  world_position = camera_position;
+  world_position.Transform(CameraToWorld());
+  return 1;
+}
+
+
+
+int RGBDImage::
+TransformWorldToCamera(const R3Point& world_position, R3Point& camera_position) const
+{
+  // Transform from position in world coordinates to camera coordinates
+  camera_position = world_position;
+  camera_position.InverseTransform(CameraToWorld());
+  if (RNIsPositiveOrZero(camera_position[2])) return 0;
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Draw functions
+////////////////////////////////////////////////////////////////////////
+
+void RGBDImage::
+Draw(int color_scheme) const
+{
+  // Draw
+  DrawCamera(color_scheme);
+}
+
+
+
+void RGBDImage::
+DrawCamera(int color_scheme, RNLength radius) const
+{
+  // Get useful variables
+  R3Point viewpoint = WorldViewpoint();
+  R3Vector towards = WorldTowards();
+  R3Vector up = WorldUp();
+
+  // Draw color
+  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
+  else LoadColor(color_scheme);
+
+  // Draw camera
+  glBegin(GL_LINES);
+  R3LoadPoint(viewpoint);
+  R3LoadPoint(viewpoint + radius * towards);
+  R3LoadPoint(viewpoint);
+  R3LoadPoint(viewpoint + 0.5*radius * up);
+  glEnd();
+}
+
+
+
+void RGBDImage::
+DrawBBox(int color_scheme) const
+{
+  // Draw color
+  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
+  else LoadColor(color_scheme);
+
+  // Outline bounding box
+  WorldBBox().Outline();
+}
+
+
+
+void RGBDImage::
+DrawImage(int color_scheme, RNLength depth) const
+{
+  // Get useful variables
+  if ((width == 0) || (height == 0)) return;
+  R3Point viewpoint = WorldViewpoint();
+  R3Vector towards = WorldTowards();
+  R3Vector right = WorldRight();
+  R3Vector up = WorldUp();
+  R3Point c = viewpoint + depth * towards;
+  R3Vector dx = (depth * 0.5*width / intrinsics[0][0]) * right;
+  R3Vector dy = (depth * 0.5*height / intrinsics[1][1]) * up;
+
+  // Update/select opengl texture
+  if (opengl_texture_id <= 0) ((RGBDImage *) this)->UpdateOpenGL();
+  if (opengl_texture_id <= 0) return;
+  glBindTexture(GL_TEXTURE_2D, opengl_texture_id);
+  glEnable(GL_TEXTURE_2D);
+
+  // Draw quad with texture coordinates
+  // LoadColor(color_scheme);
+  glColor3d(1.0, 1.0, 1.0);
+  glBegin(GL_QUADS);
+  R3LoadTextureCoords(0.0, 0.0);
+  R3LoadPoint(c - dx - dy);
+  R3LoadTextureCoords(1.0, 0.0);
+  R3LoadPoint(c + dx - dy);
+  R3LoadTextureCoords(1.0, 1.0);
+  R3LoadPoint(c + dx + dy);
+  R3LoadTextureCoords(0.0, 1.0);
+  R3LoadPoint(c - dx + dy);
+  glEnd();
+
+  // Unselect opengl texture
+  glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+
+
+void RGBDImage::
+DrawPoints(int color_scheme, int skip) const
+{
+  // Draw color
+  LoadColor(color_scheme);
+
+  // Draw points
+  glBegin(GL_POINTS);
+  R3Point world_position;
+  for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
+    for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
+      if (RGBDTransformImageToWorld(R2Point(ix+0.5, iy+0.5), world_position, this)) {
+        if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+        R3LoadPoint(world_position);
+      }
+    }
+  }
+  glEnd();
+}
+
+
+
+void RGBDImage::
+LoadColor(int color_scheme) const
+{
+  // Check color scheme
+  if (color_scheme == RGBD_INDEX_COLOR_SCHEME) {
+    // Load color encoding image index
+    int k = 65535.0 * (ConfigurationIndex()+1) / configuration->NImages();
+    unsigned char r = 0;
+    unsigned char g = (k >> 8) & 0xFF;
+    unsigned char b = k & 0xFF;
+    glColor3ub(r, g, b);
+  }
+  else if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
+    // Load white
+    glColor3d(1.0, 1.0, 1.0);
+  }
+  else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) {
+    // Load highlight color
+    glColor3d(1.0, 1.0, 0.0);
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Image processing functions
+////////////////////////////////////////////////////////////////////////
+
+#if 0
+static int
+MaskBoundaries(R2Grid& depth_image, RNScalar depth_threshold = 0.1, RNScalar pixel_erosion_distance = 100)
+{
+  // Create copy of depth image with holes filled
+  R2Grid filled_depth_image(depth_image);
+  filled_depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
+  filled_depth_image.FillHoles();
+
+  // Mark interior boundaries, silhouettes, and shadows
+  for (int i = 1; i < depth_image.XResolution()-1; i++) {
+    for (int j = 1; j < depth_image.YResolution()-1; j++) {
+      // Get original depth
+      RNScalar depth = depth_image.GridValue(i, j);
+      if (RNIsNegativeOrZero(depth)) continue;
+
+      // Get filled depth
+      depth = filled_depth_image.GridValue(i, j);
+      if (RNIsNegativeOrZero(depth)) continue;
+
+      // Check depth relative to horizontal neighbors
+      for (int k = 0; k < 4; k++) {
+        int s = (k < 3) ? -1 : 0;
+        int t = (k < 3) ? k-1 : -1;
+
+        // Get depth on one side
+        RNScalar depthA = filled_depth_image.GridValue(i-s, j-t);
+        if (RNIsNegativeOrZero(depthA)) continue;
+
+        // Get depth on other side
+        RNScalar depthB = filled_depth_image.GridValue(i+s, j+t);
+        if (RNIsNegativeOrZero(depthB)) continue;
+
+        // Check differences of depth for shadow/silhouette
+        RNScalar deltaA = depth - depthA;
+        RNScalar deltaB = depthB - depth;
+        RNScalar threshold = depth * depth_threshold;
+        if (threshold < 0.1) threshold = 0.1;
+        if (deltaA < -threshold) {
+          if (deltaA < 4*deltaB) {
+            depth_image.SetGridValue(i-s, j-t, 0.0);
+            depth_image.SetGridValue(i, j, 0.0);
+          }
+        }
+        else if (deltaA > threshold) {
+          if (deltaA > 4*deltaB) {
+            depth_image.SetGridValue(i-s, j-t, 0.0);
+            depth_image.SetGridValue(i, j, 0.0);
+          }
+        }
+        if (deltaB < -threshold) {
+          if (deltaB < 4*deltaA) {
+            depth_image.SetGridValue(i+s, j+t, 0.0);
+            depth_image.SetGridValue(i, j, 0.0);
+          }
+        }
+        else if (deltaB > threshold) {
+          if (deltaB > 4*deltaA) {
+            depth_image.SetGridValue(i+s, j+t, 0.0);
+            depth_image.SetGridValue(i, j, 0.0);
+          }
+        }
+      }
+    }
+  }
+
+  // Erode by 
+  R2Grid mask(depth_image);
+  mask.Erode(pixel_erosion_distance);
+  depth_image.Mask(mask);
+
+  // Return success 
+  return 1;
+}
+#endif
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Create/read/write/release functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDImage::
+CreateColorChannels(const R2Image& image)
+{
+  // Check/update read count
+  if (color_resident_count++ > 0) return 1;
+
+  // Create color channels
+  while (channels.NEntries() <= RGBD_BLUE_CHANNEL) channels.Insert(NULL);
+  if (!channels[RGBD_RED_CHANNEL]) channels[RGBD_RED_CHANNEL] = new R2Grid(image.Width(), image.Height());
+  if (!channels[RGBD_GREEN_CHANNEL]) channels[RGBD_GREEN_CHANNEL] = new R2Grid(image.Width(), image.Height());
+  if (!channels[RGBD_BLUE_CHANNEL]) channels[RGBD_BLUE_CHANNEL] = new R2Grid(image.Width(), image.Height());
+
+  // Initialize color channels
+  SetColorChannels(image);
+
+  // Set width and height
+  this->width = width;
+  this->height = height;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+CreateDepthChannel(const R2Grid& image)
+{
+  // Check/update read count
+  if (depth_resident_count++ > 0) return 1;
+
+  // Create depth channel
+  while (channels.NEntries() <= RGBD_DEPTH_CHANNEL) channels.Insert(NULL);
+  if (!channels[RGBD_DEPTH_CHANNEL]) channels[RGBD_DEPTH_CHANNEL] = new R2Grid(image);
+
+  // Initialize depth channel
+  SetDepthChannel(image);
+
+  // Set width and height
+  this->width = width;
+  this->height = height;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReadChannels(void)
+{
+  // Read all channels
+  if (!ReadColorChannels()) return 0;
+  if (!ReadDepthChannel()) return 0;
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReadColorChannels(void)
+{
+  // Check filename
+  if (!color_filename) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->ColorDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, color_filename);
+  else sprintf(full_filename, "%s", color_filename);
+
+  // Read color image
+  R2Image color_image;
+  if (!color_image.Read(full_filename)) return 0;
+
+  // Create color channels
+  return CreateColorChannels(color_image);
+}
+
+
+
+int RGBDImage::
+ReadDepthChannel(void)
+{
+  // Check filename
+  if (!depth_filename) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->DepthDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, depth_filename);
+  else sprintf(full_filename, "%s", depth_filename);
+
+  // Read depth image
+  R2Grid depth_image;
+  if (!depth_image.ReadFile(full_filename)) return 0;
+  if (strstr(depth_filename, ".png")) depth_image.Multiply(0.001);
+  // MaskBoundaries(depth_image);
+
+  // Perform dataset-dependent processing
+  if (configuration && configuration->DatasetFormat()) {
+    if (!strcmp(configuration->DatasetFormat(), "matterport")) {
+      depth_image.Multiply(0.25);
+    }
+  }
+
+  // Create depth channel
+  return CreateDepthChannel(depth_image);
+}
+
+
+
+int RGBDImage::
+WriteChannels(void)
+{
+  // Write all channels
+  if (!WriteColorChannels()) return 0;
+  if (!WriteDepthChannel()) return 0;
+  return 1;
+}
+
+
+
+int RGBDImage::
+WriteColorChannels(void)
+{
+  // Check filename
+  if (!color_filename) return 0;
+  if (NChannels() <= RGBD_BLUE_CHANNEL) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->ColorDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, color_filename);
+  else sprintf(full_filename, "%s", color_filename);
+
+  // Compute color image
+  R2Image rgb_image(width, height, 3);
+  for (int iy = 0; iy < height; iy++) {
+    for (int ix = 0; ix < width; ix++) {
+      RNRgb rgb = PixelColor(ix, iy);
+      rgb_image.SetPixelRGB(ix, iy, rgb);
+    }
+  }
+
+  // Write color image
+  if (!rgb_image.Write(color_filename)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+WriteDepthChannel(void)
+{
+  // Check filename
+  if (!depth_filename) return 0;
+  if (NChannels() <= RGBD_DEPTH_CHANNEL) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->DepthDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, depth_filename);
+  else sprintf(full_filename, "%s", depth_filename);
+  
+  // Write depth image  
+  R2Grid depth_image(*(channels[RGBD_DEPTH_CHANNEL]));
+  if (strstr(depth_filename, ".png")) depth_image.Multiply(1000.0);
+  if (!depth_image.WriteFile(depth_filename)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReleaseChannels(void)
+{
+  // Release all channels
+  if (!ReleaseColorChannels()) return 0;
+  if (!ReleaseDepthChannel()) return 0;
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReleaseColorChannels(void)
+{
+  // Check/update read count
+  if (--color_resident_count > 0) return 1;
+
+  // Write color channel before releasing it ???
+  // if (!WriteColorChannels()) return 0;
+
+  // Delete color channels
+  for (int channel_index = RGBD_RED_CHANNEL; channel_index <= RGBD_BLUE_CHANNEL; channel_index++) {
+    if (NChannels() <= channel_index) break;
+    if (!channels[channel_index]) continue;
+    delete channels[channel_index];
+    RNArrayEntry *entry = channels.KthEntry(channel_index);
+    channels.EntryContents(entry) = NULL;
+  }
+
+  // Return success;
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReleaseDepthChannel(void)
+{
+  // Check/update read count
+  if (--depth_resident_count > 0) return 1;
+
+  // Write depth channel before releasing it ???
+  // if (!WriteDepthChannels()) return 0;
+
+  // Delete depth channel
+  if (NChannels() <= RGBD_DEPTH_CHANNEL) return 0;
+  if (!channels[RGBD_DEPTH_CHANNEL]) return 0;
+  delete channels[RGBD_DEPTH_CHANNEL];
+  RNArrayEntry *entry = channels.KthEntry(RGBD_DEPTH_CHANNEL);
+  channels.EntryContents(entry) = NULL;
+
+  // Return success;
+  return 1;
+}
+
+
+
+void RGBDImage::
+SetColorFilename(const char *filename)
+{
+  // Set filename
+  if (color_filename) free(color_filename);
+  if (filename && strcmp(filename, "-")) color_filename = strdup(filename);
+  else color_filename = NULL;
+}
+
+
+
+void RGBDImage::
+SetDepthFilename(const char *filename)
+{
+  // Set filename
+  if (depth_filename) free(depth_filename);
+  if (filename && strcmp(filename, "-")) depth_filename = strdup(filename);
+  else depth_filename = NULL;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Update functions
+////////////////////////////////////////////////////////////////////////
+
+void RGBDImage::
+InvalidateWorldBBox(void)
+{
+  // Mark bounding box for recomputation
+  world_bbox.Reset(R3Point(FLT_MAX, FLT_MAX, FLT_MAX), R3Point(-FLT_MAX, -FLT_MAX, -FLT_MAX));
+
+  // Invalidate the configuration's bounding box
+  if (configuration) configuration->InvalidateWorldBBox();
+}
+
+
+
+void RGBDImage::
+UpdateWorldBBox(void)
+{
+  // Read depth channel
+  // ReadDepthChannel();
+  
+  // Update bounding box
+  world_bbox = R3null_box;
+  for (int iy = 0; iy < height; iy++) {
+    for (int ix = 0; ix < width; ix++) {
+      R3Point world_position;
+      R2Point image_position(ix+0.5, iy+0.5);
+      if (RGBDTransformImageToWorld(image_position, world_position, this)) {
+        world_bbox.Union(world_position);
+      }
+    }
+  }
+
+  // Release depth channel
+  // ReleaseDepthChannel();
+}
+
+
+
+void RGBDImage::
+InvalidateOpenGL(void) 
+{
+  // Delete opengl texture
+  if (opengl_texture_id > 0) {
+    GLuint i = opengl_texture_id;
+    glDeleteTextures(1, &i);
+  }
+
+  // Reset opengl identifier
+  opengl_texture_id = -1;
+}
+
+
+  
+void RGBDImage::
+UpdateOpenGL(void) 
+{
+  // Check identifier
+  if (opengl_texture_id > 0) return;
+  
+  // Create identifier
+  GLuint identifier;
+  glGenTextures(1, &identifier);
+
+  // Read color channels
+  // ReadColorChannels();
+  
+  // Create temporary R2Image
+  R2Image rgb_image(width, height, 3);
+  for (int iy = 0; iy < height; iy++) {
+    for (int ix = 0; ix < width; ix++) {
+      rgb_image.SetPixelRGB(ix, iy, PixelColor(ix, iy));
+    }
+  }
+
+  // Release color channels
+  // ReleaseColorChannels();
+
+  // Define texture
+  glBindTexture(GL_TEXTURE_2D, identifier);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, rgb_image.Width(), rgb_image.Height(),
+    GL_RGB, GL_UNSIGNED_BYTE, (const unsigned char *) rgb_image.Pixels());
+
+  // Remember identifier
+  opengl_texture_id = identifier;
+}

@@ -970,7 +970,7 @@ WriteFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 static int
-InsertSceneElement(R3Scene *scene, R3SceneNode *node, const char *object_name, R3Material *material, 
+InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material, 
   const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris)
 {
   // Create material if none
@@ -981,14 +981,6 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, const char *object_name, R
     scene->InsertMaterial(material);
   }
   
-  // Create child node if object name is set
-  if (object_name) {
-    R3SceneNode *child = new R3SceneNode(scene);
-    child->SetName(object_name);
-    node->InsertChild(child);
-    node = child;
-  }
-
   // Find element
   R3SceneElement *element = NULL;
   for (int i = 0; i < node->NElements(); i++) {
@@ -1263,13 +1255,13 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   // Read body
   char buffer[1024];
   int line_count = 0;
-  char *object_name = NULL;
   R3Material *material = NULL;
   RNSymbolTable<R3Material *> material_symbol_table;
   RNArray<R2Point *> texture_coords;
   RNArray<R3Vector *> normals;
   RNArray<R3TriangleVertex *> verts;
   RNArray<R3Triangle *> tris;
+  R3SceneNode *top_node = node;
   while (fgets(buffer, 1023, fp)) {
     // Increment line counter
     line_count++;
@@ -1418,7 +1410,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Process triangles from previous material
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-        InsertSceneElement(scene, node, object_name, material, verts, tris);
+        InsertSceneElement(scene, node, material, verts, tris);
         tris.Empty();
       }
 
@@ -1438,19 +1430,20 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Process triangles from previous object
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-        InsertSceneElement(scene, node, object_name, material, verts, tris);
+        InsertSceneElement(scene, node, material, verts, tris);
         tris.Empty();
       }
 
-      // Remember object name
-      if (object_name) free(object_name);
-      object_name = strdup(name);
+      // Create child node
+      node = new R3SceneNode(scene);
+      node->SetName(name);
+      top_node->InsertChild(node);
     }
   }
 
   // Process triangles from previous material
   if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-    InsertSceneElement(scene, node, object_name, material, verts, tris);
+    InsertSceneElement(scene, node, material, verts, tris);
     tris.Empty();
   }
 

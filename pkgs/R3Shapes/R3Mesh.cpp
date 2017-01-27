@@ -1067,7 +1067,7 @@ CreateVertex(const R3Point& position, const R3Vector& normal, R3MeshVertex *v)
 
   // Set position/normal of new vertex
   SetVertexPosition(v, position);
-  SetVertexNormal(v, normal);
+  if (!normal.IsZero()) SetVertexNormal(v, normal);
 
   // Set ID of new vertex
   v->id = vertices.NEntries();
@@ -1092,7 +1092,7 @@ CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color
 
   // Set position/normal of new vertex
   SetVertexPosition(v, position);
-  SetVertexNormal(v, normal);
+  if (!normal.IsZero()) SetVertexNormal(v, normal);
   SetVertexColor(v, color);
 
   // Set ID of new vertex
@@ -1118,7 +1118,7 @@ CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color
 
   // Set position/normal of new vertex
   SetVertexPosition(v, position);
-  SetVertexNormal(v, normal);
+  if (!normal.IsZero()) SetVertexNormal(v, normal);
   SetVertexColor(v, color);
   SetVertexTextureCoords(v, texcoords);
 
@@ -4016,8 +4016,8 @@ ReadObjFile(const char *filename)
   // Read body
   char buffer[1024];
   int line_count = 0;
-  int triangle_count = 0;
   RNArray<R2Point *> texture_coords;
+  RNArray<R3Vector *> normals;
   RNArray<R3MeshVertex *> verts;
   RNArray<R3MeshVertex *> degenerate_triangle_vertices;
   while (fgets(buffer, 1023, fp)) {
@@ -4064,79 +4064,85 @@ ReadObjFile(const char *filename)
       R2Point *vt = new R2Point(u, v);
       texture_coords.Insert(vt);
     }
+    else if (!strcmp(keyword, "vn")) {
+      // Read texture coordinates
+      double x, y, z;
+      if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
+        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        return 0;
+      }
+
+      // Create normal
+      R3Vector *vn = new R3Vector(x, y, z);
+      normals.Insert(vn);
+    }
     else if (!strcmp(keyword, "f")) {
       // Read vertex indices
       int quad = 1;
-      char s1[128], s2[128], s3[128], s4[128] = { '\0' };
-      if (sscanf(bufferp, "%s%s%s%s%s", keyword, s1, s2, s3, s4) != 5) {
+      char s[4][128] = { { '\0' }, { '\0' }, { '\0' },{ '\0' } }; 
+      if (sscanf(bufferp, "%s%s%s%s%s", keyword, s[0], s[1], s[2], s[3]) != 5) {
         quad = 0;;
-        if (sscanf(bufferp, "%s%s%s%s", keyword, s1, s2, s3) != 4) {
-          RNFail("Syntax error on line %d in file %s", line_count, filename);
+        if (sscanf(bufferp, "%s%s%s%s", keyword, s[0], s[1], s[2]) != 4) {
+          fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
           return 0;
         }
       }
 
       // Parse vertex indices
-      int vi1 = -1, vi2 = -1, vi3 = -1, vi4 = -1;
-      int ti1 = -1, ti2 = -1, ti3 = -1, ti4 = -1;
-      char *p1 = strchr(s1, '/'); 
-      if (p1) { *p1 = 0; vi1 = atoi(s1); p1++; if (*p1) ti1 = atoi(p1); }
-      else { vi1 = atoi(s1); ti1 = vi1; }
-      char *p2 = strchr(s2, '/'); 
-      if (p2) { *p2 = 0; vi2 = atoi(s2); p2++; if (*p2) ti2 = atoi(p2); }
-      else { vi2 = atoi(s2); ti2 = vi2; }
-      char *p3 = strchr(s3, '/'); 
-      if (p3) { *p3 = 0; vi3 = atoi(s3); p3++; if (*p3) ti3 = atoi(p3); }
-      else { vi3 = atoi(s3); ti3 = vi3; }
-      if (quad) {
-        char *p4 = strchr(s4, '/'); 
-        if (p4) { *p4 = 0; vi4 = atoi(s4); p4++; if (*p4) ti4 = atoi(p4); }
-        else { vi4 = atoi(s4); ti4 = vi4; }
+      int n = (quad) ? 4 : 3;
+      R3MeshVertex *v[4] = { NULL, NULL, NULL, NULL };
+      for (int i = 0; i < n; i++) {
+        char *sv = s[i];
+        char *st = strchr(sv, '/');
+        if (st) *(st++) = 0;
+        char *sn = (st) ? strchr(st, '/') : NULL;
+        if (sn) *(sn++) = 0;
+        if (sn && (strlen(sn) == 0)) sn = NULL; 
+        if (st && (strlen(st) == 0)) st = NULL;
+        int vi = (sv) ? atoi(sv) : 0;
+        int ti = (st) ? atoi(st) : 0;
+        int ni = (sn) ? atoi(sn) : 0;
+        v[i] = verts.Kth(vi-1);
+        R2Point texcoords(0,0);
+        R3Vector normal(0, 0, 0);
+        if ((ti > 0) && ((ti-1) < texture_coords.NEntries())) texcoords = *(texture_coords.Kth(ti-1));
+        if ((ni > 0) && ((ni-1) < normals.NEntries())) normal = *(normals.Kth(ni-1));
+        if (!R2Contains(texcoords, VertexTextureCoords(v[i])) || !R3Contains(normal, VertexNormal(v[i])) ) {
+          v[i] = CreateVertex(VertexPosition(v[i]), normal, RNgray_rgb, texcoords);
+        }
       }
 
-      // Get vertices
-      R3MeshVertex *v1 = verts.Kth(vi1-1);
-      R3MeshVertex *v2 = verts.Kth(vi2-1);
-      R3MeshVertex *v3 = verts.Kth(vi3-1);
-      R3MeshVertex *v4 = (quad) ? verts.Kth(vi4-1) : NULL;
-      
       // Check vertices
-      if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
-      if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
+      if ((v[0] == v[1]) || (v[1] == v[2]) || (v[0] == v[2])) continue;
+      if ((quad) && ((v[3] == v[0]) || (v[3] == v[1]) || (v[3] == v[2]))) quad = 0;
 
-      // Assign texture coordinates
-      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) v1->texcoords = *(texture_coords.Kth(ti1-1));
-      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) v2->texcoords = *(texture_coords.Kth(ti2-1));
-      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) v3->texcoords = *(texture_coords.Kth(ti3-1));
-      if (quad) {
-        if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) v4->texcoords = *(texture_coords.Kth(ti4-1));
-      }
-
-      // Create face
-      if (!CreateFace(v1, v2, v3)) {
-        // Must have been degeneracy (e.g., flips or three faces sharing an edge)
-        // Remember for later processing (to preserve vertex indices)
-        degenerate_triangle_vertices.Insert(v1);
-        degenerate_triangle_vertices.Insert(v2);
-        degenerate_triangle_vertices.Insert(v3);
-      }
-
-      // Create face
-      if (quad) {
-        if (!CreateFace(v1, v3, v4)) {
+      // Create first triangle
+      if (RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[1]))) &&
+          RNIsPositive(R3Distance(VertexPosition(v[1]), VertexPosition(v[2]))) &&
+          RNIsPositive(R3Distance(VertexPosition(v[2]), VertexPosition(v[0])))) {
+        if (!CreateFace(v[0], v[1], v[2])) {
           // Must have been degeneracy (e.g., flips or three faces sharing an edge)
           // Remember for later processing (to preserve vertex indices)
-          degenerate_triangle_vertices.Insert(v1);
-          degenerate_triangle_vertices.Insert(v3);
-          degenerate_triangle_vertices.Insert(v4);
+          degenerate_triangle_vertices.Insert(v[0]);
+          degenerate_triangle_vertices.Insert(v[1]);
+          degenerate_triangle_vertices.Insert(v[2]);
         }
-
-        // Increment triangle counter
-        triangle_count++;
       }
 
-      // Increment triangle counter
-      triangle_count++;
+      // Create second triangle
+      if (quad) {
+        if (RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[2]))) &&
+            RNIsPositive(R3Distance(VertexPosition(v[2]), VertexPosition(v[3]))) &&
+            RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[3])))) {
+          if (!CreateFace(v[0], v[2], v[3])) {
+            // Must have been degeneracy (e.g., flips or three faces sharing an edge)
+            // Remember for later processing (to preserve vertex indices)
+            degenerate_triangle_vertices.Insert(v[0]);
+            degenerate_triangle_vertices.Insert(v[2]);
+            degenerate_triangle_vertices.Insert(v[3]);
+          }
+        }
+      }
     }
   }
 
