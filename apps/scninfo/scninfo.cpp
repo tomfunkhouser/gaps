@@ -16,6 +16,7 @@
 
 // Input scene file
 static char *input_scene_name = NULL;
+static char *input_categories_name = NULL;
 
 // What to print
 static int print_nodes = 0;
@@ -61,6 +62,18 @@ ReadScene(char *filename)
   // Return scene
   return scene;
 }
+
+
+
+static int
+ReadCategories(R3Scene *scene, const char *filename)
+{
+  // Read file
+  if (!scene->ReadSUNCGModelFile(filename)) return 0;
+
+  // Return success
+  return 1;
+} 
 
 
 
@@ -395,7 +408,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-materials")) print_materials = 1; 
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1; 
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1; 
-      else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1; 
+      else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
+      else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_name = *argv; }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -431,26 +445,17 @@ int main(int argc, char **argv)
   R3Scene *scene = ReadScene(input_scene_name);
   if (!scene) exit(-1);
 
+  // Read categories
+  if (input_categories_name) {
+    if (!ReadCategories(scene, input_categories_name)) exit(-1);
+  }
+
   // Print scene
   if (!PrintScene(scene)) exit(-1);
 
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
