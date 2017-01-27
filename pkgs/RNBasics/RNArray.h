@@ -41,6 +41,7 @@ class RNVArray {
 	void *Tail(void) const;
 	void *Kth(int k) const;
 	void *operator[](int k) const;
+	void *&operator[](int k);
 
         // Entry access functions/operators
 	RNArrayEntry *HeadEntry(void) const;
@@ -128,6 +129,8 @@ class RNArray : public RNVArray {
             { return (PtrType) RNVArray::Kth(k); };
 	PtrType operator[](int k) const
             { return (PtrType) RNVArray::Kth(k); };
+	PtrType& operator[](int k)
+            { return (PtrType&) RNVArray::operator[](k); };
 
         // Insertion functions/operators
 	RNArrayEntry *InsertHead(PtrType data)

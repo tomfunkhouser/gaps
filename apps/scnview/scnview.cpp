@@ -14,6 +14,7 @@
 static char *input_scene_name = NULL;
 static char *output_image_name = NULL;
 static char *input_cameras_name = NULL;
+static char *input_categories_name = NULL;
 static char *input_lights_name = NULL;
 static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
 static R3Vector initial_camera_up(0,1,0);
@@ -951,6 +952,29 @@ ReadCameras(const char *filename)
 
 
 static int
+ReadCategories(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read file
+  if (!scene->ReadSUNCGModelFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read categories from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+} 
+
+
+
+static int
 ReadLights(const char *filename)
 {
   // Start statistics
@@ -1003,6 +1027,9 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-cameras")) {
         argv++; argc--; input_cameras_name = *argv;
+      }
+      else if (!strcmp(*argv, "-categories")) {
+        argc--; argv++; input_categories_name = *argv;
       }
       else if (!strcmp(*argv, "-lights")) {
         argv++; argc--; input_lights_name = *argv;
@@ -1069,6 +1096,11 @@ int main(int argc, char **argv)
   if (input_cameras_name) {
     cameras = ReadCameras(input_cameras_name);
     if (!cameras) exit(-1);
+  }
+
+  // Read categories
+  if (input_categories_name) {
+    if (!ReadCategories(input_categories_name)) exit(-1);
   }
 
   // Read/create lights

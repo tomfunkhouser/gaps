@@ -86,6 +86,18 @@ operator[](int k) const
 
 
 
+inline void *&RNVArray::
+operator[](int k)
+{
+    // Return reference to kth data element
+    assert(entries);
+    assert(nentries >= 0);
+    assert((k >= 0) && (k < nentries));
+    return entries[k];
+}
+
+
+
 inline RNArrayEntry *RNVArray::
 KthEntry(int k) const
 {

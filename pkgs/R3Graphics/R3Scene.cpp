@@ -3958,7 +3958,7 @@ ReadSUNCGModelFile(const char *filename)
       return 0;
     }
 
-    // Get model+id
+    // Get model id
     const char *model_id = values[model_id_k];
     if (!model_id) continue;
     int model_id_length = strlen(model_id);
@@ -3967,15 +3967,33 @@ ReadSUNCGModelFile(const char *filename)
     // Assign key-value info to nodes matching model_id
     for (int i = 0; i < NNodes(); i++) {
       R3SceneNode *node = Node(i);
-      if (!node->Name()) continue;
-      char node_name[1024];
-      strncpy(node_name, node->Name(), 1024);
-      char *model_name = strchr(node_name, '#');
-      if (model_name) { *model_name = '\0'; model_name++; }
-      else model_name = node_name;
-      if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
-        for (int j = 0; j < keys.NEntries(); j++) {
-          node->InsertInfo(keys[j], values[j]);
+
+      // Determine if node name matches model_id
+      if (node->Name()) {
+        char node_name[1024];
+        strncpy(node_name, node->Name(), 1024);
+        char *model_name = strchr(node_name, '#');
+        if (model_name) { *model_name = '\0'; model_name++; }
+        else model_name = node_name;
+        if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
+        }
+      }
+
+      // Determine if referenced scene name matches model_id
+      for (int j = 0; j < node->NReferences(); j++) {
+        R3SceneReference *reference = node->Reference(j);
+        R3Scene *referenced_scene = reference->ReferencedScene();
+        R3SceneNode *root = referenced_scene->Root();
+        if (!root->Name()) continue;
+        char node_name[1024];
+        strncpy(node_name, root->Name(), 1024);
+        char *model_name = strchr(node_name, '#');
+        if (model_name) { *model_name = '\0'; model_name++; }
+        else model_name = node_name;
+        if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
+          break;
         }
       }
     }
@@ -3992,6 +4010,19 @@ ReadSUNCGModelFile(const char *filename)
   // Close file
   fclose(fp);
 
+  // Delete inactive nodes
+  RNArray<R3SceneNode *> tmp;
+  for (int i = 0; i < NNodes(); i++)
+    tmp.Insert(Node(i));
+  for (int i = 0; i < tmp.NEntries(); i++) {
+    R3SceneNode *node = tmp.Kth(i);
+    const char *active = node->Info("active");
+    if (!active) continue;
+    if (strcmp(active, "0")) continue;
+    delete node;
+  }
+
+  
 #if 0
   // Print result
   for (int i = 0; i < NNodes(); i++) {
