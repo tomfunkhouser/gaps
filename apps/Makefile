@@ -41,6 +41,7 @@ target:
 	cd scn2img; $(MAKE) $(TARGET)
 	cd scnview; $(MAKE) $(TARGET)
 	cd pfm2pfm; $(MAKE) $(TARGET)
+	cd confview; $(MAKE) $(TARGET)
 
 
 
