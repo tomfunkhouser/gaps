@@ -83,10 +83,16 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
   }
 
   // Read file
-  if (!configuration.ReadFile(filename, load_every_kth_image)) return 0;
+  if (!configuration.ReadFile(filename, load_every_kth_image)) {
+    fprintf(stderr, "Unable to read configuration from %s\n", filename);
+    return 0;
+  }
 
   // Read all channels ... for now
-  if (!configuration.ReadChannels()) return 0;
+  if (!configuration.ReadChannels()) {
+    fprintf(stderr, "Unable to read channels for %s\n", filename);
+    return 0;
+  }
 
   // Set texel spacing if specified on command line                       
   if (texel_spacing > 0) {
