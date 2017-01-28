@@ -94,6 +94,9 @@ public:
   virtual int ReleaseDepthChannel(void);
 
 public:
+  // Mesh construction (unlike channels, you should delete the mesh when you are done with it)
+  R3Mesh *Mesh(void) const;
+
   // Channel creation
   virtual int CreateColorChannels(const R2Image& color_image);
   virtual int CreateDepthChannel(const R2Grid& image);

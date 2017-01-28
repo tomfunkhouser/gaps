@@ -534,13 +534,55 @@ Draw(int color_scheme) const
 void RGBDSurface::
 DrawFaces(int color_scheme) const
 {
-  // Load color
-  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
-  else LoadColor(color_scheme);
+  // Enable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_LIGHTING);
+  }
 
-  // Draw rectangle
-  if (rectangle) rectangle->Draw();
-  else if (mesh) mesh->DrawFaces();
+  // Load color
+  LoadColor(color_scheme);
+
+  // Draw faces
+  if (rectangle) {
+    rectangle->Draw();
+  }
+  else if (mesh) {
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < mesh->NFaces(); i++) {
+      R3MeshFace *face = mesh->Face(i);
+      R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+      R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+      R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+      if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
+        RNLoadRgb(mesh->VertexColor(v0));
+        R3LoadPoint(mesh->VertexPosition(v0));
+        RNLoadRgb(mesh->VertexColor(v1));
+        R3LoadPoint(mesh->VertexPosition(v1));
+        RNLoadRgb(mesh->VertexColor(v2));
+        R3LoadPoint(mesh->VertexPosition(v2));
+      }
+      else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+        R3LoadNormal(mesh->FaceNormal(face));
+        R3LoadPoint(mesh->VertexPosition(v0));
+        R3LoadPoint(mesh->VertexPosition(v1));
+        R3LoadPoint(mesh->VertexPosition(v2));
+      }
+      else {
+        R3LoadPoint(mesh->VertexPosition(v0));
+        R3LoadPoint(mesh->VertexPosition(v1));
+        R3LoadPoint(mesh->VertexPosition(v2));
+      }
+    }
+    glEnd();
+  }
+
+  // Disable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+  }
 }
 
 
@@ -549,8 +591,9 @@ void RGBDSurface::
 DrawEdges(int color_scheme) const
 {
   // Load color
-  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
-  else LoadColor(color_scheme);
+  if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
+  else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
+  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Draw rectangle
   if (rectangle) rectangle->Outline();
@@ -629,6 +672,10 @@ LoadColor(int color_scheme) const
     glColor3ub(r, g, b);
   }
   else if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
+    // Load white 
+    glColor3d(1.0, 1.0, 1.0);
+  }
+  else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
     // Load white 
     glColor3d(1.0, 1.0, 1.0);
   }

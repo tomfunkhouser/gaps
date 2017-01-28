@@ -290,7 +290,7 @@ ReadFile(const char *filename, int read_every_kth_image)
       }
 
       // Read intrinsics file
-      if (!strcmp(dataset_format, "matterport")) {
+      if (dataset_format && !strcmp(dataset_format, "matterport")) {
         // Read matterport intrinsics
         double width, height, fx, fy, cx, cy, k1, k2, p1, p2, k3;
         if (fscanf(intrinsics_fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &width, &height,

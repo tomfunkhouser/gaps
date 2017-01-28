@@ -469,9 +469,10 @@ DrawCamera(int color_scheme, RNLength radius) const
   R3Vector towards = WorldTowards();
   R3Vector up = WorldUp();
 
-  // Draw color
-  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
-  else LoadColor(color_scheme);
+  // Load color
+  if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
+  else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
+  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Draw camera
   glBegin(GL_LINES);
@@ -487,9 +488,10 @@ DrawCamera(int color_scheme, RNLength radius) const
 void RGBDImage::
 DrawBBox(int color_scheme) const
 {
-  // Draw color
-  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
-  else LoadColor(color_scheme);
+  // Load color
+  if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
+  else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
+  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Outline bounding box
   WorldBBox().Outline();
@@ -550,6 +552,7 @@ DrawPoints(int color_scheme, int skip) const
     for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
       if (RGBDTransformImageToWorld(R2Point(ix+0.5, iy+0.5), world_position, this)) {
         if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+        else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
         R3LoadPoint(world_position);
       }
     }
@@ -570,6 +573,10 @@ LoadColor(int color_scheme) const
     unsigned char g = (k >> 8) & 0xFF;
     unsigned char b = k & 0xFF;
     glColor3ub(r, g, b);
+  }
+  else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    // Load white
+    glColor3d(1.0, 1.0, 1.0);
   }
   else if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
     // Load white
@@ -657,6 +664,63 @@ MaskBoundaries(R2Grid& depth_image, RNScalar depth_threshold = 0.1, RNScalar pix
   R2Grid mask(depth_image);
   mask.Erode(pixel_erosion_distance);
   depth_image.Mask(mask);
+
+  // Return success 
+  return 1;
+}
+#endif
+
+
+
+#if 0
+static int
+FillMissingDepthValues(R2Grid& depth_image,
+  int pixel_radius = 4, int min_pixel_count = 6,
+  RNLength max_delta_d = 0.2, RNLength max_closest_d = 0.025)
+{
+  // Check parameters
+  if ((max_delta_d == 0) && (max_closest_d == 0)) return 1;
+
+  // Fill missing depth values
+  R2Grid copy(grid);
+  for (int ix = 0; ix < grid.XResolution(); ix++) {
+    for (int iy = 0; iy < grid.YResolution(); iy++) {
+      RNScalar depth = copy.GridValue(ix, iy);
+      if (RNIsPositive(depth)) continue;
+
+      // Gather statistics from neighborhood
+      int count = 0;
+      RNScalar sum = 0;
+      int closest_dd = INT_MAX;
+      RNScalar closest_d = 0;
+      RNScalar min_d = FLT_MAX;
+      RNScalar max_d = -FLT_MAX;
+      for (int s = -pixel_radius; s <= pixel_radius; s++) {
+        if ((ix + s < 0) || (ix + s >= grid.XResolution())) continue;
+        for (int t = -pixel_radius; t <= pixel_radius; t++) {
+          if ((iy + t < 0) || (iy + t >= grid.YResolution())) continue;
+          RNScalar d = copy.GridValue(ix+s, iy+t);
+          if (RNIsNegativeOrZero(d)) continue;
+          int dd = s*s + t*t;
+          if (dd < closest_dd) { closest_dd = dd; closest_d = d; }
+          if (d < min_d) min_d = d;
+          if (d > max_d) max_d = d;
+          sum += d;
+          count++;
+        }
+      }
+
+      // Fill in missing depth value with average if on planar surface
+      if (count >= min_pixel_count) {
+        if ((max_d - min_d) < max_delta_d) {
+          RNScalar mean = sum / count;
+          if (RNIsEqual(closest_d, mean, max_closest_d)) {
+            grid.SetGridValue(ix, iy, mean);
+          }
+        }
+      }
+    }
+  }
 
   // Return success 
   return 1;
@@ -772,6 +836,23 @@ ReadDepthChannel(void)
   if (configuration && configuration->DatasetFormat()) {
     if (!strcmp(configuration->DatasetFormat(), "matterport")) {
       depth_image.Multiply(0.25);
+    }
+    else if (!strcmp(configuration->DatasetFormat(), "tum")) {
+      depth_image.Multiply(0.2);
+    }
+  }
+
+  // Smooth depth image
+  if (configuration && configuration->DatasetFormat()) {
+    if (!strcmp(configuration->DatasetFormat(), "sunrgbd") ||
+        !strcmp(configuration->DatasetFormat(), "sun3d") ||
+        !strcmp(configuration->DatasetFormat(), "nyu") ||
+        !strcmp(configuration->DatasetFormat(), "princeton")) {
+      RNScalar d_sigma = 0.05;
+      RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
+      depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
+      depth_image.BilateralFilter(xy_sigma, d_sigma);
+      depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
     }
   }
 
@@ -1018,3 +1099,93 @@ UpdateOpenGL(void)
   // Remember identifier
   opengl_texture_id = identifier;
 }
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Mesh creation function
+////////////////////////////////////////////////////////////////////////
+
+#if 0
+int RGBDImage::
+ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor = 0.1) const
+{
+  // Read the channels
+  ReadChannels();
+
+  // Allocate temporary array of vertex pointers
+  int nvertices = NPixels(RN_X) * NPixels(RN_Y);
+  R3MeshVertex **vertices = new R3MeshVertex [ nvertices ];
+  for (int i = 0; i < nvertices; i++) vertices[i] = NULL;
+
+  // Compute boundary image ???
+  R2Grid boundary_image(NPixels(RN_X), NPixels(RN_Y));
+  static const unsigned int bad_combination = 345; // temporary
+         
+  // Create vertices
+  for (int j = 0; j < NPixels(RN_Y); j++) {
+    for (int i = 0; i < NPixels(RN_X); i++) {
+      // Check depth
+      RNScalar depth = PixelDepth(i, j);
+      if (depth == R2_GRID_UNKNOWN_VALUE) continue;
+      if (RNIsNegativeOrZero(depth)) continue;
+      if ((max_depth > 0) && (depth > max_depth)) continue;
+
+      // Compute vertex info
+      R3Point position = PixelWorldPosition(i, j);
+      RNRgb color = PixelColor(i, j);
+      R2Point texcoords(i, j);
+
+      // Create vertex
+      int vertex_index = j*depth_channel->XResolution() + i;
+      vertices[vertex_index] = mesh.CreateVertex(position, R3zero_vector, color, texcoords);
+    }
+  }
+
+  // Create faces
+  for (int i = 0; i < depth_channel->XResolution()-1; i++) {
+    for (int j = 0; j < depth_channel->YResolution()-1; j++) {
+      // Get depths
+      RNScalar d00 = PixelDepth(i, j);
+      RNScalar d10 = PixelDepth(i+1, j);
+      RNScalar d01 = PixelDepth(i, j+1);
+      RNScalar d11 = PixelDepth(i+1, j+1);
+
+      // Get vertices
+      R3MeshVertex *v00 = &vertices[(j+0)*NPixels(RN_X) + (i+0)];
+      R3MeshVertex *v01 = &vertices[(j+1)*NPixels(RN_X) + (i+0)];
+      R3MeshVertex *v10 = &vertices[(j+0)*NPixels(RN_X) + (i+1)];
+      R3MeshVertex *v11 = &vertices[(j+1)*NPixels(RN_X) + (i+1)];
+
+      // Get boundary flags
+      unsigned int b00 = (unsigned int) (boundary_image.GridValue(i, j) + 0.5);
+      unsigned int b10 = (unsigned int) (boundary_image.GridValue(i+1, j) + 0.5);
+      unsigned int b01 = (unsigned int) (boundary_image.GridValue(i, j+1) + 0.5);
+      unsigned int b11 = (unsigned int) (boundary_image.GridValue(i+1, j+1) + 0.5);
+
+      // Create face1
+      if (v00 && v10 && v11) {
+        if ((b00 | b10 | b11) != bad_combination) {
+          mesh.CreateFace(v00, v10, v11);
+        }
+      } 
+
+      // Create face2
+      if (v00 && v11 && v01) {
+        if ((b00 | b11 | b01) != bad_combination) {
+          mesh.CreateFace(v00, v11, v01);
+        }
+      } 
+    }
+  }
+
+  // Delete temporary array of vertex pointers
+  delete [] vertices;
+
+  // Release the channels
+  ReleaseChannels();
+
+  // Return success
+  return 1;
+}
+#endif

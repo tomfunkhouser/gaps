@@ -35,8 +35,9 @@ class RGBDConfiguration;
 
 #define RGBD_NO_COLOR_SCHEME          0
 #define RGBD_PHOTO_COLOR_SCHEME       1
-#define RGBD_INDEX_COLOR_SCHEME       2
-#define RGBD_HIGHLIGHT_COLOR_SCHEME   3
+#define RGBD_RENDER_COLOR_SCHEME      2
+#define RGBD_INDEX_COLOR_SCHEME       3
+#define RGBD_HIGHLIGHT_COLOR_SCHEME   4
 
 #define RGBD_NO_SELECTION        0
 #define RGBD_IMAGE_SELECTION     1
