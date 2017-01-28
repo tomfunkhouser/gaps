@@ -37,7 +37,7 @@ RGBDSurface(void)
 
 
 RGBDSurface::
-RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength world_texel_spacing)
+RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel_spacing)
   : configuration(NULL),
     configuration_index(-1),
     channels(),
@@ -45,7 +45,7 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength world
     opengl_texture_id(-1),
     texture_filename(NULL),
     mesh_filename(NULL),
-    world_texel_spacing(world_texel_spacing),
+    world_texel_spacing(texel_spacing),
     color_resident_count(0),
     rectangle(rectangle),
     mesh(NULL),
@@ -61,21 +61,12 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength world
   if (world_texel_spacing <= 0) world_texel_spacing = 0.01;
   width = (int) (2.0 * rectangle->Radius(0) / world_texel_spacing) + 1;
   height = (int) (2.0 * rectangle->Radius(1) / world_texel_spacing) + 1;
-  R2Box surface_bbox(0.0, 0.0, world_texel_spacing*width, world_texel_spacing*height);
-  
-  // Create channels
-  R2Image color_image(width, height, 3);
-  CreateColorChannels(color_image);
-  R2Grid tmp(width, height, surface_bbox);
-  SetChannel(RGBD_RED_CHANNEL, tmp);
-  SetChannel(RGBD_GREEN_CHANNEL, tmp);
-  SetChannel(RGBD_BLUE_CHANNEL, tmp);
 }
 
 
 
 RGBDSurface::
-RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength world_texel_spacing)
+RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
   : configuration(NULL),
     configuration_index(-1),
     channels(),
@@ -83,7 +74,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength world_texel_spa
     opengl_texture_id(-1),
     texture_filename(NULL),
     mesh_filename(NULL),
-    world_texel_spacing(world_texel_spacing),
+    world_texel_spacing(texel_spacing),
     color_resident_count(0),
     rectangle(NULL),
     mesh(mesh),
@@ -108,7 +99,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength world_texel_spa
   // Check surface_bbox
   if (RNIsZero(surface_bbox.Area())) {
     fprintf(stderr, "Warning: RGBDSurface mesh does not have valid texture coordinates\n");
-    return;
+    surface_bbox.Reset(R2zero_point, R2ones_point);
   }
 
   // Compute width and height from world_texel_spacing
@@ -120,12 +111,6 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength world_texel_spa
 
   // Set texture filename
   SetTextureFilename(texture_filename);
-
-  // Create channels
-  R2Grid tmp(width, height, surface_bbox);
-  SetChannel(RGBD_RED_CHANNEL, tmp);
-  SetChannel(RGBD_GREEN_CHANNEL, tmp);
-  SetChannel(RGBD_BLUE_CHANNEL, tmp);
 }
 
 
@@ -421,10 +406,10 @@ SetWorldTexelSpacing(RNLength spacing)
   width *= world_texel_spacing / spacing;
   height *= world_texel_spacing / spacing;
 
-  // Resample channels                                                                                                                         
+  // Resample channels
   for (int i = 0; i < NChannels(); i++) {
     R2Grid *channel = Channel(i);
-    channel->Resample(width, height);
+    if (channel) channel->Resample(width, height);
   }
 
   // Invalidate mesh face index
@@ -457,8 +442,8 @@ int RGBDSurface::
 TransformTextureToSurface(const R2Point& texture_position, R2Point& surface_position) const
 {
   // Transform from position in texture coordinates to surface coordinates
-  if (NChannels() == 0) return 0;
-  surface_position = Channel(0)->WorldPosition(texture_position);
+  if (world_texel_spacing == 0) return 0;
+  surface_position = world_texel_spacing * texture_position;
   return 1;
 }
 
@@ -468,8 +453,8 @@ int RGBDSurface::
 TransformSurfaceToTexture(const R2Point& surface_position, R2Point& texture_position) const
 {
   // Transform from position in surface coordinates to texture coordinates
-  if (NChannels() == 0) return 0;
-  texture_position = Channel(0)->GridPosition(surface_position);
+  if (world_texel_spacing == 0) return 0;
+  texture_position = surface_position / world_texel_spacing;
   return 1;
 }
 
@@ -704,19 +689,27 @@ ReadChannels(void)
 int RGBDSurface::
 ReadColorChannels(void)
 {
-  // Check filename
-  if (!texture_filename) return 0;
+  // Initialize image
+  R2Image rgb_image(width, height);
 
-  // Get full filename
-  char full_filename[4096];
-  const char *dirname = (configuration) ? configuration->TextureDirectory() : NULL;
-  if (dirname) sprintf(full_filename, "%s/%s", dirname, texture_filename);
-  else sprintf(full_filename, "%s", texture_filename);
-  if (!RNFileExists(full_filename)) return 0;
+  // Check filename
+  if (texture_filename) {
+    // Get full filename
+    char full_filename[4096];
+    const char *dirname = (configuration) ? configuration->TextureDirectory() : NULL;
+    if (dirname) sprintf(full_filename, "%s/%s", dirname, texture_filename);
+    else sprintf(full_filename, "%s", texture_filename);
+    if (!RNFileExists(full_filename)) return 0;
   
-  // Read color image
-  R2Image rgb_image;
-  if (!rgb_image.Read(full_filename)) return 0;
+    // Read color image
+    if (!rgb_image.Read(full_filename)) return 0;
+
+    // Check image dimensions
+    if ((rgb_image.Width() != width) || (rgb_image.Height() != height)) {
+      fprintf(stderr, "Mismatching image dimensions in %s\n", texture_filename);
+      // return 0;
+    }
+  }
 
   // Create color channels
   return CreateColorChannels(rgb_image);
@@ -784,6 +777,9 @@ ReleaseChannels(void)
 int RGBDSurface::
 ReleaseColorChannels(void)
 {
+  // Check/update read count
+  if (--color_resident_count > 0) return 1;
+
   // Write color channel before release???
   // WriteColorChannels();
   
@@ -792,8 +788,7 @@ ReleaseColorChannels(void)
     if (NChannels() <= channel_index) break;
     if (!channels[channel_index]) continue;
     delete channels[channel_index];
-    RNArrayEntry *entry = channels.KthEntry(channel_index);
-    channels.EntryContents(entry) = NULL;
+    channels[channel_index] = NULL;
   }
 
   // Return success;
@@ -813,7 +808,7 @@ CreateColorChannels(const R2Image& image)
   if (color_resident_count++ > 0) return 1;
 
   // Create color channels
-  while (channels.NEntries() <= RGBD_RED_CHANNEL) channels.Insert(NULL);
+  while (channels.NEntries() <= RGBD_BLUE_CHANNEL) channels.Insert(NULL);
   if (!channels[RGBD_RED_CHANNEL]) channels[RGBD_RED_CHANNEL] = new R2Grid(image.Width(), image.Height());
   if (!channels[RGBD_GREEN_CHANNEL]) channels[RGBD_GREEN_CHANNEL] = new R2Grid(image.Width(), image.Height());
   if (!channels[RGBD_BLUE_CHANNEL]) channels[RGBD_BLUE_CHANNEL] = new R2Grid(image.Width(), image.Height());
@@ -978,22 +973,26 @@ SearchMeshFaceIndex(const R2Point& texture_position, double *barycentrics) const
 void RGBDSurface::
 UpdateMeshFaceIndex(void)
 {
-  // Check if mesh
+  // Check everything
   if (!mesh) return;
-  if (NChannels() == 0) return;
+  if (width == 0) return;
+  if (height == 0) return;
+  if (world_texel_spacing == 0) return;
+
+  // Create face index
+  mesh_face_index = new R2Grid(width, height);
 
   // Update mesh face index grid
-  mesh_face_index = new R2Grid(*(channels[0]));
   mesh_face_index->Clear(R2_GRID_UNKNOWN_VALUE);
   for (int i = 0; i < mesh->NFaces(); i++) {
     R3MeshFace *face = mesh->Face(i);
     R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
     R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
     R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
-    const R2Point& s0 = mesh->VertexTextureCoords(v0);
-    const R2Point& s1 = mesh->VertexTextureCoords(v1);
-    const R2Point& s2 = mesh->VertexTextureCoords(v2);
-    mesh_face_index->RasterizeWorldTriangle(s0, s1, s2, i, R2_GRID_REPLACE_OPERATION);
+    R2Point s0 = mesh->VertexTextureCoords(v0) / world_texel_spacing;
+    R2Point s1 = mesh->VertexTextureCoords(v1) / world_texel_spacing;
+    R2Point s2 = mesh->VertexTextureCoords(v2) / world_texel_spacing;
+    mesh_face_index->RasterizeGridTriangle(s0, s1, s2, i, R2_GRID_REPLACE_OPERATION);
   }
 
   // For debugging

@@ -429,8 +429,8 @@ WriteFile(const char *filename, int write_every_kth_image) const
   }
 
   // Write header
-  fprintf(fp, "dataset princeton\n");
   fprintf(fp, "n_images %d\n", NImages());
+  if (DatasetFormat()) fprintf(fp, "dataset %s\n", DatasetFormat());
   if (color_directory) fprintf(fp, "color_directory %s\n", color_directory);
   if (depth_directory) fprintf(fp, "depth_directory %s\n", depth_directory);
   if (texture_directory) fprintf(fp, "texture_directory %s\n", texture_directory);
@@ -450,7 +450,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
   // Write surfaces
   for (int i = 0; i < NSurfaces(); i++) {
     RGBDSurface *surface = Surface(i);
-    if (!surface->WriteChannels()) return 0;
+    surface->WriteChannels();
     if (surface->rectangle) {
       R3Point centroid = surface->rectangle->Centroid();
       R3Vector normal = surface->rectangle->Normal();

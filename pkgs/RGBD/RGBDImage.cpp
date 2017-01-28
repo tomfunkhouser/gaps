@@ -12,7 +12,6 @@
 
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Constructors/destructors
 ////////////////////////////////////////////////////////////////////////
@@ -795,18 +794,20 @@ ReadChannels(void)
 int RGBDImage::
 ReadColorChannels(void)
 {
-  // Check filename
-  if (!color_filename) return 0;
-
-  // Get full filename
-  char full_filename[4096];
-  const char *dirname = (configuration) ? configuration->ColorDirectory() : NULL;
-  if (dirname) sprintf(full_filename, "%s/%s", dirname, color_filename);
-  else sprintf(full_filename, "%s", color_filename);
-
-  // Read color image
+  // Initialize image
   R2Image color_image;
-  if (!color_image.Read(full_filename)) return 0;
+
+  // Check filename
+  if (color_filename) {
+    // Get full filename
+    char full_filename[4096];
+    const char *dirname = (configuration) ? configuration->ColorDirectory() : NULL;
+    if (dirname) sprintf(full_filename, "%s/%s", dirname, color_filename);
+    else sprintf(full_filename, "%s", color_filename);
+
+    // Read color image
+    if (!color_image.Read(full_filename)) return 0;
+  }
 
   // Create color channels
   return CreateColorChannels(color_image);
@@ -817,45 +818,47 @@ ReadColorChannels(void)
 int RGBDImage::
 ReadDepthChannel(void)
 {
-  // Check filename
-  if (!depth_filename) return 0;
-
-  // Get full filename
-  char full_filename[4096];
-  const char *dirname = (configuration) ? configuration->DepthDirectory() : NULL;
-  if (dirname) sprintf(full_filename, "%s/%s", dirname, depth_filename);
-  else sprintf(full_filename, "%s", depth_filename);
-
-  // Read depth image
+  // Initialize image
   R2Grid depth_image;
-  if (!depth_image.ReadFile(full_filename)) return 0;
-  if (strstr(depth_filename, ".png")) depth_image.Multiply(0.001);
-  // MaskBoundaries(depth_image);
 
-  // Perform dataset-dependent processing
-  if (configuration && configuration->DatasetFormat()) {
-    if (!strcmp(configuration->DatasetFormat(), "matterport")) {
-      depth_image.Multiply(0.25);
+  // Check filename
+  if (depth_filename) {
+    // Get full filename
+    char full_filename[4096];
+    const char *dirname = (configuration) ? configuration->DepthDirectory() : NULL;
+    if (dirname) sprintf(full_filename, "%s/%s", dirname, depth_filename);
+    else sprintf(full_filename, "%s", depth_filename);
+
+    // Read depth image
+    if (!depth_image.ReadFile(full_filename)) return 0;
+    if (strstr(depth_filename, ".png")) depth_image.Multiply(0.001);
+    // MaskBoundaries(depth_image);
+
+    // Perform dataset-dependent processing
+    if (configuration && configuration->DatasetFormat()) {
+      if (!strcmp(configuration->DatasetFormat(), "matterport")) {
+        depth_image.Multiply(0.25);
+      }
+      else if (!strcmp(configuration->DatasetFormat(), "tum")) {
+        depth_image.Multiply(0.2);
+      }
     }
-    else if (!strcmp(configuration->DatasetFormat(), "tum")) {
-      depth_image.Multiply(0.2);
+
+    // Smooth depth image
+    if (configuration && configuration->DatasetFormat()) {
+      if (!strcmp(configuration->DatasetFormat(), "sunrgbd") ||
+          !strcmp(configuration->DatasetFormat(), "sun3d") ||
+          !strcmp(configuration->DatasetFormat(), "nyu") ||
+          !strcmp(configuration->DatasetFormat(), "princeton")) {
+        RNScalar d_sigma = 0.05;
+        RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
+        depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
+        depth_image.BilateralFilter(xy_sigma, d_sigma);
+        depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
+      }
     }
   }
-
-  // Smooth depth image
-  if (configuration && configuration->DatasetFormat()) {
-    if (!strcmp(configuration->DatasetFormat(), "sunrgbd") ||
-        !strcmp(configuration->DatasetFormat(), "sun3d") ||
-        !strcmp(configuration->DatasetFormat(), "nyu") ||
-        !strcmp(configuration->DatasetFormat(), "princeton")) {
-      RNScalar d_sigma = 0.05;
-      RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
-      depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
-      depth_image.BilateralFilter(xy_sigma, d_sigma);
-      depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
-    }
-  }
-
+  
   // Create depth channel
   return CreateDepthChannel(depth_image);
 }
@@ -953,8 +956,7 @@ ReleaseColorChannels(void)
     if (NChannels() <= channel_index) break;
     if (!channels[channel_index]) continue;
     delete channels[channel_index];
-    RNArrayEntry *entry = channels.KthEntry(channel_index);
-    channels.EntryContents(entry) = NULL;
+    channels[channel_index] = NULL;
   }
 
   // Return success;
@@ -976,8 +978,7 @@ ReleaseDepthChannel(void)
   if (NChannels() <= RGBD_DEPTH_CHANNEL) return 0;
   if (!channels[RGBD_DEPTH_CHANNEL]) return 0;
   delete channels[RGBD_DEPTH_CHANNEL];
-  RNArrayEntry *entry = channels.KthEntry(RGBD_DEPTH_CHANNEL);
-  channels.EntryContents(entry) = NULL;
+  channels[RGBD_DEPTH_CHANNEL] = NULL;
 
   // Return success;
   return 1;
