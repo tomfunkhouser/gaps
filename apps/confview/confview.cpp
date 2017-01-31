@@ -17,8 +17,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 static const char *input_configuration_filename = NULL;
-static const char *output_configuration_filename = NULL;
 static const char *input_mesh_filename = NULL;
+static const char *input_image_image_overlap_matrix = NULL;
+static const char *output_configuration_filename = NULL;
 static int load_every_kth_image = 1;
 static double texel_spacing = 0;
 static int print_verbose = 0;
@@ -43,6 +44,7 @@ static int GLUTmodifiers = 0;
 // Application variables
 
 static RGBDConfiguration configuration;
+static R2Grid *overlap_matrix = NULL;
 static char *screenshot_image_name = NULL;
 static int selected_surface_index = -1;
 static int selected_image_index = -1;
@@ -63,6 +65,7 @@ static int show_points = 1;
 static int show_faces = 0;
 static int show_edges = 0;
 static int show_textures = 1;
+static int show_overlaps = 0;
 static int show_axes = 0;
 
 
@@ -144,137 +147,6 @@ WriteConfiguration(RGBDConfiguration& configuration, const char *filename)
 
 
 
-////////////////////////////////////////////////////////////////////////
-// TEMPORARY - read obj file without shared vertices
-////////////////////////////////////////////////////////////////////////
-
-#if 0
-static int 
-ReadObjMeshFile(R3Mesh *mesh, const char *filename)
-{
-  // Open file
-  FILE *fp;
-  if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open OBJ mesh file %s", filename);
-    return 0;
-  }
-
-  // Read body
-  char buffer[1024];
-  int line_count = 0;
-  RNArray<R2Point *> texture_coords;
-  RNArray<R3Point *> position_coords;
-  while (fgets(buffer, 1023, fp)) {
-    // Increment line counter
-    line_count++;
-
-    // Skip white space
-    char *bufferp = buffer;
-    while (isspace(*bufferp)) bufferp++;
-
-    // Skip blank lines and comments
-    if (*bufferp == '#') continue;
-    if (*bufferp == '\0') continue;
-
-    // Get keyword
-    char keyword[80];
-    if (sscanf(bufferp, "%s", keyword) != 1) {
-      RNFail("Syntax error on line %d in file %s", line_count, filename);
-      return 0;
-    }
-
-    // Check keyword
-    if (!strcmp(keyword, "v")) {
-      // Read vertex coordinates
-      double x, y, z;
-      if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-        RNFail("Syntax error on line %d in file %s", line_count, filename);
-        return 0;
-      }
-
-      // Create vertex
-      R3Point *p = new R3Point(x, y, z);
-      position_coords.Insert(p);
-    }
-    else if (!strcmp(keyword, "vt")) {
-      // Read texture coordinates
-      double u, v;
-      if (sscanf(bufferp, "%s%lf%lf", keyword, &u, &v) != 3) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
-        return 0;
-      }
-
-      // Create texture coordinates
-      R2Point *vt = new R2Point(u, v);
-      texture_coords.Insert(vt);
-    }
-    else if (!strcmp(keyword, "f")) {
-      // Read vertex indices
-      int quad = 1;
-      char s1[128], s2[128], s3[128], s4[128] = { '\0' };
-      if (sscanf(bufferp, "%s%s%s%s%s", keyword, s1, s2, s3, s4) != 5) {
-        quad = 0;;
-        if (sscanf(bufferp, "%s%s%s%s", keyword, s1, s2, s3) != 4) {
-          RNFail("Syntax error on line %d in file %s", line_count, filename);
-          return 0;
-        }
-      }
-
-      // Parse vertex indices
-      int vi1 = -1, vi2 = -1, vi3 = -1, vi4 = -1;
-      int ti1 = -1, ti2 = -1, ti3 = -1, ti4 = -1;
-      char *p1 = strchr(s1, '/'); 
-      if (p1) { *p1 = 0; vi1 = atoi(s1); p1++; if (*p1) ti1 = atoi(p1); }
-      else { vi1 = atoi(s1); ti1 = vi1; }
-      char *p2 = strchr(s2, '/'); 
-      if (p2) { *p2 = 0; vi2 = atoi(s2); p2++; if (*p2) ti2 = atoi(p2); }
-      else { vi2 = atoi(s2); ti2 = vi2; }
-      char *p3 = strchr(s3, '/'); 
-      if (p3) { *p3 = 0; vi3 = atoi(s3); p3++; if (*p3) ti3 = atoi(p3); }
-      else { vi3 = atoi(s3); ti3 = vi3; }
-      if (quad) {
-        char *p4 = strchr(s4, '/'); 
-        if (p4) { *p4 = 0; vi4 = atoi(s4); p4++; if (*p4) ti4 = atoi(p4); }
-        else { vi4 = atoi(s4); ti4 = vi4; }
-      }
-
-      // Create vertices
-      R3MeshVertex *v1 = mesh->CreateVertex(*(position_coords.Kth(vi1-1)));
-      R3MeshVertex *v2 = mesh->CreateVertex(*(position_coords.Kth(vi2-1)));
-      R3MeshVertex *v3 = mesh->CreateVertex(*(position_coords.Kth(vi3-1)));
-      R3MeshVertex *v4 = (quad) ? mesh->CreateVertex(*(position_coords.Kth(vi4-1))) : NULL;
-      
-      // Check vertices
-      if ((v1 == v2) || (v2 == v3) || (v1 == v3)) continue;
-      if ((quad) && ((v4 == v1) || (v4 == v2) || (v4 == v3))) quad = 0;
-
-      // Set texture coordinates
-      R2Point t1, t2, t3, t4;
-      if ((ti1 > 0) && ((ti1-1) < texture_coords.NEntries())) mesh->SetVertexTextureCoords(v1, *(texture_coords.Kth(ti1-1)));
-      if ((ti2 > 0) && ((ti2-1) < texture_coords.NEntries())) mesh->SetVertexTextureCoords(v2, *(texture_coords.Kth(ti2-1)));
-      if ((ti3 > 0) && ((ti3-1) < texture_coords.NEntries())) mesh->SetVertexTextureCoords(v3, *(texture_coords.Kth(ti3-1)));
-      if (quad) { if ((ti4 > 0) && ((ti4-1) < texture_coords.NEntries())) mesh->SetVertexTextureCoords(v4, *(texture_coords.Kth(ti4-1))); }
-
-      // Create face(s)
-      mesh->CreateFace(v1, v2, v3);
-      if (quad) mesh->CreateFace(v1, v3, v4);
-    }
-  }
-
-  // Delete temporary data
-  for (int i = 0; i < position_coords.NEntries(); i++) delete position_coords[i];
-  for (int i = 0; i < texture_coords.NEntries(); i++) delete texture_coords[i];
-
-  // Close file
-  fclose(fp);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
 static int
 ReadMesh(RGBDConfiguration& configuration, const char *filename)
 {
@@ -312,6 +184,41 @@ ReadMesh(RGBDConfiguration& configuration, const char *filename)
     printf("  # Faces = %d\n", mesh->NFaces());
     printf("  # Edges = %d\n", mesh->NEdges());
     printf("  # Vertices = %d\n", mesh->NVertices());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadImageImageOverlapMatrix(RGBDConfiguration& configuration, const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Allocate matrix
+  overlap_matrix = new R2Grid();
+  if (!overlap_matrix) {
+    fprintf(stderr, "Unable to allocate overlap matrix for %s\n", filename);
+    return 0;
+  }
+
+  // Read matrix from file
+  if (!overlap_matrix->ReadFile(filename)) {
+    fprintf(stderr, "Unable to read overlap matrix from %s\n", filename);
+    return 0;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read overlaps from %s ...\n", filename);
+    printf("  # Images = %d\n", overlap_matrix->XResolution());
+    printf("  # Overlaps = %d\n", overlap_matrix->Cardinality());
+    printf("  Mean = %g\n", overlap_matrix->Mean());
     fflush(stdout);
   }
 
@@ -411,6 +318,24 @@ DrawTextures(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
     RGBDSurface *surface = configuration.Surface(i);
     int c = (i == selected_surface_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
     surface->DrawTexture(c);
+  }
+}
+
+
+
+static void
+DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
+{
+  // Check stuff
+  if (!overlap_matrix) return;
+  if (selected_image_index < 0) return;
+  
+  // Draw overlaps
+  for (int i = 0; i < overlap_matrix->YResolution(); i++) {
+    RNScalar value = overlap_matrix->GridValue(selected_image_index, i);
+    RGBDImage *image = configuration.Image(i);
+    RNLoadRgb(value, value, value);
+    image->DrawCamera(RGBD_NO_COLOR_SCHEME);
   }
 }
 
@@ -810,6 +735,7 @@ void GLUTRedraw(void)
   if (show_edges) DrawEdges(color_scheme);
   if (show_points) DrawPoints(color_scheme);
   if (show_textures) DrawTextures(color_scheme);
+  if (show_overlaps) DrawOverlaps();
   if (show_axes) DrawAxes();
 
   // Capture screenshot image 
@@ -1069,6 +995,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_images = !show_images;
     break;
 
+  case 'O':
+  case 'o':
+    show_overlaps = !show_overlaps;
+    break;
+
   case 'P':
   case 'p':
     show_points = !show_points;
@@ -1159,6 +1090,7 @@ ParseArgs(int argc, char **argv)
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-input_mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-input_image_image_overlap_matrix")) { argc--; argv++; input_image_image_overlap_matrix = *argv; }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
@@ -1200,6 +1132,11 @@ main(int argc, char **argv)
   // Read mesh
   if (input_mesh_filename) {
     if (!ReadMesh(configuration, input_mesh_filename)) exit(-1);
+  }
+
+  // Read overlaps
+  if (input_image_image_overlap_matrix) {
+    if (!ReadImageImageOverlapMatrix(configuration, input_image_image_overlap_matrix)) exit(-1);
   }
 
   // Begin viewing interface -- never returns
