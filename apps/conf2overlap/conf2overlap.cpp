@@ -227,9 +227,15 @@ WriteImageVertexOverlapFile(RGBDConfiguration *configuration, R3Mesh *mesh,
     return 0;
   }
   
+  // Write header
+  fprintf(fp, "C %s\n", input_configuration_filename);
+  fprintf(fp, "M %s\n", input_mesh_filename);
+  fprintf(fp, "\n");
+  
   // Write overlaps
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
-    fprintf(fp, "%d   ", i0);
+    if (image_to_vertex_overlaps[i0].IsEmpty()) continue;
+    fprintf(fp, "I %d   ", i0);
     for (int i1 = 0; i1 < image_to_vertex_overlaps[i0].NEntries(); i1++) {
       R3MeshVertex *vertex = image_to_vertex_overlaps[i0].Kth(i1);
       fprintf(fp, "%d ", mesh->VertexID(vertex));
@@ -272,9 +278,15 @@ WriteVertexImageOverlapFile(RGBDConfiguration *configuration, R3Mesh *mesh,
     return 0;
   }
   
+  // Write header
+  fprintf(fp, "C %s\n", input_configuration_filename);
+  fprintf(fp, "M %s\n", input_mesh_filename);
+  fprintf(fp, "\n");
+  
   // Write overlaps
   for (int i0 = 0; i0 < mesh->NVertices(); i0++) {
-    fprintf(fp, "%d   ", i0);
+    if (vertex_to_image_overlaps[i0].IsEmpty()) continue;
+    fprintf(fp, "V %d   ", i0);
     for (int i1 = 0; i1 < vertex_to_image_overlaps[i0].NEntries(); i1++) {
       RGBDImage *image = vertex_to_image_overlaps[i0].Kth(i1);
       fprintf(fp, "%d ", image->ConfigurationIndex());
@@ -317,17 +329,22 @@ WriteImageImageOverlapFile(RGBDConfiguration *configuration, R3Mesh *mesh,
     fprintf(stderr, "Unable to open overlap file %s\n", filename);
     return 0;
   }
+
+  // Write header
+  fprintf(fp, "C %s\n", input_configuration_filename);
+  fprintf(fp, "M %s\n", input_mesh_filename);
+  fprintf(fp, "\n");
   
   // Write overlaps
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
+    if (image_to_vertex_overlaps[i0].IsEmpty()) continue;
     for (int i1 = 0; i1 < configuration->NImages(); i1++) {
-      if (image_to_vertex_overlaps[i0].IsEmpty()) continue;
       if (image_to_vertex_overlaps[i1].IsEmpty()) continue;
       int overlap_count = CountOverlaps(mesh, image_to_vertex_overlaps[i0], image_to_vertex_overlaps[i1]);
       if (overlap_count == 0) continue;
       double overlap_fraction = (double) overlap_count / (double) image_to_vertex_overlaps[i0].NEntries();
       if (overlap_fraction < min_overlap_fraction) continue;
-      fprintf(fp, "%d %d %d %g\n", i0, i1, overlap_count, overlap_fraction);
+      fprintf(fp, "O %d %d %d %g\n", i0, i1, overlap_count, overlap_fraction);
       count++;
     }
   }
@@ -370,7 +387,7 @@ WriteImageImageOverlapMatrix(RGBDConfiguration *configuration, R3Mesh *mesh,
       if (overlap_count == 0) continue;
       double overlap_fraction = (double) overlap_count / (double) image_to_vertex_overlaps[i0].NEntries();
       if (overlap_fraction < min_overlap_fraction) continue;
-      matrix.SetGridValue(i0, i1, overlap_fraction);
+      matrix.SetGridValue(i0, i1, 1000 * overlap_fraction);
     }
   }
 
@@ -418,7 +435,7 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_configuration_filename) input_configuration_filename = *argv;
       else if (!input_mesh_filename) input_mesh_filename = *argv;
-      else if (!output_image_image_overlap_filename) output_image_image_overlap_filename = *argv;
+      else if (!output_image_image_overlap_filename) { output_image_image_overlap_filename = *argv; output = TRUE; }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
