@@ -276,6 +276,8 @@ PrintNodes(R3Scene *scene, R3SceneNode *node, int index, int level)
   printf("%s  Scene index = %d\n", indent, node->SceneIndex());
   printf("%s  # Elements = %d\n", indent, node->NElements());
   printf("%s  # References = %d\n", indent, node->NReferences());
+  printf("%s  # Facets = %g\n", indent, node->NFacets().Mid());
+  printf("%s  Area = %g\n", indent, node->Area());
   printf("%s  Centroid = %g %g %g\n", indent, centroid[0], centroid[1], centroid[2]);
   printf("%s  BBox = ( %g %g %g ) ( %g %g %g )\n", indent, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
   printf("%s  Transformation matrix = \n", indent);
