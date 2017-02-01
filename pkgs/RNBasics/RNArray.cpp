@@ -336,8 +336,8 @@ IsValid(void) const
     assert(nentries >= 0);
     assert(nallocated >= 0);
     assert(nentries <= nallocated);
-    if (nallocated == 0) assert(entries == NULL);
-    else assert(entries != NULL);
+    if (nallocated == 0) { assert(entries == NULL); }
+    else { assert(entries != NULL); }
 
     // Check entries
     for (int i = 0; i < nentries; i++) {
