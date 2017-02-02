@@ -196,8 +196,8 @@ ComputeOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
       }
 
       // Insert overlap
-      if (image_to_vertex_overlaps) (*image_to_vertex_overlaps)[i0].Insert(vertex);
-      if (vertex_to_image_overlaps) (*vertex_to_image_overlaps)[i1].Insert(image);
+      if (image_to_vertex_overlaps) (*image_to_vertex_overlaps)[image->ConfigurationIndex()].Insert(vertex);
+      if (vertex_to_image_overlaps) (*vertex_to_image_overlaps)[mesh->VertexID(vertex)].Insert(image);
 
       // Update statistics
       overlap_count++;
@@ -249,7 +249,7 @@ WriteImageVertexOverlapFile(RGBDConfiguration *configuration, R3Mesh *mesh,
   // Write overlaps
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
     if (image_to_vertex_overlaps[i0].IsEmpty()) continue;
-    fprintf(fp, "I %d   ", i0);
+    fprintf(fp, "I %d  %d  ", i0, image_to_vertex_overlaps[i0].NEntries());
     for (int i1 = 0; i1 < image_to_vertex_overlaps[i0].NEntries(); i1++) {
       R3MeshVertex *vertex = image_to_vertex_overlaps[i0].Kth(i1);
       fprintf(fp, "%d ", mesh->VertexID(vertex));
@@ -299,8 +299,13 @@ WriteVertexImageOverlapFile(RGBDConfiguration *configuration, R3Mesh *mesh,
   
   // Write overlaps
   for (int i0 = 0; i0 < mesh->NVertices(); i0++) {
+    R3MeshVertex *vertex = mesh->Vertex(i0);
     if (vertex_to_image_overlaps[i0].IsEmpty()) continue;
-    fprintf(fp, "V %d   ", i0);
+    const R3Point& position = mesh->VertexPosition(vertex);
+    const R3Vector& normal = mesh->VertexNormal(vertex);
+    fprintf(fp, "V  %d  %g %g %g  %g %g %g  %d  ", i0,
+      position.X(), position.Y(), position.Z(), normal.X(), normal.Y(), normal.Z(),
+      vertex_to_image_overlaps[i0].NEntries());
     for (int i1 = 0; i1 < vertex_to_image_overlaps[i0].NEntries(); i1++) {
       RGBDImage *image = vertex_to_image_overlaps[i0].Kth(i1);
       fprintf(fp, "%d ", image->ConfigurationIndex());
