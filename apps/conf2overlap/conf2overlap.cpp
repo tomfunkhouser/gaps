@@ -21,9 +21,9 @@ static const char *output_image_vertex_overlap_filename = NULL;
 static const char *output_image_image_overlap_filename = NULL;
 static const char *output_image_image_overlap_matrix = NULL;
 static double min_overlap_fraction = RN_EPSILON;
-// static int max_reprojection_distance = 0; // in pixels
-static double max_depth_error = 0.05; // as fraction of depth
-static int check_every_kth_pixel = 1;
+static double max_depth_inconsistency = 0.1; // as fraction of depth
+static double max_depth = 0;
+static double vertex_spacing = 0;
 static int print_verbose = 0;
 static int print_debug = 0;
 
@@ -150,6 +150,14 @@ ComputeOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
     fflush(stdout);
   }
 
+  // Create a sampled list of vertices to check
+  RNArray<R3MeshVertex *> vertices;
+  RNScalar sampling_fraction = (vertex_spacing > 0) ?  mesh->AverageEdgeLength() / vertex_spacing : 1.0;
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    if (RNRandomScalar() > sampling_fraction) continue;
+    vertices.Insert(mesh->Vertex(i));
+  }
+
   // Consider every image
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
     RGBDImage *image = configuration->Image(i0);
@@ -160,9 +168,9 @@ ComputeOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
     if (image_bbox.IsEmpty()) { image->ReleaseDepthChannel(); continue; }
     if (!R3Intersects(image_bbox, mesh->BBox())) { image->ReleaseDepthChannel(); continue; }
     
-    // Consider every mesh vertex
-    for (int i1 = 0; i1 < mesh->NVertices(); i1++) {
-      R3MeshVertex *vertex = mesh->Vertex(i1);
+    // Consider every sample vertex
+    for (int i1 = 0; i1 < vertices.NEntries(); i1++) {
+      R3MeshVertex *vertex = vertices.Kth(i1);
       const R3Point& vertex_position = mesh->VertexPosition(vertex);
       if (!R3Intersects(image_bbox, vertex_position)) continue;
       
@@ -170,15 +178,21 @@ ComputeOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
       R2Point image_position;
       if (!RGBDTransformWorldToImage(vertex_position, image_position, image)) continue;
 
+      // Check depth
+      if (max_depth > 0) {
+        RNScalar pixel_depth = image->DepthChannel()->GridValue(image_position);
+        if (pixel_depth > max_depth) continue;
+      }
+      
       // Check for depth consistency
-      if (max_depth_error > 0) {
+      if (max_depth_inconsistency > 0) {
         RNScalar vertex_depth = (vertex_position - image->WorldViewpoint()).Dot(image->WorldTowards());
         RNScalar pixel_depth = image->DepthChannel()->GridValue(image_position);
         RNScalar depth_difference = fabs(vertex_depth - pixel_depth);
         RNScalar depth_maximum = (pixel_depth > vertex_depth) ? pixel_depth : vertex_depth;
         if (depth_maximum <= 0) continue;
         RNScalar depth_error = depth_difference / depth_maximum;
-        if (depth_error > max_depth_error) continue;
+        if (depth_error > max_depth_inconsistency) continue;
       }
 
       // Insert overlap
@@ -423,12 +437,14 @@ ParseArgs(int argc, char **argv)
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-debug")) print_debug = 1;
-      else if (!strcmp(*argv, "-min_overlap")) { argc--; argv++; min_overlap_fraction = atof(*argv); }
-      else if (!strcmp(*argv, "-check_every_kth_pixel")) { argc--; argv++; check_every_kth_pixel = atoi(*argv); }
       else if (!strcmp(*argv, "-output_image_vertex_overlaps")) { argc--; argv++; output_image_vertex_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_vertex_image_overlaps")) { argc--; argv++; output_vertex_image_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_overlaps")) { argc--; argv++; output_image_image_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_matrix")) { argc--; argv++; output_image_image_overlap_matrix = *argv; output = TRUE; }
+      else if (!strcmp(*argv, "-max_depth_inconsistency")) { argc--; argv++; max_depth_inconsistency = atof(*argv); }
+      else if (!strcmp(*argv, "-max_depth")) { argc--; argv++; max_depth = atof(*argv); }
+      else if (!strcmp(*argv, "-min_overlap")) { argc--; argv++; min_overlap_fraction = atof(*argv); }
+      else if (!strcmp(*argv, "-vertex_spacing")) { argc--; argv++; vertex_spacing = atof(*argv); }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
