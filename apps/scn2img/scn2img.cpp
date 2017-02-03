@@ -46,6 +46,7 @@ static int capture_category_images = 0;
 static int capture_boundary_images = 0;
 static int capture_room_surface_images = 0;
 static int capture_room_boundary_images = 0;
+static int capture_vrgb_images = 0;
 
 
 // Other parameter program variables
@@ -95,7 +96,8 @@ enum {
   MATERIAL_COLOR_SCHEME,
   NODE_COLOR_SCHEME,
   CATEGORY_COLOR_SCHEME,
-  ROOM_SURFACE_COLOR_SCHEME
+  ROOM_SURFACE_COLOR_SCHEME,
+  VRGB_COLOR_SCHEME
 };
 
 
@@ -630,6 +632,10 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       }
       glEnd();
     }
+    else if (color_scheme == VRGB_COLOR_SCHEME) {
+      // Draw node with vertex colors
+      node->Draw(R3_SURFACES_DRAW_FLAG | R3_VERTEX_COLORS_DRAW_FLAG);
+    }
     else {
       // Draw without setting colors
       for (int i = 0; i < node->NElements(); i++) {
@@ -902,6 +908,18 @@ void Redraw(void)
       if (CaptureInteger(image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_room_surface.png", output_image_directory, name);
+        image.WriteFile(output_image_filename);
+      }
+    }
+  }
+
+  // Capture and write vertex color image 
+  if (capture_vrgb_images) {
+    if (DrawSceneWithOpenGL(*camera, scene, VRGB_COLOR_SCHEME)) {
+      image.Clear(0);
+      if (CaptureInteger(image)) {
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_vrgb.png", output_image_directory, name);
         image.WriteFile(output_image_filename);
       }
     }
@@ -1407,6 +1425,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_boundary_images")) { capture_images = capture_boundary_images = 1; }
       else if (!strcmp(*argv, "-capture_room_surface_images")) { capture_images = capture_room_surface_images = 1; }
       else if (!strcmp(*argv, "-capture_room_boundary_images")) { capture_images = capture_room_boundary_images = 1; }
+      else if (!strcmp(*argv, "-capture_vrgb_images")) { capture_images = capture_vrgb_images = 1; }
       else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_name = *argv; capture_category_images = 1; }
       else if (!strcmp(*argv, "-kinect_min_depth")) { argc--; argv++; kinect_min_depth = atof(*argv); }
       else if (!strcmp(*argv, "-kinect_max_depth")) { argc--; argv++; kinect_max_depth = atof(*argv); }
