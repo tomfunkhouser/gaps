@@ -452,7 +452,7 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_configuration_filename) input_configuration_filename = *argv;
       else if (!input_mesh_filename) input_mesh_filename = *argv;
-      else if (!output_image_image_overlap_filename) { output_image_image_overlap_filename = *argv; output = TRUE; }
+      else if (!output_image_image_overlap_matrix) { output_image_image_overlap_matrix = *argv; output = TRUE; }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
