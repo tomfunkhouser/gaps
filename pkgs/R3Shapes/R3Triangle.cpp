@@ -38,6 +38,7 @@ R3TriangleVertex::
 R3TriangleVertex(void)
     : position(0,0,0),
       normal(0,0,0),
+      color(0, 0, 0),
       texcoords(0,0),
       flags(0),
       mark(0)
@@ -50,6 +51,7 @@ R3TriangleVertex::
 R3TriangleVertex(const R3TriangleVertex& vertex)
     : position(vertex.position), 
       normal(vertex.normal),
+      color(vertex.color),
       texcoords(vertex.texcoords),
       flags(vertex.flags),
       mark(0)
@@ -62,6 +64,7 @@ R3TriangleVertex::
 R3TriangleVertex(const R3Point& position)
     : position(position),
       normal(0,0,0),
+      color(0, 0, 0),
       texcoords(0,0),
       flags(0),
       mark(0)
@@ -74,6 +77,7 @@ R3TriangleVertex::
 R3TriangleVertex(const R3Point& position, const R3Vector& normal)
     : position(position),
       normal(normal),
+      color(0,0,0),
       texcoords(0,0),
       flags(0),
       mark(0)
@@ -85,9 +89,25 @@ R3TriangleVertex(const R3Point& position, const R3Vector& normal)
 
 
 R3TriangleVertex::
+R3TriangleVertex(const R3Point& position, const RNRgb& color)
+    : position(position),
+      normal(0,0,0),
+      color(color),
+      texcoords(0,0),
+      flags(0),
+      mark(0)
+{
+  // Check normal
+  flags.Add(R3_VERTEX_COLORS_DRAW_FLAG);
+}
+
+
+
+R3TriangleVertex::
 R3TriangleVertex(const R3Point& position, const R2Point& texcoords)
     : position(position),
       normal(0,0,0),
+      color(0, 0, 0),
       texcoords(texcoords),
       flags(R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG),
       mark(0)
@@ -97,9 +117,40 @@ R3TriangleVertex(const R3Point& position, const R2Point& texcoords)
 
 
 R3TriangleVertex::
+R3TriangleVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color)
+    : position(position),
+      normal(normal),
+      color(color),
+      texcoords(0, 0),
+      flags(R3_VERTEX_COLORS_DRAW_FLAG),
+      mark(0)
+{
+  // Check normal
+  if (!normal.IsZero()) flags.Add(R3_VERTEX_NORMALS_DRAW_FLAG);
+}
+
+
+
+R3TriangleVertex::
+R3TriangleVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, const R2Point& texcoords)
+    : position(position),
+      normal(normal),
+      color(color),
+      texcoords(texcoords),
+      flags(R3_VERTEX_COLORS_DRAW_FLAG | R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG),
+      mark(0)
+{
+  // Check normal
+  if (!normal.IsZero()) flags.Add(R3_VERTEX_NORMALS_DRAW_FLAG);
+}
+
+
+
+R3TriangleVertex::
 R3TriangleVertex(const R3Point& position, const R3Vector& normal, const R2Point& texcoords)
     : position(position),
       normal(normal),
+      color(0, 0, 0),
       texcoords(texcoords),
       flags(R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG),
       mark(0)
@@ -525,6 +576,8 @@ Update(void)
 	RNFlags vertex_flags = v[i]->Flags();
 	if (!(vertex_flags[R3_VERTEX_NORMALS_DRAW_FLAG]))
 	    flags.Remove(R3_VERTEX_NORMALS_DRAW_FLAG);
+	if (!(vertex_flags[R3_VERTEX_COLORS_DRAW_FLAG]))
+	    flags.Remove(R3_VERTEX_COLORS_DRAW_FLAG);
 	if (!(vertex_flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]))
 	    flags.Remove(R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG);
     }

@@ -682,6 +682,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-axes")) { show_axes = TRUE; }
       else if (!strcmp(*argv, "-segments")) { show_segments = TRUE; }
       else if (!strcmp(*argv, "-materials")) { show_materials = TRUE; }
+      else if (!strcmp(*argv, "-vertex_colors")) { show_vertex_colors = TRUE; }
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 
         argv++; argc--; GLUTwindow_height = atoi(*argv); 

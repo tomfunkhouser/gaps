@@ -18,12 +18,16 @@ class R3TriangleVertex {
         R3TriangleVertex(const R3TriangleVertex& vertex);
         R3TriangleVertex(const R3Point& position);
         R3TriangleVertex(const R3Point& position, const R3Vector& normal);
+        R3TriangleVertex(const R3Point& position, const RNRgb& color);
         R3TriangleVertex(const R3Point& position, const R2Point& texcoords);
+        R3TriangleVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color);
+        R3TriangleVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, const R2Point& texcoords);
         R3TriangleVertex(const R3Point& position, const R3Vector& normal, const R2Point& texcoords);
 
 	// Property functions/operators
 	const R3Point& Position(void) const;
 	const R3Vector& Normal(void) const;
+        const RNRgb& Color(void) const;
 	const R2Point& TextureCoords(void) const;
         const RNFlags Flags(void) const;
         const RNMark Mark(void) const;
@@ -33,6 +37,7 @@ class R3TriangleVertex {
         void Transform(const R3Transformation& transformation);
 	void SetPosition(const R3Point& position);
 	void SetNormal(const R3Vector& normal);
+        void SetColor(const RNRgb& color);
 	void SetTextureCoords(const R2Point& texcoords);
         void SetSharedFlag(void);
         void SetMark(RNMark mark);
@@ -40,6 +45,7 @@ class R3TriangleVertex {
     public:
         R3Point position;
 	R3Vector normal;
+        RNRgb color;
 	R2Point texcoords;
         RNFlags flags;
         RNMark mark;
@@ -144,6 +150,15 @@ Normal(void) const
 
 
 
+inline const RNRgb& R3TriangleVertex::
+Color(void) const
+{
+    // Return color
+    return color;
+}
+
+
+
 inline const R2Point& R3TriangleVertex::
 TextureCoords(void) const
 {
@@ -188,6 +203,18 @@ SetNormal(const R3Vector& vector)
 
     // Update flags
     if (!normal.IsZero()) flags.Add(R3_VERTEX_NORMALS_DRAW_FLAG);
+}
+
+
+
+inline void R3TriangleVertex::
+SetColor(const RNRgb& rgb)
+{
+    // Reset vertex color
+    color = rgb;
+
+    // Update flags
+    flags.Add(R3_VERTEX_COLORS_DRAW_FLAG);
 }
 
 

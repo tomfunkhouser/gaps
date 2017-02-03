@@ -1819,6 +1819,14 @@ ReadMesh(const char *filename)
       const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
       triangle_vertex->SetNormal(normal);
     }
+    
+    // Assign vertex color
+    if (!mesh.VertexColor(mesh_vertex).IsBlack()) {
+      triangle_vertex->SetColor(mesh.VertexColor(mesh_vertex));
+    }
+
+    // Assign vertex texture coordinates
+    triangle_vertex->SetTextureCoords(mesh.VertexTextureCoords(mesh_vertex));
   }
 
   // Create array of triangles

@@ -349,6 +349,18 @@ Draw(const R3DrawFlags draw_flags) const
       R3EndPolygon();
       break;
 
+    case R3_SURFACES_DRAW_FLAG | R3_VERTEX_COLORS_DRAW_FLAG:
+      // Color interpolation
+      R3BeginPolygon();
+      RNLoadRgb(v[0]->Color());
+      R3LoadPoint(v[0]->Position());
+      RNLoadRgb(v[1]->Color());
+      R3LoadPoint(v[1]->Position());
+      RNLoadRgb(v[2]->Color());
+      R3LoadPoint(v[2]->Position());
+      R3EndPolygon();
+      break;
+
     case R3_SURFACES_DRAW_FLAG | R3_SURFACE_NORMALS_DRAW_FLAG | R3_VERTEX_NORMALS_DRAW_FLAG:
       // Gouraud shading
       R3BeginPolygon();
@@ -448,6 +460,11 @@ Draw(const R3DrawFlags draw_flags) const
 
 	    // Load triangle vertices
 	    for (int i = 0; i < 3; i++) {
+		// Load vertex color
+  		if (flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
+                    RNLoadRgb(v[i]->Color());
+ 		}
+
 		// Load vertex normal
 		if (flags[R3_VERTEX_NORMALS_DRAW_FLAG])
 		    R3LoadNormal(v[i]->normal);
