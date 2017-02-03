@@ -117,6 +117,7 @@ private:
   RNLength world_texel_spacing;
   int color_resident_count;
 
+public: // temporary
   // Rectangular surface variables
   R3Rectangle *rectangle;
 

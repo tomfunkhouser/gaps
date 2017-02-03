@@ -525,7 +525,15 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) { print_verbose = 1; }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else if (!strcmp(*argv, "-selected_grid_range")) {
+        argc--; argv++; RNScalar min_value = atof(*argv);
+        argc--; argv++; RNScalar max_value = atof(*argv);
+        selected_grid_range.Reset(min_value, max_value);
+      }
+      else {
+        fprintf(stderr, "Invalid program argument: %s", *argv);
+        exit(1);
+      }
       argv++; argc--;
     }
     else {

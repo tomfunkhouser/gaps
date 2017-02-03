@@ -562,6 +562,51 @@ DrawPoints(int color_scheme, int skip) const
 
 
 void RGBDImage::
+DrawQuads(int color_scheme, int skip) const
+{
+  // Draw color
+  RNBoolean c = FALSE;
+  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) c = TRUE;
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) c = TRUE;
+  LoadColor(color_scheme);
+
+  // Draw quads
+  glBegin(GL_TRIANGLES);
+  for (int ix = 0; ix < NPixels(RN_X)-skip; ix += skip) {
+    for (int iy = 0; iy < NPixels(RN_Y)-skip; iy += skip) {
+      R3Point p1, p2, p3, p4;
+      if (!RGBDTransformImageToWorld(R2Point(ix, iy), p1, this)) continue;
+      if (!RGBDTransformImageToWorld(R2Point(ix+skip, iy), p2, this)) continue;
+      if (!RGBDTransformImageToWorld(R2Point(ix+skip, iy+skip), p3, this)) continue;
+      if (!RGBDTransformImageToWorld(R2Point(ix, iy+skip), p4, this)) continue;
+      R3Plane planeA(p1, p2, p3);
+      if (planeA.Normal().Dot(WorldTowards()) < -0.7) {
+        if (!c) R3LoadNormal(planeA.Normal());
+        if (c) RNLoadRgb(PixelColor(ix, iy));
+        R3LoadPoint(p1);
+        if (c) RNLoadRgb(PixelColor(ix+skip, iy));
+        R3LoadPoint(p2);
+        if (c) RNLoadRgb(PixelColor(ix+skip, iy+skip));
+        R3LoadPoint(p3);
+      }
+      R3Plane planeB(p1, p3, p4);
+      if (planeB.Normal().Dot(WorldTowards()) < -0.7) {
+        if (!c) R3LoadNormal(planeB.Normal());
+        if (c) RNLoadRgb(PixelColor(ix, iy));
+        R3LoadPoint(p1);
+        if (c) RNLoadRgb(PixelColor(ix+skip, iy+skip));
+        R3LoadPoint(p3);
+        if (c) RNLoadRgb(PixelColor(ix, iy+skip));
+        R3LoadPoint(p4);
+      }
+    }
+  }
+  glEnd();
+}
+
+
+
+void RGBDImage::
 LoadColor(int color_scheme) const
 {
   // Check color scheme

@@ -17,9 +17,10 @@
 ////////////////////////////////////////////////////////////////////////
 
 static const char *input_configuration_filename = NULL;
-static const char *input_mesh_filename = NULL;
-static const char *input_image_image_overlap_matrix = NULL;
 static const char *output_configuration_filename = NULL;
+static const char *input_mesh_filename = NULL;
+static const char *input_overlap_filename = NULL;
+static const char *input_overlap_matrix = NULL;
 static int load_every_kth_image = 1;
 static double texel_spacing = 0;
 static int print_verbose = 0;
@@ -44,7 +45,9 @@ static int GLUTmodifiers = 0;
 // Application variables
 
 static RGBDConfiguration configuration;
-static R2Grid *overlap_matrix = NULL;
+static R2Grid *image_image_overlaps = NULL;
+static RNArray<RGBDImage *> *vertex_image_overlaps = NULL;
+static RNArray<R3MeshVertex *> *image_vertex_overlaps = NULL;
 static char *screenshot_image_name = NULL;
 static int selected_surface_index = -1;
 static int selected_image_index = -1;
@@ -61,10 +64,11 @@ static R3Viewer viewer;
 static int show_cameras = 1;
 static int show_bboxes = 0;
 static int show_images = 0;
-static int show_points = 1;
+static int show_points = 0;
+static int show_quads = 0;
 static int show_faces = 0;
 static int show_edges = 0;
-static int show_textures = 1;
+static int show_textures = 0;
 static int show_overlaps = 0;
 static int show_axes = 0;
 
@@ -194,21 +198,21 @@ ReadMesh(RGBDConfiguration& configuration, const char *filename)
 
 
 static int
-ReadImageImageOverlapMatrix(RGBDConfiguration& configuration, const char *filename)
+ReadOverlapMatrix(RGBDConfiguration& configuration, const char *filename)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
   // Allocate matrix
-  overlap_matrix = new R2Grid();
-  if (!overlap_matrix) {
+  image_image_overlaps = new R2Grid();
+  if (!image_image_overlaps) {
     fprintf(stderr, "Unable to allocate overlap matrix for %s\n", filename);
     return 0;
   }
 
   // Read matrix from file
-  if (!overlap_matrix->ReadFile(filename)) {
+  if (!image_image_overlaps->ReadFile(filename)) {
     fprintf(stderr, "Unable to read overlap matrix from %s\n", filename);
     return 0;
   }
@@ -216,9 +220,193 @@ ReadImageImageOverlapMatrix(RGBDConfiguration& configuration, const char *filena
   // Print statistics
   if (print_verbose) {
     printf("Read overlaps from %s ...\n", filename);
-    printf("  # Images = %d\n", overlap_matrix->XResolution());
-    printf("  # Overlaps = %d\n", overlap_matrix->Cardinality());
-    printf("  Mean = %g\n", overlap_matrix->Mean());
+    printf("  # Images = %d\n", image_image_overlaps->XResolution());
+    printf("  # Overlaps = %d\n", image_image_overlaps->Cardinality());
+    printf("  Mean = %g\n", image_image_overlaps->Mean());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int count = 0;
+
+  // Check configuration
+  if (configuration.NSurfaces() == 0) {
+    fprintf(stderr, "Must have mesh to read overlaps\n");
+    return 0;
+  }
+
+  // Get mesh from configuration
+  RGBDSurface *surface = configuration.Surface(0);
+  R3Mesh *mesh = surface->mesh;
+  if (!mesh || (mesh->NVertices() == 0)) {
+    fprintf(stderr, "Must have mesh to read overlaps\n");
+    return 0;
+  }
+
+  // Allocate arrays of vertex image overlaps
+  vertex_image_overlaps = new RNArray<RGBDImage *> [ mesh->NVertices() ];
+  if (!vertex_image_overlaps) {
+    fprintf(stderr, "Unable to allocate vertex image overlaps for %s\n", filename);
+    return 0;
+  }
+
+  // Allocate arrays of image vertex overlaps
+  image_vertex_overlaps = new RNArray<R3MeshVertex *> [ configuration.NImages() ];
+  if (!image_vertex_overlaps) {
+    fprintf(stderr, "Unable to allocate image vertex overlaps for %s\n", filename);
+    return 0;
+  }
+
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open overlap file %s\n", filename);
+    return 0;
+  }
+  
+  // Read file
+  char cmd[1024];
+  while (fscanf(fp, "%s", cmd) == (unsigned int) 1) {
+    // Check cmd
+    if (!strcmp(cmd, "C")) {
+      // Read configuration filename
+      char configuration_filename[1024];
+      if (fscanf(fp, "%s", configuration_filename) != (unsigned int) 1) {
+        fprintf(stderr, "Unable to read configuration filename in %s\n", filename);
+        return 0;
+      }
+    }
+    else if (!strcmp(cmd, "M")) {
+      // Read mesh filename
+      char mesh_filename[1024];
+      if (fscanf(fp, "%s", mesh_filename) != (unsigned int) 1) {
+        fprintf(stderr, "Unable to read mesh filename in %s\n", filename);
+        return 0;
+      }
+    }
+    else if (!strcmp(cmd, "V")) {
+      // Read vertex to image overlaps
+      int vertex_index, noverlaps;
+      double px, py, pz, nx, ny, nz;
+      if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%d", &vertex_index,
+        &px, &py, &pz, &nx, &ny, &nz, &noverlaps) != (unsigned int) 8) {
+        fprintf(stderr, "Unable to read vertex in %s\n", filename);
+        return 0;
+      }
+        
+      // Check vertex index
+      if ((vertex_index < 0) || (vertex_index >= mesh->NVertices())) {
+        fprintf(stderr, "Invalid vertex index %d in %s\n", vertex_index, filename);
+        return 0;
+      }
+
+      // Find vertex
+      R3MeshVertex *vertex = mesh->Vertex(vertex_index);
+      if (R3SquaredDistance(mesh->VertexPosition(vertex), R3Point(px, py, pz)) > RN_EPSILON) {
+        fprintf(stderr, "Mismatching position for vertex index %d in %s\n", vertex_index, filename);
+        return 0;
+      }
+
+      // Read overlaps
+      for (int i = 0; i < noverlaps; i++) {
+        // Read image index
+        int image_index;
+        if (fscanf(fp, "%d", &image_index) != (unsigned int) 1) {
+          fprintf(stderr, "Unable to read image index in %s\n", filename);
+          return 0;
+        }
+
+        // Check image index
+        if ((image_index < 0) || (image_index >= mesh->NVertices())) {
+          fprintf(stderr, "Invalid image index %d in %s\n", image_index, filename);
+          return 0;
+        }
+         
+        // Find image
+        RGBDImage *image = configuration.Image(image_index);
+        if (!image) {
+          fprintf(stderr, "This should never happen\n");
+          return 0;
+        }
+
+        // Add overlap
+        vertex_image_overlaps[vertex_index].Insert(image);
+
+        // Increment count
+        count++;
+      }
+    }
+    else if (!strcmp(cmd, "I")) {
+      // Read image to vertex overlaps
+      int image_index, noverlaps;
+      if (fscanf(fp, "%d%d", &image_index, &noverlaps) != (unsigned int) 2) {
+        fprintf(stderr, "Unable to read image in %s\n", filename);
+        return 0;
+      }
+        
+      // Check image index
+      if ((image_index < 0) || (image_index >= configuration.NImages())) {
+        fprintf(stderr, "Invalid image index %d in %s\n", image_index, filename);
+        return 0;
+      }
+
+      // Find image
+      RGBDImage *image = configuration.Image(image_index);
+      if (!image) {
+        fprintf(stderr, "This should never happen\n");
+        return 0;
+      }
+
+      // Read overlaps
+      for (int i = 0; i < noverlaps; i++) {
+        // Read vertex index
+        int vertex_index;
+        if (fscanf(fp, "%d", &vertex_index) != (unsigned int) 1) {
+          fprintf(stderr, "Unable to read vertex index in %s\n", filename);
+          return 0;
+        }
+
+        // Check vertex index
+        if ((vertex_index < 0) || (vertex_index >= mesh->NVertices())) {
+          fprintf(stderr, "Invalid vertex index %d in %s\n", vertex_index, filename);
+          return 0;
+        }
+
+        // Find vertex
+        R3MeshVertex *vertex = mesh->Vertex(vertex_index);
+        if (!vertex) {
+          fprintf(stderr, "This should never happen\n");
+          return 0;
+        }
+
+        // Add overlap
+        image_vertex_overlaps[image_index].Insert(vertex);
+
+        // Increment count
+        count++;
+      }
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read overlaps from %s ...\n", filename);
+    printf("  # Images = %d\n", configuration.NImages());
+    printf("  # Overlaps = %d\n", count);
     fflush(stdout);
   }
 
@@ -266,6 +454,19 @@ DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
     RGBDImage *image = configuration.Image(i);
     int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
     image->DrawPoints(c, skip);
+  }
+}
+
+
+
+static void
+DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
+{
+  // Draw pixels of all images as quads in world space
+  for (int i = 0; i < configuration.NImages(); i++) {
+    RGBDImage *image = configuration.Image(i);
+    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
+    image->DrawQuads(c, skip);
   }
 }
 
@@ -327,15 +528,49 @@ static void
 DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
 {
   // Check stuff
-  if (!overlap_matrix) return;
   if (selected_image_index < 0) return;
+  if (configuration.NSurfaces() == 0) return;
   
-  // Draw overlaps
-  for (int i = 0; i < overlap_matrix->YResolution(); i++) {
-    RNScalar value = overlap_matrix->GridValue(selected_image_index, i);
-    RGBDImage *image = configuration.Image(i);
-    RNLoadRgb(value, value, value);
-    image->DrawCamera(RGBD_NO_COLOR_SCHEME);
+  // Draw vertex image overlaps
+  if (vertex_image_overlaps) {
+    glPointSize(3);
+    glBegin(GL_POINTS);
+    RGBDSurface *surface = configuration.Surface(0);
+    R3Mesh *mesh = surface->mesh;
+    for (int i = 0; i < mesh->NVertices(); i++) {
+      R3MeshVertex *vertex = mesh->Vertex(i);
+      for (int j = 0; j < vertex_image_overlaps[i].NEntries(); j++) {
+        RGBDImage *image = vertex_image_overlaps[i][j];
+        if (image->ConfigurationIndex() != selected_image_index) continue;
+        R3LoadPoint(mesh->VertexPosition(vertex));
+      }
+    }
+    glEnd();
+    glPointSize(1);
+  }
+
+  // Draw vertex image overlaps
+  if (image_vertex_overlaps) {
+    glPointSize(3);
+    glBegin(GL_POINTS);
+    RGBDSurface *surface = configuration.Surface(0);
+    R3Mesh *mesh = surface->mesh;
+    for (int j = 0; j < image_vertex_overlaps[selected_image_index].NEntries(); j++) {
+      R3MeshVertex *vertex = image_vertex_overlaps[selected_image_index][j];
+      R3LoadPoint(mesh->VertexPosition(vertex));
+    }
+    glEnd();
+    glPointSize(1);
+  }
+
+  // Draw image image overlaps
+  if (image_image_overlaps) {
+    for (int i = 0; i < image_image_overlaps->YResolution(); i++) {
+      RNScalar value = image_image_overlaps->GridValue(selected_image_index, i);
+      RGBDImage *image = configuration.Image(i);
+      RNLoadRgb(value, value, value);
+      image->DrawCamera(RGBD_NO_COLOR_SCHEME);
+    }
   }
 }
 
@@ -442,6 +677,7 @@ Pick(int x, int y,
   if (picked_image || !picked_surface) {
     if (show_cameras) DrawCameras(RGBD_INDEX_COLOR_SCHEME);
     if (show_points) DrawPoints(RGBD_INDEX_COLOR_SCHEME);
+    if (show_quads) DrawQuads(RGBD_INDEX_COLOR_SCHEME);
   }
   if (picked_surface || !picked_image) {
     if (show_faces || show_textures) DrawFaces(RGBD_INDEX_COLOR_SCHEME);
@@ -734,6 +970,7 @@ void GLUTRedraw(void)
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
   if (show_points) DrawPoints(color_scheme);
+  if (show_quads) DrawQuads(color_scheme);
   if (show_textures) DrawTextures(color_scheme);
   if (show_overlaps) DrawOverlaps();
   if (show_axes) DrawAxes();
@@ -1005,6 +1242,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_points = !show_points;
     break;
 
+  case 'q':
+  case 'Q':
+    show_quads = !show_quads;
+    break;
+
   case 'T':
   case 't':
     show_textures = !show_textures;
@@ -1089,8 +1331,9 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-input_mesh")) { argc--; argv++; input_mesh_filename = *argv; }
-      else if (!strcmp(*argv, "-input_image_image_overlap_matrix")) { argc--; argv++; input_image_image_overlap_matrix = *argv; }
+      else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-overlap_file")) { argc--; argv++; input_overlap_filename = *argv; }
+      else if (!strcmp(*argv, "-overlap_matrix")) { argc--; argv++; input_overlap_matrix = *argv; }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
@@ -1134,9 +1377,14 @@ main(int argc, char **argv)
     if (!ReadMesh(configuration, input_mesh_filename)) exit(-1);
   }
 
-  // Read overlaps
-  if (input_image_image_overlap_matrix) {
-    if (!ReadImageImageOverlapMatrix(configuration, input_image_image_overlap_matrix)) exit(-1);
+  // Read image-image overlaps
+  if (input_overlap_matrix) {
+    if (!ReadOverlapMatrix(configuration, input_overlap_matrix)) exit(-1);
+  }
+
+  // Read vertex-image overlaps
+  if (input_overlap_filename) {
+    if (!ReadOverlapFile(configuration, input_overlap_filename)) exit(-1);
   }
 
   // Begin viewing interface -- never returns

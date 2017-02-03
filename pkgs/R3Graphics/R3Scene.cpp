@@ -35,6 +35,7 @@ R3Scene(void)
     textures(),
     referenced_scenes(),
     info(),
+    viewer(),
     ambient(0, 0, 0),
     background(0, 0, 0),
     filename(NULL),
