@@ -305,6 +305,7 @@ int RGBDUndistortAndScaleColorChannel(
       R2Point undistorted_output_position(output_ix + 0.5, output_iy + 0.5);
 
       // Compute coordinates in undistorted input image
+      // Note that this ignores p1 and p2
       R2Point undistorted_input_position(undistorted_output_position);
       RNScalar x = sx * (undistorted_output_position.X() - output_camera.mx_color) + input_camera.mx_color;
       RNScalar y = sy * (undistorted_output_position.Y() - output_camera.my_color) + input_camera.my_color;
@@ -315,8 +316,8 @@ int RGBDUndistortAndScaleColorChannel(
       if ((input_camera.k1_color != 0.0) || (input_camera.k2_color != 0.0) || (input_camera.k3_color != 0.0) || (input_camera.k4_color != 0.0)) {
         double nx = (undistorted_input_position.X() - input_camera.mx_color) / input_camera.fx_color;
         double ny = (undistorted_input_position.Y() - input_camera.my_color) / input_camera.fy_color;
-        double rr = nx*nx + ny*ny;
-        double s = 1.0 + rr*input_camera.k1_color + rr*rr*input_camera.k2_color + rr*rr*rr*input_camera.k3_color + rr*rr*rr*rr*input_camera.k4_color;
+        double rr = nx*nx + ny*ny; double rrrr = rr*rr;
+        double s = 1.0 + rr*input_camera.k1_color + rrrr*input_camera.k2_color + rrrr*rr*input_camera.k3_color + rrrr*rrrr*input_camera.k4_color;
         double x = s*nx*input_camera.fx_color + input_camera.mx_color;
         double y = s*ny*input_camera.fy_color + input_camera.my_color;
         distorted_input_position.Reset(x, y);
@@ -388,6 +389,7 @@ int RGBDUndistortScaleAndWarpDepthChannel(
   for (double undistorted_input_y = 0.5*y_step; undistorted_input_y < source_image.YResolution(); undistorted_input_y += y_step) {
     for (double undistorted_input_x = 0.5*x_step; undistorted_input_x < source_image.XResolution(); undistorted_input_x += x_step) {
       // Compute coordinates in distorted input image
+      // Note that this ignores p1 and p2
       R2Point distorted_input_position(undistorted_input_x, undistorted_input_y);
       if ((input_camera.k1_depth != 0.0) || (input_camera.k2_depth != 0.0) || (input_camera.k3_depth != 0.0) || (input_camera.k3_depth != 0.0)) {
         double nx = (undistorted_input_x - input_camera.mx_depth) / input_camera.fx_depth;
