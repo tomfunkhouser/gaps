@@ -49,6 +49,7 @@ class RGBDConfiguration;
 // RGBD include files
 ////////////////////////////////////////////////////////////////////////
 
+#include "RGBDCamera.h"
 #include "RGBDImage.h"
 #include "RGBDSurface.h"
 #include "RGBDConfiguration.h"

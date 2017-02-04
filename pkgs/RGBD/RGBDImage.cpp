@@ -36,7 +36,8 @@ RGBDImage(void)
 
 
 RGBDImage::
-RGBDImage(const char *color_filename, const char *depth_filename, const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix)
+RGBDImage(const char *color_filename, const char *depth_filename,
+  const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix)
   : configuration(NULL),
     configuration_index(-1),
     channels(),

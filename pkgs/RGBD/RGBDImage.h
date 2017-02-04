@@ -12,13 +12,14 @@ class RGBDImage {
 public:
   // Constructors/destructors
   RGBDImage(void);
-  RGBDImage(const char *color_filename, const char *depth_filename, const R3Matrix& intrinisics, const R4Matrix& extrinsics);
+  RGBDImage(const char *color_filename, const char *depth_filename,
+    const R3Matrix& intrinisics, const R4Matrix& extrinsics);
   virtual ~RGBDImage(void);
 
   // Configuration access functions
   RGBDConfiguration *Configuration(void) const;
   int ConfigurationIndex(void) const;
-  
+
   // Channel access functions
   int NChannels(void) const;
   R2Grid *Channel(int k) const;
