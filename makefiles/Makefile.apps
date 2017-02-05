@@ -73,7 +73,7 @@ debug:
 	    $(MAKE) $(EXE) "CFLAGS=$(DEBUG_CFLAGS)" "LDFLAGS=$(DEBUG_LDFLAGS)"
 
 mesa:
-	    $(MAKE) $(EXE) "CFLAGS=$(OPT_CFLAGS) -DUSE_MESA" "LDFLAGS=$(OPT_LDFLAGS)" "LIBS=$(LIBS) -lOSMesa"
+	    $(MAKE) $(EXE) "CFLAGS=$(OPT_CFLAGS) -DUSE_MESA" "LDFLAGS=$(OPT_LDFLAGS)" "LIBS=$(PKG_LIBS) $(USER_LIBS) -lOSMesa $(OPENGL_LIBS)"
 
 $(EXE):	    $(OBJS) $(LIB_DIR)/*.a
 	    mkdir -p $(EXE_DIR)
