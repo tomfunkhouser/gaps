@@ -16,9 +16,11 @@ public:
   // Parameter manipulation functions
   void SetUndistortedParameters(void);
 
-  // Input functions
+  // Input/output functions
   int ReadScanNetFile(const char *filename);
   int ReadMatterportFile(const char *filename);
+  int WriteScanNetFile(const char *filename) const;
+  int WriteMatterportFile(const char *filename) const;
 
 public:
   // Input data

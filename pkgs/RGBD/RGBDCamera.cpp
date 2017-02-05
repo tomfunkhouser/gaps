@@ -142,6 +142,10 @@ SetUndistortedParameters(void)
 
 
 
+////////////////////////////////////////////////////////////////////////
+// ScanNet i/o functions
+////////////////////////////////////////////////////////////////////////
+
 int RGBDCamera::
 ReadScanNetFile(const char *filename)
 {
@@ -218,6 +222,62 @@ ReadScanNetFile(const char *filename)
 
 
 int RGBDCamera::
+WriteScanNetFile(const char *filename) const
+{
+  // Open camera file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    return 0;
+  }
+
+  // Write camera file
+  R4Matrix yzflip(1, 0, 0, 0,  0, -1, 0, 0,  0, 0, -1, 0,  0, 0, 0, 1);
+  R4Matrix m = yzflip.Inverse() * depthToColorExtrinsics * yzflip.Inverse();
+  if (depthToColorExtrinsics.IsIdentity()) m = R4identity_matrix;
+  fprintf(fp, "colorWidth = %d\n", colorWidth);
+  fprintf(fp, "colorHeight = %d\n", colorHeight); 
+  fprintf(fp, "depthWidth = %d\n", depthWidth);  
+  fprintf(fp, "depthHeight = %d\n", depthHeight); 
+  fprintf(fp, "fx_color = %g\n", fx_color);
+  fprintf(fp, "fy_color = %g\n", fy_color);
+  fprintf(fp, "mx_color = %g\n", mx_color); 
+  fprintf(fp, "my_color = %g\n", colorHeight - my_color - 1); 
+  fprintf(fp, "fx_depth = %g\n", fx_depth); 
+  fprintf(fp, "fy_depth = %g\n", fy_depth); 
+  fprintf(fp, "mx_depth = %g\n", mx_depth); 
+  fprintf(fp, "my_depth = %g\n", depthHeight - my_depth - 1); 
+  fprintf(fp, "k1_color = %g\n", k1_color); 
+  fprintf(fp, "k2_color = %g\n", k2_color); 
+  fprintf(fp, "k1_depth = %g\n", k1_depth); 
+  fprintf(fp, "k2_depth = %g\n", k2_depth); 
+  fprintf(fp, "deviceId = %s\n", deviceId);
+  fprintf(fp, "deviceName = %s\n", deviceName);
+  fprintf(fp, "sceneLabel = %s\n", sceneLabel);
+  fprintf(fp, "sceneType = %s\n", sceneType);
+  fprintf(fp, "numDepthFrames = %d\n", numDepthFrames);
+  fprintf(fp, "numColorFrames = %d\n", numColorFrames);
+  fprintf(fp, "numIMUmeasurements = %d\n", numIMUmeasurements);
+  fprintf(fp, "depthToColorExtrinsics = %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", 
+     m[0][0], m[0][1], m[0][2], m[0][3],
+     m[1][0], m[1][1], m[1][2], m[1][3],
+     m[2][0], m[2][1], m[2][2], m[2][3],
+     m[3][0], m[3][1], m[3][2], m[3][3]);
+
+  // Close camera file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Matterport i/o functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDCamera::
 ReadMatterportFile(const char *filename)
 {
   // Open camera file
@@ -270,6 +330,34 @@ ReadMatterportFile(const char *filename)
 }
 
 
+
+int RGBDCamera::
+WriteMatterportFile(const char *filename) const
+{
+  // Open camera file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    return 0;
+  }
+
+  // Write intrinsics file
+  fprintf(fp, "%d %d %g %g %g %g %g %g %g %g %g\n", 
+    colorWidth, colorHeight, fx_color, fy_color, mx_color, my_color,
+    k1_color, k2_color, p1_color, p2_color, k3_color);
+
+  // Close camera file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Processing utility functions
+////////////////////////////////////////////////////////////////////////
 
 int RGBDUndistortAndScaleColorChannel(
   const RGBDCamera& input_camera, const RGBDCamera& output_camera,
