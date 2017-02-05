@@ -363,6 +363,11 @@ int RGBDUndistortAndScaleColorChannel(
   const RGBDCamera& input_camera, const RGBDCamera& output_camera,
   const R2Grid& input_image, R2Grid& output_image)
 {
+  // Check output camera
+  assert((output_camera.k1_color == 0) && (output_camera.k2_color == 0) &&
+         (output_camera.k3_color == 0) && (output_camera.k4_color == 0) &&
+         (output_camera.p1_color == 0) && (output_camera.p2_color == 0));
+
   // Get convenient variables
   if ((input_camera.colorWidth == 0) || (input_camera.colorHeight == 0)) return 0;
   if ((output_camera.colorWidth == 0) || (output_camera.colorHeight == 0)) return 0;
@@ -401,13 +406,17 @@ int RGBDUndistortAndScaleColorChannel(
       
       // Compute coordinates in distorted input image
       R2Point distorted_input_position(undistorted_input_position);
-      if ((input_camera.k1_color != 0.0) || (input_camera.k2_color != 0.0) || (input_camera.k3_color != 0.0) || (input_camera.k4_color != 0.0)) {
+      if ((input_camera.k1_color != 0.0) || (input_camera.k2_color != 0.0) ||
+          (input_camera.k3_color != 0.0) || (input_camera.k4_color != 0.0) ||
+          (input_camera.p1_color != 0.0) || (input_camera.k2_color != 0.0)) {
         double nx = (undistorted_input_position.X() - input_camera.mx_color) / input_camera.fx_color;
         double ny = (undistorted_input_position.Y() - input_camera.my_color) / input_camera.fy_color;
         double rr = nx*nx + ny*ny; double rrrr = rr*rr;
-        double s = 1.0 + rr*input_camera.k1_color + rrrr*input_camera.k2_color + rrrr*rr*input_camera.k3_color + rrrr*rrrr*input_camera.k4_color;
-        double x = s*nx*input_camera.fx_color + input_camera.mx_color;
-        double y = s*ny*input_camera.fy_color + input_camera.my_color;
+        double s = 1.0 + rr*input_camera.k1_depth + rrrr*input_camera.k2_depth + rrrr*rr*input_camera.k3_depth + rrrr*rrrr*input_camera.k4_depth;
+        nx = s*nx + input_camera.p1_color*(rr + 2*nx*nx) + 2*input_camera.p2_color*nx*ny;
+        ny = s*ny + input_camera.p2_color*(rr + 2*ny*ny) + 2*input_camera.p1_color*nx*ny;
+        double x = nx*input_camera.fx_color + input_camera.mx_color;
+        double y = ny*input_camera.fy_color + input_camera.my_color;
         distorted_input_position.Reset(x, y);
       }
 
@@ -440,6 +449,12 @@ int RGBDUndistortScaleAndWarpDepthChannel(
    const RGBDCamera& input_camera, RGBDCamera& output_camera,
    const R2Grid& input_image, R2Grid& output_image)
 {
+  // Check output camera
+  assert((output_camera.k1_depth == 0) && (output_camera.k2_depth == 0) &&
+         (output_camera.k3_depth == 0) && (output_camera.k4_depth == 0) &&
+         (output_camera.p1_depth == 0) && (output_camera.p2_depth == 0) &&
+         (output_camera.depthToColorExtrinsics.IsIdentity()));
+
   // Check inputs
   if ((input_camera.depthWidth == 0) || (input_camera.depthHeight == 0)) return 0;
   if ((output_camera.depthWidth == 0) || (output_camera.depthHeight == 0)) return 0;
@@ -479,13 +494,17 @@ int RGBDUndistortScaleAndWarpDepthChannel(
       // Compute coordinates in distorted input image
       // Note that this ignores p1 and p2
       R2Point distorted_input_position(undistorted_input_x, undistorted_input_y);
-      if ((input_camera.k1_depth != 0.0) || (input_camera.k2_depth != 0.0) || (input_camera.k3_depth != 0.0) || (input_camera.k3_depth != 0.0)) {
+      if ((input_camera.k1_depth != 0.0) || (input_camera.k2_depth != 0.0) ||
+          (input_camera.k3_depth != 0.0) || (input_camera.k3_depth != 0.0) ||
+          (input_camera.p1_depth != 0.0) || (input_camera.p2_depth != 0.0)) {
         double nx = (undistorted_input_x - input_camera.mx_depth) / input_camera.fx_depth;
         double ny = (undistorted_input_y - input_camera.my_depth) / input_camera.fy_depth;
-        double rr = nx*nx + ny*ny;
-        double s = 1.0 + rr*input_camera.k1_depth + rr*rr*input_camera.k2_depth + rr*rr*rr*input_camera.k3_depth + rr*rr*rr*rr*input_camera.k4_depth;
-        double x = s*nx*input_camera.fx_depth + input_camera.mx_depth;
-        double y = s*ny*input_camera.fy_depth + input_camera.my_depth;
+        double rr = nx*nx + ny*ny; double rrrr = rr*rr;
+        double s = 1.0 + rr*input_camera.k1_depth + rrrr*input_camera.k2_depth + rrrr*rr*input_camera.k3_depth + rrrr*rrrr*input_camera.k4_depth;
+        nx = s*nx + input_camera.p1_depth*(rr + 2*nx*nx) + 2*input_camera.p2_depth*nx*ny;
+        ny = s*ny + input_camera.p2_depth*(rr + 2*ny*ny) + 2*input_camera.p1_depth*nx*ny;
+        double x = nx*input_camera.fx_depth + input_camera.mx_depth;
+        double y = ny*input_camera.fy_depth + input_camera.my_depth;
         distorted_input_position.Reset(x, y);
       }
 
