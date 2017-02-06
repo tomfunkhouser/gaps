@@ -663,24 +663,7 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   }
   else {
     // Read surfels one by one and element by element
-    if ((major_version == 2) && (minor_version == 1)) {
-      for (int i = 0; i < count; i++) {
-        float position[3];
-        float normal[3];
-        float radius;
-        unsigned char color_and_flags[4];
-        fread(position, sizeof(float), 3, fp);
-        fread(normal, sizeof(float), 3, fp);
-        fread(&radius, sizeof(float), 1, fp);
-        fread(color_and_flags, sizeof(unsigned char), 4, fp);
-        ptr[i].SetCoords(position);
-        ptr[i].SetNormal(normal);
-        ptr[i].SetRadius(radius);
-        ptr[i].SetColor(color_and_flags);
-        ptr[i].SetFlags(color_and_flags[3]);
-      }
-    }
-    else if (major_version < 2) {
+    if (major_version < 2) {
       for (int i = 0; i < count; i++) {
         float position[3];
         unsigned char color_and_flags[4];

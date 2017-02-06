@@ -93,15 +93,6 @@ operator=(const R3SurfelPoint& point)
 
 
 void R3SurfelPoint::
-SetID(int id)
-{
-  // Set scan index
-  block->SetSurfelID(block->SurfelIndex(surfel), id);
-}
-
-
-
-void R3SurfelPoint::
 SetPosition(const R3Point& position)
 {
   // Set position

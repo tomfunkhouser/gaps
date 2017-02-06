@@ -37,7 +37,6 @@ public:
   float Radius(void) const;
 
   // Other property functions
-  int ID(void) const;
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
   RNBoolean IsAerial(void) const;
@@ -60,7 +59,6 @@ public:
   R3SurfelPoint& operator=(const R3SurfelPoint& point);
 
   // Manipulation functions
-  void SetID(int id);
   void SetPosition(const R3Point& position);
   void SetNormal(const R3Vector& normal);
   void SetColor(const RNRgb& color);
@@ -235,15 +233,6 @@ Rgb(void) const
   // Return RGB
   return surfel->Rgb();
 }
-
-
-inline int R3SurfelPoint::
-ID(void) const
-{
-  // Return scan index
-  return surfel->ID();
-}
-
 
 
 inline RNBoolean R3SurfelPoint::

@@ -86,7 +86,6 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     surfel->SetNormal(normal[0], normal[1], normal[2]);
     surfel->SetColor(point->Color());
     surfel->SetRadius(point->Radius());
-    surfel->SetID(point->ID());
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
 }
@@ -120,7 +119,6 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
     surfel->SetNormal(normal[0], normal[1], normal[2]);
     surfel->SetColor(point->Color());
     surfel->SetRadius(point->Radius());
-    surfel->SetID(point->ID());
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
 }
@@ -405,24 +403,6 @@ SetOrigin(const R3Point& origin)
 {
   // Set origin
   this->origin = origin;
-}
-
-
-
-void R3SurfelBlock::
-SetSurfelID(int surfel_index, int id)
-{
-  // Check if surfels are resident
-  if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
-    abort();
-  }
-
-  // Set surfel scan inddex
-  surfels[surfel_index].SetID(id);
-
-  // Remember that block is dirty
-  SetDirty();
 }
 
 

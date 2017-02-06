@@ -75,6 +75,10 @@ public:
   //// IMAGE GENERATION FUNCTIONS ////
   ////////////////////////////////////
 
+  // Projection from world into image
+  R2Point ImagePosition(const R3Point& world_position) const;
+
+  // Projection of all points into image
   int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
     R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
     R2Grid *label_image = NULL, R2Grid *object_image = NULL,
@@ -154,14 +158,6 @@ protected:
   RNFlags flags;
   void *data;
 };
-
-
-
-////////////////////////////////////////////////////////////////////////
-// CONSTANT DEFINITIONS
-////////////////////////////////////////////////////////////////////////
-
-#define R3_SURFEL_SCAN_ID_FLAG                        0x10000
 
 
 

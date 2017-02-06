@@ -67,7 +67,6 @@ public:
   ///////////////////////////////////
 
   // Surfel property functions
-  int SurfelID(int surfel_index) const;
   R3Point SurfelPosition(int surfel_index) const;
   R3Vector SurfelNormal(int surfel_index) const;
   RNLength SurfelRadius(int surfel_index) const;
@@ -98,7 +97,6 @@ public:
   ///////////////////////////////////////
 
   // Surfel manipulation functions
-  void SetSurfelID(int surfel_index, int id);
   void SetSurfelPosition(int surfel_index, const R3Point& position);
   void SetSurfelNormal(int surfel_index, const R3Vector& normal);
   void SetSurfelRadius(int surfel_index, RNLength radius);
@@ -340,16 +338,6 @@ SurfelIndex(const R3Surfel *surfel) const
   int index = surfel - surfels;
   assert((index >= 0) && (index < nsurfels));
   return index;
-}
-
-
-
-inline int R3SurfelBlock::
-SurfelID(int surfel_index) const
-{
-  // Return ID of kth surfel
-  R3Surfel& surfel = surfels[surfel_index];
-  return surfel.ID();
 }
 
 

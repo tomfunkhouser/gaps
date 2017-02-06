@@ -43,7 +43,6 @@ public:
   float Radius(void) const;
 
   // Other property functions
-  int ID(void) const;
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
   RNBoolean IsAerial(void) const;
@@ -56,7 +55,6 @@ public:
   unsigned char Flags(void) const;
 
   // Manipulation functions
-  void SetID(int id);
   void SetCoords(float x, float y, float z);
   void SetCoords(const float *xyz);
   void SetNormal(float x, float y, float z);
@@ -88,7 +86,6 @@ public:
 
 private:
   // Internal data
-  RNUInt32 id;
   RNScalar32 position[3];
   RNInt16 normal[3]; // x 2^15-1 (32767)
   RNUInt16 radius; // x 2^13 (8192)
@@ -252,15 +249,6 @@ Rgb(void) const
 
 
 
-inline int R3Surfel::
-ID(void) const
-{
-  // Return id
-  return id;
-}
-
-
-
 inline RNBoolean R3Surfel::
 IsActive(void) const
 {
@@ -347,15 +335,6 @@ Flags(void) const
 {
   // Return bit-encoded status flags
   return flags;
-}
-
-
-
-inline void R3Surfel::
-SetID(int id)
-{
-  // Set id
-  this->id = id;
 }
 
 
