@@ -413,8 +413,8 @@ int RGBDUndistortAndScaleColorChannel(
         double ny = (undistorted_input_position.Y() - input_camera.my_color) / input_camera.fy_color;
         double rr = nx*nx + ny*ny; double rrrr = rr*rr;
         double s = 1.0 + rr*input_camera.k1_depth + rrrr*input_camera.k2_depth + rrrr*rr*input_camera.k3_depth + rrrr*rrrr*input_camera.k4_depth;
-        nx = s*nx + input_camera.p1_color*(rr + 2*nx*nx) + 2*input_camera.p2_color*nx*ny;
-        ny = s*ny + input_camera.p2_color*(rr + 2*ny*ny) + 2*input_camera.p1_color*nx*ny;
+        nx = s*nx + input_camera.p2_color*(rr + 2*nx*nx) + 2*input_camera.p1_color*nx*ny;
+        ny = s*ny + input_camera.p1_color*(rr + 2*ny*ny) + 2*input_camera.p2_color*nx*ny;
         double x = nx*input_camera.fx_color + input_camera.mx_color;
         double y = ny*input_camera.fy_color + input_camera.my_color;
         distorted_input_position.Reset(x, y);
@@ -501,8 +501,8 @@ int RGBDUndistortScaleAndWarpDepthChannel(
         double ny = (undistorted_input_y - input_camera.my_depth) / input_camera.fy_depth;
         double rr = nx*nx + ny*ny; double rrrr = rr*rr;
         double s = 1.0 + rr*input_camera.k1_depth + rrrr*input_camera.k2_depth + rrrr*rr*input_camera.k3_depth + rrrr*rrrr*input_camera.k4_depth;
-        nx = s*nx + input_camera.p1_depth*(rr + 2*nx*nx) + 2*input_camera.p2_depth*nx*ny;
-        ny = s*ny + input_camera.p2_depth*(rr + 2*ny*ny) + 2*input_camera.p1_depth*nx*ny;
+        nx = s*nx + input_camera.p2_depth*(rr + 2*nx*nx) + 2*input_camera.p1_depth*nx*ny;
+        ny = s*ny + input_camera.p1_depth*(rr + 2*ny*ny) + 2*input_camera.p2_depth*nx*ny;
         double x = nx*input_camera.fx_depth + input_camera.mx_depth;
         double y = ny*input_camera.fy_depth + input_camera.my_depth;
         distorted_input_position.Reset(x, y);
