@@ -60,14 +60,3 @@ public:
 
 
 
-// Utility functions
-
-extern int RGBDUndistortAndScaleColorChannel(
-  const RGBDCamera& input_camera, const RGBDCamera& output_camera,
-  const R2Grid& input_image, R2Grid& output_image);
-
-extern int RGBDUndistortScaleAndWarpDepthChannel(
-  const RGBDCamera& input_camera, RGBDCamera& output_camera,
-  const R2Grid& input_image, R2Grid& output_image);
-
-  

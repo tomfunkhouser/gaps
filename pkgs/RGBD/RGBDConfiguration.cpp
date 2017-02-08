@@ -90,7 +90,9 @@ InsertImage(RGBDImage *image)
   images.Insert(image);
 
   // Update bounding box
+  // This is a hack for images that are not in memory
   if (!image->world_bbox.IsEmpty()) world_bbox.Union(image->world_bbox);
+  else world_bbox.Union(image->WorldViewpoint());
 }
 
 

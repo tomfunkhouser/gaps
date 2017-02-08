@@ -14,7 +14,7 @@ CCSRCS=RGBD.cpp \
     RGBDTransform.cpp \
     RGBDConfiguration.cpp \
     RGBDSurface.cpp RGBDImage.cpp \
-    RGBDCamera.cpp
+    RGBDCamera.cpp RGBDUtil.cpp
 
 
 #

@@ -33,6 +33,10 @@ class RGBDConfiguration;
 #define RGBD_BLUE_CHANNEL   2
 #define RGBD_DEPTH_CHANNEL  3
 
+#define RGBD_BORDER_BOUNDARY        0x1
+#define RGBD_SILHOUETTE_BOUNDARY    0x2
+#define RGBD_SHADOW_BOUNDARY        0x4
+
 #define RGBD_NO_COLOR_SCHEME          0
 #define RGBD_PHOTO_COLOR_SCHEME       1
 #define RGBD_RENDER_COLOR_SCHEME      2
@@ -54,6 +58,7 @@ class RGBDConfiguration;
 #include "RGBDSurface.h"
 #include "RGBDConfiguration.h"
 #include "RGBDTransform.h"
+#include "RGBDUtil.h"
 
 
 
