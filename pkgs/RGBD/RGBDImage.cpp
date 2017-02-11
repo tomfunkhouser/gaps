@@ -581,7 +581,7 @@ DrawQuads(int color_scheme, int skip) const
       if (!RGBDTransformImageToWorld(R2Point(ix+skip, iy+skip), p3, this)) continue;
       if (!RGBDTransformImageToWorld(R2Point(ix, iy+skip), p4, this)) continue;
       R3Plane planeA(p1, p2, p3);
-      if (planeA.Normal().Dot(WorldTowards()) < -0.7) {
+      if (planeA.Normal().Dot(WorldTowards()) < -0.25) {
         if (!c) R3LoadNormal(planeA.Normal());
         if (c) RNLoadRgb(PixelColor(ix, iy));
         R3LoadPoint(p1);
@@ -591,7 +591,7 @@ DrawQuads(int color_scheme, int skip) const
         R3LoadPoint(p3);
       }
       R3Plane planeB(p1, p3, p4);
-      if (planeB.Normal().Dot(WorldTowards()) < -0.7) {
+      if (planeB.Normal().Dot(WorldTowards()) < -0.25) {
         if (!c) R3LoadNormal(planeB.Normal());
         if (c) RNLoadRgb(PixelColor(ix, iy));
         R3LoadPoint(p1);

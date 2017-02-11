@@ -128,6 +128,38 @@ Check(const R3Point& point) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// NORMAL CONSTRAINT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelNormalConstraint::
+R3SurfelNormalConstraint(const R3Vector& direction, RNAngle max_angle)
+{
+  // Remember reference vector
+  this->direction[0] = direction.X();
+  this->direction[1] = direction.Y();
+  this->direction[2] = direction.Z();
+
+  // Compute min dot product
+  this->min_dot = cos(max_angle);
+}
+
+
+
+int R3SurfelNormalConstraint::
+Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
+{
+  // Return whether surfel normal is within max_angle of reference
+  RNScalar dot = 0.0;
+  dot += surfel->NX() * direction[0];
+  dot += surfel->NY() * direction[1];
+  dot += surfel->NZ() * direction[2];
+  if (dot < min_dot) return R3_SURFEL_CONSTRAINT_FAIL;
+  return R3_SURFEL_CONSTRAINT_PASS;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // BOX CONSTRAINT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 

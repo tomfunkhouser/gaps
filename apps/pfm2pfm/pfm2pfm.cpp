@@ -5,6 +5,7 @@
 // Include files 
 
 #include "R2Shapes/R2Shapes.h"
+#include "RNMath/RNMath.h"
 
 
 
@@ -73,6 +74,7 @@ typedef enum {
   OVERLAY_GRID_OPERATION,
   THRESHOLD_GRID_OPERATION,
   SUN3D_BITSHIFT_OPERATION,
+  POISSON_OPERATION,
   TMP_OPERATION,
   NUM_OPERATIONS
 } OperationType;
@@ -288,6 +290,81 @@ FlattenGrid(R2Grid *grid, RNScalar delta, RNScalar sigma)
 }
 
 
+void 
+Poisson(R2Grid *grid, R2Grid *dx_grid, R2Grid *dy_grid)
+{
+  // Create system of equations
+  int n = grid->NEntries();
+  int nx = grid->XResolution();
+  RNSystemOfEquations equations(n);
+  
+  // Add inertia equations
+  RNScalar inertia_weight = 1.0E-3;
+  for (int i = 0; i < n; i++) {
+    RNScalar d = grid->GridValue(i);
+    RNPolynomial *f = new RNPolynomial(1.0, i, 1.0);
+    RNAlgebraic *e = new RNAlgebraic(RN_SUBTRACT_OPERATION, f, d);
+    e->Multiply(inertia_weight);
+    equations.InsertEquation(e);
+  }
+
+  // Add dx equations
+  RNScalar dx_weight = 1.0;
+  for (int iy = 1; iy < grid->YResolution()-1; iy++) {
+    for (int ix = 1; ix < grid->XResolution()-1; ix++) {
+      RNScalar dx = dx_grid->GridValue(ix, iy);
+      RNPolynomial *e = new RNPolynomial();
+      e->AddTerm(-0.25, (iy-1)*nx+(ix-1), 1.0);
+      e->AddTerm(-0.50, (iy)*nx+(ix-1), 1.0);
+      e->AddTerm(-0.25, (iy+1)*nx+(ix-1), 1.0);
+      e->AddTerm( 0.25, (iy-1)*nx+(ix+1), 1.0);
+      e->AddTerm( 0.50, (iy)*nx+(ix+1), 1.0);
+      e->AddTerm( 0.25, (iy+1)*nx+(ix+1), 1.0);
+      e->Subtract(dx);
+      e->Multiply(dx_weight);
+      equations.InsertEquation(e);
+    }
+  }
+  
+  // Add dy equations
+  RNScalar dy_weight = 1.0;
+  for (int iy = 1; iy < grid->YResolution()-1; iy++) {
+    for (int ix = 1; ix < grid->XResolution()-1; ix++) {
+      RNScalar dy = dy_grid->GridValue(ix, iy);
+      RNPolynomial *e = new RNPolynomial();
+      e->AddTerm(-0.25, (iy-1)*nx+(ix-1), 1.0);
+      e->AddTerm(-0.50, (iy-1)*nx+(ix), 1.0);
+      e->AddTerm(-0.25, (iy-1)*nx+(ix+1), 1.0);
+      e->AddTerm( 0.25, (iy+1)*nx+(ix-1), 1.0);
+      e->AddTerm( 0.50, (iy+1)*nx+(ix), 1.0);
+      e->AddTerm( 0.25, (iy+1)*nx+(ix+1), 1.0);
+      e->Subtract(dy);
+      e->Multiply(dy_weight);
+      equations.InsertEquation(e);
+    }
+  }
+  
+  // Initialize variables
+  double *x = new double [ n ];
+  for (int i = 0; i < n; i++) x[i] = grid->GridValue(i);
+
+  // Solve system of equations
+  if (equations.NEquations() >= n) {
+    if (!equations.Minimize(x, RN_CSPARSE_SOLVER, 1E-3)) {
+      fprintf(stderr, "Unable to minimize system of equations\n");
+      delete [] x;
+      return;
+    }
+  }
+
+  // Copy solution into grid
+  for (int i = 0; i < n; i++) grid->SetGridValue(i, x[i]);
+
+  // Delete variables
+  delete [] x;
+}
+
+
 struct LineSegment {
   LineSegment(R2Point p1, R2Point p2, RNScalar score) : p1(p1), p2(p2), score(score) {};
   R2Point p1, p2;
@@ -356,6 +433,7 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
 
     // Read grid operand
     R2Grid *grid1 = NULL;
+    R2Grid *grid2 = NULL;
     switch (operation->type) {
     case ADD_GRID_OPERATION: 
     case SUBTRACT_GRID_OPERATION: 
@@ -369,6 +447,20 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
         fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
         return 0;
       }
+      break;
+
+    case POISSON_OPERATION: 
+      grid1 = ReadGrid(operation->operand1);
+      if (!grid1) {
+        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
+        return 0;
+      }
+      grid2 = ReadGrid(operation->operand2);
+      if (!grid2) {
+        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand2, i);
+        return 0;
+      }
+      break;
     }
 
     // Apply operation
@@ -430,6 +522,7 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
     case MASK_GRID_OPERATION: grid->Mask(*grid1); break;
     case OVERLAY_GRID_OPERATION: grid->Overlay(*grid1); break;
     case SUN3D_BITSHIFT_OPERATION: SUN3DBitshift(grid); break;
+    case POISSON_OPERATION: Poisson(grid, grid1, grid2); break;
     case TMP_OPERATION: Tmp(grid); break;
 
     case REFINE_OPERATION: {
@@ -902,6 +995,13 @@ ParseArgs(int argc, char **argv)
         assert(noperations < max_operations);
         Operation *operation = &operations[noperations++];
         operation->type = SUN3D_BITSHIFT_OPERATION;
+      }
+      else if (!strcmp(*argv, "-poisson")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = POISSON_OPERATION;
+        argc--; argv++; operation->operand1 = *argv; 
+        argc--; argv++; operation->operand2 = *argv; 
       }
       else if (!strcmp(*argv, "-tmp")) {
         assert(noperations < max_operations);

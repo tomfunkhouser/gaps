@@ -170,10 +170,10 @@ inline R2Grid *RGBDImage::
 Channel(int channel_index) const
 {
   // Check channel
-  if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD Channel is not resident in memory -- cannot get it\n");
-    return NULL;
-  }
+  if (channel_index >= channels.NEntries()) return NULL;
+  
+  // Check channel
+  if (!channels[channel_index]) return NULL;
   
   // Return channel
   return channels[channel_index];

@@ -95,12 +95,14 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
     return 0;
   }
 
+#if 0
   // Read all channels ... for now
   if (!configuration.ReadChannels()) {
     fprintf(stderr, "Unable to read channels for %s\n", filename);
     return 0;
   }
-
+#endif
+  
   // Set texel spacing if specified on command line                       
   if (texel_spacing > 0) {
     for (int i = 0; i < configuration.NSurfaces(); i++) {
@@ -217,6 +219,9 @@ ReadOverlapMatrix(RGBDConfiguration& configuration, const char *filename)
     return 0;
   }
 
+  // Apply scale factor if png
+  if (strstr(filename, ".png")) image_image_overlaps->Multiply(0.001);
+
   // Print statistics
   if (print_verbose) {
     printf("Read overlaps from %s ...\n", filename);
@@ -268,6 +273,15 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
     return 0;
   }
 
+  // Allocate matrix of image image overlaps
+  if (!image_image_overlaps) {
+    image_image_overlaps = new R2Grid(configuration.NImages(), configuration.NImages());
+    if (!image_image_overlaps) {
+      fprintf(stderr, "Unable to allocate image image overlap matrix\n");
+      return 0;
+    }
+  }
+
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
@@ -295,7 +309,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
         return 0;
       }
     }
-    else if (!strcmp(cmd, "V")) {
+    else if (!strcmp(cmd, "VI")) {
       // Read vertex to image overlaps
       int vertex_index, noverlaps;
       double px, py, pz, nx, ny, nz;
@@ -347,7 +361,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
         count++;
       }
     }
-    else if (!strcmp(cmd, "I")) {
+    else if (!strcmp(cmd, "IV")) {
       // Read image to vertex overlaps
       int image_index, noverlaps;
       if (fscanf(fp, "%d%d", &image_index, &noverlaps) != (unsigned int) 2) {
@@ -397,6 +411,21 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
         count++;
       }
     }
+    else if (!strcmp(cmd, "II")) {
+      // Read image to image overlap
+      RNScalar fraction;
+      int image_index1, image_index2, noverlaps;
+      if (fscanf(fp, "%d%d%d%lf", &image_index1, &image_index2, &noverlaps, &fraction) != (unsigned int) 4) {
+        fprintf(stderr, "Unable to read line in %s\n", filename);
+        return 0;
+      }
+
+      // Assign entry in image image overlap matrix
+      image_image_overlaps->SetGridValue(image_index1, image_index2, fraction);
+
+      // Increment count
+      count++;
+    }        
   }
 
   // Close file
@@ -439,6 +468,7 @@ DrawImages(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
   // Draw images
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
+    if (!image->RedChannel()) continue;
     int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
     if (i == selected_image_index) image->DrawImage(c);
   }
@@ -452,6 +482,7 @@ DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
   // Draw pixels of all images as points in world space
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
+    if (!image->DepthChannel()) continue;
     int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
     image->DrawPoints(c, skip);
   }
@@ -465,6 +496,7 @@ DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
   // Draw pixels of all images as quads in world space
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
+    if (!image->DepthChannel()) continue;
     int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
     image->DrawQuads(c, skip);
   }
@@ -529,38 +561,41 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
 {
   // Check stuff
   if (selected_image_index < 0) return;
-  if (configuration.NSurfaces() == 0) return;
   
   // Draw vertex image overlaps
   if (vertex_image_overlaps) {
-    glPointSize(3);
-    glBegin(GL_POINTS);
-    RGBDSurface *surface = configuration.Surface(0);
-    R3Mesh *mesh = surface->mesh;
-    for (int i = 0; i < mesh->NVertices(); i++) {
-      R3MeshVertex *vertex = mesh->Vertex(i);
-      for (int j = 0; j < vertex_image_overlaps[i].NEntries(); j++) {
-        RGBDImage *image = vertex_image_overlaps[i][j];
-        if (image->ConfigurationIndex() != selected_image_index) continue;
-        R3LoadPoint(mesh->VertexPosition(vertex));
+    if (configuration.NSurfaces() > 0) {
+      glPointSize(3);
+      glBegin(GL_POINTS);
+      RGBDSurface *surface = configuration.Surface(0);
+      R3Mesh *mesh = surface->mesh;
+      for (int i = 0; i < mesh->NVertices(); i++) {
+        R3MeshVertex *vertex = mesh->Vertex(i);
+        for (int j = 0; j < vertex_image_overlaps[i].NEntries(); j++) {
+          RGBDImage *image = vertex_image_overlaps[i][j];
+          if (image->ConfigurationIndex() != selected_image_index) continue;
+          R3LoadPoint(mesh->VertexPosition(vertex));
+        }
       }
+      glEnd();
+      glPointSize(1);
     }
-    glEnd();
-    glPointSize(1);
   }
 
   // Draw vertex image overlaps
   if (image_vertex_overlaps) {
-    glPointSize(3);
-    glBegin(GL_POINTS);
-    RGBDSurface *surface = configuration.Surface(0);
-    R3Mesh *mesh = surface->mesh;
-    for (int j = 0; j < image_vertex_overlaps[selected_image_index].NEntries(); j++) {
-      R3MeshVertex *vertex = image_vertex_overlaps[selected_image_index][j];
-      R3LoadPoint(mesh->VertexPosition(vertex));
+    if (configuration.NSurfaces() > 0) {
+      glPointSize(3);
+      glBegin(GL_POINTS);
+      RGBDSurface *surface = configuration.Surface(0);
+      R3Mesh *mesh = surface->mesh;
+      for (int j = 0; j < image_vertex_overlaps[selected_image_index].NEntries(); j++) {
+        R3MeshVertex *vertex = image_vertex_overlaps[selected_image_index][j];
+        R3LoadPoint(mesh->VertexPosition(vertex));
+      }
+      glEnd();
+      glPointSize(1);
     }
-    glEnd();
-    glPointSize(1);
   }
 
   // Draw image image overlaps
@@ -969,8 +1004,8 @@ void GLUTRedraw(void)
   if (show_images) DrawImages(color_scheme);
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
-  if (show_points) DrawPoints(color_scheme);
-  if (show_quads) DrawQuads(color_scheme);
+  if (show_points) DrawPoints(color_scheme, 1);
+  if (show_quads) DrawQuads(color_scheme, 1);
   if (show_textures) DrawTextures(color_scheme);
   if (show_overlaps) DrawOverlaps();
   if (show_axes) DrawAxes();
@@ -1177,6 +1212,9 @@ void GLUTSpecial(int key, int x, int y)
 
 void GLUTKeyboard(unsigned char key, int x, int y)
 {
+  // Invert y coordinate
+  y = GLUTwindow_height - y;
+
   // Process keyboard button event 
   switch (key) {
   case '~': {
@@ -1251,6 +1289,16 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 't':
     show_textures = !show_textures;
     break;
+
+  case ' ': {
+    RGBDImage *selected_image = NULL;
+    if (Pick(x, y, NULL, &selected_image)) {
+      printf("HERE %d\n", selected_image->ConfigurationIndex());
+      if (!selected_image->DepthChannel()) selected_image->ReadChannels();
+      else selected_image->ReleaseChannels();
+      selected_image_index = selected_image->ConfigurationIndex();
+    }
+    break; }
 
   case 27: // ESCAPE
     GLUTStop();

@@ -15,10 +15,18 @@ CCSRCS=$(NAME).cpp
 
 
 #
+# Compile flags
+#
+
+USER_CFLAGS=-DRN_USE_CSPARSE
+
+
+
+#
 # Libraries
 #
 
-PKG_LIBS=-lR2Shapes -lRNBasics -ljpeg -lpng
+PKG_LIBS=-lR2Shapes -lRNMath -lRNBasics -ljpeg -lpng -lCSparse
 
 
 

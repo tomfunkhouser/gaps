@@ -84,6 +84,21 @@ private:
 
 
 
+class R3SurfelNormalConstraint : public R3SurfelConstraint {
+public:
+  // Constructor functions
+  R3SurfelNormalConstraint(const R3Vector& direction, RNAngle max_angle);
+
+  // Surfel check functions
+  virtual int Check(const R3SurfelBlock *block, const R3Surfel *surfel) const;
+
+private:
+  float direction[3];
+  float min_dot;
+};
+
+
+
 class R3SurfelBoxConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions
