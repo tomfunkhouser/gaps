@@ -70,6 +70,7 @@ static int show_faces = 1;
 static int show_edges = 0;
 static int show_vertices = 0;
 static int show_points = 0;
+static int show_normals = 0;
 static int show_matches = 0;
 static int show_backfacing = 0;
 static int show_point_order = 0;
@@ -199,21 +200,25 @@ void GLUTRedraw(void)
         glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material); 
         mesh->DrawVertices();
       }
-
-      // Draw normals
-      if (FALSE) {
-        glDisable(GL_LIGHTING);
-        glColor3f(1, 0, 0);
-        RNLength radius = 0.008 * model->bbox.LongestAxisLength();
-        for (int i = 0; i < mesh->NVertices(); i++) {
-          R3MeshVertex *vertex = mesh->Vertex(i);
-          const R3Point& position = mesh->VertexPosition(vertex);
-          const R3Vector& normal = mesh->VertexNormal(vertex);
-          R3Span(position, position + (4 * radius) * normal).Draw();
-        }
-      }
     }
 
+#if 1
+    // Draw points
+    if (points && show_points) {
+      glEnable(GL_LIGHTING);
+      glPointSize(3);
+      glBegin(GL_POINTS);
+      for (int i = 0; i < points->NEntries(); i++) {
+        Point *point = points->Kth(i);
+        int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
+        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, point_colors[point_color_index]);
+        R3LoadNormal(point->normal);
+        R3LoadPoint(point->position);
+      }
+      glEnd();
+      glPointSize(1);
+    }
+#else
     // Draw points
     if (points && show_points) {
       // Draw points
@@ -236,6 +241,22 @@ void GLUTRedraw(void)
           glDisable(GL_LIGHT2);
         }
       }
+    }
+#endif
+
+    // Draw point normals
+    if (points && show_normals) {
+      glDisable(GL_LIGHTING);
+      glBegin(GL_LINES);
+      RNLength radius = 0.008 * model->bbox.LongestAxisLength();
+      for (int i = 0; i < points->NEntries(); i++) {
+        Point *point = points->Kth(i);
+        int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
+        glColor4fv(point_colors[point_color_index]);
+        R3LoadPoint(point->position);
+        R3LoadPoint(point->position + radius*point->normal);
+      }
+      glEnd();
     }
 
     // Draw point names
@@ -438,6 +459,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_faces = !show_faces;
     break;
 
+  case 'I':
+  case 'i':
+    show_point_names = !show_point_names;
+    break;
+
   case 'M':
   case 'm':
     show_matches = !show_matches;
@@ -445,7 +471,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'N':
   case 'n':
-    show_point_names = !show_point_names;
+    show_normals = !show_normals;
     break;
 
   case 'O':
