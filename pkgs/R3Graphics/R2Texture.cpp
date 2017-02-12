@@ -243,7 +243,7 @@ Load(void) const
   else if (image->Depth() == 4) format = GL_RGBA;
   else RNAbort("Illegal texture image");
 
-#ifdef USE_MESA
+#ifdef AT_ONE_POINT_THIS_WAS_NEEDED_FOR_MESA
   // For some reason, gluBuild2DMipmaps segfaults in mesa
   glTexImage2D(GL_TEXTURE_2D, 0, format, image->Width(), image->Height(),
     0, format, GL_UNSIGNED_BYTE, (const unsigned char *) image->Pixels());
