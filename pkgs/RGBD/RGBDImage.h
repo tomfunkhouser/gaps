@@ -41,6 +41,7 @@ public:
   RNScalar PixelDepth(const R2Point& image_position) const;
   R3Point PixelWorldPosition(const R2Point& image_position) const;
   R3Vector PixelWorldNormal(const R2Point& image_position) const;
+  R3Ray PixelWorldRay(const R2Point& image_position) const;
   RNScalar PixelChannelValue(const R2Point& image_position, int channel_index) const;
 
   // Camera property functions

@@ -51,6 +51,7 @@ static RNArray<R3MeshVertex *> *image_vertex_overlaps = NULL;
 static char *screenshot_image_name = NULL;
 static int selected_surface_index = -1;
 static int selected_image_index = -1;
+static int snap_image_index = -1;
 static R2Point rubber_box_corners[2] = { R2Point(0,0), R2Point(0,0) };
 static RNBoolean rubber_box_active = FALSE;
 static int color_scheme = RGBD_PHOTO_COLOR_SCHEME;
@@ -455,8 +456,9 @@ DrawCameras(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw cameras
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
-    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    image->DrawCamera(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    image->DrawCamera(color_scheme);
   }
 }
 
@@ -469,36 +471,39 @@ DrawImages(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     if (!image->RedChannel()) continue;
-    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    if (i == selected_image_index) image->DrawImage(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    image->DrawImage(color_scheme);
   }
 }
 
 
 
 static void
-DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
+DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 {
   // Draw pixels of all images as points in world space
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     if (!image->DepthChannel()) continue;
-    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    image->DrawPoints(c, skip);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    image->DrawPoints(color_scheme, skip);
   }
 }
 
 
 
 static void
-DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10)
+DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 {
   // Draw pixels of all images as quads in world space
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     if (!image->DepthChannel()) continue;
-    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    image->DrawQuads(c, skip);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    image->DrawQuads(color_scheme, skip);
   }
 }
 
@@ -510,8 +515,9 @@ DrawBBoxes(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw pixels of all images as bboxs in world space
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
-    int c = (i == selected_image_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    image->DrawBBox(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    image->DrawBBox(color_scheme);
   }
 }
 
@@ -523,8 +529,9 @@ DrawFaces(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw surfaces
   for (int i = 0; i < configuration.NSurfaces(); i++) {
     RGBDSurface *surface = configuration.Surface(i);
-    int c = (i == selected_surface_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    surface->DrawFaces(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    surface->DrawFaces(color_scheme);
   }
 }
 
@@ -536,8 +543,9 @@ DrawEdges(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw surfaces
   for (int i = 0; i < configuration.NSurfaces(); i++) {
     RGBDSurface *surface = configuration.Surface(i);
-    int c = (i == selected_surface_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    surface->DrawEdges(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    surface->DrawEdges(color_scheme);
   }
 }
 
@@ -549,8 +557,9 @@ DrawTextures(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
   // Draw surfaces
   for (int i = 0; i < configuration.NSurfaces(); i++) {
     RGBDSurface *surface = configuration.Surface(i);
-    int c = (i == selected_surface_index) ? RGBD_HIGHLIGHT_COLOR_SCHEME : color_scheme;
-    surface->DrawTexture(c);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      color_scheme = RGBD_HIGHLIGHT_COLOR_SCHEME;
+    surface->DrawTexture(color_scheme);
   }
 }
 
@@ -711,6 +720,7 @@ Pick(int x, int y,
   glLineWidth(pick_tolerance);
   if (picked_image || !picked_surface) {
     if (show_cameras) DrawCameras(RGBD_INDEX_COLOR_SCHEME);
+    if (show_bboxes) DrawBBoxes(RGBD_INDEX_COLOR_SCHEME);
     if (show_points) DrawPoints(RGBD_INDEX_COLOR_SCHEME);
     if (show_quads) DrawQuads(RGBD_INDEX_COLOR_SCHEME);
   }
@@ -883,8 +893,9 @@ ResetViewer(void)
 
   // Initialize viewer
   RNLength r = bbox.DiagonalRadius();
-  R3Point eye = center - R3posy_vector * (2.5 * r);
-  R3Camera camera(eye, R3posy_vector, R3posz_vector, 0.4, 0.4, 0.01 * r, 100.0 * r);
+  if (r < 10) r = 10;
+  R3Point eye = center - R3negz_vector * (2.5 * r);
+  R3Camera camera(eye, R3negz_vector, R3posy_vector, 0.4, 0.4, 0.01 * r, 100.0 * r);
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   viewer.SetViewport(viewport);
   viewer.SetCamera(camera);
@@ -1004,8 +1015,8 @@ void GLUTRedraw(void)
   if (show_images) DrawImages(color_scheme);
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
-  if (show_points) DrawPoints(color_scheme, 1);
-  if (show_quads) DrawQuads(color_scheme, 1);
+  if (show_points) DrawPoints(color_scheme);
+  if (show_quads) DrawQuads(color_scheme);
   if (show_textures) DrawTextures(color_scheme);
   if (show_overlaps) DrawOverlaps();
   if (show_axes) DrawAxes();
@@ -1180,19 +1191,15 @@ void GLUTSpecial(int key, int x, int y)
   case GLUT_KEY_RIGHT:
     // Select next image
     if (configuration.NImages() > 0) {
-      if (key == GLUT_KEY_RIGHT) selected_image_index++;
-      else if (key == GLUT_KEY_LEFT) selected_image_index--;
-      if (selected_image_index < 0) selected_image_index = 0;
-      if (selected_image_index >= configuration.NImages()) selected_image_index = configuration.NImages()-1;
-      RGBDImage *selected_image = configuration.Image(selected_image_index);
-      R3Point viewpoint = selected_image->WorldViewpoint();
-      R3Vector towards = selected_image->WorldTowards();
-      R3Vector up = selected_image->WorldUp();
-      RNAngle xfov = selected_image->XFov();
-      RNAngle yfov = selected_image->YFov();
-      R3Camera camera(viewpoint, towards, up, xfov, yfov, 0.01, 100.0);
-      viewer.SetCamera(camera);
-      center = viewpoint + towards;
+      snap_image_index += (key == GLUT_KEY_RIGHT) ? 1 : -1;
+      if (snap_image_index < 0) snap_image_index = 0;
+      if (snap_image_index >= configuration.NImages()) snap_image_index = configuration.NImages()-1;
+      RGBDImage *snap_image = configuration.Image(snap_image_index);
+      for (int i = 0; i < configuration.NImages(); i++) {
+        RGBDImage *image = configuration.Image(i);
+        if (image == snap_image) { if (!image->DepthChannel()) image->ReadChannels(); }
+        else { if (image->DepthChannel()) image->ReleaseChannels(); }
+      }
     }
     break;
   }
@@ -1215,7 +1222,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   // Invert y coordinate
   y = GLUTwindow_height - y;
 
-  // Process keyboard button event 
+  // Process keyboard button event
   switch (key) {
   case '~': {
     // Dump screen shot to file iX.jpg
@@ -1224,6 +1231,20 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     sprintf(buffer, "i%d.jpg", image_count++);
     screenshot_image_name = buffer;
     break; }
+
+  case 1: // ctrl-A
+    for (int i = 0; i < configuration.NImages(); i++) {
+      RGBDImage *image = configuration.Image(i);
+      if (!image->DepthChannel()) image->ReadChannels();
+    }
+    break;
+
+  case 26: // ctrl-Z
+    for (int i = 0; i < configuration.NImages(); i++) {
+      RGBDImage *image = configuration.Image(i);
+      if (image->DepthChannel()) image->ReleaseChannels();
+    }
+    break;
 
   case 4: // ctrl-D
     DeleteSelectedSurface();
@@ -1290,10 +1311,19 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_textures = !show_textures;
     break;
 
+  case 'V':
+  case 'v':
+    if (snap_image_index >= 0) {
+      RGBDImage *snap_image = configuration.Image(snap_image_index);
+      viewer.RepositionCamera(snap_image->WorldViewpoint());
+      viewer.ReorientCamera(snap_image->WorldTowards(), snap_image->WorldUp());
+      center = snap_image->WorldViewpoint() + 3 * snap_image->WorldTowards();
+    }
+    break;
+      
   case ' ': {
     RGBDImage *selected_image = NULL;
     if (Pick(x, y, NULL, &selected_image)) {
-      printf("HERE %d\n", selected_image->ConfigurationIndex());
       if (!selected_image->DepthChannel()) selected_image->ReadChannels();
       else selected_image->ReleaseChannels();
       selected_image_index = selected_image->ConfigurationIndex();

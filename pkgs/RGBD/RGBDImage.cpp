@@ -168,6 +168,30 @@ PixelWorldPosition(const R2Point& image_position) const
 
 
 
+R3Ray RGBDImage::
+PixelWorldRay(const R2Point& image_position) const
+{
+  // Get/check intrinsics matrix
+  const R3Matrix& intrinsics_matrix = Intrinsics();
+  if (RNIsZero(intrinsics_matrix[0][0])) return R3null_ray;
+  if (RNIsZero(intrinsics_matrix[1][1])) return R3null_ray;
+
+  // Get point at depth 1.0 along ray in camera coordinates
+  R3Point camera_position;
+  camera_position[0] = (image_position[0] - intrinsics_matrix[0][2]) / intrinsics_matrix[0][0];
+  camera_position[1] = (image_position[1] - intrinsics_matrix[1][2]) / intrinsics_matrix[1][1];
+  camera_position[2] = -1.0;
+
+  // Create ray and transform into world coordinates
+  R3Ray ray(R3zero_point, camera_position);
+  ray.Transform(camera_to_world);
+
+  // Return ray through pixel in world coordinates
+  return ray;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Manipulation functions
 ////////////////////////////////////////////////////////////////////////
@@ -542,22 +566,63 @@ DrawImage(int color_scheme, RNLength depth) const
 void RGBDImage::
 DrawPoints(int color_scheme, int skip) const
 {
+  // Push transformation
+  Extrinsics().Push();
+
+  // Enable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_LIGHTING);
+  }
+
   // Draw color
   LoadColor(color_scheme);
 
+  // Set point size
+  glPointSize(2);
+
   // Draw points
-  glBegin(GL_POINTS);
-  R3Point world_position;
-  for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
-    for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
-      if (RGBDTransformImageToWorld(R2Point(ix+0.5, iy+0.5), world_position, this)) {
-        if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
-        else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+  if (color_scheme != RGBD_RENDER_COLOR_SCHEME) {
+    glBegin(GL_POINTS);
+    R3Point world_position;
+    for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
+      for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
+        if (RGBDTransformImageToCamera(R2Point(ix+0.5, iy+0.5), world_position, this)) {
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+          R3LoadPoint(world_position);
+        }
+      }
+    }
+    glEnd();
+  }
+  else {
+    glBegin(GL_POINTS);
+    R3Point world_position, p1, p2;
+    for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
+      for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
+        if (!RGBDTransformImageToCamera(R2Point(ix+0.5, iy+0.5), world_position, this)) continue;
+        if (!RGBDTransformImageToCamera(R2Point(ix+1, iy), p1, this)) continue;
+        if (!RGBDTransformImageToCamera(R2Point(ix, iy+1), p2, this)) continue;
+        R3Plane plane(world_position, p1, p2);
+        R3LoadNormal(plane.Normal());
         R3LoadPoint(world_position);
       }
     }
+    glEnd();
   }
-  glEnd();
+
+  // Reset point size
+  glPointSize(1);
+  
+  // Disable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+  }
+
+  // Pop transformation
+  Extrinsics().Pop();
 }
 
 
@@ -565,10 +630,17 @@ DrawPoints(int color_scheme, int skip) const
 void RGBDImage::
 DrawQuads(int color_scheme, int skip) const
 {
+  // Push transformation
+  Extrinsics().Push();
+
+  // Enable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_LIGHTING);
+  }
+
   // Draw color
-  RNBoolean c = FALSE;
-  if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) c = TRUE;
-  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) c = TRUE;
   LoadColor(color_scheme);
 
   // Draw quads
@@ -576,33 +648,52 @@ DrawQuads(int color_scheme, int skip) const
   for (int ix = 0; ix < NPixels(RN_X)-skip; ix += skip) {
     for (int iy = 0; iy < NPixels(RN_Y)-skip; iy += skip) {
       R3Point p1, p2, p3, p4;
-      if (!RGBDTransformImageToWorld(R2Point(ix, iy), p1, this)) continue;
-      if (!RGBDTransformImageToWorld(R2Point(ix+skip, iy), p2, this)) continue;
-      if (!RGBDTransformImageToWorld(R2Point(ix+skip, iy+skip), p3, this)) continue;
-      if (!RGBDTransformImageToWorld(R2Point(ix, iy+skip), p4, this)) continue;
-      R3Plane planeA(p1, p2, p3);
-      if (planeA.Normal().Dot(WorldTowards()) < -0.25) {
-        if (!c) R3LoadNormal(planeA.Normal());
-        if (c) RNLoadRgb(PixelColor(ix, iy));
-        R3LoadPoint(p1);
-        if (c) RNLoadRgb(PixelColor(ix+skip, iy));
-        R3LoadPoint(p2);
-        if (c) RNLoadRgb(PixelColor(ix+skip, iy+skip));
-        R3LoadPoint(p3);
+      if (!RGBDTransformImageToCamera(R2Point(ix, iy), p1, this)) continue;
+      if (!RGBDTransformImageToCamera(R2Point(ix+skip, iy), p2, this)) continue;
+      if (!RGBDTransformImageToCamera(R2Point(ix+skip, iy+skip), p3, this)) continue;
+      if (!RGBDTransformImageToCamera(R2Point(ix, iy+skip), p4, this)) continue;
+      if ((fabs(p1.Z() - p2.Z())/-p1.Z() < 0.05) &&
+          (fabs(p2.Z() - p3.Z())/-p2.Z() < 0.05) &&
+          (fabs(p3.Z() - p1.Z())/-p3.Z() < 0.05)) {
+        R3Plane plane(p1, p2, p3);
+        RNScalar dot = plane.Normal().Dot(p1.Vector());
+        if (dot < -0.5 ) {
+          R3LoadNormal(plane.Normal());
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+          R3LoadPoint(p1);
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix+skip, iy));
+          R3LoadPoint(p2);
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix+skip, iy+skip));
+          R3LoadPoint(p3);
+        }
       }
-      R3Plane planeB(p1, p3, p4);
-      if (planeB.Normal().Dot(WorldTowards()) < -0.25) {
-        if (!c) R3LoadNormal(planeB.Normal());
-        if (c) RNLoadRgb(PixelColor(ix, iy));
-        R3LoadPoint(p1);
-        if (c) RNLoadRgb(PixelColor(ix+skip, iy+skip));
-        R3LoadPoint(p3);
-        if (c) RNLoadRgb(PixelColor(ix, iy+skip));
-        R3LoadPoint(p4);
+      if ((fabs(p1.Z() - p3.Z())/-p1.Z() < 0.05) &&
+          (fabs(p3.Z() - p4.Z())/-p3.Z() < 0.05) &&
+          (fabs(p4.Z() - p1.Z())/-p4.Z() < 0.05)) {
+        R3Plane plane(p1, p3, p4);
+        RNScalar dot = plane.Normal().Dot(p1.Vector());
+        if (dot < -0.5 ) {
+          R3LoadNormal(plane.Normal());
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+          R3LoadPoint(p1);
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix+skip, iy+skip));
+          R3LoadPoint(p3);
+          if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy+skip));
+          R3LoadPoint(p4);
+        }
       }
     }
   }
   glEnd();
+
+  // Disable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+  }
+
+  // Pop transformation
+  Extrinsics().Pop();
 }
 
 
@@ -840,6 +931,12 @@ ReadChannels(void)
 int RGBDImage::
 ReadColorChannels(void)
 {
+  // Check if already resident
+  if (color_resident_count > 0) {
+    color_resident_count++;
+    return 1;
+  }
+
   // Initialize image
   R2Image color_image;
 
@@ -864,6 +961,12 @@ ReadColorChannels(void)
 int RGBDImage::
 ReadDepthChannel(void)
 {
+  // Check if already resident/update read count
+  if (depth_resident_count > 0) {
+    depth_resident_count++;
+    return 1;
+  }
+
   // Initialize image
   R2Grid depth_image;
 
@@ -877,6 +980,7 @@ ReadDepthChannel(void)
 
     // Read depth image
     if (!depth_image.ReadFile(full_filename)) return 0;
+    depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
     if (strstr(depth_filename, ".png")) depth_image.Multiply(0.001);
     // MaskBoundaries(depth_image);
 
@@ -898,9 +1002,9 @@ ReadDepthChannel(void)
           !strcmp(configuration->DatasetFormat(), "princeton")) {
         RNScalar d_sigma = 0.05;
         RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
-        depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
+        // depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
         depth_image.BilateralFilter(xy_sigma, d_sigma);
-        depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
+        // depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
       }
     }
   }
@@ -1073,6 +1177,7 @@ InvalidateWorldBBox(void)
 void RGBDImage::
 UpdateWorldBBox(void)
 {
+#if 0
   // Read depth channel
   // ReadDepthChannel();
   
@@ -1090,6 +1195,25 @@ UpdateWorldBBox(void)
 
   // Release depth channel
   // ReleaseDepthChannel();
+#else
+  // Get convenient variables
+  RNLength max_depth = 7.0;
+  RNScalar xfocal = Intrinsics()[0][0];
+  RNScalar yfocal = Intrinsics()[1][1];
+  RNScalar tan_xfov = (xfocal > 0) ? 0.5*NPixels(RN_X) / xfocal : 1.0;
+  RNScalar tan_yfov = (yfocal > 0) ? 0.5*NPixels(RN_Y) / yfocal : 1.0;
+  R3Point c = WorldViewpoint() + max_depth * WorldTowards();
+  R3Vector dx = WorldRight() * max_depth * tan_xfov * WorldRight();
+  R3Vector dy = WorldRight() * max_depth * tan_yfov * WorldUp();
+
+  // Update conservative bounding box
+  world_bbox = R3null_box;
+  world_bbox.Union(WorldViewpoint());
+  world_bbox.Union(c - dx - dy);
+  world_bbox.Union(c + dx - dy);
+  world_bbox.Union(c - dx + dy);
+  world_bbox.Union(c + dx + dy);
+#endif
 }
 
 

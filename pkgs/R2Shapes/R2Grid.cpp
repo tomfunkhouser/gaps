@@ -3761,19 +3761,16 @@ WritePNGFile(const char *filename) const
     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
   // Copy the data into RNUInt16
-  RNInterval range = Range();
-  RNScalar diameter = range.Diameter();
   png_bytep data = new png_byte [ 2*grid_size ];
   png_bytep datap = data;
   for (int i = 0; i < grid_size; i++) {
     RNScalar value = grid_values[i];
-    if ((value == R2_GRID_UNKNOWN_VALUE) || (diameter == 0)) {
+    if (value == R2_GRID_UNKNOWN_VALUE) {
       *datap++ = 0;
       *datap++ = 0;
     }
     else {
-      // unsigned int ivalue = (unsigned int) (65535 * (value - range.Min()) / diameter);
-      if (value > UINT_MAX) value = UINT_MAX;
+      if (value > 65535) value = 65535;
       unsigned int ivalue = (unsigned int) value;
       *datap++ = (ivalue >> 8) & 0xFF;
       *datap++ = ivalue & 0xFF;
