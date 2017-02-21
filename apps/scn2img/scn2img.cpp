@@ -479,7 +479,7 @@ CaptureDepth(R2Grid& image)
   // Read pixels from frame buffer 
   glReadPixels(0, 0, viewport[2], viewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, pixels); 
 
-  // Resize image
+  // Clear image
   image.Clear(0.0);
   
   // Convert pixels to depths

@@ -391,7 +391,7 @@ ReadFile(const char *filename, int read_every_kth_image)
         return 0;
       }
 
-      // Create RGBD surface
+      // Read mesh
       R3Mesh *mesh = new R3Mesh();
       if (!mesh->ReadFile(mesh_filename)) {
         fprintf(stderr, "Unable to read mesh file %s at line %d of %s\n", mesh_filename, line_number, filename);
@@ -539,6 +539,78 @@ ReleaseChannels(void)
   for (int i = 0; i < NSurfaces(); i++) {
     RGBDSurface *surface = Surface(i);
     surface->ReleaseChannels();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadDepthChannels(void)
+{
+  // Read images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReadDepthChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReleaseDepthChannels(void)
+{
+  // Release images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReleaseDepthChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadColorChannels(void)
+{
+  // Read images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReadColorChannels();
+  }
+
+  // Read surfaces
+  for (int i = 0; i < NSurfaces(); i++) {
+    RGBDSurface *surface = Surface(i);
+    surface->ReadColorChannels();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReleaseColorChannels(void)
+{
+  // Release images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReleaseColorChannels();
+  }
+
+  // Release surfaces
+  for (int i = 0; i < NSurfaces(); i++) {
+    RGBDSurface *surface = Surface(i);
+    surface->ReleaseColorChannels();
   }
 
   // Return success

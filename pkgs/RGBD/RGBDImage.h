@@ -114,7 +114,6 @@ public:
   
   // Update functions
   virtual void InvalidateWorldBBox(void);
-  virtual void UpdateWorldBBox(void);
   virtual void InvalidateOpenGL(void);
   virtual void UpdateOpenGL(void);
 
@@ -345,16 +344,6 @@ YFov(void) const
   RNScalar yfocal = Intrinsics()[1][1];
   if (RNIsZero(yfocal)) return RN_INFINITY;
   else return atan(0.5 * NPixels(RN_Y) / yfocal);
-}
-
-
-
-inline R3Box RGBDImage::
-WorldBBox(void) const
-{
-  // Return bounding box of points in world coordinates
-  if (world_bbox.IsEmpty()) ((RGBDImage *) this)->UpdateWorldBBox();
-  return world_bbox;
 }
 
 

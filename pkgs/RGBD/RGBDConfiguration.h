@@ -51,6 +51,10 @@ public:
   // Read/release functions
   virtual int ReadChannels(void);
   virtual int ReleaseChannels(void);
+  virtual int ReadDepthChannels(void);
+  virtual int ReleaseDepthChannels(void);
+  virtual int ReadColorChannels(void);
+  virtual int ReleaseColorChannels(void);
 
   // Update functions
   virtual void InvalidateWorldBBox(void);

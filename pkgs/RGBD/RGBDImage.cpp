@@ -82,6 +82,60 @@ RGBDImage::
 
 
 ////////////////////////////////////////////////////////////////////////
+// Image property access functions
+////////////////////////////////////////////////////////////////////////
+
+R3Box RGBDImage::
+WorldBBox(void) const
+{
+  // Return remembered bounding box of points in world coordinates, if valid
+  if (!world_bbox.IsEmpty()) return world_bbox;
+
+  // Compute world bounding box
+  R3Box b = R3null_box;
+  if (DepthChannel()) {
+    // Compute world bounding box of points
+    b = R3null_box;
+    for (int iy = 0; iy < height; iy++) {
+      for (int ix = 0; ix < width; ix++) {
+        R3Point world_position;
+        R2Point image_position(ix+0.5, iy+0.5);
+        if (RGBDTransformImageToWorld(image_position, world_position, this)) {
+          b.Union(world_position);
+        }
+      }
+    }
+
+    // Just so that don't compute again if empty
+    if (b.IsEmpty()) b.Union(WorldViewpoint());
+
+    // Remember world bounding box
+    ((RGBDImage *) this)->world_bbox = b;
+  }
+  else {
+    // Return conservative bounding box without reading image
+    RNLength max_depth = 7.0;
+    RNScalar xfocal = Intrinsics()[0][0];
+    RNScalar yfocal = Intrinsics()[1][1];
+    RNScalar tan_xfov = (xfocal > 0) ? 0.5*NPixels(RN_X) / xfocal : 1.0;
+    RNScalar tan_yfov = (yfocal > 0) ? 0.5*NPixels(RN_Y) / yfocal : 1.0;
+    R3Point c = WorldViewpoint() + max_depth * WorldTowards();
+    R3Vector dx = WorldRight() * max_depth * tan_xfov * WorldRight();
+    R3Vector dy = WorldRight() * max_depth * tan_yfov * WorldUp();
+    b.Union(WorldViewpoint());
+    b.Union(c - dx - dy);
+    b.Union(c + dx - dy);
+    b.Union(c - dx + dy);
+    b.Union(c + dx + dy);
+  }
+
+  // Return computed bounding box
+  return b;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Pixel property access functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -1170,50 +1224,6 @@ InvalidateWorldBBox(void)
 
   // Invalidate the configuration's bounding box
   if (configuration) configuration->InvalidateWorldBBox();
-}
-
-
-
-void RGBDImage::
-UpdateWorldBBox(void)
-{
-#if 0
-  // Read depth channel
-  // ReadDepthChannel();
-  
-  // Update bounding box
-  world_bbox = R3null_box;
-  for (int iy = 0; iy < height; iy++) {
-    for (int ix = 0; ix < width; ix++) {
-      R3Point world_position;
-      R2Point image_position(ix+0.5, iy+0.5);
-      if (RGBDTransformImageToWorld(image_position, world_position, this)) {
-        world_bbox.Union(world_position);
-      }
-    }
-  }
-
-  // Release depth channel
-  // ReleaseDepthChannel();
-#else
-  // Get convenient variables
-  RNLength max_depth = 7.0;
-  RNScalar xfocal = Intrinsics()[0][0];
-  RNScalar yfocal = Intrinsics()[1][1];
-  RNScalar tan_xfov = (xfocal > 0) ? 0.5*NPixels(RN_X) / xfocal : 1.0;
-  RNScalar tan_yfov = (yfocal > 0) ? 0.5*NPixels(RN_Y) / yfocal : 1.0;
-  R3Point c = WorldViewpoint() + max_depth * WorldTowards();
-  R3Vector dx = WorldRight() * max_depth * tan_xfov * WorldRight();
-  R3Vector dy = WorldRight() * max_depth * tan_yfov * WorldUp();
-
-  // Update conservative bounding box
-  world_bbox = R3null_box;
-  world_bbox.Union(WorldViewpoint());
-  world_bbox.Union(c - dx - dy);
-  world_bbox.Union(c + dx - dy);
-  world_bbox.Union(c - dx + dy);
-  world_bbox.Union(c + dx + dy);
-#endif
 }
 
 
