@@ -316,6 +316,9 @@ ComputeGridOverlaps(RGBDConfiguration *configuration, R2Grid& image_image_grid_o
     fflush(stdout);
   }
 
+  // Initialize matrix
+  image_image_grid_overlap_matrix = R2Grid(configuration->NImages(), configuration->NImages());
+
   // Consider every image
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
     RGBDImage *image0 = configuration->Image(i0);
