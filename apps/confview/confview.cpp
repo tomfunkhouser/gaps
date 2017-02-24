@@ -1330,6 +1330,16 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     break; }
 
+  case '!': {
+    // Print camera
+    const R3Camera& camera = viewer.Camera();
+    printf("%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
+           camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
+           camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
+           camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
+           camera.XFOV(), camera.YFOV());
+    break; }
+
   case 27: // ESCAPE
     GLUTStop();
     break;

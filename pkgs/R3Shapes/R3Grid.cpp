@@ -77,6 +77,47 @@ R3Grid(int xresolution, int yresolution, int zresolution, const R3Box& bbox)
 
 
 R3Grid::
+R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution)
+{
+  // Enforce max resolution
+  if (max_resolution > 0) {
+    if (bbox.XLength() / spacing > max_resolution) spacing = bbox.XLength() / max_resolution;
+    if (bbox.YLength() / spacing > max_resolution) spacing = bbox.YLength() / max_resolution;
+    if (bbox.ZLength() / spacing > max_resolution) spacing = bbox.ZLength() / max_resolution;
+  }
+
+  // Compute resolution
+  grid_resolution[0] = (int) (bbox.XLength() / spacing + 0.5);
+  grid_resolution[1] = (int) (bbox.YLength() / spacing + 0.5);
+  grid_resolution[2] = (int) (bbox.ZLength() / spacing + 0.5);
+
+  // Enforce min resolution
+  if (min_resolution > 0) {
+    if (grid_resolution[0] < min_resolution) grid_resolution[0] = min_resolution;
+    if (grid_resolution[1] < min_resolution) grid_resolution[1] = min_resolution;
+    if (grid_resolution[2] < min_resolution) grid_resolution[2] = min_resolution;
+  }
+
+  // Set grid resolution
+  grid_row_size = grid_resolution[0];
+  grid_sheet_size = grid_row_size * grid_resolution[1];
+  grid_size = grid_sheet_size * grid_resolution[2];
+
+  // Allocate grid values
+  if (grid_size == 0) grid_values = NULL;
+  else grid_values = new RNScalar [ grid_size ];
+  assert(!grid_size || grid_values);
+
+  // Set all values to zero
+  for (int i = 0; i < grid_size; i++) grid_values[i] = 0;
+
+  // Set transformations
+  SetWorldToGridTransformation(bbox);
+}
+
+
+
+R3Grid::
 R3Grid(const R3Grid& voxels)
   : grid_values(NULL)
 {

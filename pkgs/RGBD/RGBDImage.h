@@ -81,8 +81,8 @@ public:
   virtual void DrawCamera(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, RNLength radius = 0.25) const;
   virtual void DrawBBox(int color_scheme = RGBD_INDEX_COLOR_SCHEME) const;
   virtual void DrawImage(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, RNLength depth = 0.25) const;
-  virtual void DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10) const;
-  virtual void DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 10) const;
+  virtual void DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 1) const;
+  virtual void DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 1) const;
   virtual void LoadColor(int color_scheme = RGBD_PHOTO_COLOR_SCHEME) const;
 
   // Create/read/write/release functions

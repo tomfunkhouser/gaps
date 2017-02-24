@@ -26,7 +26,10 @@ static int compute_dijkstra_distance_properties = 0;
 static int compute_dijkstra_histogram_properties = 0;
 static int compute_raytrace_properties = 0;
 static int compute_solidtexture_properties = 0;
-static char *map_name = NULL;
+static char *input_mturk_segmentation_name = NULL;
+static char *input_mturk_annotation_name = NULL;
+static char *input_mturk_label_mapping_name = NULL;
+static char *input_map_name = NULL;
 static int print_verbose = 0;
 static int print_debug = 0;
 
@@ -1295,11 +1298,279 @@ ComputeRayTracingProperties(R3Mesh *mesh)
 
 
 ////////////////////////////////////////////////////////////////////////
+// MTurk Segmentation properties
+////////////////////////////////////////////////////////////////////////
+
+struct MTurkLabel {
+  int id;
+  char *name;
+  int nyuId;
+  int nyu40id;
+};
+
+static R3MeshPropertySet *
+ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Reading mturk segmentation properties ...\n");
+    fflush(stdout);
+  }
+
+  // Open file
+  FILE* fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open json file %s\n", filename);
+    return 0;
+  }
+
+  // Read file 
+  std::string text;
+  fseek(fp, 0, SEEK_END);
+  long const size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  char* buffer = new char[size + 1];
+  unsigned long const usize = static_cast<unsigned long const>(size);
+  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  else { buffer[size] = 0; text = buffer; }
+  delete[] buffer;
+
+  // Close file
+  fclose(fp);
+
+  // Parse file
+  Json::Value json_root;
+  Json::Reader json_reader;
+  if (!json_reader.parse(text, json_root, false)) {
+    fprintf(stderr, "Unable to parse %s\n", filename);
+    return 0;
+  }
+
+  // Allocate property set
+  R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
+  if (!properties) {
+    fprintf(stderr, "Unable to allocate property set.\n");
+    return NULL;
+  }
+
+  // Allocate property
+  R3MeshProperty *segmentation = new R3MeshProperty(mesh, "MTurkSegment");
+
+  // Parse segment identifiers
+  if (json_root.isMember("segIndices")) {
+    Json::Value json_segments = json_root["segIndices"];
+    for (Json::ArrayIndex index = 0; index < json_segments.size(); index++) {
+      Json::Value json_segment = json_segments[index];
+      segmentation->SetVertexValue(index, json_segment.asInt());
+    }
+  }
+
+  // Insert property
+  InsertProperty(properties, segmentation);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Properties = %d\n", properties->NProperties());
+    fflush(stdout);
+  }
+
+  // Return property set
+  return properties;
+}
+
+
+
+static int
+ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Reading mturk label mapping ...\n");
+    fflush(stdout);
+  }
+
+  // Open file
+  FILE* fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open label mapping file %s\n", filename);
+    return 0;
+  }
+
+  // Read keys from first line
+  char key_buffer[4096];
+  RNArray<char *> keys;
+  if (fgets(key_buffer, 4096, fp)) {
+    char *token = strtok(key_buffer, ",\t\n");
+    while (token) {
+      keys.Insert(token);
+      token = strtok(NULL, ",\t\n");
+    }
+  }
+
+  // Extract index of model_id
+  int id_index = -1;
+  int name_index = -1;
+  int nyuId_index = -1;
+  int nyu40id_index = -1;
+  for (int i = 0; i < keys.NEntries(); i++) {
+    if (!strcmp(keys[i], "index")) id_index = i;
+    else if (!strcmp(keys[i], "category")) name_index = i; 
+    else if (!strcmp(keys[i], "nyuId")) nyuId_index = i; 
+    else if (!strcmp(keys[i], "nyu40id")) nyu40id_index = i; 
+  }
+
+  // Check if found key fields in header
+  if ((id_index < 0) || (name_index < 0) || (nyuId_index < 0) || (nyu40id_index < 0)) {
+    fprintf(stderr, "Did not find index, category, nyuId, and nyu40id in header of %s\n", filename);
+    return 0;
+  }
+
+  // Read subsequent lines of file
+  char value_buffer[4096];
+  while (fgets(value_buffer, 4096, fp)) {
+    // Read values
+    RNArray<char *> values;
+    char *token = strtok(value_buffer, ",\t\n");
+    while (token) {
+      values.Insert(token);
+      token = strtok(NULL, ",\t\n");
+    }
+
+    // Create label
+    MTurkLabel *label = new MTurkLabel();
+    label->id = atoi(values[id_index]);
+    label->name = strdup(values[name_index]);
+    label->nyuId = atoi(values[nyuId_index]);
+    label->nyu40id = atoi(values[nyu40id_index]);
+    labels.Insert(label->name, label);
+  }
+  
+  // Close file
+  fclose(fp);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Labels = %d\n", labels.NEntries());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static R3MeshPropertySet *
+ReadMTurkAnnotationProperties(R3Mesh *mesh,
+  R3MeshProperty *segmentation_property, RNSymbolTable<MTurkLabel *> *label_mapping,
+  const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Reading mturk annotation properties ...\n");
+    fflush(stdout);
+  }
+
+  // Open file
+  FILE* fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open json file %s\n", filename);
+    return 0;
+  }
+
+  // Read file 
+  std::string text;
+  fseek(fp, 0, SEEK_END);
+  long const size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  char* buffer = new char[size + 1];
+  unsigned long const usize = static_cast<unsigned long const>(size);
+  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  else { buffer[size] = 0; text = buffer; }
+  delete[] buffer;
+
+  // Close file
+  fclose(fp);
+
+  // Parse file
+  Json::Value json_root;
+  Json::Reader json_reader;
+  if (!json_reader.parse(text, json_root, false)) {
+    fprintf(stderr, "Unable to parse %s\n", filename);
+    return 0;
+  }
+
+  // Allocate property set
+  R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
+  if (!properties) {
+    fprintf(stderr, "Unable to allocate property set.\n");
+    return NULL;
+  }
+
+  // Allocate properites
+  R3MeshProperty *instance = new R3MeshProperty(mesh, "MTurkInstance");
+  R3MeshProperty *nyuId = new R3MeshProperty(mesh, "MTurkNNYUId");
+  R3MeshProperty *nyu40id = new R3MeshProperty(mesh, "MTurkNYU40Id");
+
+  // Parse instance identifiers
+  if (json_root.isMember("segGroups")) {
+    MTurkLabel *label = NULL;
+    Json::Value json_groups = json_root["segGroups"];
+    for (Json::ArrayIndex group_index = 0; group_index < json_groups.size(); group_index++) {
+      Json::Value json_group = json_groups[group_index];
+      if (!json_group.isMember("segments")) continue;
+      if (!json_group.isMember("label")) continue;
+      Json::Value json_segments = json_group["segments"];
+      Json::Value json_label = json_group["label"];
+      label_mapping->Find(json_label.asString(), &label);
+      for (Json::ArrayIndex segment_index = 0; segment_index < json_segments.size(); segment_index++) {
+        Json::Value json_segment = json_segments[segment_index];
+        int segment_id = json_segment.asInt();
+        for (int i = 0; i < mesh->NVertices(); i++) {
+          if (RNIsEqual(segmentation_property->VertexValue(i), segment_id)) {
+            instance->SetVertexValue(i, group_index);
+            if (label) {
+              nyuId->SetVertexValue(i, label->nyuId);
+              nyu40id->SetVertexValue(i, label->nyu40id);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Insert properties
+  InsertProperty(properties, instance);
+  InsertProperty(properties, nyuId);
+  InsertProperty(properties, nyu40id);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Properties = %d\n", properties->NProperties());
+    fflush(stdout);
+  }
+
+  // Return property set
+  return properties;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Symmetry map properties
 ////////////////////////////////////////////////////////////////////////
 
 static R3MeshPropertySet *
-ComputeMapProperties(R3Mesh *mesh)
+ComputeMapProperties(R3Mesh *mesh, const char *filename)
 {
   // Start statistics
   RNTime start_time;
@@ -1325,9 +1596,9 @@ ComputeMapProperties(R3Mesh *mesh)
   RNScalar scale = 1 / sqrt_area;
 
   // Open map file
-  FILE *fp = fopen(map_name, "r");
+  FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open map file: %s\n", map_name);
+    fprintf(stderr, "Unable to open map file: %s\n", filename);
     return NULL;
   }
 
@@ -1338,7 +1609,7 @@ ComputeMapProperties(R3Mesh *mesh)
     // Read corresponding vertex ID
     int id;
     if (fscanf(fp, "%d", &id) != (unsigned int) 1) { 
-      fprintf(stderr, "Unable to read %s\n", map_name); 
+      fprintf(stderr, "Unable to read %s\n", filename); 
       return NULL; 
     }
 
@@ -1528,9 +1799,29 @@ ComputeProperties(R3Mesh *mesh)
     delete raytrace_properties;
   }
 
+  // Read mturk segmentation properties
+  if (input_mturk_segmentation_name) {
+    R3MeshPropertySet *segmentation_properties = ReadMTurkSegmentationProperties(mesh, input_mturk_segmentation_name);
+    if (!segmentation_properties) return NULL;
+    properties->Insert(segmentation_properties);
+    delete segmentation_properties;
+    if (input_mturk_annotation_name && input_mturk_label_mapping_name) {
+      R3MeshProperty *segmentation_property = properties->Property("MTurkSegment");
+      if (segmentation_property) {
+        RNSymbolTable<MTurkLabel *> label_mapping;
+        if (ReadMTurkLabelMapping(label_mapping, input_mturk_label_mapping_name)) {
+          R3MeshPropertySet *annotation_properties = ReadMTurkAnnotationProperties(mesh, segmentation_property, &label_mapping, input_mturk_annotation_name);
+          if (!annotation_properties) return NULL;
+          properties->Insert(annotation_properties);
+          delete annotation_properties;
+        }
+      }
+    }
+  }
+
   // Compute map properties
-  if (map_name) {
-    R3MeshPropertySet *map_properties = ComputeMapProperties(mesh);
+  if (input_map_name) {
+    R3MeshPropertySet *map_properties = ComputeMapProperties(mesh, input_map_name);
     if (!map_properties) return NULL;
     properties->Insert(map_properties);
     delete map_properties;
@@ -1574,7 +1865,12 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-dijkstra_histogram")) { compute_dijkstra_histogram_properties = 1; }
       else if (!strcmp(*argv, "-raytrace")) { compute_raytrace_properties = 1; }
       else if (!strcmp(*argv, "-solidtexture")) { compute_solidtexture_properties = 1; }
-      else if (!strcmp(*argv, "-map")) { argv++; argc--; map_name = *argv; }
+      else if (!strcmp(*argv, "-map")) { argv++; argc--; input_map_name = *argv; }
+      else if (!strcmp(*argv, "-mturk_semantic_segmentation")) {
+        argv++; argc--; input_mturk_segmentation_name = *argv; 
+        argv++; argc--; input_mturk_annotation_name = *argv;         
+        argv++; argc--; input_mturk_label_mapping_name = *argv;         
+      }
       else if (!strcmp(*argv, "-all")) { 
         compute_basic_properties = 1;
         compute_coordinate_properties = 1;

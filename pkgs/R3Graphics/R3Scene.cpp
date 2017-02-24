@@ -3195,8 +3195,6 @@ ReadRectangleFile(const char *filename, R3SceneNode *parent_node)
 // SUNCG PARSING FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-#include "json.h"
-
 static int
 GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, int expected_type = 0)
 {

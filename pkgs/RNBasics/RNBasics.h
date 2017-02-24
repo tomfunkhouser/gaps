@@ -7,84 +7,90 @@
 
 /* Compatability switch include files */
 
-#include "RNCompat.h"
+#include "RNBasics/RNCompat.h"
 
 
 
 /* External include files */
 
-#include "RNExtern.h"
+#include "RNBasics/RNExtern.h"
 
 
 
 /* Base class for GAPS modules */
 
-#include "RNBase.h"
+#include "RNBasics/RNBase.h"
 
 
 
 /* Error reporting include files */
 
-#include "RNError.h"
+#include "RNBasics/RNError.h"
 
 
 
 /* Memory management include files */
 
-#include "RNMem.h"
+#include "RNBasics/RNMem.h"
 
 
 
 /* File management include files */
 
-#include "RNFile.h"
+#include "RNBasics/RNFile.h"
 
 
 
 /* Basic bitflags include files */
 
-#include "RNFlags.h"
+#include "RNBasics/RNFlags.h"
 
 
 
 /* Class type include files */
 
-#include "RNType.h"
+#include "RNBasics/RNType.h"
 
 
 
 /* Math include files */
 
-#include "RNScalar.h"
-#include "RNIntval.h"
+#include "RNBasics/RNScalar.h"
+#include "RNBasics/RNIntval.h"
 
 
 
 /* Dynamic array include files */
 
-#include "RNArray.h"
-#include "RNQueue.h"
-#include "RNHeap.h"
-#include "RNMap.h"
+#include "RNBasics/RNArray.h"
+#include "RNBasics/RNQueue.h"
+#include "RNBasics/RNHeap.h"
+#include "RNBasics/RNMap.h"
 
 
 
 /* Graphics utility include files */
 
-#include "RNGrfx.h"
-#include "RNRgb.h"
+#include "RNBasics/RNGrfx.h"
+#include "RNBasics/RNRgb.h"
 
 
 
 /* OS utility include files */
 
-#include "RNTime.h"
+#include "RNBasics/RNTime.h"
 
 
 
 /* SVD stuff */
 
-#include "RNSvd.h"
+#include "RNBasics/RNSvd.h"
+
+
+
+/* JSON stuff */
+
+#include "RNBasics/json.h"
 
 
 
