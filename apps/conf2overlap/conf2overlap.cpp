@@ -323,7 +323,7 @@ ComputeGridOverlaps(RGBDConfiguration *configuration, R2Grid& image_image_grid_o
     // Read image0 depth channel
     image0->ReadDepthChannel();
     R2Grid *depth_channel0 = image0->DepthChannel();
-    if (!depth_channel0) continue;
+    if (!depth_channel0) { image0->ReleaseDepthChannel(); continue; }
     const R3Box& bbox0 = image0->WorldBBox();
 
     // Create grid
@@ -337,7 +337,7 @@ ComputeGridOverlaps(RGBDConfiguration *configuration, R2Grid& image_image_grid_o
     }
   
     // Release image0 depth channel
-    if (!image0->ReleaseDepthChannel()) continue;
+    image0->ReleaseDepthChannel();
     if (grid0.Cardinality() == 0) continue;
 
     // Consider every other image
@@ -350,7 +350,7 @@ ComputeGridOverlaps(RGBDConfiguration *configuration, R2Grid& image_image_grid_o
       R2Grid *depth_channel1 = image1->DepthChannel();
       if (!depth_channel1) continue;
       const R3Box& bbox1 = image1->WorldBBox();
-      if (!R3Intersects(bbox0, bbox1)) continue;
+      if (!R3Intersects(bbox0, bbox1)) { image1->ReleaseDepthChannel(); continue; }
 
       // Count pixels from image1 overlapping grid0
       int count = 0;
@@ -375,7 +375,7 @@ ComputeGridOverlaps(RGBDConfiguration *configuration, R2Grid& image_image_grid_o
       }
 
       // Release image1 depth channel
-      if (!image1->ReleaseDepthChannel()) continue;
+      image1->ReleaseDepthChannel();
     }
   }
 
@@ -852,28 +852,6 @@ main(int argc, char **argv)
     }
   }
 
-  // Check if should compute pixel overlaps
-  if (output_image_image_pixel_overlap_filename || output_image_image_pixel_overlap_matrix || output_image_image_pixel_iou_matrix) {
-    // Compute image to image pixel overlaps
-    R2Grid image_image_pixel_overlap_matrix;
-    if (!ComputePixelOverlaps(configuration, image_image_pixel_overlap_matrix)) exit(-1);
-    
-    // Write image to image pixel overlap file
-    if (output_image_image_pixel_overlap_filename) {
-      if (!WriteImageImageOverlapFile(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_overlap_filename)) exit(-1);
-    }
-  
-    // Write image to image pixel overlap matrix
-    if (output_image_image_pixel_overlap_matrix) {
-      if (!WriteImageImageOverlapMatrix(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_overlap_matrix)) exit(-1);
-    }
-
-    // Write image to image pixel iou matrix
-    if (output_image_image_pixel_iou_matrix) {
-      if (!WriteImageImageIOUMatrix(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_iou_matrix)) exit(-1);
-    }
-  }
-  
   // Check if should compute grid overlaps
   if (output_image_image_grid_overlap_filename || output_image_image_grid_overlap_matrix || output_image_image_grid_iou_matrix) {
     // Compute image to image grid overlaps
@@ -893,6 +871,28 @@ main(int argc, char **argv)
     // Write image to image grid iou matrix
     if (output_image_image_grid_iou_matrix) {
       if (!WriteImageImageIOUMatrix(configuration, image_image_grid_overlap_matrix, output_image_image_grid_iou_matrix)) exit(-1);
+    }
+  }
+  
+  // Check if should compute pixel overlaps
+  if (output_image_image_pixel_overlap_filename || output_image_image_pixel_overlap_matrix || output_image_image_pixel_iou_matrix) {
+    // Compute image to image pixel overlaps
+    R2Grid image_image_pixel_overlap_matrix;
+    if (!ComputePixelOverlaps(configuration, image_image_pixel_overlap_matrix)) exit(-1);
+    
+    // Write image to image pixel overlap file
+    if (output_image_image_pixel_overlap_filename) {
+      if (!WriteImageImageOverlapFile(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_overlap_filename)) exit(-1);
+    }
+  
+    // Write image to image pixel overlap matrix
+    if (output_image_image_pixel_overlap_matrix) {
+      if (!WriteImageImageOverlapMatrix(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_overlap_matrix)) exit(-1);
+    }
+
+    // Write image to image pixel iou matrix
+    if (output_image_image_pixel_iou_matrix) {
+      if (!WriteImageImageIOUMatrix(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_iou_matrix)) exit(-1);
     }
   }
   
