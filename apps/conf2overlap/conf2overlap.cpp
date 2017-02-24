@@ -754,8 +754,8 @@ ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-debug")) print_debug = 1;
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
-      else if (!strcmp(*argv, "-output_image_vertex_overlaps")) { argc--; argv++; output_image_vertex_overlap_filename = *argv; output = TRUE; }
-      else if (!strcmp(*argv, "-output_vertex_image_overlaps")) { argc--; argv++; output_vertex_image_overlap_filename = *argv; output = TRUE; }
+      else if (!strcmp(*argv, "-output_image_vertex_overlap_file")) { argc--; argv++; output_image_vertex_overlap_filename = *argv; output = TRUE; }
+      else if (!strcmp(*argv, "-output_vertex_image_overlap_file")) { argc--; argv++; output_vertex_image_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_vertex_overlap_file")) { argc--; argv++; output_image_image_vertex_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_vertex_overlap_matrix")) { argc--; argv++; output_image_image_vertex_overlap_matrix = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_vertex_iou_matrix")) { argc--; argv++; output_image_image_vertex_iou_matrix = *argv; output = TRUE; }
