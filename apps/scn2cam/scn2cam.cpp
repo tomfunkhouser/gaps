@@ -941,6 +941,7 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   RNScalar grid_sampling_factor = 2;
   RNScalar grid_sample_spacing = min_distance_from_obstacle / grid_sampling_factor;
   if (grid_sample_spacing == 0) grid_sample_spacing = 0.05;
+  if (grid_sample_spacing > 0.1) grid_sample_spacing = 0.1;
   R2Box grid_bbox(room_bbox.ZMin(), room_bbox.XMin(), room_bbox.ZMax(), room_bbox.XMax());
   int res1 = (int) (grid_bbox.XLength() / grid_sample_spacing);
   int res2 = (int) (grid_bbox.YLength() / grid_sample_spacing);
