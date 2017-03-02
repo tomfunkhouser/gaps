@@ -1433,6 +1433,27 @@ Strength(RNScalar sigma)
 }
 
 
+
+void R3MeshProperty::
+Reset(R3Mesh *mesh)
+{
+  // Set mesh
+  this->mesh = mesh;
+
+  // Assign vertex values
+  if (values) delete [] values;
+  this->nvalues = mesh->NVertices();
+  this->values = new RNScalar [ this->nvalues ];
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    this->values[i] = 0;
+  }
+
+  // Reset statistics
+  ResetStatistics();
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Arithmetic functions
 ////////////////////////////////////////////////////////////////////////

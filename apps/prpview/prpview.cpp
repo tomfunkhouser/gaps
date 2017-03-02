@@ -20,6 +20,7 @@ static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
 static int color_with_redness = 0;
+static int color_with_labels = 0;
 static int print_verbose = 0;
 
 
@@ -104,27 +105,37 @@ NormalizedValue(R3MeshVertex *vertex)
 static RNRgb 
 NormalizedColor(R3MeshVertex *vertex)
 {
-  // Compute normalized value
-  RNScalar value = NormalizedValue(vertex);
-
-  // Compute color
+  // Check color scheme
   RNRgb c(0, 0, 0);
-  if (color_with_redness) {
-    c[0] = 0.8;
-    c[1] = 0.8 * (1 - value);
-    c[2] = 0.8 * (1 - value);
+  if (color_with_labels) {
+    // Color with deterministic value based on int label
+    int ivalue = (current_property->VertexValue(vertex) + 0.5);
+    c[0] = (ivalue % 7) / 6.0;
+    c[1] = (ivalue % 5) / 4.0;
+    c[2] = (ivalue % 2) / 1.0;
   }
   else {
-    if (value < 0.5) {
-      c[0] = 1 - 2 * value;
-      c[1] = 2 * value;
+    // Compute normalized value
+    RNScalar value = NormalizedValue(vertex);
+
+    // Compute color
+    if (color_with_redness) {
+      c[0] = 0.8;
+      c[1] = 0.8 * (1 - value);
+      c[2] = 0.8 * (1 - value);
     }
     else {
-      c[1] = 1 - 2 * (value - 0.5);
-      c[2] = 2 * (value - 0.5);
+      if (value < 0.5) {
+        c[0] = 1 - 2 * value;
+        c[1] = 2 * value;
+      }
+      else {
+        c[1] = 1 - 2 * (value - 0.5);
+        c[2] = 2 * (value - 0.5);
+      }
     }
   }
-
+  
   // Return color
   return c;
 }
@@ -896,6 +907,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-no_statistics")) { show_statistics = 0; }
       else if (!strcmp(*argv, "-faces")) { show_faces = 1; show_values = 0; }
       else if (!strcmp(*argv, "-redness")) { color_with_redness = 1; }
+      else if (!strcmp(*argv, "-labels")) { color_with_labels = 1; }
       else if (!strcmp(*argv, "-back")) { show_backfacing = 1; }
       else if (!strcmp(*argv, "-value_range")) { 
         RNScalar min_value, max_value;

@@ -37,6 +37,7 @@ static char *output_nodes_filename = NULL;
 static int create_object_cameras = 0;
 static int create_room_cameras = 0;
 static int create_world_in_hand_cameras = 0;
+static int create_path_in_room_cameras = 0;
 static int interpolate_camera_trajectory = 0;
 
 
@@ -999,6 +1000,93 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
 
 
 
+static int
+FindIndexOfRandomPoint(const R2Grid& grid)
+{
+  // Choose random point in connected component
+  int random_point_counter = (int) (RNRandomScalar() * grid.Cardinality());
+  for (int i = 0; i < grid.NEntries(); i++) {
+    if (grid.GridValue(i) == R2_GRID_UNKNOWN_VALUE) continue;
+    if (--random_point_counter == 0) return i;
+  }
+
+  // Should not get here
+  return -1;
+}
+
+
+
+static int
+FindIndexOfFurthestPointAlongPath(const R2Grid& grid, int start_index,
+  int *path = NULL, int *path_size = NULL)
+{
+  // Initialize Dijksra bookkeeping
+  R2Grid parent_grid(grid), distance_grid(grid);
+  parent_grid.Clear(R2_GRID_UNKNOWN_VALUE);
+  distance_grid.Clear(FLT_MAX);
+  const RNScalar *grid_values = distance_grid.GridValues();
+  int neighbor_index, ix, iy;
+  int end_index = -1;
+  
+  // Compute shortest path to all nonzero points
+  RNHeap<const RNScalar *> heap(0);
+  distance_grid.SetGridValue(start_index, 0);
+  parent_grid.SetGridValue(start_index, start_index);
+  heap.Push(grid_values + start_index);
+  while (!heap.IsEmpty()) {
+    const RNScalar *grid_entry = heap.Pop();
+    int grid_index = grid_entry - grid_values;
+    end_index = grid_index;
+    grid.IndexToIndices(grid_index, ix, iy);
+    for (int dx = -1; dx <= 1; dx++) {
+      int nx = ix + dx;
+      if ((nx < 0) || (nx > grid.XResolution()-1)) continue;
+      for (int dy = -1; dy <= 1; dy++) {
+        int ny = iy + dy;
+        if ((ny < 0) || (ny > grid.YResolution()-1)) continue;
+        grid.IndicesToIndex(nx, ny, neighbor_index);
+        if (neighbor_index == grid_index) continue;
+        if (grid.GridValue(neighbor_index) != R2_GRID_UNKNOWN_VALUE) {
+          RNScalar d = distance_grid.GridValue(grid_index) + sqrt(dx*dx + dy*dy);
+          RNScalar old_d = distance_grid.GridValue(neighbor_index);
+          if (d < old_d) {
+            distance_grid.SetGridValue(neighbor_index, d);
+            parent_grid.SetGridValue(neighbor_index, grid_index);
+            if (old_d == FLT_MAX) heap.Push(grid_values + neighbor_index);
+            else heap.Update(grid_values + neighbor_index);
+          }
+        }
+      }
+    }
+  }
+
+  // Fill in path
+  if (path && path_size) {
+    // Construct path backwards
+    int count = 0;
+    path[count++] = end_index;
+    while (path[count-1] != start_index) {
+      path[count] = (int) parent_grid.GridValue(path[count-1]);
+      count++;
+    }
+
+    // Reverse order of path
+    for (int i = 0; i < count/2; i++) {
+      int swap = path[i];
+      path[i] = path[count-1-i];
+      path[count-1-i] = swap;
+    }
+
+    // Fill in path size
+    *path_size = count;
+  }
+
+  // Return last visited index
+  return end_index;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Camera creation functions
 ////////////////////////////////////////////////////////////////////////
@@ -1210,6 +1298,110 @@ CreateRoomCameras(void)
 
 
 static void
+CreatePathInRoomCameras(void)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int camera_count = 0;
+
+  // Get useful variables
+  RNScalar neardist = 0.01 * scene->BBox().DiagonalRadius();
+  RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
+  RNScalar aspect = (RNScalar) height / (RNScalar) width;
+  RNAngle yfov = atan(aspect * tan(xfov));
+
+  // Create one camera trajectory per door
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *room_node = scene->Node(i);
+    if (!room_node->Name()) continue;
+    if (strncmp(room_node->Name(), "Room#", 5)) continue;
+    R3Box room_bbox = room_node->BBox();
+
+    // Compute viewpoint mask
+    R2Grid viewpoint_mask;
+    if (!ComputeViewpointMask(room_node, viewpoint_mask)) continue;
+
+    // Find largest connected component
+    R2Grid component_mask = viewpoint_mask;
+    component_mask.ConnectedComponentSizeFilter(RN_EPSILON);
+    RNScalar component_size = component_mask.Maximum();
+    component_mask.Threshold(component_size - 0.5, 0, 1.0);
+    component_mask.Substitute(0, R2_GRID_UNKNOWN_VALUE);
+    
+    // Find path between distant pair of points in largest connected component
+    int path_size = 0;
+    int random_point_index = FindIndexOfRandomPoint(component_mask);
+    if (random_point_index < 0) continue;
+    int start_point_index = FindIndexOfFurthestPointAlongPath(component_mask, random_point_index);
+    if (start_point_index < 0) continue;
+    int *path_indices = new int [ component_mask.NEntries() ];
+    int end_point_index = FindIndexOfFurthestPointAlongPath(component_mask, start_point_index, path_indices, &path_size);
+    if (end_point_index <= 0) { delete [] path_indices; continue; }
+
+    // Find the lookat point
+    RNScalar lookat_weight = 0;
+    R3Point lookat_position = R3zero_point;
+    for (int j = 0; j < room_node->NChildren(); j++) {
+      R3SceneNode *child_node = room_node->Child(j);
+      RNScalar weight = child_node->NFacets().Max();
+      lookat_position += weight * child_node->Centroid();
+      lookat_weight += weight;
+    }
+    if (lookat_weight > 0) lookat_position /= lookat_weight;
+    else lookat_position = room_node->Centroid();
+    
+    // Sample viewpoints on the path
+    int sample_ix, sample_iy;
+    int path_step = position_sampling * component_mask.WorldToGridScaleFactor();
+    if (path_step == 0) path_step = 1;
+    for (int i = 0; i < path_size; i += path_step) {
+      // Compute viewpoint
+      int sample_index = path_indices[i];
+      component_mask.IndexToIndices(sample_index, sample_ix, sample_iy);
+      R2Point viewpoint_mask_position = component_mask.WorldPosition(sample_ix+0.5, sample_iy+0.5);  // ZX      
+
+      // Compute height
+      RNScalar y = room_bbox.YMin() + eye_height;
+      y += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+      if (y > room_bbox.YMax()) continue;
+
+      // Compute camera
+      R3Point viewpoint(viewpoint_mask_position[1], y, viewpoint_mask_position[0]);
+      if (R3Contains(viewpoint, lookat_position)) continue;
+      R3Vector towards = lookat_position - viewpoint;
+      towards.Normalize();
+      R3Vector right = towards % R3posy_vector;
+      right.Normalize();
+      R3Vector up = right % towards;
+      up.Normalize();
+      R3Camera best_camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+      // Insert camera
+      if (print_debug) printf("PATH %s : %d / %d\n", room_node->Name(), i, path_size);
+      char name[1024];
+      sprintf(name, "%s_%d", room_node->Name(), i);
+      Camera *camera = new Camera(best_camera, name);
+      cameras.Insert(camera);
+      camera_count++;
+    }
+
+    // Delete temporary memory
+    delete [] path_indices;
+  }
+        
+  // Print statistics
+  if (print_verbose) {
+    printf("Created room cameras ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Cameras = %d\n", camera_count++);
+    fflush(stdout);
+  }
+}
+
+
+
+static void
 CreateWorldInHandCameras(void)
 {
   // Start statistics
@@ -1392,6 +1584,7 @@ CreateAndWriteCameras(void)
   // Create cameras
   if (create_object_cameras) CreateObjectCameras();
   if (create_room_cameras) CreateRoomCameras();
+  if (create_path_in_room_cameras) CreatePathInRoomCameras();
   if (create_world_in_hand_cameras) CreateWorldInHandCameras();
 
   // Create trajectory from cameras
@@ -1533,6 +1726,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_room_cameras")) {
         create_cameras = create_room_cameras = 1;
         angle_sampling = RN_PI / 2.0;
+      }
+      else if (!strcmp(*argv, "-create_path_in_room_cameras")) {
+        create_cameras = create_path_in_room_cameras = 1;
       }
       else if (!strcmp(*argv, "-create_world_in_hand_cameras")) {
         create_cameras = create_world_in_hand_cameras = 1;

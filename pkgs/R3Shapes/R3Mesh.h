@@ -583,21 +583,21 @@ class R3Mesh {
       // Loads data structure from STL file (.stl), returns 0 if error
     virtual int ReadVRMLFile(const char *filename);
       // Loads data structure from VRML file (.wrl), returns 0 if error
-    virtual int WriteFile(const char *filename);
+    virtual int WriteFile(const char *filename) const;
      // Writes a file, returns number of faces written (0 is error)
-    virtual int WriteRayFile(const char *filename);
+    virtual int WriteRayFile(const char *filename) const;
      // Writes a ray file, returns number of faces written (0 is error)
-    virtual int WritePlyFile(const char *filename, RNBoolean binary = TRUE);
+    virtual int WritePlyFile(const char *filename, RNBoolean binary = TRUE) const;
      // Writes a PLY file, returns number of faces written (0 is error)
-    virtual int WriteObjFile(const char *filename);
+    virtual int WriteObjFile(const char *filename) const;
      // Writes a Wavefront OBJ file, returns number of faces written (0 is error)
-    virtual int WriteOffFile(const char *filename);
+    virtual int WriteOffFile(const char *filename) const;
      // Writes a OFF (.off) file, returns number of faces written (0 is error)
-    virtual int WriteCattFile(const char *filename);
+    virtual int WriteCattFile(const char *filename) const;
      // Writes a Catt Acoustics (.cat) file, returns number of faces written (0 is error)
-    virtual int WriteIfsFile(const char *filename);
+    virtual int WriteIfsFile(const char *filename) const;
      // Writes a IFS (.ifs) file, returns number of faces written (0 is error)
-    virtual int WriteSTLFile(const char *filename);
+    virtual int WriteSTLFile(const char *filename) const;
      // Writes a STL (.stl) file, returns number of faces written (0 is error)
 
     // DEBUG FUNCTIONS

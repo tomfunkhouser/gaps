@@ -868,7 +868,7 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
 
     // Create label
     R3SurfelLabel *label = new R3SurfelLabel(label_name);
-    if (assignment_keystroke[0] != '-') label->SetAssignmentKeystroke(toupper(assignment_keystroke[0]));
+    if (assignment_keystroke[0] != '-') label->SetAssignmentKeystroke(assignment_keystroke[0]);
     label->SetIdentifier(identifier);
     label->SetColor(RNRgb(r, g, b));
     

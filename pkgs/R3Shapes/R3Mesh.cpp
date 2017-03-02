@@ -5297,7 +5297,7 @@ ReadVRMLFile(const char *filename)
 
 
 int R3Mesh::
-WriteFile(const char *filename)
+WriteFile(const char *filename) const
 {
   // Parse input filename extension
   const char *extension;
@@ -5330,7 +5330,7 @@ WriteFile(const char *filename)
 
 
 int R3Mesh::
-WriteRayFile(const char *filename)
+WriteRayFile(const char *filename) const
 {
   // Open file
   FILE *fp;
@@ -5367,7 +5367,7 @@ WriteRayFile(const char *filename)
 
 
 int R3Mesh::
-WritePlyFile(const char *filename, RNBoolean binary)
+WritePlyFile(const char *filename, RNBoolean binary)  const
 {
   typedef struct PlyVertex {
     float x, y, z;
@@ -5477,7 +5477,7 @@ WritePlyFile(const char *filename, RNBoolean binary)
 
 
 int R3Mesh::
-WriteObjFile(const char *filename)
+WriteObjFile(const char *filename) const
 {
   // Open file
   FILE *fp;
@@ -5512,7 +5512,7 @@ WriteObjFile(const char *filename)
 
 
 int R3Mesh::
-WriteOffFile(const char *filename)
+WriteOffFile(const char *filename) const
 {
   // Open file
   FILE *fp;
@@ -5551,7 +5551,7 @@ WriteOffFile(const char *filename)
 
 
 int R3Mesh::
-WriteCattFile(const char *filename)
+WriteCattFile(const char *filename) const
 {
   // Open file
   FILE *fp;
@@ -5618,7 +5618,7 @@ WriteIfsString(FILE *fp, const char *buffer)
 
 
 int R3Mesh::
-WriteIfsFile(const char *filename)
+WriteIfsFile(const char *filename) const
 {
   float version = 1.0;
   unsigned int nverts = NVertices();
@@ -5674,7 +5674,7 @@ WriteIfsFile(const char *filename)
 
 
 int R3Mesh::
-WriteSTLFile(const char *filename)
+WriteSTLFile(const char *filename) const
 {
   // Open file
   FILE *fp;

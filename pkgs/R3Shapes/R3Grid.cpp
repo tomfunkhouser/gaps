@@ -79,6 +79,9 @@ R3Grid(int xresolution, int yresolution, int zresolution, const R3Box& bbox)
 R3Grid::
 R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution)
 {
+  // Check for empty bounding box
+  if (bbox.IsEmpty() || (RNIsZero(spacing))) { *this = R3Grid(); return; }
+  
   // Enforce max resolution
   if (max_resolution > 0) {
     if (bbox.XLength() / spacing > max_resolution) spacing = bbox.XLength() / max_resolution;
@@ -204,8 +207,11 @@ Cardinality(void) const
   // Return number of non-zero grid values
   int count = 0;
   RNScalar *grid_valuep = grid_values;
-  for (int i = 0; i < grid_size; i++) 
-    if (*(grid_valuep++) != 0.0) count++;
+  for (int i = 0; i < grid_size; i++) {
+    RNScalar value = *(grid_valuep++);
+    if (value == 0.0) continue;
+    count++;
+  }
   return count;
 }
 

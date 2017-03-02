@@ -35,7 +35,7 @@ static int selected_grid_index = -1;
 static R2Box selected_grid_window = R2null_box;
 static R2Point selected_grid_position(RN_UNKNOWN, RN_UNKNOWN);
 static RNInterval selected_grid_range(0,0);
-static int color_type = 0; // 0=gray, 1=red-green-blue
+static int color_type = 0; // 0=gray, 1=red-green-blue, 2=labels
 
 
 
@@ -84,20 +84,24 @@ Color(RNScalar value)
     else return RNblack_rgb;
   }
 
-  // Normalize color
-  RNScalar value_min = selected_grid_range.Min();
-  RNScalar value_width = selected_grid_range.Diameter();
-  RNScalar value_scale = (value_width > 0) ? 1.0 / value_width : 1.0;
-  RNScalar normalized_value = value_scale * (value - value_min);
-
   // Compute color
   RNRgb c(0, 0, 0);
   if (color_type == 0) {
+    // Draw gray value
+    RNScalar value_min = selected_grid_range.Min();
+    RNScalar value_width = selected_grid_range.Diameter();
+    RNScalar value_scale = (value_width > 0) ? 1.0 / value_width : 1.0;
+    RNScalar normalized_value = value_scale * (value - value_min);
     c[0] = normalized_value;
     c[1] = normalized_value;
     c[2] = normalized_value;
   }
-  else {
+  else if (color_type == 1) {
+    // Draw heatmap value
+    RNScalar value_min = selected_grid_range.Min();
+    RNScalar value_width = selected_grid_range.Diameter();
+    RNScalar value_scale = (value_width > 0) ? 1.0 / value_width : 1.0;
+    RNScalar normalized_value = value_scale * (value - value_min);
     if (normalized_value < 0.5) {
       c[0] = 1 - 2 * normalized_value;
       c[1] = 2 * normalized_value;
@@ -106,6 +110,13 @@ Color(RNScalar value)
       c[1] = 1 - 2 * (normalized_value - 0.5);
       c[2] = 2 * (normalized_value - 0.5);
     }
+  }
+  else if (color_type == 2) {
+    // Draw deterministic color based on int label
+    int ivalue = value + 0.5;
+    c[0] = 0.1 + (ivalue % 7) / 6.0;
+    c[1] = 0.1 + (ivalue % 5) / 4.0;
+    c[2] = 0.1 + (ivalue % 2) / 1.0;
   }
 
   // Return color
@@ -393,7 +404,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'C': 
   case 'c': 
-    color_type = ((color_type + 1) % 2);
+    color_type = ((color_type + 1) % 3);
     break;
 
   case 27: // ESCAPE
@@ -525,6 +536,9 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) { print_verbose = 1; }
+      else if (!strcmp(*argv, "-gray_colors")) color_type = 0;
+      else if (!strcmp(*argv, "-heatmap_colors")) color_type = 1;
+      else if (!strcmp(*argv, "-label_colors")) color_type = 2;
       else if (!strcmp(*argv, "-selected_grid_range")) {
         argc--; argv++; RNScalar min_value = atof(*argv);
         argc--; argv++; RNScalar max_value = atof(*argv);

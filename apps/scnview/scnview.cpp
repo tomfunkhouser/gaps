@@ -1019,6 +1019,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
+      else if (!strcmp(*argv, "-headlight")) headlight = 1; 
       else if (!strcmp(*argv, "-max_vertex_spacing")) {
         argc--; argv++; max_vertex_spacing = atof(*argv);
       }

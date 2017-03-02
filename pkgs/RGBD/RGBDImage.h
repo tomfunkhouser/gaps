@@ -45,6 +45,8 @@ public:
   RNScalar PixelChannelValue(const R2Point& image_position, int channel_index) const;
 
   // Camera property functions
+  R4Matrix ProjectionMatrix(RNLength neardist = 0.1, RNLength fardist = 100.0) const;
+  R4Matrix ModelViewMatrix(void) const;
   R3Point WorldViewpoint(void) const;
   R3Vector WorldTowards(void) const;
   R3Vector WorldRight(void) const;
@@ -55,7 +57,7 @@ public:
   
   // Transformation property functions
   const R3Affine& CameraToWorld(void) const;
-  const R4Matrix& Extrinsics(void) const;
+  const R4Matrix Extrinsics(void) const;
   const R3Matrix& Intrinsics(void) const;
 
   // Manipulation functions
@@ -357,11 +359,12 @@ CameraToWorld(void) const
 
 
 
-inline const R4Matrix& RGBDImage::
+inline const R4Matrix RGBDImage::
 Extrinsics(void) const
 {
   // Return extrinsics matrix (transforms camera coordinates to world coordinates)
-  return camera_to_world.Matrix();
+  RNAbort("Not implemented for now");
+  return camera_to_world.Matrix().Inverse();
 }
 
 

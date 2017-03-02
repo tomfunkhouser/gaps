@@ -75,6 +75,7 @@ public:
   void SetVertexValue(R3MeshVertex *vertex, RNScalar value);
   void SetVertexValue(int vertex_index, RNScalar value);
   void SetName(const char *name);
+  void Reset(R3Mesh *mesh);
 
   // More property manipulation functions
   void Normalize(void);

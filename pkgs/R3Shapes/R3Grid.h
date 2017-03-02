@@ -180,8 +180,8 @@ public:
 
   // Debugging functions
   const RNScalar *GridValues(void) const;
-  void IndicesToIndex(int i, int j, int k, int& index);
-  void IndexToIndices(int index, int& i, int& j, int& k);
+  void IndicesToIndex(int i, int j, int k, int& index) const;
+  void IndexToIndices(int index, int& i, int& j, int& k) const;
 
 public:
   // Gaussian filtering
@@ -748,7 +748,7 @@ GridPosition(const R3Point& world_point) const
 
 
 inline void R3Grid::
-IndicesToIndex(int i, int j, int k, int& index)
+IndicesToIndex(int i, int j, int k, int& index) const
 {
   // Set index of grid value at (i, j, k) 
   index = k * grid_sheet_size + j * grid_row_size + i;
@@ -756,7 +756,7 @@ IndicesToIndex(int i, int j, int k, int& index)
 
 
 inline void R3Grid::
-IndexToIndices(int index, int& i, int& j, int& k)
+IndexToIndices(int index, int& i, int& j, int& k) const
 {
   // Set indices of grid value at index
   k = index / grid_sheet_size;

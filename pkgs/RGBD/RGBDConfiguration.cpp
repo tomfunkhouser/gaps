@@ -481,7 +481,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
     RGBDImage *image = Image(i);
     if ((write_every_kth_image > 1) && ((i % write_every_kth_image) != 0)) continue;
     // if (!image->WriteChannels()) return 0;
-    R4Matrix m = image->Extrinsics();
+    R4Matrix m = image->CameraToWorld().Matrix();
     const char *depth_filename = (image->DepthFilename()) ? image->DepthFilename() : "-";
     const char *color_filename = (image->ColorFilename()) ? image->ColorFilename() : "-";
     fprintf(fp, "image %s %s  %g %g %g %g  %g %g %g %g  %g %g %g %g  %g %g %g %g\n",

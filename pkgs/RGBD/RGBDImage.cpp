@@ -37,12 +37,12 @@ RGBDImage(void)
 
 RGBDImage::
 RGBDImage(const char *color_filename, const char *depth_filename,
-  const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix)
+  const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix)
   : configuration(NULL),
     configuration_index(-1),
     channels(),
     width(0), height(0),
-    camera_to_world(extrinsics_matrix, 0),
+    camera_to_world(camera_to_world_matrix, 0),
     intrinsics(intrinsics_matrix),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     opengl_texture_id(-1),
@@ -84,6 +84,34 @@ RGBDImage::
 ////////////////////////////////////////////////////////////////////////
 // Image property access functions
 ////////////////////////////////////////////////////////////////////////
+
+R4Matrix RGBDImage::
+ModelViewMatrix(void) const
+{
+  // Return transformation from world coordinates to camera coordinates
+  return camera_to_world.Matrix().Inverse();
+}
+
+
+
+R4Matrix RGBDImage::
+ProjectionMatrix(RNScalar neardist, RNScalar fardist) const
+{
+  // Return projection transformation from camera coordinates to normalized image coordinates
+  RNScalar fx = Intrinsics()[0][0];
+  RNScalar fy = Intrinsics()[1][1];
+  RNScalar cx = Intrinsics()[0][2];
+  RNScalar cy = Intrinsics()[1][2];
+  RNScalar W = NPixels(RN_X);
+  RNScalar H = NPixels(RN_Y);
+  return R4Matrix(
+    2*fx/W, 0, 2*(cx/W)-1, 0,
+    0, 2*fy/H, 2*(cy/H)-1, 0,
+    0, 0, -(fardist + neardist) / (fardist - neardist),  -2.0 * neardist * fardist / (fardist - neardist),
+    0, 0, -1, 0 );
+}
+
+
 
 R3Box RGBDImage::
 WorldBBox(void) const
@@ -395,7 +423,7 @@ void RGBDImage::
 SetExtrinsics(const R4Matrix& matrix)
 {
   // Set extrinsics matrix
-  this->camera_to_world.Reset(matrix);
+  this->camera_to_world.Reset(matrix.Inverse());
 
   // Invalidate bounding box
   InvalidateWorldBBox();
@@ -621,7 +649,7 @@ void RGBDImage::
 DrawPoints(int color_scheme, int skip) const
 {
   // Push transformation
-  Extrinsics().Push();
+  CameraToWorld().Push();
 
   // Enable lighting and material
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
@@ -676,7 +704,7 @@ DrawPoints(int color_scheme, int skip) const
   }
 
   // Pop transformation
-  Extrinsics().Pop();
+  CameraToWorld().Pop();
 }
 
 
@@ -685,7 +713,7 @@ void RGBDImage::
 DrawQuads(int color_scheme, int skip) const
 {
   // Push transformation
-  Extrinsics().Push();
+  CameraToWorld().Push();
 
   // Enable lighting and material
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
@@ -747,7 +775,7 @@ DrawQuads(int color_scheme, int skip) const
   }
 
   // Pop transformation
-  Extrinsics().Pop();
+  CameraToWorld().Pop();
 }
 
 
