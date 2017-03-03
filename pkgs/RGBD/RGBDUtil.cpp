@@ -21,7 +21,7 @@ int RGBDCreatePositionChannels(RGBDImage *image,
 {
   return RGBDCreatePositionChannels(*(image->DepthChannel()),
     output_px_image, output_py_image, output_pz_image,
-    image->Intrinsics(), image->Extrinsics());
+    image->Intrinsics(), image->CameraToWorld().Matrix());
 }
 
 
@@ -60,7 +60,7 @@ int RGBDCreateBoundaryChannel(RGBDImage *image,
 int RGBDCreatePositionChannels(
   const R2Grid& input_undistorted_depth_image,
   R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image,
-  const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix)
+  const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix)
 {
   // Initialize position images
   output_px_image = input_undistorted_depth_image; 
@@ -82,7 +82,7 @@ int RGBDCreatePositionChannels(
       R3Point position(x, y, z);
 
       // Transform by extrinsics matrix
-      position = extrinsics_matrix * position;
+      position = camera_to_world_matrix * position;
 
       // Fill position images
       output_px_image.SetGridValue(i, j, position.X());

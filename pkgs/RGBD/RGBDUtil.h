@@ -31,7 +31,7 @@ int RGBDCreateBoundaryChannel(RGBDImage *image,
 int RGBDCreatePositionChannels(
   const R2Grid& input_undistorted_depth_image,
   R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image,
-  const R3Matrix& intrinsics_matrix, const R4Matrix& extrinsics_matrix);
+  const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix);
 
 int RGBDCreateNormalChannels(const R2Grid& input_depth_image, 
   const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image, const R2Grid& boundary_image,
