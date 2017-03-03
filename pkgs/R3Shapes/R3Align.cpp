@@ -389,6 +389,98 @@ R3AlignPoints(const RNArray<R3Point *>& points1, const RNArray<R3Point *>& point
 }
 
 
+
+R3Plane
+R3EstimatePlaneWithPCA(const RNArray<R3Point *>& points, const RNScalar *weights)
+{
+  // Return best fitting plane
+  RNScalar variances[3];
+  R3Point centroid = R3Centroid(points);
+  R3Triad axes = R3PrincipleAxes(centroid, points, weights, variances);
+  if (RNIsZero(variances[1])) return R3null_plane;
+  return R3Plane(centroid, axes[2]);
+}
+
+
+
+R3Plane
+R3EstimatePlaneWithRansac(const RNArray<R3Point *>& points, const RNScalar *weights,
+  RNScalar tolerance, int max_iterations,
+  RNScalar *max_inlier_fraction, RNScalar *avg_inlier_fraction)
+{
+  // Check number of points
+  if (points.NEntries() < 3) return R3null_plane;
+  
+  // Try PCA plane
+  RNScalar variances[3];
+  RNArray<R3Point *> inliers;
+  RNScalar *w = (weights) ? new RNScalar [ points.NEntries() ] : NULL;
+  R3Point centroid = R3Centroid(points);
+  R3Triad axes = R3PrincipleAxes(centroid, points, weights, variances);
+  if (RNIsZero(variances[1])) return R3null_plane;
+  R3Plane plane(centroid, axes[2]);
+  if (tolerance == 0) tolerance = sqrt(variances[2]);
+  for (int i = 0; i < points.NEntries(); i++) {
+    R3Point *point = points[i];
+    RNScalar d = R3Distance(plane, *point);
+    if (d > tolerance) continue; 
+    if (w) w[inliers.NEntries()] = weights[i];
+    inliers.Insert(point);
+  }
+
+  // Initialize best score
+  R3Plane best_plane = plane;
+  RNScalar score = (RNScalar) inliers.NEntries() / (RNScalar) points.NEntries();
+  RNScalar best_score = score;
+  RNScalar total_score = score;
+  int nscores = 1;
+
+  // Search for a best normal
+  for (int i = 0; i < max_iterations; i++) {
+    // Guess normal by selecting three random points
+    R3Point *p0 = points[(int) (RNRandomScalar() * points.NEntries()) ];
+    R3Point *p1 = points[(int) (RNRandomScalar() * points.NEntries()) ];
+    R3Point *p2 = points[(int) (RNRandomScalar() * points.NEntries()) ];
+    if (R3Contains(*p0, *p1) || R3Contains(*p1, *p2) || R3Contains(*p2, *p0)) continue;
+    R3Plane plane(*p0, *p1, *p2);
+    
+    // Find inliers
+    inliers.Empty();
+    for (int i = 0; i < points.NEntries(); i++) {
+      R3Point *point = points[i];
+      RNScalar d = R3Distance(plane, *point);
+      if (d > tolerance) continue; 
+      if (w) w[inliers.NEntries()] = weights[i];
+      inliers.Insert(point);
+    }
+
+    // Compute  score
+    RNScalar score = (RNScalar) inliers.NEntries() / (RNScalar) points.NEntries();
+    total_score += score;
+    nscores++;
+
+    // Check score
+    if (score <= best_score) continue;
+    
+    // Recompute plane with just inliers
+    plane = R3EstimatePlaneWithPCA(inliers, w);
+    if (plane == R3null_plane) continue;
+    
+    // Update best stuff
+    best_plane = plane;
+    best_score = score;
+  }
+
+  // Update returned results
+  if (max_inlier_fraction) *max_inlier_fraction = best_score;
+  if (avg_inlier_fraction) *avg_inlier_fraction = total_score / nscores;
+  
+  // Return best plane
+  return best_plane;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 
 
@@ -452,13 +544,24 @@ R3AlignPoints(int npoints, R3Point *points1, R3Point *points2, const RNScalar *w
 
 
 
+R3Plane
+R3EstimatePlaneWithPCA(int npoints, R3Point *points, const RNScalar *weights)
+{
+  RNArray<R3Point *> array;
+  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  return R3EstimatePlaneWithPCA(array, weights);
+
+}
 
 
 
+R3Plane
+R3EstimatePlaneWithRansac(int npoints, R3Point *points, const RNScalar *weights,
+  RNScalar tolerance, int max_iterations, RNScalar *max_inlier_fraction, RNScalar *avg_inlier_fraction)
+{
+  RNArray<R3Point *> array;
+  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  return R3EstimatePlaneWithRansac(array, weights, tolerance, max_iterations, max_inlier_fraction, avg_inlier_fraction);
 
-
-
-
-
-
+}
 

@@ -9,14 +9,13 @@
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDCreatePositionChannels(RGBDImage *image,
-  R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image);
-
-int RGBDCreatePositionChannels(RGBDImage *image,
-  R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image);
+  R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image,
+  RNBoolean world_coordinates = TRUE);
 
 int RGBDCreateNormalChannels(RGBDImage *image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
-  RNLength neighborhood_world_radius = 0.25, int neighborhood_pixel_radius = 8, RNBoolean neighborhood_search = TRUE);
+  RNLength neighborhood_world_radius = 0.25, int neighborhood_pixel_radius = 8, RNBoolean neighborhood_search = TRUE,
+  RNBoolean world_coordinates = TRUE);
 
 int RGBDCreateBoundaryChannel(RGBDImage *image,
   R2Grid& output_boundary_image,

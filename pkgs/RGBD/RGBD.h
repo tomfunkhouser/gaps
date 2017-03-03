@@ -59,6 +59,7 @@ class RGBDConfiguration;
 #include "RGBDConfiguration.h"
 #include "RGBDTransform.h"
 #include "RGBDUtil.h"
+#include "RGBDSegmentation.h"
 
 
 

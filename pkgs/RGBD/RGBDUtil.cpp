@@ -17,22 +17,26 @@
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDCreatePositionChannels(RGBDImage *image,
-  R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image)
+  R2Grid& output_px_image, R2Grid& output_py_image, R2Grid& output_pz_image,
+  RNBoolean world_coordinates)
 {
+  R4Matrix camera_to_world = R4identity_matrix;
+  if (world_coordinates) camera_to_world = image->CameraToWorld().Matrix();
   return RGBDCreatePositionChannels(*(image->DepthChannel()),
     output_px_image, output_py_image, output_pz_image,
-    image->Intrinsics(), image->CameraToWorld().Matrix());
+    image->Intrinsics(), camera_to_world);
 }
 
 
 
 int RGBDCreateNormalChannels(RGBDImage *image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
-  RNLength neighborhood_world_radius, int neighborhood_pixel_radius, RNBoolean neighborhood_search)
+  RNLength neighborhood_world_radius, int neighborhood_pixel_radius, RNBoolean neighborhood_search,
+  RNBoolean world_coordinates)
 {
-  R2Grid px_image, py_image, pz_image, radius_image, boundary_image;
-  if (!RGBDCreatePositionChannels(image, px_image, py_image, pz_image)) return 0;
+  R2Grid boundary_image, px_image, py_image, pz_image, radius_image;
   if (!RGBDCreateBoundaryChannel(image, boundary_image)) return 0;
+  if (!RGBDCreatePositionChannels(image, px_image, py_image, pz_image, world_coordinates)) return 0;
   return RGBDCreateNormalChannels(*(image->DepthChannel()),
     px_image, py_image, pz_image, boundary_image,
     output_nx_image, output_ny_image, output_nz_image, radius_image,
@@ -384,7 +388,7 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Undistortion utility functions
+// LOW-LEVEL UNDISTORTION UTILITY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDCreateUndistortedColorImage(
@@ -621,7 +625,7 @@ int RGBDCreateUndistortedDepthImage(
 
 
 ////////////////////////////////////////////////////////////////////////
-// IMAGE RESAMPLING STUFF
+// LOW-LEVEL IMAGE RESAMPLING UTILITIES
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres, int yres)

@@ -184,7 +184,7 @@ WriteImages(const char *output_directory)
   sprintf(cmd, "mkdir -p %s", output_image_directory);
   system(cmd);
 
-  // Write position images
+  // Write images
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
 
@@ -215,11 +215,11 @@ WriteImages(const char *output_directory)
       }
     }
 
-    // Create position images
+    // Create position images (in camera coordinates)
     R2Grid px_image, py_image, pz_image;
     if (create_position_images || create_normal_images) {
       if (!RGBDCreatePositionChannels(depth_image, px_image, py_image, pz_image,
-        image->Intrinsics(), image->CameraToWorld().Matrix())) return 0;
+          image->Intrinsics(), R4identity_matrix)) return 0;
       if (create_position_images) {
         // Write position images
         char output_image_filename[4096];
@@ -232,13 +232,13 @@ WriteImages(const char *output_directory)
       }
     }
 
-    // Create normal images
+    // Create normal images (in camera coordinates)
     R2Grid nx_image, ny_image, nz_image, radius_image;
     if (create_normal_images) {
       RGBDCreateNormalChannels(depth_image,
         px_image, py_image, pz_image, boundary_image,
         nx_image, ny_image, nz_image, radius_image,
-       image->WorldViewpoint(), image->WorldTowards(), image->WorldUp());
+        R3zero_point, R3negz_vector, R3posy_vector);
       if (create_normal_images) {
         // Write normal images
         R2Grid tmp;

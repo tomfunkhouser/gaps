@@ -13,6 +13,9 @@ RNScalar R3AlignError(const RNArray<R3Point *>& points1, const RNArray<R3Point *
   const R4Matrix& matrix = R4identity_matrix, const RNScalar* weights = NULL);
 R4Matrix R3AlignPoints(const RNArray<R3Point *>& points1, const RNArray<R3Point *>& points2, const RNScalar *weights = NULL, 
   RNBoolean align_center = TRUE, RNBoolean align_rotation = TRUE, int align_scale = 1);
+R3Plane R3EstimatePlaneWithPCA(const RNArray<R3Point *>& points, const RNScalar *weights = NULL);
+R3Plane R3EstimatePlaneWithRansac(const RNArray<R3Point *>& points, const RNScalar *weights = NULL,
+  RNScalar tolerance = 0, int niterations = 16, RNScalar *max_inlier_fraction = NULL, RNScalar *avg_inlier_fraction = NULL);
 
 
 
@@ -27,6 +30,5 @@ RNScalar R3AlignError(int npoints, R3Point *points1, R3Point *points2,
   const R4Matrix& matrix = R4identity_matrix, const RNScalar* weights = NULL);
 R4Matrix R3AlignPoints(int npoints, R3Point *points1, R3Point *points2, const RNScalar* weights = NULL, 
   RNBoolean align_center = TRUE, RNBoolean align_rotation = TRUE, int align_scale = 1);
-
-
-
+R3Plane R3EstimatePlaneWithRansac(int npoints, R3Point *points, const RNScalar *weights = NULL,
+  RNScalar tolerance = 0, int niterations = 16, RNScalar *max_inlier_fraction = NULL, RNScalar *avg_inlier_fraction = NULL);
