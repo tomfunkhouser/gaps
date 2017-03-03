@@ -61,3 +61,10 @@ int RGBDCreateUndistortedDepthImage(
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Low-level Resampling Functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres, int yres);
+
+int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres, int yres);

@@ -64,7 +64,7 @@ int RGBDCreatePositionChannels(
 {
   // Initialize position images
   output_px_image = input_undistorted_depth_image; 
-  output_px_image.Clear(0);
+  output_px_image.Clear(R2_GRID_UNKNOWN_VALUE);
   output_py_image = output_px_image;
   output_pz_image = output_px_image;
 
@@ -103,7 +103,7 @@ int RGBDCreateBoundaryChannel(
 {
   // Initialize position images
   output_boundary_image = input_depth_image; 
-  output_boundary_image.Clear(0);
+  output_boundary_image.Clear(R2_GRID_UNKNOWN_VALUE);
 
   // Mark bottom and top border boundaries
   for (int i = 0; i < output_boundary_image.XResolution(); i++) {
@@ -216,7 +216,7 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
 {
   // Initialize normal images
   output_nx_image = input_depth_image; 
-  output_nx_image.Clear(0);
+  output_nx_image.Clear(R2_GRID_UNKNOWN_VALUE);
   output_ny_image = output_nx_image;
   output_nz_image = output_nx_image;
   output_radius_image = output_nx_image;
@@ -613,6 +613,145 @@ int RGBDCreateUndistortedDepthImage(
 #endif
     }
   }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// IMAGE RESAMPLING STUFF
+////////////////////////////////////////////////////////////////////////
+
+int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres, int yres)
+{
+  // Just checking
+  if ((xres == 0) || (yres == 0)) return 0;
+  if ((image.XResolution() == 0) || (image.YResolution() == 0)) return 0;
+
+  // Compute scale factors
+  double xscale = (double) image.XResolution() / (double) xres;
+  double yscale = (double) image.YResolution() / (double) yres;
+
+  // Copy original image and then initialize to zeroes
+  R2Grid copy_image(image);
+  image = R2Grid(xres, yres);
+
+  // Resample images
+  for (int iy = 0; iy < yres; iy++) {
+    double cy = yscale * iy;
+    int min_y = cy - 0.5*yscale + 0.5;
+    if (min_y >= copy_image.YResolution()) continue;
+    int max_y = cy + 0.5*yscale + 0.5;
+    if (max_y < 0) continue;
+    if (min_y < 0) min_y = 0;
+    if (max_y >= copy_image.YResolution()) max_y = copy_image.YResolution()-1;
+    if (max_y < min_y) max_y = min_y;
+    
+    for (int ix = 0; ix < xres; ix++) {
+      double cx = xscale * ix;
+      int min_x = cx - 0.5*xscale + 0.5;
+      if (min_x >= copy_image.XResolution()) continue;
+      int max_x = cx + 0.5*xscale + 0.5;
+      if (max_x < 0) continue;
+      if (min_x < 0) min_x = 0;
+      if (max_x >= copy_image.XResolution()) max_x = copy_image.XResolution()-1;
+      if (max_x < min_x) max_x = min_x;
+
+      // Find minimum depth in neighborhood
+      RNScalar min_depth = FLT_MAX;
+      for (int j = min_y; j <= max_y; j++) {
+        for (int i = min_x; i <= max_x; i++) {
+          RNScalar depth = copy_image.GridValue(i, j);
+          if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
+          if (depth < min_depth) min_depth = depth;
+        }
+      }
+
+      // Set depth
+      if (min_depth < FLT_MAX) {
+        image.SetGridValue(ix, iy, min_depth);
+      }
+    }
+  }
+
+  // Update depth intrinsics matrix
+  intrinsics_matrix[0][0] /= xscale;
+  intrinsics_matrix[0][2] /= xscale;
+  intrinsics_matrix[1][1] /= yscale;
+  intrinsics_matrix[1][2] /= yscale;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres, int yres)
+{
+  // Just checking
+  if ((xres == 0) || (yres == 0)) return 0;
+  if ((image.Width() == 0) || (image.Height() == 0)) return 0;
+
+  // Compute scale factors
+  double xscale = (double) image.Width() / (double) xres;
+  double yscale = (double) image.Height() / (double) yres;
+  if (RNIsNotEqual(xscale, yscale, 0.01)) {
+    fprintf(stderr, "Warning: anisotropic scaling of color image by factor %g\n", yscale/xscale);
+  }
+  
+  // Copy original image and then initialize to zeroes
+  R2Image copy_image(image);
+  image = R2Image(xres, yres, 3);
+
+  // Resample images
+  for (int iy = 0; iy < yres; iy++) {
+    double cy = yscale * iy;
+    int min_y = cy - 0.5*yscale + 0.5;
+    if (min_y >= copy_image.Height()) continue;
+    int max_y = cy + 0.5*yscale + 0.5;
+    if (max_y < 0) continue;
+    if (min_y < 0) min_y = 0;
+    if (max_y >= copy_image.Height()) max_y = copy_image.Height()-1;
+    if (max_y < min_y) max_y = min_y;
+
+    for (int ix = 0; ix < xres; ix++) {
+      double cx = xscale * ix;
+      int min_x = cx - 0.5*xscale + 0.5;
+      if (min_x >= copy_image.Width()) continue;
+      int max_x = cx + 0.5*xscale + 0.5;
+      if (max_x < 0) continue;
+      if (min_x < 0) min_x = 0;
+      if (max_x >= copy_image.Width()) max_x = copy_image.Width()-1;
+      if (max_x < min_x) max_x = min_x;
+
+      // Compute weighted sum of colors in neighborhood
+      RNRgb sum(0,0,0);
+      RNScalar weight = 0;
+      for (int j = min_y; j <= max_y; j++) {
+        for (int i = min_x; i <= max_x; i++) {
+          RNRgb color = copy_image.PixelRGB(i, j);
+          if (color == RNblack_rgb) continue; // ??? for borders
+          RNScalar w = 1.0;
+          sum += w * color;
+          weight += w;
+        }
+      }
+
+      // Compute average
+      if (weight > 0) {
+        RNRgb color = sum / weight;
+        image.SetPixelRGB(ix, iy, color);
+      }
+    }
+  }
+
+  // Update depth intrinsics matrix
+  intrinsics_matrix[0][0] /= xscale;
+  intrinsics_matrix[0][2] /= xscale;
+  intrinsics_matrix[1][1] /= yscale;
+  intrinsics_matrix[1][2] /= yscale;
 
   // Return success
   return 1;
