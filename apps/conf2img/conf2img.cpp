@@ -40,7 +40,7 @@ static int capture_depth_images = 0;
 // Other parameter program variables
 
 static int width = 640;
-static int height = 480;
+static int height = 512;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
 static int glut = 1;
@@ -199,7 +199,7 @@ WriteImages(const char *output_directory)
     if (!image->ReadDepthChannel()) return 0;
     R2Grid depth_image = *(image->DepthChannel());
     R3Matrix intrinsics_matrix = image->Intrinsics();
-    RGBDResampleDepthImage(depth_image, intrinsics_matrix, 640, 512);
+    RGBDResampleDepthImage(depth_image, intrinsics_matrix, width, height);
     if (!image->ReleaseDepthChannel()) return 0;
     
     // Create boundary image
