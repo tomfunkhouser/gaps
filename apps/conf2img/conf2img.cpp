@@ -199,6 +199,7 @@ WriteImages(const char *output_directory)
     if (!image->ReadDepthChannel()) return 0;
     R2Grid depth_image = *(image->DepthChannel());
     R3Matrix intrinsics_matrix = image->Intrinsics();
+    height = (int) ((double) image->NPixels(RN_Y) * width / (double) image->NPixels(RN_X) + 0.5);
     RGBDResampleDepthImage(depth_image, intrinsics_matrix, width, height);
     if (!image->ReleaseDepthChannel()) return 0;
     
