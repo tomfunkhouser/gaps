@@ -210,6 +210,9 @@ R3Triangle(const R3Triangle& triangle)
     else v[1] = new R3TriangleVertex(*(triangle.v[1]));
     if (!triangle.v[2] || triangle.v[2]->Flags()[R3_VERTEX_SHARED_FLAG]) v[2] = triangle.v[2];
     else v[2] = new R3TriangleVertex(*(triangle.v[2]));
+
+    // Update the triangle
+    Update();
 }
 
 

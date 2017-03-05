@@ -535,10 +535,10 @@ RNBoolean R3Contains(const R3Triangle& triangle, const R3Point& point)
 {
     // Check whether triangle bounding shape contains point
     if (!R3Contains(triangle.Box(), point)) return FALSE;
-
+  
     // Check whether triangle plane contains point
     if (!R3Contains(triangle.Plane(), point)) return FALSE;
-
+  
     // Compute whether point is on correct side of each edge
     const R3Point& p0 = triangle.Vertex(0)->Position();
     const R3Point& p1 = triangle.Vertex(1)->Position();
@@ -551,7 +551,7 @@ RNBoolean R3Contains(const R3Triangle& triangle, const R3Point& point)
     if (RNIsNegative(R3SignedDistance(plane12, point))) return FALSE;
     R3Plane plane20(p0, triangle.Normal(), p0 - p2);
     if (RNIsNegative(R3SignedDistance(plane20, point))) return FALSE;
-
+  
     // Triangle contains point
     return TRUE;
 }

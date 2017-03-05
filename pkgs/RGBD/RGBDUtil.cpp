@@ -231,7 +231,6 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
   int neighborhood_pixel_radius_squared = pixel_radius * pixel_radius;
   RNScalar neighborhood_world_radius_squared = neighborhood_world_radius * neighborhood_world_radius;
   R3Point *neighborhood_points = new R3Point [ input_depth_image.NEntries() ];
-  // R3Point *neighborhood_points = new R3Point [ neighborhood_diameter * neighborhood_diameter ];
 
   // Allocate search grid
   R2Grid search_grid(input_depth_image.XResolution(), input_depth_image.YResolution());
