@@ -219,7 +219,7 @@ WriteImages(const char *output_directory)
     R2Grid px_image, py_image, pz_image;
     if (create_position_images || create_normal_images) {
       if (!RGBDCreatePositionChannels(depth_image, px_image, py_image, pz_image,
-          image->Intrinsics(), R4identity_matrix)) return 0;
+          intrinsics_matrix, R4identity_matrix)) return 0;
       if (create_position_images) {
         // Write position images
         char output_image_filename[4096];
@@ -264,7 +264,7 @@ WriteImages(const char *output_directory)
 
   // Print statistics
   if (print_verbose) {
-    printf("Wrote position images ...\n");
+    printf("Wrote images to %s\n", output_directory);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", configuration.NImages());
     fflush(stdout);

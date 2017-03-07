@@ -212,6 +212,8 @@ int RGBDCreateBoundaryChannel(
 
 
 
+void BreakDebug(void) {}
+
 int RGBDCreateNormalChannels(const R2Grid& input_depth_image, 
   const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image, const R2Grid& boundary_image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image, R2Grid& output_radius_image,
