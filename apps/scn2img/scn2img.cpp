@@ -695,7 +695,11 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     R3null_material.Draw();
     DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
     R3null_material.Draw();
-    glEnable(GL_LIGHT0);
+
+    // Restore lights
+    if (headlight) {
+      glEnable(GL_LIGHT0);
+    }
 
     // Restore ambient reflections
     if (saved_ambients) {
