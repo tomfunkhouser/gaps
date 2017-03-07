@@ -684,9 +684,13 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
       }
     }
 
+    // Disable lights
+    for (int i = 0; i < 8; i++) {
+      glDisable(GL_LIGHT0 + i);
+    }
+
     // Draw scene with only ambient light
     glColor3d(1.0, 1.0, 1.0);
-    glDisable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
     R3null_material.Draw();
     DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
