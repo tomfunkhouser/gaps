@@ -10,6 +10,7 @@ public:
   R2Grid(int xresolution = 0, int yresolution = 0);
   R2Grid(int xresolution, int yresolution, const R2Box& bbox);
   R2Grid(int xresolution, int yresolution, const R2Affine& world_to_grid);
+  R2Grid(const R2Box& bbox, RNLength spacing, int min_resolution = 0, int max_resolution = 0);
   R2Grid(const R2Grid& grid, int x1, int y1, int x2, int y2);
   R2Grid(const R2Grid& grid);
   R2Grid(const R2Image& image, int dummy);

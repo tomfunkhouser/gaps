@@ -28,6 +28,7 @@ static const char *output_image_image_pixel_iou_matrix = NULL;
 static const char *output_image_image_grid_overlap_filename = NULL;
 static const char *output_image_image_grid_overlap_matrix = NULL;
 static const char *output_image_image_grid_iou_matrix = NULL;
+static int load_every_kth_image = 1;
 static int max_reprojection_distance = 32; // in pixels
 static double max_depth_inconsistency = 0.1; // as fraction of depth
 static double max_depth = 0;
@@ -62,7 +63,7 @@ ReadConfigurationFile(const char *filename)
   }
 
   // Read file
-  if (!configuration->ReadFile(filename)) {
+  if (!configuration->ReadFile(filename, load_every_kth_image)) {
     fprintf(stderr, "Unable to read configuration from %s\n", filename);
     return NULL;
   }
@@ -768,6 +769,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-output_image_image_grid_overlap_file")) { argc--; argv++; output_image_image_grid_overlap_filename = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_grid_overlap_matrix")) { argc--; argv++; output_image_image_grid_overlap_matrix = *argv; output = TRUE; }
       else if (!strcmp(*argv, "-output_image_image_grid_iou_matrix")) { argc--; argv++; output_image_image_grid_iou_matrix = *argv; output = TRUE; }
+      else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-max_reprojection_distance")) { argc--; argv++; max_reprojection_distance = atof(*argv); }
       else if (!strcmp(*argv, "-max_depth_inconsistency")) { argc--; argv++; max_depth_inconsistency = atof(*argv); }
       else if (!strcmp(*argv, "-max_depth")) { argc--; argv++; max_depth = atof(*argv); }
@@ -855,28 +857,6 @@ main(int argc, char **argv)
     }
   }
 
-  // Check if should compute grid overlaps
-  if (output_image_image_grid_overlap_filename || output_image_image_grid_overlap_matrix || output_image_image_grid_iou_matrix) {
-    // Compute image to image grid overlaps
-    R2Grid image_image_grid_overlap_matrix;
-    if (!ComputeGridOverlaps(configuration, image_image_grid_overlap_matrix)) exit(-1);
-    
-    // Write image to image grid overlap file
-    if (output_image_image_grid_overlap_filename) {
-      if (!WriteImageImageOverlapFile(configuration, image_image_grid_overlap_matrix, output_image_image_grid_overlap_filename)) exit(-1);
-    }
-  
-    // Write image to image grid overlap matrix
-    if (output_image_image_grid_overlap_matrix) {
-      if (!WriteImageImageOverlapMatrix(configuration, image_image_grid_overlap_matrix, output_image_image_grid_overlap_matrix)) exit(-1);
-    }
-
-    // Write image to image grid iou matrix
-    if (output_image_image_grid_iou_matrix) {
-      if (!WriteImageImageIOUMatrix(configuration, image_image_grid_overlap_matrix, output_image_image_grid_iou_matrix)) exit(-1);
-    }
-  }
-  
   // Check if should compute pixel overlaps
   if (output_image_image_pixel_overlap_filename || output_image_image_pixel_overlap_matrix || output_image_image_pixel_iou_matrix) {
     // Compute image to image pixel overlaps
@@ -896,6 +876,28 @@ main(int argc, char **argv)
     // Write image to image pixel iou matrix
     if (output_image_image_pixel_iou_matrix) {
       if (!WriteImageImageIOUMatrix(configuration, image_image_pixel_overlap_matrix, output_image_image_pixel_iou_matrix)) exit(-1);
+    }
+  }
+  
+  // Check if should compute grid overlaps
+  if (output_image_image_grid_overlap_filename || output_image_image_grid_overlap_matrix || output_image_image_grid_iou_matrix) {
+    // Compute image to image grid overlaps
+    R2Grid image_image_grid_overlap_matrix;
+    if (!ComputeGridOverlaps(configuration, image_image_grid_overlap_matrix)) exit(-1);
+    
+    // Write image to image grid overlap file
+    if (output_image_image_grid_overlap_filename) {
+      if (!WriteImageImageOverlapFile(configuration, image_image_grid_overlap_matrix, output_image_image_grid_overlap_filename)) exit(-1);
+    }
+  
+    // Write image to image grid overlap matrix
+    if (output_image_image_grid_overlap_matrix) {
+      if (!WriteImageImageOverlapMatrix(configuration, image_image_grid_overlap_matrix, output_image_image_grid_overlap_matrix)) exit(-1);
+    }
+
+    // Write image to image grid iou matrix
+    if (output_image_image_grid_iou_matrix) {
+      if (!WriteImageImageIOUMatrix(configuration, image_image_grid_overlap_matrix, output_image_image_grid_iou_matrix)) exit(-1);
     }
   }
   

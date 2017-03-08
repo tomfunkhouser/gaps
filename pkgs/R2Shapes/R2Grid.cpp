@@ -129,6 +129,46 @@ R2Grid(const R2Grid& grid, int x1, int y1, int x2, int y2)
 
 
 R2Grid::
+R2Grid(const R2Box& bbox, RNLength spacing, int min_resolution, int max_resolution)
+{
+  // Check for empty bounding box
+  if (bbox.IsEmpty() || (RNIsZero(spacing))) { *this = R2Grid(); return; }
+  
+  // Enforce max resolution
+  if (max_resolution > 0) {
+    if (bbox.XLength() / spacing > max_resolution) spacing = bbox.XLength() / max_resolution;
+    if (bbox.YLength() / spacing > max_resolution) spacing = bbox.YLength() / max_resolution;
+  }
+
+  // Compute resolution
+  grid_resolution[0] = (int) (bbox.XLength() / spacing + 0.5);
+  grid_resolution[1] = (int) (bbox.YLength() / spacing + 0.5);
+
+  // Enforce min resolution
+  if (min_resolution > 0) {
+    if (grid_resolution[0] < min_resolution) grid_resolution[0] = min_resolution;
+    if (grid_resolution[1] < min_resolution) grid_resolution[1] = min_resolution;
+  }
+
+  // Set grid resolution
+  grid_row_size = grid_resolution[0];
+  grid_size = grid_row_size * grid_resolution[1];
+
+  // Allocate grid values
+  if (grid_size == 0) grid_values = NULL;
+  else grid_values = new RNScalar [ grid_size ];
+  assert(!grid_size || grid_values);
+
+  // Set all values to zero
+  for (int i = 0; i < grid_size; i++) grid_values[i] = 0;
+
+  // Set transformations
+  SetWorldToGridTransformation(bbox);
+}
+
+
+
+R2Grid::
 R2Grid(const R2Grid& grid)
   : grid_values(NULL)
 {
