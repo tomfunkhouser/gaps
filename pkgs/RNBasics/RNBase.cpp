@@ -28,4 +28,6 @@ void RNStopBase()
 
 
 
-
+void RNBreakDebug(void)
+{
+}

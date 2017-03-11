@@ -42,3 +42,9 @@ typedef int RNMark;
 /* Global variables */
 
 extern RNMark RNmark;
+
+
+
+/* Useful functions */
+
+extern void RNBreakDebug(void);

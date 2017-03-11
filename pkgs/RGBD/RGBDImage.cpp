@@ -967,8 +967,8 @@ CreateColorChannels(const R2Image& image)
   SetColorChannels(image);
 
   // Set width and height
-  this->width = width;
-  this->height = height;
+  this->width = image.Width();
+  this->height = image.Height();
 
   // Return success
   return 1;
@@ -990,8 +990,8 @@ CreateDepthChannel(const R2Grid& image)
   SetDepthChannel(image);
 
   // Set width and height
-  this->width = width;
-  this->height = height;
+  this->width = image.XResolution();
+  this->height = image.YResolution();
 
   // Return success
   return 1;
