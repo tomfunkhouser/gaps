@@ -25,6 +25,7 @@
 
 static const char *input_configuration_filename = NULL;
 static const char *input_camera_filename = NULL;
+static const char *input_mesh_filename = NULL;
 static const char *output_image_directory = NULL;
 
 
@@ -35,12 +36,14 @@ static int create_boundary_images = 0;
 static int create_normal_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
+static int capture_object_images = 0;
+static int capture_category_images = 0;
 
 
 // Other parameter program variables
 
-static int width = 640;
-static int height = 512;
+static int width = 1280;
+static int height = 1024;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
 static int glut = 1;
@@ -62,7 +65,8 @@ static int print_debug = 0;
 
 static RGBDConfiguration configuration;
 static RNArray<R3Camera *> cameras;
-static int next_image_index = 0;
+static R3Mesh mesh;
+static int current_image_index = -1;
 
 
 
@@ -164,6 +168,32 @@ ReadCameras(const char *filename)
 
 
 
+static int
+ReadMesh(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read mesh from file
+  if (!mesh.ReadFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read mesh ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Faces = %d\n", mesh.NFaces());
+    printf("  # Edges = %d\n", mesh.NEdges());
+    printf("  # Vertices = %d\n", mesh.NVertices());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Image write functions
 ////////////////////////////////////////////////////////////////////////
@@ -171,6 +201,9 @@ ReadCameras(const char *filename)
 static int
 WriteImages(const char *output_directory)
 {
+  // Check parameters
+  if (!create_position_images && !create_boundary_images && !create_normal_images) return 1;
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
@@ -293,7 +326,6 @@ CaptureColor(R2Image& image)
 
 
 
-#if 0
 static void
 LoadInteger(int value)
 {
@@ -337,44 +369,6 @@ CaptureInteger(R2Grid& image)
   // Return success
   return 1;
 }
-
-
-
-static void
-LoadScalar(RNScalar value, RNScalar max_value = 65535)
-{
-  // Set color to represent an scalar value
-  if (value > max_value) value = max_value;
-  glColor3d(0, 0, value / max_value);
-}
-
-
-
-static int
-CaptureScalar(R2Grid& image, RNScalar max_value = 65535)
-{
-  // Allocate pixel buffer
-  float *pixels = new float [ width * height ];
-
-  // Read blue channel
-  glReadPixels(0, 0, width, height, GL_BLUE, GL_FLOAT, pixels);
-  
-  // Fill image
-  float *pixelp = pixels;
-  for (int iy = 0; iy < height; iy++) {
-    for (int ix = 0; ix < width; ix++) {
-      RNScalar value = *pixelp++;
-      image.SetGridValue(ix, iy, max_value * value);
-    }
-  }
-
-  // Delete pixels
-  delete [] pixels;
-  
-  // Return success
-  return 1;
-}
-#endif
 
 
 
@@ -436,21 +430,22 @@ CaptureDepth(R2Grid& image)
 ////////////////////////////////////////////////////////////////////////
 
 static RNScalar
-Affinity(const R3Camera& source, const R3Camera& target)
+Affinity(const R3Point& source_viewpoint, const R3Vector& source_towards,
+         const R3Point& target_viewpoint, const R3Vector& target_towards)
 {
   // Initialize affinity
   RNScalar affinity = 1.0;
   
   // Consider distance
-  RNScalar dd = R3SquaredDistance(source.Origin(), target.Origin());
+  RNScalar dd = R3SquaredDistance(source_viewpoint, target_viewpoint);
   if (dd > 1.0) affinity /= dd;
 
   // Consider delta z
-  RNScalar dz = fabs(source.Origin().Z() - target.Origin().Z());
+  RNScalar dz = fabs(source_viewpoint.Z() - target_viewpoint.Z());
   if (dz > 1.0) return 0;
 
   // Consider view angle
-  RNScalar dot = source.Towards().Dot(target.Towards());
+  RNScalar dot = source_towards.Dot(target_towards);
   if (dot > 0) affinity *= dot*dot;
   else return 0;
 
@@ -461,15 +456,22 @@ Affinity(const R3Camera& source, const R3Camera& target)
 
 
 static void
-RenderImage(const RGBDConfiguration& configuration, const R3Camera& target_camera, RNScalar min_affinity = 0.1)
+RenderConfiguration(const RGBDConfiguration& configuration,
+  const R3Point& target_viewpoint, const R3Vector& target_towards,
+  RNScalar min_affinity = 0.1)
 {
+  // Clear window
+  glViewport(0, 0, width, height);
+  glClearColor(background.R(), background.G(), background.B(), 1.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+  glColor3d(1.0, 1.0, 1.0);
+
   // Draw images
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
-    R3Camera source_camera(image->WorldViewpoint(), image->WorldTowards(), image->WorldUp(), image->XFov(), image->YFov(), 0.1, 100);
-    RNScalar affinity = Affinity(source_camera, target_camera);
+    RNScalar affinity = Affinity(image->WorldViewpoint(), image->WorldTowards(), target_viewpoint, target_towards);
     if (affinity < min_affinity) continue;
-    printf("%d\n", i);
     image->ReadChannels();
     image->DrawPoints(RGBD_PHOTO_COLOR_SCHEME);
     image->ReleaseChannels();
@@ -478,75 +480,155 @@ RenderImage(const RGBDConfiguration& configuration, const R3Camera& target_camer
 
 
 
+static void
+RenderMesh(const R3Mesh& mesh, int color_scheme,
+  const R3Point& target_viewpoint, const R3Vector& target_towards,
+  RNScalar min_affinity = 0.1)
+{
+  // Clear window
+  glViewport(0, 0, width, height);
+  glClearColor(0, 0, 0, 1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+  glColor3d(1.0, 1.0, 1.0);
+
+  // Draw mesh
+  glBegin(GL_TRIANGLES);
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    if (color_scheme == 1) LoadInteger(mesh.FaceSegment(face)+1);
+    else if (color_scheme == 2) LoadInteger(mesh.FaceMaterial(face)+1);
+    for (int j = 0; j < 3; j++) {
+      R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+      const R3Point& p = mesh.VertexPosition(vertex);
+      R3LoadPoint(p);
+    }
+  }
+  glEnd();
+}
+
+
+
+static int
+LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
+{
+  // Update next image index
+  current_image_index++;
+
+  // Check input cameras
+  if (cameras.NEntries() > 0) {
+    if (current_image_index < cameras.NEntries()) {
+      // Load camera from input file
+      R3Camera *camera = cameras.Kth(current_image_index);
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      camera->Load();
+      viewpoint = camera->Origin();
+      towards = camera->Towards();
+      return 1;
+    }
+  }
+  else if (configuration.NImages() > 0) {
+    if (current_image_index < configuration.NImages()) {
+      // Load camera for image from configuration
+      RGBDImage *image = configuration.Image(current_image_index);
+      if (image->NPixels(RN_X) == 0) {
+        image->ReadDepthChannel();  // Temporary, just to read width/height :(
+        image->ReleaseDepthChannel();
+      }
+      glMatrixMode(GL_PROJECTION);
+      glLoadIdentity();
+      image->ProjectionMatrix().Load();
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      image->CameraToWorld().InverseMatrix().Load();
+      viewpoint = image->WorldViewpoint();
+      towards = image->WorldTowards();
+      return 1;
+    }
+  }
+
+  // Return failure - no more cameras
+  return 0;
+}
+
+
 
 static void
 Redraw(void)
 {
   // Statistics variables
   static RNTime start_time;
-  if (next_image_index == 0) start_time.Read(); 
+  if (current_image_index == -1) start_time.Read(); 
 
-  // Check if we have captured all images
-  if (next_image_index >= cameras.NEntries()) {
+  // Get camera and name for next image
+  R3Point target_viewpoint;
+  R3Vector target_towards;
+  if (!LoadNextCamera(target_viewpoint, target_towards)) {
     if (print_verbose) {
       printf("  Time = %.2f seconds\n", start_time.Elapsed());
-      printf("  # Images = %d\n", next_image_index);
+      printf("  # Images = %d\n", current_image_index);
       fflush(stdout);
     }
     exit(0);
   }
 
-  // Get camera and name for next image
+  // Get image name
   char name[1024];
-  sprintf(name, "%06d", next_image_index); 
-  R3Camera *camera = cameras.Kth(next_image_index);
-  next_image_index++;
-
-  // Print debug message
+  sprintf(name, "%06d", current_image_index); 
   if (print_debug) {
     printf("  Rendering %s ...\n", name);
     fflush(stdout);
   }
 
-  // Clear window
-  glClearColor(background.R(), background.G(), background.B(), 1.0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Load camera and viewport
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  camera->Load();
-  glViewport(0, 0, width, height);
-
-  // Initialize depth test and color
-  glEnable(GL_DEPTH_TEST);
-  glColor3d(1.0, 1.0, 1.0);
-
-  // Render image
-  RenderImage(configuration, *camera);
-
   // Capture and write depth image 
-  if (capture_depth_images) {
-    R2Grid depth_image(width, height);
-    if (CaptureDepth(depth_image)) {
-      depth_image.Multiply(4000);
-      depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
-      char output_image_filename[1024];
-      sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
-      depth_image.WriteFile(output_image_filename);
+  if (capture_depth_images || capture_color_images) {
+    // Draw configuration
+    RenderConfiguration(configuration, target_viewpoint, target_towards);
+
+    // Capture and write depth image
+    if (capture_depth_images) {
+      R2Grid depth_image(width, height);
+      if (CaptureDepth(depth_image)) {
+        depth_image.Multiply(4000);
+        depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
+        depth_image.WriteFile(output_image_filename);
+      }
+    }
+
+    // Capture and write color image 
+    if (capture_color_images) {
+      R2Image color_image(width, height, 3);
+      if (CaptureColor(color_image)) {
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
+        color_image.Write(output_image_filename);
+      }
     }
   }
 
-  // Capture and write color image 
-  if (capture_color_images) {
-    R2Image color_image(width, height, 3);
-    if (CaptureColor(color_image)) {
+  if (capture_object_images) {
+    RenderMesh(mesh, 1, target_viewpoint, target_towards);
+    R2Grid object_image(width, height);
+    if (CaptureInteger(object_image)) {
       char output_image_filename[1024];
-      sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
-      color_image.Write(output_image_filename);
+      sprintf(output_image_filename, "%s/%s_object.png", output_image_directory, name);
+      object_image.WriteFile(output_image_filename);
     }
   }
 
+  if (capture_category_images) {
+    RenderMesh(mesh, 2, target_viewpoint, target_towards);
+    R2Grid category_image(width, height);
+    if (CaptureInteger(category_image)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_category.png", output_image_directory, name);
+      category_image.WriteFile(output_image_filename);
+    }
+  }
+    
 #ifdef USE_GLUT
   // Redraw
   glutPostRedisplay();
@@ -645,12 +727,15 @@ RenderImagesWithMesa(const char *output_image_directory)
 static int
 RenderImages(const char *output_image_directory)
 {
+  // Create output directory
+  char cmd[1024];
+  sprintf(cmd, "mkdir -p %s", output_image_directory);
+  system(cmd);
+
   // Render images
-  if (cameras.NEntries() > 0) {
-    if (glut) { if (!RenderImagesWithGlut(output_image_directory)) return 0; }
-    else if (mesa) { if (!RenderImagesWithMesa(output_image_directory)) return 0; }
-    else { RNAbort("Not implemented"); }
-  }
+  if (glut) { if (!RenderImagesWithGlut(output_image_directory)) return 0; }
+  else if (mesa) { if (!RenderImagesWithMesa(output_image_directory)) return 0; }
+  else { RNAbort("Not implemented"); }
 
   // Return success
   return 1;
@@ -677,11 +762,14 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-cameras")) { argc--; argv++; input_camera_filename = *argv; }
+      else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
       else if (!strcmp(*argv, "-create_position_images")) { output = create_position_images = 1; }
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
+      else if (!strcmp(*argv, "-capture_object_images")) { output = capture_object_images = 1; }
+      else if (!strcmp(*argv, "-capture_category_images")) { output = capture_category_images = 1; }
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
       else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
       else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
@@ -735,15 +823,22 @@ main(int argc, char **argv)
   // Read configuration
   if (!ReadConfiguration(input_configuration_filename)) exit(-1);
 
-  // Write images from existing cameras
+  // Write images for configuration cameras
   if (!WriteImages(output_image_directory)) return 0;
 
-  // Render images from novel cameras 
+  // Read cameras
   if (input_camera_filename) {
     if (!ReadCameras(input_camera_filename)) exit(-1);
-    if (!RenderImages(output_image_directory)) exit(-1);
   }
 
+  // Read mesh
+  if (input_mesh_filename) {
+    if (!ReadMesh(input_mesh_filename)) exit(-1);
+  }
+
+  // Render images
+  if (!RenderImages(output_image_directory)) exit(-1);
+  
   // Return success 
   return 0;
 }
