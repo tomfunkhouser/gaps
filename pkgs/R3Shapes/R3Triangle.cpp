@@ -97,7 +97,7 @@ R3TriangleVertex(const R3Point& position, const RNRgb& color)
       flags(0),
       mark(0)
 {
-  // Check normal
+  // Remember that color was set
   flags.Add(R3_VERTEX_COLORS_DRAW_FLAG);
 }
 

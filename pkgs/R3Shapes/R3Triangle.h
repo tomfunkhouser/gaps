@@ -32,6 +32,11 @@ class R3TriangleVertex {
         const RNFlags Flags(void) const;
         const RNMark Mark(void) const;
 
+        // Query functions/operations
+        RNBoolean HasNormal(void) const;
+        RNBoolean HasColor(void) const;
+        RNBoolean HasTextureCoords(void) const;
+
 	// Manipulation functions/operators
         void Mirror(const R3Plane& plane);
         void Transform(const R3Transformation& transformation);
@@ -182,6 +187,33 @@ Mark(void) const
 {
     // Return vertex mark
     return mark;
+}
+
+
+
+inline RNBoolean R3TriangleVertex::
+HasNormal(void) const
+{
+  // Return whether triangle vertex has explicit normal
+  return flags[R3_VERTEX_NORMALS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3TriangleVertex::
+HasColor(void) const
+{
+  // Return whether triangle vertex has explicit color
+  return flags[R3_VERTEX_COLORS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3TriangleVertex::
+HasTextureCoords(void) const
+{
+  // Return whether triangle vertex has explicit texture coordinates
+  return flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG];
 }
 
 
