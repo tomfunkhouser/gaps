@@ -13,6 +13,7 @@
 
 static RNArray<char *> mesh_names;
 static char *image_name = NULL;
+static RNRgb background(200.0/255.0, 200.0/255.0, 200.0/255.0);
 static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
 static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
 static R3Point initial_camera_origin(0,0,0);
@@ -563,7 +564,7 @@ void GLUTInit(int *argc, char **argv)
   GLUTwindow = glutCreateWindow("OpenGL Viewer");
 
   // Initialize background color 
-  glClearColor(200.0/255.0, 200.0/255.0, 200.0/255.0, 1.0);
+  glClearColor(background[0], background[1], background[2], 1.0);
 
   // Initialize lights
   static GLfloat lmodel_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
@@ -686,6 +687,11 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 
         argv++; argc--; GLUTwindow_height = atoi(*argv); 
+      }
+      else if (!strcmp(*argv, "-background")) { 
+        argv++; argc--; background[0] = atof(*argv); 
+        argv++; argc--; background[1] = atof(*argv); 
+        argv++; argc--; background[2] = atof(*argv);
       }
       else if (!strcmp(*argv, "-camera")) { 
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;

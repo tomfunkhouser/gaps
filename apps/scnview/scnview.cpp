@@ -1040,6 +1040,10 @@ ParseArgs(int argc, char **argv)
         argv++; argc--; background_color[1] = atof(*argv);
         argv++; argc--; background_color[2] = atof(*argv);
       }
+      else if (!strcmp(*argv, "-window")) { 
+        argv++; argc--; GLUTwindow_width = atoi(*argv); 
+        argv++; argc--; GLUTwindow_height = atoi(*argv); 
+      }
       else if (!strcmp(*argv, "-camera")) {
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;
         argv++; argc--; x = atof(*argv);

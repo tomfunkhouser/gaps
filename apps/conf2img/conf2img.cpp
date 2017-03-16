@@ -574,8 +574,20 @@ Redraw(void)
   }
 
   // Get image name
-  char name[1024];
-  sprintf(name, "%06d", current_image_index); 
+  char image_name_buffer[1024];
+  char *name = image_name_buffer;
+  if (configuration.NImages() > 0) {
+    RGBDImage *image = configuration.Image(current_image_index);
+    strncpy(image_name_buffer, image->DepthFilename(), 4096);
+    if (strrchr(image_name_buffer, '/')) name = strrchr(image_name_buffer, '/')+1;
+    char *endp = strrchr(name, '.');
+    if (endp) *endp = '\0';
+  }
+  else {
+    sprintf(image_name_buffer, "%06d", current_image_index);
+  }
+
+  // Print debug statement
   if (print_debug) {
     printf("  Rendering %s ...\n", name);
     fflush(stdout);
