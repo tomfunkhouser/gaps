@@ -12,7 +12,7 @@
 // Program variables
 
 static RNArray<char *> mesh_names;
-static char *image_name = NULL;
+static const char *image_name = NULL;
 static RNRgb background(200.0/255.0, 200.0/255.0, 200.0/255.0);
 static RNBoolean initial_camera = FALSE;
 static R3Point initial_camera_origin(0,0,0);
@@ -70,11 +70,32 @@ static R3Point world_origin(0, 0, 0);
 
 // Colors
 
-static GLfloat colors[24][4] = {
-  {1,0,0,1}, {0,1,0,1}, {0,0,1,1}, {1,0,1,1}, {0,1,1,1}, {1,1,0,1}, 
-  {1,.3,.7,1}, {1,.7,.3,1}, {.7,1,.3}, {.3,1,.7,1}, {.7,.3,1,1}, {.3,.7,1,1}, 
-  {1,.5,.5,1}, {.5,1,.5,1}, {.5,.5,1,1}, {1,.5,1,1}, {.5,1,1,1}, {1,1,.5,1}, 
-  {.5,0,0,1}, {0,.5,0,1}, {0,0,.5,1}, {.5,0,.5,1}, {0,.5,.5,1}, {.5,.5,0,1} 
+const int ncolors = 72;
+const RNRgb colors[ncolors] = {
+  RNRgb(0.5, 0.5, 0.5), RNRgb(1, 0, 0), RNRgb(0, 0, 1), 
+  RNRgb(0, 1, 0), RNRgb(0, 1, 1), RNRgb(1, 0, 1), 
+  RNRgb(1, 0.5, 0), RNRgb(0, 1, 0.5), RNRgb(0.5, 0, 1), 
+  RNRgb(0.5, 1, 0), RNRgb(0, 0.5, 1), RNRgb(1, 0, 0.5), 
+  RNRgb(0.5, 0, 0), RNRgb(0, 0.5, 0), RNRgb(0, 0, 0.5), 
+  RNRgb(0.5, 0.5, 0), RNRgb(0, 0.5, 0.5), RNRgb(0.5, 0, 0.5),
+  RNRgb(0.7, 0, 0), RNRgb(0, 0.7, 0), RNRgb(0, 0, 0.7), 
+  RNRgb(0.7, 0.7, 0), RNRgb(0, 0.7, 0.7), RNRgb(0.7, 0, 0.7), 
+  RNRgb(0.7, 0.3, 0), RNRgb(0, 0.7, 0.3), RNRgb(0.3, 0, 0.7), 
+  RNRgb(0.3, 0.7, 0), RNRgb(0, 0.3, 0.7), RNRgb(0.7, 0, 0.3), 
+  RNRgb(0.3, 0, 0), RNRgb(0, 0.3, 0), RNRgb(0, 0, 0.3), 
+  RNRgb(0.3, 0.3, 0), RNRgb(0, 0.3, 0.3), RNRgb(0.3, 0, 0.3),
+  RNRgb(1, 0.3, 0.3), RNRgb(0.3, 1, 0.3), RNRgb(0.3, 0.3, 1), 
+  RNRgb(1, 1, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1), 
+  RNRgb(1, 0.5, 0.3), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1), 
+  RNRgb(0.5, 1, 0.3), RNRgb(0.3, 0.5, 1), RNRgb(1, 0.3, 0.5), 
+  RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), RNRgb(0.3, 0.3, 0.5), 
+  RNRgb(0.5, 0.5, 0.3), RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5),
+  RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5), RNRgb(0.5, 0.5, 0.3), 
+  RNRgb(0.3, 0.3, 0.5), RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), 
+  RNRgb(0.3, 0.8, 0.5), RNRgb(0.5, 0.3, 0.8), RNRgb(0.8, 0.5, 0.3), 
+  RNRgb(0.8, 0.3, 0.5), RNRgb(0.5, 0.8, 0.3), RNRgb(0.3, 0.5, 0.8), 
+  RNRgb(0.8, 0.5, 0.5), RNRgb(0.5, 0.8, 0.5), RNRgb(0.5, 0.5, 0.8), 
+  RNRgb(0.8, 0.8, 0.5), RNRgb(0.5, 0.8, 0.8), RNRgb(0.8, 0.5, 0.8)
 };
 
 
@@ -131,9 +152,9 @@ void GLUTRedraw(void)
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
-        if (show_materials) glColor4fv(colors[mesh->FaceMaterial(face)%24]); 
-        else if (show_segments) glColor4fv(colors[mesh->FaceSegment(face)%24]); 
-        else if (meshes.NEntries() > 1) glColor4fv(colors[m%24]); 
+        if (show_materials) RNLoadRgb(colors[mesh->FaceMaterial(face)%ncolors]); 
+        else if (show_segments) RNLoadRgb(colors[mesh->FaceSegment(face)%ncolors]); 
+        else if (meshes.NEntries() > 1) RNLoadRgb(colors[m%ncolors]); 
         else if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
@@ -527,6 +548,10 @@ void GLUTKeyboard(unsigned char key, int x, int y)
            camera.XFOV(), camera.YFOV());
     break; }
       
+  case 16:  // ctrl-P
+    image_name = "mshview.png";
+    break; 
+
   case 27: // ESCAPE
     GLUTStop();
     break;
