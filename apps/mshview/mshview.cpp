@@ -152,9 +152,9 @@ void GLUTRedraw(void)
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
-        if (show_materials) RNLoadRgb(colors[mesh->FaceMaterial(face)%ncolors]); 
-        else if (show_segments) RNLoadRgb(colors[mesh->FaceSegment(face)%ncolors]); 
-        else if (meshes.NEntries() > 1) RNLoadRgb(colors[m%ncolors]); 
+        if (show_materials) RNLoadRgb(colors[1 + mesh->FaceMaterial(face)%(ncolors-1)]); 
+        else if (show_segments) RNLoadRgb(colors[1 + mesh->FaceSegment(face)%(ncolors-1)]); 
+        else if (meshes.NEntries() > 1) RNLoadRgb(colors[1 + m%(ncolors-1)]); 
         else if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
