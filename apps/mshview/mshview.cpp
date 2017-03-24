@@ -14,10 +14,14 @@
 static RNArray<char *> mesh_names;
 static char *image_name = NULL;
 static RNRgb background(200.0/255.0, 200.0/255.0, 200.0/255.0);
-static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
-static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
-static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
+static R3Point initial_camera_origin(0,0,0);
+static R3Vector initial_camera_towards(0, 0, -1);
+static R3Vector initial_camera_up(0, 1, 0);
+// static R3Vector initial_camera_towards(0.115655, 0.447639, -0.886704);
+// static R3Vector initial_camera_up(0.00610775, 0.892357, 0.451289);
+// static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
+// static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
 static int print_verbose = 0;
 
 
@@ -511,13 +515,17 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case ' ': {
     // Print camera
     const R3Camera& camera = viewer->Camera();
-    printf("#camera  %g %g %g  %g %g %g  %g %g %g  %g \n",
+    fprintf(stderr, "%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
            camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
            camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
            camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
-           camera.YFOV());
-    }
-    break;
+           camera.XFOV(), camera.YFOV());
+    printf("%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
+           camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
+           camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
+           camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
+           camera.XFOV(), camera.YFOV());
+    break; }
       
   case 27: // ESCAPE
     GLUTStop();
