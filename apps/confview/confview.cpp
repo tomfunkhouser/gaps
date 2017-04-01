@@ -606,7 +606,8 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
     for (int i = 0; i < image_image_overlaps->YResolution(); i++) {
       RNScalar value = image_image_overlaps->GridValue(selected_image_index, i);
       RGBDImage *image = configuration.Image(i);
-      RNLoadRgb(1.0 - 5*value, 0, 1.0);
+      glLineWidth((value < 0.4) ? 20*value : 5);
+      RNLoadRgb(5*value, 0.25 - value, 0.25 - value);
       image->DrawCamera(RGBD_NO_COLOR_SCHEME);
     }
     glLineWidth(1);

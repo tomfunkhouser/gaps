@@ -100,6 +100,7 @@ public:
   // I/O functions
   int ReadFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadObjFile(const char *filename, R3SceneNode *parent_node = NULL);
+  int ReadPlyFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadMeshFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadSUNCGFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadPlanner5DFile(const char *filename, R3SceneNode *parent_node = NULL);

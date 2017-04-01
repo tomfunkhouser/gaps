@@ -901,10 +901,10 @@ ReadFile(const char *filename, R3SceneNode *parent_node)
   else if (!strncmp(extension, ".obj", 4)) {
     if (!ReadObjFile(filename, parent_node)) return 0;
   }
-  else if (!strncmp(extension, ".off", 4)) {
-    if (!ReadMeshFile(filename, parent_node)) return 0;
-  }
   else if (!strncmp(extension, ".ply", 4)) {
+    if (!ReadPlyFile(filename, parent_node)) return 0;
+  }
+  else if (!strncmp(extension, ".off", 4)) {
     if (!ReadMeshFile(filename, parent_node)) return 0;
   }
   else if (!strncmp(extension, ".rct", 4)) {
@@ -1001,6 +1001,7 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material,
   }
 
   // Create array of verts used by tris
+  // Note: this results in sharing of vertices across triangle arrays
   RNArray<R3TriangleVertex *> tri_verts;
   for (int i = 0; i < tris.NEntries(); i++) {
     R3Triangle *triangle = tris.Kth(i);
@@ -1784,6 +1785,79 @@ WriteObjFile(const char *filename) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// PLY FILE I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3Scene::
+ReadPlyFile(const char *filename, R3SceneNode *parent_node)
+{
+  // Check/set parent node
+  if (!parent_node) parent_node = root;
+
+  // Read ply file
+  R3Mesh mesh;
+  if (!mesh.ReadFile(filename)) {
+    fprintf(stderr, "Unable to read mesh %s\n", filename);
+    return 0;
+  }
+  
+  // Count face segments
+  int max_face_segment = 0;
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    int face_segment = mesh.FaceSegment(face);
+    if (face_segment > max_face_segment) max_face_segment = face_segment;
+  }
+
+  // Create array of vertices
+  RNArray<R3TriangleVertex *> vertices;
+  for (int i = 0; i < mesh.NVertices(); i++) {
+    R3MeshVertex *mesh_vertex = mesh.Vertex(i);
+    const R3Point& position = mesh.VertexPosition(mesh_vertex);
+    R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
+    if (!mesh.VertexColor(mesh_vertex).IsBlack()) triangle_vertex->SetColor(mesh.VertexColor(mesh_vertex));
+    triangle_vertex->SetTextureCoords(mesh.VertexTextureCoords(mesh_vertex));
+    vertices.Insert(triangle_vertex);
+  }
+
+  // Create arrays of triangles
+  RNArray<R3Triangle *> *triangles = new RNArray<R3Triangle *> [ max_face_segment + 1 ];
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *mesh_face = mesh.Face(i);
+    int face_segment = mesh.FaceSegment(mesh_face);
+    if (face_segment < 0) face_segment = 0;
+    assert(face_segment <= max_face_segment);
+    int i0 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 0));
+    int i1 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 1));
+    int i2 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 2));
+    R3TriangleVertex *v0 = vertices.Kth(i0);
+    R3TriangleVertex *v1 = vertices.Kth(i1);
+    R3TriangleVertex *v2 = vertices.Kth(i2);
+    R3Triangle *triangle = new R3Triangle(v0, v1, v2);
+    triangles[face_segment].Insert(triangle);
+  }
+
+  // Create node for each face segment
+  for (int i = 0; i <= max_face_segment; i++) {
+    if (triangles[i].IsEmpty()) continue;
+    R3SceneNode *node = new R3SceneNode(this);
+    if (!InsertSceneElement(this, node, NULL, vertices, triangles[i])) return 0;
+    char node_name[1024];
+    sprintf(node_name, "Segment%d", i);
+    node->SetName(node_name);
+    parent_node->InsertChild(node);
+  }
+
+  // Delete arrays of triangles
+  delete [] triangles;
+  
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // MESH FILE I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -1852,10 +1926,10 @@ ReadMesh(const char *filename)
 int R3Scene::
 ReadMeshFile(const char *filename, R3SceneNode *parent_node)
 {
-  // Check/set parent node
+  // Check/set parent node                                                                                                                                   
   if (!parent_node) parent_node = root;
 
-  // Load triangles into scene
+  // Load triangles into scene                                                                                                                               
   R3TriangleArray *shape = ReadMesh(filename);
   if (!shape) return 0;
   R3SceneElement *element = new R3SceneElement();
@@ -1863,8 +1937,8 @@ ReadMeshFile(const char *filename, R3SceneNode *parent_node)
   R3SceneNode *node = new R3SceneNode(this);
   node->InsertElement(element);
   parent_node->InsertChild(node);
-  
-  // Return success
+
+  // Return success                                                                                                                                          
   return 1;
 }
 

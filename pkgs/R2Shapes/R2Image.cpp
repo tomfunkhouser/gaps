@@ -326,7 +326,7 @@ Write(const char *filename) const
   // Write file of appropriate type
   if (!strncmp(input_extension, ".bmp", 4)) return WriteBMP(filename);
   else if (!strncmp(input_extension, ".pgm", 4)) return WritePPM(filename, 0);
-  else if (!strncmp(input_extension, ".ppm", 4)) return WritePPM(filename, 1);
+  else if (!strncmp(input_extension, ".ppm", 4)) return WritePPM(filename, 0);
   else if (!strncmp(input_extension, ".jpg", 4)) return WriteJPEG(filename);
   else if (!strncmp(input_extension, ".jpeg", 5)) return WriteJPEG(filename);
   else if (!strncmp(input_extension, ".tif", 4)) return WriteTIFF(filename);

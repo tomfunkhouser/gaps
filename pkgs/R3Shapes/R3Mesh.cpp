@@ -2146,8 +2146,8 @@ CollapseShortEdges(RNLength min_edge_length)
     R3MeshFace *f1 = FaceOnEdge(edge, 1);  
     R3MeshEdge *e01 = (f0) ? EdgeAcrossVertex(v1, edge, f0) : NULL;
     R3MeshEdge *e11 = (f1) ? EdgeAcrossVertex(v1, edge, f1) : NULL;
-    if (e01) { heap.Remove(e01); SetEdgeMark(e01, 0); }
-    if (e11) { heap.Remove(e11); SetEdgeMark(e11, 0); }
+    if (e01 && (EdgeMark(e01) == R3mesh_mark)) { heap.Remove(e01); SetEdgeMark(e01, 0); }
+    if (e11 && (EdgeMark(e11) == R3mesh_mark)) { heap.Remove(e11); SetEdgeMark(e11, 0); }
 
     // Collapse edge
     R3MeshVertex *vertex = CollapseEdge(edge);
