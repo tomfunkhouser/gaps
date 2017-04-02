@@ -27,6 +27,7 @@ static char *input_cameras_name = NULL;
 static char *input_lights_name = NULL;
 static char *input_categories_name = NULL;
 static char *output_image_directory = NULL;
+static char *output_nodes_filename = NULL;
 
 
 // Image capture program variables
@@ -258,6 +259,44 @@ ReadCameras(const char *filename)
     printf("Read cameras from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Cameras = %d\n", camera_count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+WriteNodeNames(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Unable to open node name file %s\n", filename);
+    return 0;
+  }
+
+  // Write file
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    const char *name = (node->Name()) ? node->Name() : "-";
+    fprintf(fp, "%d %s\n", i+1, name);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Wrote node names to %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Nodes = %d\n", scene->NNodes());
     fflush(stdout);
   }
 
@@ -1418,6 +1457,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-raycast")) { mesa = 0; glut = 0; }
       else if (!strcmp(*argv, "-lights")) { argc--; argv++; input_lights_name = *argv; }
+      else if (!strcmp(*argv, "-output_nodes")) { argc--; argv++; output_nodes_filename = *argv; }
       else if (!strcmp(*argv, "-capture_color_images")) { capture_images = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { capture_images = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_kinect_images")) { capture_images = capture_kinect_images = 1; }
@@ -1518,6 +1558,11 @@ int main(int argc, char **argv)
   // Read/create lights
   if (input_lights_name) { if (!ReadLights(input_lights_name)) exit(-1); }
   else { scene->CreateDirectionalLights(); headlight = 1; }
+
+  // Write node names
+  if (output_nodes_filename) {
+    if (!WriteNodeNames(output_nodes_filename)) exit(-1);
+  }
 
   // Render images
   if (!RenderImages(output_image_directory)) exit(-1);
