@@ -54,7 +54,7 @@ class RNMap {
         // Manipulation operators
         RNMap<KeyType, ValueType>& operator=(const RNMap<KeyType,ValueType>& map);
 
-    private:
+    public:
         std::map<KeyType, ValueType, RNMapComparator<KeyType> > *m;
 };
 

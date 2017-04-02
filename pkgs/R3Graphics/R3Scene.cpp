@@ -1801,14 +1801,6 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     return 0;
   }
   
-  // Count face segments
-  int max_face_segment = 0;
-  for (int i = 0; i < mesh.NFaces(); i++) {
-    R3MeshFace *face = mesh.Face(i);
-    int face_segment = mesh.FaceSegment(face);
-    if (face_segment > max_face_segment) max_face_segment = face_segment;
-  }
-
   // Create array of vertices
   RNArray<R3TriangleVertex *> vertices;
   for (int i = 0; i < mesh.NVertices(); i++) {
@@ -1820,13 +1812,27 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     vertices.Insert(triangle_vertex);
   }
 
+  // Check face segments and materials
+  int max_face_segment = 0;
+  int max_face_material = 0;
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    int face_segment = mesh.FaceSegment(face);
+    int face_material = mesh.FaceMaterial(face);
+    if (face_segment > max_face_segment) max_face_segment = face_segment;
+    if (face_material > max_face_material) max_face_material = face_material;
+  }
+
   // Create arrays of triangles
-  RNArray<R3Triangle *> *triangles = new RNArray<R3Triangle *> [ max_face_segment + 1 ];
+  char node_name[1024];
+  RNArray<R3Triangle *> *tris_0_0 = NULL;
+  RNSymbolTable<RNArray<R3Triangle *> *> triangles;
   for (int i = 0; i < mesh.NFaces(); i++) {
     R3MeshFace *mesh_face = mesh.Face(i);
     int face_segment = mesh.FaceSegment(mesh_face);
     if (face_segment < 0) face_segment = 0;
-    assert(face_segment <= max_face_segment);
+    int face_material = mesh.FaceMaterial(mesh_face);
+    if (face_material < 0) face_material = 0;
     int i0 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 0));
     int i1 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 1));
     int i2 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 2));
@@ -1834,22 +1840,30 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3TriangleVertex *v1 = vertices.Kth(i1);
     R3TriangleVertex *v2 = vertices.Kth(i2);
     R3Triangle *triangle = new R3Triangle(v0, v1, v2);
-    triangles[face_segment].Insert(triangle);
+    RNArray<R3Triangle *> *tris = ((face_segment == 0) && (face_material == 0)) ? tris_0_0 : NULL; 
+    if (!tris) {
+      sprintf(node_name, "%d_%d", face_segment, face_material);
+      if (!triangles.Find(node_name, &tris)) {
+        tris = new RNArray<R3Triangle *>();
+        if ((face_segment == 0) && (face_material == 0)) tris_0_0 = tris;
+        triangles.Insert(node_name, tris);
+      }
+    }
+    tris->Insert(triangle);
   }
 
-  // Create node for each face segment
-  for (int i = 0; i <= max_face_segment; i++) {
-    if (triangles[i].IsEmpty()) continue;
+  // Create node for each set of triangles
+  std::map<std::string, RNArray<R3Triangle *> *, RNMapComparator< std::string > >::iterator it;
+  for (it = triangles.m->begin(); it != triangles.m->end(); it++) {
+    std::string node_name = it->first;
+    RNArray<R3Triangle *> *tris = it->second;
+    if (tris->IsEmpty()) { delete tris; continue; }
     R3SceneNode *node = new R3SceneNode(this);
-    if (!InsertSceneElement(this, node, NULL, vertices, triangles[i])) return 0;
-    char node_name[1024];
-    sprintf(node_name, "Segment%d", i);
-    node->SetName(node_name);
+    if (!InsertSceneElement(this, node, NULL, vertices, *tris)) return 0;
+    node->SetName(node_name.c_str());
     parent_node->InsertChild(node);
-  }
-
-  // Delete arrays of triangles
-  delete [] triangles;
+    delete tris;
+  } 
   
   // Return success
   return 1;
