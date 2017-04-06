@@ -1831,8 +1831,8 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3MeshFace *mesh_face = mesh.Face(i);
     int face_segment = mesh.FaceSegment(mesh_face);
     if (face_segment < 0) face_segment = 0;
-    int face_material = mesh.FaceMaterial(mesh_face);
-    if (face_material < 0) face_material = 0;
+    int face_category = mesh.FaceCategory(mesh_face);
+    if (face_category < 0) face_category = 0;
     int i0 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 0));
     int i1 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 1));
     int i2 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 2));
@@ -1840,12 +1840,12 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3TriangleVertex *v1 = vertices.Kth(i1);
     R3TriangleVertex *v2 = vertices.Kth(i2);
     R3Triangle *triangle = new R3Triangle(v0, v1, v2);
-    RNArray<R3Triangle *> *tris = ((face_segment == 0) && (face_material == 0)) ? tris_0_0 : NULL; 
+    RNArray<R3Triangle *> *tris = ((face_segment == 0) && (face_category == 0)) ? tris_0_0 : NULL; 
     if (!tris) {
-      sprintf(node_name, "%d_%d", face_segment, face_material);
+      sprintf(node_name, "%d_%d", face_segment, face_category);
       if (!triangles.Find(node_name, &tris)) {
         tris = new RNArray<R3Triangle *>();
-        if ((face_segment == 0) && (face_material == 0)) tris_0_0 = tris;
+        if ((face_segment == 0) && (face_category == 0)) tris_0_0 = tris;
         triangles.Insert(node_name, tris);
       }
     }
