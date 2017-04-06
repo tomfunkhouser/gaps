@@ -79,6 +79,7 @@ class R3MeshFace {
     RNArea area;
     int material;
     int segment;
+    int category;
     int id;
     RNFlags flags;
     RNScalar value;
@@ -244,6 +245,8 @@ class R3Mesh {
       // Returns the material ID associated with a face
     int FaceSegment(const R3MeshFace *face) const;
       // Returns the segment ID associated with a face
+    int FaceCategory(const R3MeshFace *face) const;
+      // Returns the category ID associated with a face
     int FaceID(const R3MeshFace *face) const;
       // Returns the ID stored with a face
     RNFlags FaceFlags(const R3MeshFace *face) const;
@@ -294,6 +297,8 @@ class R3Mesh {
       // Set the material associated with a face
     void SetFaceSegment(R3MeshFace *face, int segment);
       // Set the segment associated with a face
+    void SetFaceCategory(R3MeshFace *face, int category);
+      // Set the category associated with a face
     void SetFaceMark(R3MeshFace *face, RNMark mark);
       // Set the mark stored with a face
     void SetFaceValue(R3MeshFace *face, RNScalar value);
@@ -1049,6 +1054,15 @@ FaceSegment(const R3MeshFace *f) const
 
 
 inline int R3Mesh:: 
+FaceCategory(const R3MeshFace *f) const
+{
+  // Returns the category associated with a face
+  return f->category; 
+}
+
+
+
+inline int R3Mesh:: 
 FaceID(const R3MeshFace *f) const
 {
   // Returns the ID stored with a face
@@ -1246,6 +1260,15 @@ SetFaceSegment(R3MeshFace *f, int segment)
 {
   // Set the segment stored with a face
   f->segment = segment; 
+}
+
+
+
+inline void R3Mesh:: 
+SetFaceCategory(R3MeshFace *f, int category)
+{
+  // Set the category stored with a face
+  f->category = category; 
 }
 
 

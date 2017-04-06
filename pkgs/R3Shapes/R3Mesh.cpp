@@ -1800,6 +1800,7 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
   R3MeshVertex *vf[2] = { NULL, NULL };
   int m[2] = { 0, 0 };
   int s[2] = { 0, 0 };
+  int c[2] = { 0, 0 };
   if (f[0]) {
     ef[0][0] = EdgeAcrossVertex(v[0], edge, f[0]);
     ef[0][1] = EdgeAcrossVertex(v[1], edge, f[0]);
@@ -1807,6 +1808,7 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
     assert(vf[0] == VertexAcrossEdge(ef[0][0], v[0]));
     m[0] = FaceMaterial(f[0]);
     s[0] = FaceSegment(f[0]);
+    c[0] = FaceCategory(f[0]);
   }
   if (f[1]) {
     ef[1][0] = EdgeAcrossVertex(v[0], edge, f[1]);
@@ -1815,6 +1817,7 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
     assert(vf[1] == VertexAcrossEdge(ef[1][0], v[0]));
     m[1] = FaceMaterial(f[1]);
     s[1] = FaceSegment(f[1]);
+    c[1] = FaceCategory(f[1]);
   }
 
   // Delete the edge and the two adjacent faces
@@ -1838,12 +1841,14 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
     R3MeshFace *f00 = CreateFace(vf[0], v[0], vertex, ef[0][0], e[0], es);
     SetFaceMaterial(f00, m[0]);
     SetFaceSegment(f00, s[0]);
+    SetFaceCategory(f00, c[0]);
 
     // Create new face on v[1] side of split
     assert((es != e[1]) && (es != ef[0][1]) && (e[1] != ef[0][1]));
     R3MeshFace *f01 = CreateFace(vf[0], vertex, v[1], es, e[1], ef[0][1]);
     SetFaceMaterial(f01, m[0]);
     SetFaceSegment(f01, s[0]);
+    SetFaceCategory(f01, c[0]);
   }
 
   // Create two new faces on other side
@@ -1857,12 +1862,14 @@ SplitEdge(R3MeshEdge *edge, const R3Point& point, R3MeshEdge **e0, R3MeshEdge **
     R3MeshFace *f10 = CreateFace(vf[1], v[1], vertex, ef[1][1], e[1], es);
     SetFaceMaterial(f10, m[1]);
     SetFaceSegment(f10, s[1]);
+    SetFaceCategory(f10, c[1]);
 
     // Create new face on v[0] side of split
     assert((es != e[0]) && (es != ef[1][0]) && (e[0] != ef[1][0]));
     R3MeshFace *f11 = CreateFace(vf[1], vertex, v[0], es, e[0], ef[1][0]);
     SetFaceMaterial(f11, m[1]);
     SetFaceSegment(f11, s[1]);
+    SetFaceCategory(f11, c[1]);
   }
 
   // Interpolate vertex properties
@@ -1925,6 +1932,7 @@ SplitFace(R3MeshFace *f, const R3Point& point, R3MeshFace **f0, R3MeshFace **f1,
   R3MeshEdge *e2 = EdgeOnFace(f, v2, RN_CCW);
   int m = FaceMaterial(f);
   int s = FaceSegment(f);
+  int c = FaceCategory(f);
 
   // Delete face
   DeleteFace(f);
@@ -1951,6 +1959,11 @@ SplitFace(R3MeshFace *f, const R3Point& point, R3MeshFace **f0, R3MeshFace **f1,
   SetFaceSegment(t0, s);
   SetFaceSegment(t1, s);
   SetFaceSegment(t2, s);
+
+  // Set face categories
+  SetFaceCategory(t0, c);
+  SetFaceCategory(t1, c);
+  SetFaceCategory(t2, c);
 
   // Interpolate vertex properties
   RNScalar d0 = R3Distance(point, VertexPosition(v0));
@@ -1986,6 +1999,7 @@ SubdivideFace(R3MeshFace *f)
   R3MeshEdge *e2 = EdgeOnFace(f, v2, RN_CCW);
   int m = FaceMaterial(f);
   int s = FaceSegment(f);
+  int c = FaceCategory(f);
 
   // Delete face
   DeleteFace(f);
@@ -2012,6 +2026,12 @@ SubdivideFace(R3MeshFace *f)
   SetFaceSegment(f2, s);
   SetFaceSegment(f3, s);
   SetFaceSegment(f4, s);
+
+  // Set face categorys
+  SetFaceCategory(f1, c);
+  SetFaceCategory(f2, c);
+  SetFaceCategory(f3, c);
+  SetFaceCategory(f4, c);
 
   // Return interior face
   return f4;
@@ -4376,7 +4396,6 @@ ReadRayFile(const char *filename)
 
       // Set face material
       if (face) SetFaceMaterial(face, m);
-      if (face) SetFaceSegment(face, m);
 
       // Increment triangle counter
       triangle_count++;
@@ -4480,6 +4499,7 @@ ReadPlyFile(const char *filename)
     int *verts;
     int material;
     int segment;
+    int category;
   } PlyFace;
 
   typedef struct PlyRangeGrid {
@@ -4504,7 +4524,8 @@ ReadPlyFile(const char *filename)
   static PlyProperty face_props[] = { 
     {(char *) "vertex_indices", PLY_INT, PLY_INT, offsetof(PlyFace,verts), 1, PLY_UCHAR, PLY_UCHAR, offsetof(PlyFace,nverts)},
     {(char *) "material_id", PLY_INT, PLY_INT, offsetof(PlyFace,material), 0, 0, 0, 0},
-    {(char *) "segment_id", PLY_INT, PLY_INT, offsetof(PlyFace,segment), 0, 0, 0, 0}
+    {(char *) "segment_id", PLY_INT, PLY_INT, offsetof(PlyFace,segment), 0, 0, 0, 0},
+    {(char *) "category_id", PLY_INT, PLY_INT, offsetof(PlyFace,category), 0, 0, 0, 0}
   };
 
   // List of property information for a range_grid
@@ -4589,12 +4610,14 @@ ReadPlyFile(const char *filename)
 	if (equal_strings("vertex_indices", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[0]);
 	else if (equal_strings("material_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[1]);
 	else if (equal_strings("segment_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[2]);
+	else if (equal_strings("category_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[3]);
       }
 
       // Create stuff for degenerate triangles
       RNArray<R3MeshVertex *> degenerate_triangle_vertices;
       int *degenerate_triangle_materials = new int [ num_elems ];
       int *degenerate_triangle_segments = new int [ num_elems ];
+      int *degenerate_triangle_categories = new int [ num_elems ];
       int num_degenerate_triangles = 0;
 
       // grab all the face elements 
@@ -4604,7 +4627,8 @@ ReadPlyFile(const char *filename)
         plyface.nverts = 0;
         plyface.verts = NULL;
         plyface.material = -1;
-        plyface.segment = 0;
+        plyface.segment = -1;
+        plyface.category = -1;
         ply_get_element(ply, (void *) &plyface);
 
         // Create mesh face(s)
@@ -4628,9 +4652,10 @@ ReadPlyFile(const char *filename)
           // Create face
           R3MeshFace *f = CreateFace(v1, v2, v3);
           if (f) {
-            // Set material/segment
+            // Set material/segment/category
             SetFaceMaterial(f, plyface.material);
             SetFaceSegment(f, plyface.segment);
+            SetFaceCategory(f, plyface.category);
           }
           else {
             // Must have been degeneracy (e.g., three faces sharing an edge)
@@ -4640,6 +4665,7 @@ ReadPlyFile(const char *filename)
             degenerate_triangle_vertices.Insert(v3);
             degenerate_triangle_materials[num_degenerate_triangles] = plyface.material;
             degenerate_triangle_segments[num_degenerate_triangles] = plyface.segment;
+            degenerate_triangle_categories[num_degenerate_triangles] = plyface.category;
             num_degenerate_triangles++;
           }
         }
@@ -4665,14 +4691,16 @@ ReadPlyFile(const char *filename)
           }
         }
         if (f) {
-          SetFaceSegment(f, degenerate_triangle_segments[i]);
           SetFaceMaterial(f, degenerate_triangle_materials[i]);
+          SetFaceSegment(f, degenerate_triangle_segments[i]);
+          SetFaceCategory(f, degenerate_triangle_categories[i]);
         }
       }
 
       // Delete memory for degenerate triangles
-      delete [] degenerate_triangle_segments;
       delete [] degenerate_triangle_materials;
+      delete [] degenerate_triangle_segments;
+      delete [] degenerate_triangle_categories;
     }
     else if (equal_strings ("range_grid", elem_name)) {
       // Get num_cols and num_rows for range_grid
@@ -5380,6 +5408,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     int *verts;
     int material;
     int segment;
+    int category;
   } PlyFace;
 
   // Element names
@@ -5402,7 +5431,8 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   static PlyProperty face_props[] = { 
     {(char *) "vertex_indices", PLY_INT, PLY_INT, offsetof(PlyFace,verts), 1, PLY_UCHAR, PLY_UCHAR, offsetof(PlyFace,nverts)},
     {(char *) "material_id", PLY_INT, PLY_INT, offsetof(PlyFace,material), 0, 0, 0, 0},
-    {(char *) "segment_id", PLY_INT, PLY_INT, offsetof(PlyFace,segment), 0, 0, 0, 0}
+    {(char *) "segment_id", PLY_INT, PLY_INT, offsetof(PlyFace,segment), 0, 0, 0, 0},
+    {(char *) "category_id", PLY_INT, PLY_INT, offsetof(PlyFace,category), 0, 0, 0, 0}
   };
 
   // Open ply file
@@ -5428,6 +5458,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   ply_describe_property(ply, (char *) "face", &face_props[0]);
   ply_describe_property(ply, (char *) "face", &face_props[1]);
   ply_describe_property(ply, (char *) "face", &face_props[2]);
+  ply_describe_property(ply, (char *) "face", &face_props[3]);
 
   // Complete header
   ply_header_complete(ply);
@@ -5464,6 +5495,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     ply_face.verts[2] = VertexID(VertexOnFace(f, 2));
     ply_face.material = FaceMaterial(f);
     ply_face.segment = FaceSegment(f);
+    ply_face.category = FaceCategory(f);
     ply_put_element(ply, (void *) &ply_face);
   }
 
@@ -6128,7 +6160,8 @@ R3MeshFace(void)
   : plane(0.0, 0.0, 0.0, 0.0),
     bbox(1.0, 1.0, 1.0, -1.0, -1.0, -1.0),
     material(-1),
-    segment(0),
+    segment(-1),
+    category(-1),
     id(-1),
     flags(0),
     value(0.0),

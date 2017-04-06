@@ -51,6 +51,7 @@ static int show_edges = 0;
 static int show_vertices = 0;
 static int show_materials = 0;
 static int show_segments = 0;
+static int show_categories = 0;
 static int show_boundaries = 0;
 static int show_axes = 0;
 static int show_face_normals = 0;
@@ -62,6 +63,7 @@ static int show_vertex_texcoords = 0;
 static int show_vertex_names = 0;
 static int show_material_names = 0;
 static int show_segment_names = 0;
+static int show_category_names = 0;
 static int show_backfacing = 0;
 static int current_mesh = -1;
 static R3Point world_origin(0, 0, 0);
@@ -154,6 +156,7 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         if (show_materials) RNLoadRgb(colors[1 + mesh->FaceMaterial(face)%(ncolors-1)]); 
         else if (show_segments) RNLoadRgb(colors[1 + mesh->FaceSegment(face)%(ncolors-1)]); 
+        else if (show_categories) RNLoadRgb(colors[1 + mesh->FaceCategory(face)%(ncolors-1)]); 
         else if (meshes.NEntries() > 1) RNLoadRgb(colors[1 + m%(ncolors-1)]); 
         else if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
@@ -289,6 +292,18 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->FaceSegment(face));
+        GLUTDrawText(mesh->FaceCentroid(face), buffer);
+      }
+    }
+    
+    // Draw category names
+    if (show_category_names) {
+      glDisable(GL_LIGHTING);
+      glColor3f(0, 0, 1);
+      for (int i = 0; i < mesh->NFaces(); i++) {
+        R3MeshFace *face = mesh->Face(i);
+        char buffer[256];
+        sprintf(buffer, "%d", mesh->FaceCategory(face));
         GLUTDrawText(mesh->FaceCentroid(face), buffer);
       }
     }
@@ -489,6 +504,14 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'f':
     show_faces = !show_faces;
+    break;
+
+  case 'L':
+    show_category_names = !show_category_names;
+    break;
+
+  case 'l':
+    show_categories = !show_categories;
     break;
 
   case 'M':
@@ -714,8 +737,9 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-back")) { show_backfacing = TRUE; }
       else if (!strcmp(*argv, "-boundaries")) { show_boundaries = TRUE; }
       else if (!strcmp(*argv, "-axes")) { show_axes = TRUE; }
-      else if (!strcmp(*argv, "-segments")) { show_segments = TRUE; }
       else if (!strcmp(*argv, "-materials")) { show_materials = TRUE; }
+      else if (!strcmp(*argv, "-segments")) { show_segments = TRUE; }
+      else if (!strcmp(*argv, "-categories")) { show_categories = TRUE; }
       else if (!strcmp(*argv, "-vertex_colors")) { show_vertex_colors = TRUE; }
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 
