@@ -334,6 +334,8 @@ void GLUTSpecial(int key, int x, int y)
   // Translate key
   int translated_key = key;
   switch (key) {
+    case GLUT_KEY_PAGE_DOWN: translated_key = R3_SURFEL_VIEWER_PAGE_DOWN_KEY; break;
+    case GLUT_KEY_PAGE_UP: translated_key = R3_SURFEL_VIEWER_PAGE_UP_KEY; break;
     case GLUT_KEY_DOWN: translated_key = R3_SURFEL_VIEWER_DOWN_KEY; break;
     case GLUT_KEY_UP: translated_key = R3_SURFEL_VIEWER_UP_KEY; break;
     case GLUT_KEY_LEFT: translated_key = R3_SURFEL_VIEWER_LEFT_KEY; break;

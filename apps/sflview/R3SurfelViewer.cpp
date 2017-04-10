@@ -329,9 +329,8 @@ Redraw(void)
       RNLength d = R3Distance(viewer.Camera().Origin(), scan->Viewpoint());
       if (d < distance_to_closest_scan) distance_to_closest_scan = d;
     }
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glEnable(GL_BLEND);
-    // glDepthMask(FALSE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
   }
 
   // Draw surfels
@@ -356,6 +355,16 @@ Redraw(void)
         R3SurfelLabel *label = object->GroundTruthLabel();
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
+        node->Draw(0); 
+      }
+    }
+    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SCAN) {
+      // Draw with colors based on nodes
+      for (int i = 0; i < resident_nodes.NNodes(); i++) {
+        R3SurfelNode *node = resident_nodes.Node(i);
+        R3SurfelScan *scan = node->Scan();
+        int scan_index = (scan) ? scan->SceneIndex() : 0;
+        LoadColor(scan_index);
         node->Draw(0); 
       }
     }
@@ -460,17 +469,16 @@ Redraw(void)
         R3SurfelNode *node = resident_nodes.Node(i);
         R3SurfelScan *scan = node->Scan();
         if (!scan) continue;
-        
-        // Check distance to closest scan
+
+        // Compute alpha
+        unsigned char alpha = 255;
         if (distance_to_closest_scan < FLT_MAX) {
           RNLength d = R3Distance(viewer.Camera().Origin(), scan->Viewpoint());
-          if (d > distance_to_closest_scan + 0.25) continue;
+          // if (d > distance_to_closest_scan + 0.25) continue;
+          RNScalar a = (d > 1.0) ? distance_to_closest_scan / d : 1.0;
+          alpha = 255 * a*a;
         }
 
-        // Compute alpha for node
-        // RNScalar dot = viewer.Camera().Towards().Dot(scan->Towards());
-        unsigned char alpha = 255;
-       
         // Draw surfels
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
@@ -478,7 +486,7 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
 
-            // Check surfel
+            // Check backfacing
             if (!backfacing_visibility) {
               R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
               if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
@@ -531,7 +539,6 @@ Redraw(void)
 
   // Reset the point size
   glDisable(GL_BLEND);
-  glDepthMask(TRUE);
   glPointSize(1);
 
   // Draw normals
@@ -1053,16 +1060,18 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
-      if (shift) viewing_extent[RN_LO][RN_Z] += 0.1;
-      else viewing_extent[RN_HI][RN_Z] += 0.1;
+      if (shift) viewing_extent[RN_LO][RN_Z] += 0.25;
+      else viewing_extent[RN_HI][RN_Z] += 0.25;
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
+      printf("HERE %g %g\n", viewing_extent[RN_LO][RN_Z], viewing_extent[RN_HI][RN_Z]);
       break;
 
     case R3_SURFEL_VIEWER_PAGE_DOWN_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
-      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.1;
-      else viewing_extent[RN_HI][RN_Z] -= 0.1;
+      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.25;
+      else viewing_extent[RN_HI][RN_Z] -= 0.25;
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
+      printf("HERE %g %g\n", viewing_extent[RN_LO][RN_Z], viewing_extent[RN_HI][RN_Z]);
       break;
 
     case '-': 
@@ -1564,6 +1573,9 @@ PickNode(int x, int y, R3Point *picked_position,
   // Set viewing transformation
   viewer.Load();
 
+  // Set viewing extent
+  LoadViewingExtent(this);
+
   // Set OpenGL stuff
   glPointSize(pick_tolerance);    
 
@@ -1600,6 +1612,9 @@ PickNode(int x, int y, R3Point *picked_position,
   // Reset OpenGL stuff
   glPointSize(1);
   glFinish();
+
+  // Reset viewing modes
+  LoadViewingExtent(NULL);
 
   // Read color buffer at cursor position
   unsigned char rgba[4];

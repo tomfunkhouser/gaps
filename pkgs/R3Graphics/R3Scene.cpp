@@ -972,7 +972,8 @@ WriteFile(const char *filename) const
 
 static int
 InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material, 
-  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris)
+  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris,
+  RNBoolean copy_vertices = FALSE)
 {
   // Create material if none
   if (!material) {
@@ -994,7 +995,7 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material,
     element = new R3SceneElement(material);
   }
 
-  // Mark vertices used by tris
+  // Mark vertices 
   for (int i = 0; i < verts.NEntries(); i++) {
     R3TriangleVertex *vertex = verts.Kth(i);
     vertex->SetMark(0);
@@ -1011,6 +1012,15 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material,
         tri_verts.Insert(vertex);
         vertex->SetMark(1);
       }
+    }
+  }
+
+  // Copy vertices
+  if (copy_vertices) {
+    for (int i = 0; i < tri_verts.NEntries(); i++) {
+      R3TriangleVertex *v0 = tri_verts.Kth(i);
+      R3TriangleVertex *v1 = new R3TriangleVertex(*v0);
+      tri_verts[i] = v1;
     }
   }
 
@@ -1859,11 +1869,14 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     RNArray<R3Triangle *> *tris = it->second;
     if (tris->IsEmpty()) { delete tris; continue; }
     R3SceneNode *node = new R3SceneNode(this);
-    if (!InsertSceneElement(this, node, NULL, vertices, *tris)) return 0;
+    if (!InsertSceneElement(this, node, NULL, vertices, *tris, TRUE)) return 0;
     node->SetName(node_name.c_str());
     parent_node->InsertChild(node);
     delete tris;
-  } 
+  }
+
+  // Delete the original vertices (they got copied by InsertSceneElement)
+  for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
   
   // Return success
   return 1;
