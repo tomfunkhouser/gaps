@@ -972,8 +972,7 @@ WriteFile(const char *filename) const
 
 static int
 InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material, 
-  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris,
-  RNBoolean copy_vertices = FALSE)
+  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris)
 {
   // Create material if none
   if (!material) {
@@ -995,37 +994,32 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material,
     element = new R3SceneElement(material);
   }
 
-  // Mark vertices 
+  // Set vertex marks
   for (int i = 0; i < verts.NEntries(); i++) {
     R3TriangleVertex *vertex = verts.Kth(i);
     vertex->SetMark(0);
   }
 
-  // Create array of verts used by tris
-  // Note: this results in sharing of vertices across triangle arrays
-  RNArray<R3TriangleVertex *> tri_verts;
+  // Create copies of verts and tris for this element
+  RNArray<R3Triangle *> element_tris;
+  RNArray<R3TriangleVertex *> element_verts;
   for (int i = 0; i < tris.NEntries(); i++) {
     R3Triangle *triangle = tris.Kth(i);
+    R3TriangleVertex *element_vertex[3];
     for (int j = 0; j < 3; j++) {
       R3TriangleVertex *vertex = triangle->Vertex(j);
       if (vertex->Mark() == 0) {
-        tri_verts.Insert(vertex);
-        vertex->SetMark(1);
+        element_verts.Insert(new R3TriangleVertex(*vertex));
+        vertex->SetMark(element_verts.NEntries());
       }
+      element_vertex[j] = element_verts.Kth(vertex->Mark()-1); 
     }
-  }
-
-  // Copy vertices
-  if (copy_vertices) {
-    for (int i = 0; i < tri_verts.NEntries(); i++) {
-      R3TriangleVertex *v0 = tri_verts.Kth(i);
-      R3TriangleVertex *v1 = new R3TriangleVertex(*v0);
-      tri_verts[i] = v1;
-    }
+    R3Triangle *element_triangle = new R3Triangle(element_vertex[0], element_vertex[1], element_vertex[2]);
+    element_tris.Insert(element_triangle);
   }
 
   // Create shape (triangle array)
-  R3TriangleArray *shape = new R3TriangleArray(tri_verts, tris);
+  R3TriangleArray *shape = new R3TriangleArray(element_verts, element_tris);
         
   // Insert shape
   element->InsertShape(shape);
@@ -1271,8 +1265,9 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   RNSymbolTable<R3Material *> material_symbol_table;
   RNArray<R2Point *> texture_coords;
   RNArray<R3Vector *> normals;
-  RNArray<R3TriangleVertex *> verts;
   RNArray<R3Triangle *> tris;
+  RNArray<R3TriangleVertex *> verts;
+  RNArray<R3TriangleVertex *> tmp_verts;
   R3SceneNode *top_node = node;
   while (fgets(buffer, 1023, fp)) {
     // Increment line counter
@@ -1304,6 +1299,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Create vertex
       R3TriangleVertex *vertex = new R3TriangleVertex(R3Point(x, y, z));
+      vertex->SetSharedFlag();
       verts.Insert(vertex);
     }
     else if (!strcmp(keyword, "vt")) {
@@ -1360,12 +1356,20 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
         if ((ti > 0) && ((ti-1) < texture_coords.NEntries())) {
           R2Point texcoords = *(texture_coords.Kth(ti-1));
           if (!(v[i]->Flags()[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])) v[i]->SetTextureCoords(texcoords);
-          else if (!R2Contains(texcoords, v[i]->TextureCoords())) { v[i] = new R3TriangleVertex(v[i]->Position(), texcoords); }
+          else if (!R2Contains(texcoords, v[i]->TextureCoords())) {
+            v[i] = new R3TriangleVertex(v[i]->Position(), texcoords); 
+            v[i]->SetSharedFlag();
+            tmp_verts.Insert(v[i]);
+          }
         }
         if ((ni > 0) && ((ni-1) < normals.NEntries())) {
           R3Vector normal = *(normals.Kth(ni-1));
           if (!(v[i]->Flags()[R3_VERTEX_NORMALS_DRAW_FLAG])) v[i]->SetNormal(normal);
-          else if (!R3Contains(normal, v[i]->Normal())) { v[i] = new R3TriangleVertex(v[i]->Position(), normal, v[i]->TextureCoords()); }
+          else if (!R3Contains(normal, v[i]->Normal())) {
+            v[i] = new R3TriangleVertex(v[i]->Position(), normal, v[i]->TextureCoords());
+            v[i]->SetSharedFlag();
+            tmp_verts.Insert(v[i]);
+          }
         }
       }
 
@@ -1423,6 +1427,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Process triangles from previous material
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
         InsertSceneElement(scene, node, material, verts, tris);
+        for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
         tris.Empty();
       }
 
@@ -1443,6 +1448,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Process triangles from previous object
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
         InsertSceneElement(scene, node, material, verts, tris);
+        for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
         tris.Empty();
       }
 
@@ -1456,19 +1462,28 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   // Process triangles from previous material
   if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
     InsertSceneElement(scene, node, material, verts, tris);
+    for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
     tris.Empty();
   }
 
   // Delete texture coordinates
   for (int i = 0; i < texture_coords.NEntries(); i++) {
-    R2Point *vt = texture_coords.Kth(i);
-    delete vt;
+    delete texture_coords.Kth(i);
   }
 
   // Delete normals
   for (int i = 0; i < normals.NEntries(); i++) {
-    R3Vector *vn = normals.Kth(i);
-    delete vn;
+    delete normals.Kth(i);
+  }
+
+  // Delete verts (copied in InsertSceneElement)
+  for (int i = 0; i < verts.NEntries(); i++) {
+    delete verts.Kth(i);
+  }
+
+  // Delete tmp verts (copied in InsertSceneElement)
+  for (int i = 0; i < tmp_verts.NEntries(); i++) {
+    delete tmp_verts.Kth(i);
   }
 
   // Return success
@@ -1819,6 +1834,7 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
     if (!mesh.VertexColor(mesh_vertex).IsBlack()) triangle_vertex->SetColor(mesh.VertexColor(mesh_vertex));
     triangle_vertex->SetTextureCoords(mesh.VertexTextureCoords(mesh_vertex));
+    triangle_vertex->SetSharedFlag();
     vertices.Insert(triangle_vertex);
   }
 
@@ -1869,13 +1885,14 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     RNArray<R3Triangle *> *tris = it->second;
     if (tris->IsEmpty()) { delete tris; continue; }
     R3SceneNode *node = new R3SceneNode(this);
-    if (!InsertSceneElement(this, node, NULL, vertices, *tris, TRUE)) return 0;
+    if (!InsertSceneElement(this, node, NULL, vertices, *tris)) return 0;
     node->SetName(node_name.c_str());
     parent_node->InsertChild(node);
+    for (int i = 0; i < tris->NEntries(); i++) delete tris->Kth(i);
     delete tris;
   }
 
-  // Delete the original vertices (they got copied by InsertSceneElement)
+  // Delete vertices 
   for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
   
   // Return success

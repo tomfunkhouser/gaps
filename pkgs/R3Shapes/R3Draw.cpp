@@ -328,6 +328,11 @@ Draw(const R3DrawFlags draw_flags) const
     R3DrawFlags flags(Flags() & draw_flags);
     RNDimension dim = 0, dim1 = 0, dim2 = 0;
 
+    if (R3Contains(v[0]->Position(), R3zero_point)) RNAbort("HEREA");
+    if (R3Contains(v[1]->Position(), R3zero_point)) RNAbort("HEREA");
+    if (R3Contains(v[2]->Position(), R3zero_point)) RNAbort("HEREA");
+
+
     // Unroll flags/loops for efficiency 
     switch (flags) {
     case R3_SURFACES_DRAW_FLAG:
