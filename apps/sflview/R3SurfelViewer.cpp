@@ -340,8 +340,8 @@ Redraw(void)
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         R3SurfelObject *object = node->Object();
-        if (!object) continue;
-        R3SurfelLabel *label = object->CurrentLabel();
+        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+        R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
         node->Draw(0); 
@@ -350,9 +350,9 @@ Redraw(void)
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL) {
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelObject *object = node->Object();
-        if (!object) continue;
-        R3SurfelLabel *label = object->GroundTruthLabel();
+        R3SurfelObject *object = node->Object(TRUE);
+        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+        R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
         node->Draw(0); 
@@ -372,7 +372,8 @@ Redraw(void)
       // Draw with colors based on nodes
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelObject *object = node->Object();
+        R3SurfelObject *object = node->Object(TRUE);
+        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
         int object_index = (object) ? object->SceneIndex() : 0;
         LoadColor(object_index);
         node->Draw(0); 
@@ -1063,7 +1064,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       if (shift) viewing_extent[RN_LO][RN_Z] += 0.25;
       else viewing_extent[RN_HI][RN_Z] += 0.25;
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
-      printf("HERE %g %g\n", viewing_extent[RN_LO][RN_Z], viewing_extent[RN_HI][RN_Z]);
       break;
 
     case R3_SURFEL_VIEWER_PAGE_DOWN_KEY: 
@@ -1071,7 +1071,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       if (shift) viewing_extent[RN_LO][RN_Z] -= 0.25;
       else viewing_extent[RN_HI][RN_Z] -= 0.25;
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
-      printf("HERE %g %g\n", viewing_extent[RN_LO][RN_Z], viewing_extent[RN_HI][RN_Z]);
       break;
 
     case '-': 
