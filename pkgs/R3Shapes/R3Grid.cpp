@@ -1485,9 +1485,9 @@ void R3Grid::
 SquaredDistanceTransform(void)
 {
   int x,y,z,s,t;
-  int dist,square,new_dist;
-  int* oldBuffer;
-  int* newBuffer;
+  long long dist,square,new_dist;
+  long long* oldBuffer;
+  long long* newBuffer;
   int first;
   int i;
 
@@ -1495,9 +1495,9 @@ SquaredDistanceTransform(void)
   int res = XResolution();
   if (res < YResolution()) res = YResolution();
   if (res < ZResolution()) res = ZResolution();
-  oldBuffer = new int[res];
+  oldBuffer = new long long [res];
   assert(oldBuffer);
-  newBuffer = new int[res];
+  newBuffer = new long long[res];
   assert(newBuffer);
 
   // Initalize values (0 if was set, max_value if not)
