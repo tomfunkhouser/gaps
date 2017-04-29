@@ -964,11 +964,13 @@ void Redraw(void)
   // Capture and write vertex color image 
   if (capture_vrgb_images) {
     if (DrawSceneWithOpenGL(*camera, scene, VRGB_COLOR_SCHEME)) {
-      image.Clear(0);
-      if (CaptureInteger(image)) {
+      // image.Clear(0);
+      // if (CaptureInteger(image)) {
+      R2Image color_image(width, height, 3);
+      if (CaptureColor(color_image)) {
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_vrgb.png", output_image_directory, name);
-        image.WriteFile(output_image_filename);
+        color_image.Write(output_image_filename);
       }
     }
   }

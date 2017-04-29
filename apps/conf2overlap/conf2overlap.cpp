@@ -422,7 +422,8 @@ ComputeMeshOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
   // Consider every image
   for (int i0 = 0; i0 < configuration->NImages(); i0++) {
     RGBDImage *image = configuration->Image(i0);
-
+    R3Point image_viewpoint = image->WorldViewpoint();
+    
     // Read image depth channel
     if (!image->ReadDepthChannel()) continue;
     const R3Box& image_bbox = image->WorldBBox();
@@ -435,6 +436,11 @@ ComputeMeshOverlaps(RGBDConfiguration *configuration, R3Mesh *mesh,
       const R3Point& vertex_position = mesh->VertexPosition(vertex);
       if (!R3Intersects(image_bbox, vertex_position)) continue;
       
+      // Check if image viewpoint is in front of tangent plane at vertex
+      const R3Vector& vertex_normal = mesh->VertexNormal(vertex);
+      R3Plane vertex_tangent_plane(vertex_position, vertex_normal);
+      if (R3SignedDistance(vertex_tangent_plane, image_viewpoint) < 0) continue;
+
       // Compute mapping from vertex into image
       R2Point image_position;
       if (!RGBDTransformWorldToImage(vertex_position, image_position, image)) continue;
