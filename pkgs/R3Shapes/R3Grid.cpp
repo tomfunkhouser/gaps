@@ -1501,7 +1501,7 @@ SquaredDistanceTransform(void)
   assert(newBuffer);
 
   // Initalize values (0 if was set, max_value if not)
-  RNScalar max_value = 3 * (res+1) * (res+1) * (res+1);
+  RNScalar max_value = 3.0 * (res+1) * (res+1);
   RNScalar *grid_valuesp = grid_values;
   for (i = 0; i < grid_size; i++) {
     if (*grid_valuesp == 0.0) *grid_valuesp = max_value;
@@ -1545,7 +1545,7 @@ SquaredDistanceTransform(void)
         }
       }
     }
-  } 
+  }
 
   // Scan along x axis
   for (z = 0; z < ZResolution(); z++) {
