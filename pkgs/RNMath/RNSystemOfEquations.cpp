@@ -222,7 +222,7 @@ InsertEquation(RNEquation *equation)
   // Just checking
   assert(!equation->system);
   assert(equation->system_index == -1);
-  assert(!equations.FindEntry(equation));
+  // assert(!equations.FindEntry(equation));
 
   // Insert equation
   equation->system = this;
@@ -238,7 +238,7 @@ RemoveEquation(RNEquation *equation)
   // Just checking
   assert(equation->system == this);
   assert(equation->system_index >= 0);
-  assert(equations.FindEntry(equation));
+  // assert(equations.FindEntry(equation));
 
   // Remove equation
   RNArrayEntry *entry = equations.KthEntry(equation->system_index);

@@ -167,20 +167,38 @@ AverageRadius(const R3Point *center) const
   // Get centroid
   R3Point centroid = (center) ? *center : Centroid();
 
-  // Compute average distance between a position on the surface and a center point
-  RNArea area = 0;
-  RNLength distance = 0;
-  for (int i = 0; i < NFaces(); i++) {
-    R3MeshFace *face = Face(i);
-    RNArea face_area = FaceArea(face);
-    R3Point face_centroid = FaceCentroid(face);
-    distance += face_area * R3Distance(face_centroid, centroid);
-    area += face_area;
+  // Check if mesh has faces
+  if (NFaces() > 0) {
+    // Compute average distance between a position on the surface and a center point
+    RNArea area = 0;
+    RNLength distance = 0;
+    for (int i = 0; i < NFaces(); i++) {
+      R3MeshFace *face = Face(i);
+      RNArea face_area = FaceArea(face);
+      R3Point face_centroid = FaceCentroid(face);
+      distance += face_area * R3Distance(face_centroid, centroid);
+      area += face_area;
+    }
+
+    // Return weighted average
+    if (area == 0) return 0;
+    else return distance / area;
+  }
+  else if (NVertices() > 0) {
+    // Sum distances between vertices and center point
+    RNLength sum = 0;
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      const R3Point& position = VertexPosition(vertex);
+      sum += R3Distance(position, centroid);
+    }
+
+    // Return average
+    return sum / NVertices();
   }
 
-  // Return weighted average
-  if (area == 0) return 0;
-  else return distance / area;
+  // Should not get here unless mesh is empty
+  return 0.0;
 }
 
 
@@ -864,7 +882,7 @@ Empty(void)
 
 
 void R3Mesh::
-Smooth(void)
+Smooth(RNScalar factor)
 {
   // Copy vertex positions
   R3Point *positions = new R3Point [ NVertices() ];
@@ -886,7 +904,7 @@ Smooth(void)
         const R3Point& neighbor_position = positions[neighbor_vertex->id];
         RNLength length = EdgeLength(edge);
         RNLength sigma = (length > 0) ? length / radius : 1;
-        RNScalar w = exp((length * length) / (-2.0 * sigma * sigma));
+        RNScalar w = factor * exp((length * length) / (-2.0 * sigma * sigma));
         position += w * neighbor_position;
         weight += w;
       }
@@ -904,7 +922,7 @@ Smooth(void)
 
 
 void R3Mesh::
-Sharpen(void)
+Sharpen(RNScalar factor)
 {
   // Copy vertex positions
   R3Point *positions = new R3Point [ NVertices() ];
@@ -925,7 +943,7 @@ Sharpen(void)
       const R3Point& neighbor_position = positions[neighbor_vertex->id];
       RNLength length = EdgeLength(edge);
       RNLength sigma = length / radius;
-      RNScalar w = exp((length * length) / (-2.0 * sigma * sigma));
+      RNScalar w = factor * exp((length * length) / (-2.0 * sigma * sigma));
       position += w * neighbor_position;
       weight += w;
     }
@@ -1571,6 +1589,9 @@ MergeCoincidentVertices(RNLength epsilon)
 R3MeshVertex *R3Mesh::
 CollapseEdge(R3MeshEdge *edge, const R3Point& point)
 {
+  // Just to be safe
+  if (NFaces() <= 4) return NULL;
+
   // Get vertices on edge
   R3MeshVertex *v[2];
   v[0] = edge->vertex[0];

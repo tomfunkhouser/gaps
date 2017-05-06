@@ -176,7 +176,7 @@ public:
 
   // Utility functions
   int ConnectedComponents(RNScalar isolevel = 0, int max_components = 0, int *seeds = NULL, int *sizes = NULL, int *grid_components = NULL);
-  int GenerateIsoSurface(RNScalar isolevel, R3Point *points, int max_points) const;
+  int GenerateIsoSurface(RNScalar isolevel, R3Mesh *mesh) const;
 
   // Debugging functions
   const RNScalar *GridValues(void) const;
@@ -189,6 +189,9 @@ public:
   RNScalar WorldValue(RNCoord x, RNCoord y, RNCoord z, RNLength sigma) const;
   void RasterizeGridPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma, int operation = 0);
   void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, RNLength sigma, int operation = 0);
+
+  // Old isosurface function
+  int GenerateIsoSurface(RNScalar isolevel, R3Point *points, int max_points) const;
 
 private:
   R3Affine grid_to_world_transform;

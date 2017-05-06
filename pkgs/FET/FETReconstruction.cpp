@@ -840,6 +840,8 @@ InitializeOptimizationParameters(void)
   total_correspondence_weights[SIFT_FEATURE_TYPE] = 0;
   total_correspondence_weights[FAST_FEATURE_TYPE] = 0;
   total_correspondence_weights[CORNER_FEATURE_TYPE] = 1000;
+  total_correspondence_weights[CONVEX_FEATURE_TYPE] = 1000;
+  total_correspondence_weights[CONCAVE_FEATURE_TYPE] = 1000;
   total_correspondence_weights[RIDGE_FEATURE_TYPE] = 500;
   total_correspondence_weights[VALLEY_FEATURE_TYPE] = 1000;
   total_correspondence_weights[SILHOUETTE_FEATURE_TYPE] = 1000;
@@ -3120,7 +3122,7 @@ OptimizeTransformationsWithLinearSystemOfEquations(void)
   // Check the shapes
   if (NShapes() < 2) return;
 
-#define PRINT_TIMING
+// #define PRINT_TIMING
 #ifdef PRINT_TIMING
   RNTime step_time;
   step_time.Read();

@@ -977,7 +977,10 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
     // Compute scan viewpoint
     if (!viewpoint) {
       static R3Point estimated_viewpoint(0, 0, 0);
-      estimated_viewpoint = Centroid();
+      R3SurfelBlock *block = point->Block();
+      R3SurfelNode *node = block->Node();
+      R3SurfelScan *scan = (node) ? node->Scan() : NULL;
+      estimated_viewpoint = (scan) ? scan->Viewpoint() : Centroid();
       viewpoint = &estimated_viewpoint;
     }
 

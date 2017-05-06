@@ -40,6 +40,7 @@ public:
   void ResetTransformation(void);
   void SetTransformation(const R3Affine& transformation);
   void PerturbTransformation(RNLength translation_magnitude, RNAngle rotation_magnitude);
+  void SetInertia(RNScalar *variable_inertias, int nvariables = 9);
   void SetViewpoint(const R3Point& viewpoint);
   void SetTowards(const R3Vector& towards);
   void SetUp(const R3Vector& up);
@@ -80,6 +81,7 @@ public:
   void RemoveFeature(FETFeature *feature);
   void InsertMatch(FETMatch *match, int k);
   void RemoveMatch(FETMatch *match, int k);
+  void DeleteFeatures(void);
 
   // Internal transformation
   void Transform(R3Point& point) const;
@@ -91,6 +93,8 @@ public:
   void UpdateFeatureProperties(void);
   void InvalidateBBox(void);
   void UpdateBBox(void);
+  void InvalidateKdtree(void);
+  void UpdateKdtree(void);
 
   // Variable stuff
   int NVariables(void) const;
@@ -325,6 +329,27 @@ Name(void) const
 {
   // Return name
   return name;
+}
+
+
+
+inline void FETShape::
+SetInertia(RNScalar *inertias, int ninertias)
+{
+  // Check if should make shape immovable
+  if (!inertias) {
+    // Set inertia weights to infinity
+    for (int i = 0; i < max_variables; i++) {
+      variable_inertias[i] = RN_INFINITY;
+    }
+  }
+  else {    
+    // Copy inertia weights
+    ninertias = (ninertias < max_variables) ? ninertias : max_variables;
+    for (int i = 0; i < ninertias; i++) {
+      variable_inertias[i] = inertias[i];
+    }
+  }
 }
 
 

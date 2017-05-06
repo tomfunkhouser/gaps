@@ -107,9 +107,6 @@ FETShape::
   // Delete name
   if (name) free(name);
   
-  // Delete kdtree
-  if (kdtree) delete kdtree;
-  
   // Remove from parents
   while (NParents() > 0) {
     FETShape *parent = Parent(NParents()-1);
@@ -131,9 +128,16 @@ FETShape::
   // Delete features 
   while (NFeatures() > 0) {
     FETFeature *feature = Feature(NFeatures()-1);
+    RemoveFeature(feature);
     delete feature;
   }
 
+  // Delete kdtree
+  if (kdtree) {
+    delete kdtree;
+    kdtree = NULL;
+  }
+  
   // Remove from reconstruction
   if (reconstruction) reconstruction->RemoveShape(this);
 }
@@ -247,8 +251,21 @@ RemoveFeature(FETFeature *feature)
   feature->shape_index = -1;
   feature->shape = NULL;
 
-  // Reset bounding box
+  // Reset stuff
   InvalidateBBox();
+  InvalidateKdtree();
+}
+
+
+
+void FETShape::
+DeleteFeatures(void)
+{
+  // Delete all features
+  while (NFeatures() > 0) {
+    FETFeature *feature = Feature(NFeatures()-1);
+    delete feature;
+  }
 }
 
 
@@ -632,11 +649,7 @@ UpdateFeatureProperties(void)
   RNLength max_neighbor_distance = RN_INFINITY;
 
   // Build shape's feature kdtree 
-  if (!kdtree) {
-    FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-    kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
-    if (!kdtree) RNAbort("Cannot build kdtree");
-  }
+  if (!kdtree) UpdateKdtree();
 
   // Update normal and radius for every feature (if none already)
   for (int i = 0; i < NFeatures(); i++) {
@@ -715,6 +728,34 @@ InvalidateBBox(void)
 
 
 
+void FETShape::
+UpdateKdtree(void)
+{
+  // Check if already uptodate
+  if (kdtree) return;
+
+  // Build shape's feature kdtree 
+  FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
+  if (!kdtree) RNAbort("Cannot build kdtree");
+}
+
+
+
+void FETShape::
+InvalidateKdtree(void)
+{
+  // Check if already invalid
+  if (!kdtree) return;
+
+  // Delete kdtree
+  delete kdtree;
+  kdtree = NULL;
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Search functions
 ////////////////////////////////////////////////////////////////////////
@@ -724,11 +765,7 @@ FindClosestFeature(const R3Point& query_position,
   RNLength min_euclidean_distance, RNLength max_euclidean_distance) 
 {
   // Build shape's feature kdtree 
-  if (!kdtree) {
-    FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-    kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
-    if (!kdtree) RNAbort("Cannot build kdtree");
-  }
+  if (!kdtree) UpdateKdtree();
 
   // Find closest feature
   return kdtree->FindClosest(query_position, min_euclidean_distance, max_euclidean_distance);
@@ -748,11 +785,7 @@ FindClosestFeature(FETFeature *query_feature, const R3Affine& query_transformati
    min_distinction, min_salience, discard_boundaries);
 
   // Build kdtree 
-  if (!kdtree) {
-    FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-    kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
-    if (!kdtree) RNAbort("Cannot build kdtree");
-  }
+  if (!kdtree) UpdateKdtree();
 
   // Temporarily transform query feature
   R3Point saved_query_position = query_feature->position;
@@ -794,11 +827,7 @@ FindAllFeatures(FETFeature *query_feature, const R3Affine& query_transformation,
    min_distinction, min_salience, discard_boundaries);
 
   // Build shape's feature kdtree 
-  if (!kdtree) {
-    FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-    kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
-    if (!kdtree) RNAbort("Cannot build kdtree");
-  }
+  if (!kdtree) UpdateKdtree();
 
   // Temporarily transform query feature
   R3Point saved_query_position = query_feature->position;

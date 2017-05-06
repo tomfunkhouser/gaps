@@ -126,6 +126,8 @@ enum {
 #define SIFT_FEATURE_TYPE           1
 #define FAST_FEATURE_TYPE           2
 #define CORNER_FEATURE_TYPE         3
+#define CONVEX_FEATURE_TYPE         4
+#define CONCAVE_FEATURE_TYPE        5
 #define BORDER_FEATURE_TYPE        11
 #define SILHOUETTE_FEATURE_TYPE    12
 #define SHADOW_FEATURE_TYPE        13

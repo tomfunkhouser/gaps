@@ -487,9 +487,9 @@ class R3Mesh {
      // Fill all holes in mesh
 
     // GEOMETRY MANIPULATION FUNCTIONS
-    virtual void Smooth(void);
+    virtual void Smooth(RNScalar factor = 1.0);
       // Smooth mesh
-    virtual void Sharpen(void);
+    virtual void Sharpen(RNScalar factor = 1.0);
       // Sharpen mesh 
     virtual void AddRandomNoise(RNScalar factor);
       // Add noise to vertex positions (factor is relative to average edge length at each vertex)
