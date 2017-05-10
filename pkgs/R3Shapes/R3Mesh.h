@@ -417,6 +417,8 @@ class R3Mesh {
     // TOPOLOGY MANIPULATION FUNCTIONS
     virtual void Empty(void);
       // Delete all vertices, edges, faces
+    virtual R3MeshVertex *CreateVertex(const R3MeshVertex& source, R3MeshVertex *vertex = NULL);
+      // Create a new vertex with position, normal, color and texture coordinates of source
     virtual R3MeshVertex *CreateVertex(const R3Point& position, R3MeshVertex *vertex = NULL);
       // Create a new vertex at a position (compute normal)
     virtual R3MeshVertex *CreateVertex(const R3Point& position, const R3Vector& normal, R3MeshVertex *vertex = NULL);
@@ -431,8 +433,7 @@ class R3Mesh {
       // Create a face with vertices (v1, v2, v3)
     virtual R3MeshFace *CreateFace(R3MeshEdge *e1, R3MeshEdge *e2, R3MeshEdge *e3, R3MeshFace *face = NULL);
       // Create a face with edges (e1, e2, e3)
-    virtual R3MeshFace *CreateFace(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3, 
-                                   R3MeshEdge *e1, R3MeshEdge *e2, R3MeshEdge *e3, R3MeshFace *face = NULL);
+    virtual R3MeshFace *CreateFace(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3, R3MeshEdge *e1, R3MeshEdge *e2, R3MeshEdge *e3, R3MeshFace *face = NULL);
       // Create a face with vertices (v1, v2, v3) and edges (e1, e2, e3)
     virtual void DeleteVertex(R3MeshVertex *v);
       // Delete a vertex and all edges/faces attached to it
@@ -477,6 +478,8 @@ class R3Mesh {
       // Collapse edges shorter than min_edge_length
     void SubdivideLongEdges(RNLength max_edge_length);
       // Subdivide edges longer than max_edge_length
+    void FlipFaces(void);
+      // Flip orientation of all faces
     void SubdivideFaces(void);
       // Subdivide all faces, replacing each triangle by four with vertices at edge midpoints
     void SwapEdges(RNAngle min_angle_improvement = 0.1);
@@ -582,6 +585,8 @@ class R3Mesh {
       // Loads data structure from ply file (.ply), returns 0 if error
     virtual int ReadCattFile(const char *filename);
       // Loads data structure from a Catt acoustic file (.cat), returns 0 if error
+    virtual int ReadHoppeFile(const char *filename);
+      // Loads data structure from a file in Hugues' mesh format (.m), returns 0 if error
     virtual int ReadIfsFile(const char *filename);
       // Loads data structure from ifs file (.ifs), returns 0 if error
     virtual int ReadSTLFile(const char *filename);

@@ -934,8 +934,8 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
   // Declare variables (fill it only if needed)
   R3Kdtree<R3SurfelPoint *> *kdtree = NULL;
   RNArray<R3SurfelPoint *> neighbors;
+  R3Point pointset_centroid = Centroid();
   R3Point *positions = NULL;
-  R3Point *viewpoint = NULL;
 
   // Compute normals for all points that don't already have them
   for (int i = 0; i < NPoints(); i++) {
@@ -974,19 +974,21 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
     R3Triad triad = R3PrincipleAxes(centroid, npositions, positions);
     R3Vector normal = triad[2];
 
-    // Compute scan viewpoint
-    if (!viewpoint) {
-      static R3Point estimated_viewpoint(0, 0, 0);
-      R3SurfelBlock *block = point->Block();
-      R3SurfelNode *node = block->Node();
-      R3SurfelScan *scan = (node) ? node->Scan() : NULL;
-      estimated_viewpoint = (scan) ? scan->Viewpoint() : Centroid();
-      viewpoint = &estimated_viewpoint;
+    // Flip normal
+    R3SurfelBlock *block = point->Block();
+    R3SurfelNode *node = block->Node();
+    R3SurfelScan *scan = (node) ? node->Scan() : NULL;
+    if (scan) {
+      // Orient normal towards scan viewpoint
+      R3Plane plane(centroid, normal);
+      const R3Point& viewpoint = scan->Viewpoint();
+      if (R3SignedDistance(plane, viewpoint) < 0) normal.Flip();
     }
-
-    // Orient normal towards scan viewpoint
-    R3Plane plane(centroid, normal);
-    if (R3SignedDistance(plane, *viewpoint) < 0) normal.Flip();
+    else {
+      // Orient normal away from pointset centroid
+      R3Vector v = point->Position() - pointset_centroid;
+      if (v.Dot(normal) < 0) normal.Flip();
+    }
 
     // Assign normal
     point->SetNormal(normal);

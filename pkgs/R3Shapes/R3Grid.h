@@ -25,6 +25,8 @@ public:
   RNScalar StandardDeviation(void) const;
   RNScalar Maximum(void) const;
   RNScalar Minimum(void) const;
+  RNScalar Median(void) const;
+  RNScalar Percentile(RNScalar percentile) const;
   RNInterval Range(void) const;
   RNScalar L1Norm(void) const;
   RNScalar L2Norm(void) const;
@@ -78,6 +80,7 @@ public:
   void MedianFilter(RNLength grid_radius);
   void MaskNonMinima(RNLength grid_radius = 0);
   void MaskNonMaxima(RNLength grid_radius = 0);
+  void FillHoles(int max_hole_size = INT_MAX);
   void Clear(RNScalar value = 0);
   void Substitute(RNScalar old_value, RNScalar new_value);
   void Add(RNScalar value);
@@ -310,6 +313,15 @@ Mean(void) const
   // Return average value
   if (grid_size == 0) return 0.0;
   else return L1Norm() / grid_size;
+}
+
+
+
+inline RNScalar R3Grid::
+Median(void) const
+{
+  // Return median
+  return Percentile(0.5);
 }
 
 

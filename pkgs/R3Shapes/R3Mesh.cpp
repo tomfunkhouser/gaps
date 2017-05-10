@@ -1051,6 +1051,33 @@ Transform(const R3Transformation& transformation)
 ////////////////////////////////////////////////////////////////////////
 
 R3MeshVertex *R3Mesh::
+CreateVertex(const R3MeshVertex& source_vertex, R3MeshVertex *v)
+{
+  // Create vertex
+  if (!v) {
+    v = new R3MeshVertex();
+    v->flags.Add(R3_MESH_VERTEX_ALLOCATED);
+  }
+
+  // Set position/normal of new vertex
+  SetVertexPosition(v, source_vertex.position);
+  if (!source_vertex.normal.IsZero()) SetVertexNormal(v, source_vertex.normal);
+  SetVertexColor(v, source_vertex.color);
+  SetVertexTextureCoords(v, source_vertex.texcoords);
+
+  // Set ID of new vertex
+  v->id = vertices.NEntries();
+
+  // Insert vertex into array
+  vertices.Insert(v);
+
+  // Return vertex
+  return v;
+}
+
+
+
+R3MeshVertex *R3Mesh::
 CreateVertex(const R3Point& position, R3MeshVertex *v)
 {
   // Create vertex
@@ -2148,6 +2175,18 @@ FlipFace(R3MeshFace *f)
 
 
 
+void R3Mesh::
+FlipFaces(void)
+{
+  // Reverse orientation of all faces
+  for (int i = 0; i < NFaces(); i++) {
+    R3MeshFace *f = Face(i);
+    FlipFace(f);
+  }
+}
+
+
+
 static RNScalar 
 EdgeLengthCallback(R3MeshEdge *edge, void *data)
 {
@@ -2277,7 +2316,11 @@ SubdivideFaces(void)
   // Create vertex at midpoint of every edge
   for (int i = 0; i < nedges; i++) {
     R3MeshEdge *edge = Edge(i);
-    SplitEdge(edge, EdgeMidpoint(edge));
+    R3MeshVertex *v0 = VertexOnEdge(edge, 0);
+    R3MeshVertex *v1 = VertexOnEdge(edge, 1);
+    R3MeshVertex *vertex = CreateVertex(EdgeMidpoint(edge));
+    SetVertexTextureCoords(vertex, 0.5*VertexTextureCoords(v0) + 0.5*VertexTextureCoords(v1)); 
+    SetVertexColor(vertex, 0.5*VertexColor(v0) + 0.5*VertexColor(v1)); 
   }
 
   // Delete all edges and faces
@@ -4021,6 +4064,9 @@ ReadFile(const char *filename)
   else if (!strncmp(extension, ".cat", 4)) { 
     if (!ReadCattFile(filename)) return 0;
   }
+  else if (!strncmp(extension, ".m", 4)) { 
+    if (!ReadHoppeFile(filename)) return 0;
+  }  
   else if (!strncmp(extension, ".ifs", 4)) { 
     if (!ReadIfsFile(filename)) return 0;
   }
@@ -4952,6 +4998,111 @@ ReadCattFile(const char *filename)
   // Return success
   return 1;
 }    
+
+
+
+int R3Mesh::
+ReadHoppeFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "r"))) {
+    fprintf(stderr, "Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  int line_count = 0;
+  char buffer[1024];
+  RNArray<R3MeshVertex *> vertices;
+  RNArray<R3MeshVertex *> degenerate_triangle_vertices;
+  while (fgets(buffer, 1023, fp)) {
+    // Increment line counter
+    line_count++;
+
+    // Skip white space
+    char *bufferp = buffer;
+    while (isspace(*bufferp)) bufferp++;
+
+    // Skip blank lines and comments
+    if (*bufferp == '#') continue;
+    if (*bufferp == '\0') continue;
+
+    // Read command
+    char cmd[1024];
+    if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) {
+      fprintf(fp, "Syntax error line %d in file %s\n", line_count, filename);
+      fclose(fp);
+      return 0;
+    }
+
+    // Check command
+    if (!strcmp(cmd, "Vertex")) {
+      // Read vertex info
+      int index;
+      double x, y, z;
+      if (sscanf(bufferp, "%s%d%lf%lf%lf", cmd, &index, &x, &y, &z) != (unsigned int) 5) {
+        RNFail("Syntax error with vertex coordinates on line %d in file %s\n", line_count, filename);
+        fclose(fp);
+        return 0;
+      }
+
+      // Create vertex
+      R3MeshVertex *vertex = CreateVertex(R3Point(x, y, z));
+      vertices.Insert(vertex);
+    }
+    else if (!strcmp(cmd, "Face")) {
+      // Read face info
+      int index, i0, i1, i2;
+      if (sscanf(bufferp, "%s%d%d%d%d", cmd, &index, &i0, &i1, &i2) != (unsigned int) 5) {
+        RNFail("Syntax error with face info on line %d in file %s\n", line_count, filename);
+        fclose(fp);
+        return 0;
+      }
+
+      // Find vertices
+      assert((i0 >= 0) && (i0 < vertices.NEntries()));
+      assert((i1 >= 0) && (i1 < vertices.NEntries()));
+      assert((i2 >= 0) && (i2 < vertices.NEntries()));
+      R3MeshVertex *v0 = vertices.Kth(i0-1);
+      R3MeshVertex *v1 = vertices.Kth(i1-1);
+      R3MeshVertex *v2 = vertices.Kth(i2-1);
+
+      // Create triangle
+      if ((v0 != v1) && (v0 != v2) && (v1 != v2)) {
+        if (!CreateFace(v0, v1, v2)) {
+          // Must have been degeneracy (e.g., flips or three faces sharing an edge)
+          // Remember for later processing (to preserve vertex indices)
+          degenerate_triangle_vertices.Insert(v0);
+          degenerate_triangle_vertices.Insert(v1);
+          degenerate_triangle_vertices.Insert(v2);
+        }
+      }
+    }
+  }
+
+  // Create degenerate triangles
+  for (int i = 0; i <= degenerate_triangle_vertices.NEntries()-3; i+=3) {
+    R3MeshVertex *v1 = degenerate_triangle_vertices.Kth(i+0);
+    R3MeshVertex *v2 = degenerate_triangle_vertices.Kth(i+1);
+    R3MeshVertex *v3 = degenerate_triangle_vertices.Kth(i+2);
+    if (!CreateFace(v1, v2, v3)) {
+      if (!CreateFace(v1, v3, v2)) {
+        // Note: these vertices are allocated separately, and so they will not be deleted (memory leak)
+        R3MeshVertex *v1a = CreateVertex(VertexPosition(v1));
+        R3MeshVertex *v2a = CreateVertex(VertexPosition(v2));
+        R3MeshVertex *v3a = CreateVertex(VertexPosition(v3));
+        CreateFace(v1a, v2a, v3a);
+      }
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
 
 
 

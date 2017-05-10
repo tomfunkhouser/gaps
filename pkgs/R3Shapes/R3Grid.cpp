@@ -155,6 +155,22 @@ Variance(void) const
 
 
 
+RNScalar R3Grid::
+Percentile(RNScalar percentile) const
+{
+  // Return value at given percentile 
+  if (grid_size == 0) return 0.0;
+  RNScalar *tmp_values = new RNScalar [ grid_size ];
+  for (int i = 0; i < grid_size; i++) tmp_values[i] = grid_values[i];
+  qsort(tmp_values, grid_size, sizeof(RNScalar), RNCompareScalars);
+  int percentile_index = percentile * grid_size;
+  RNScalar value = tmp_values[percentile_index];
+  delete [] tmp_values;
+  return value;
+}
+
+
+
 RNInterval R3Grid::
 Range(void) const
 {
@@ -638,6 +654,9 @@ Erode(RNLength grid_distance)
 void R3Grid::
 Blur(RNLength grid_sigma) 
 {
+  // Check sigma
+  if (RNIsZero(grid_sigma)) return;
+
   // Build filter
   RNScalar sigma = grid_sigma;
   int filter_radius = (int) (3 * sigma + 0.5);
@@ -1026,6 +1045,81 @@ MaskNonMaxima(RNLength grid_radius)
   // Mask values that are not maxima
   for (int i = 0; i < grid_size; i++) {
     if (grid_values[i] < copy.grid_values[i]) grid_values[i] = 0;
+  }
+}
+
+
+
+void R3Grid::
+FillHoles(int max_hole_size)
+{
+  // Interpolate in z
+  for (int ix = 0; ix < XResolution(); ix++) {
+    for (int iy = 0; iy < YResolution(); iy++) {
+      int iz0 = -1;
+      for (int iz1 = 0; iz1 < ZResolution(); iz1++) {
+        if (GridValue(ix, iy, iz1) != 0.0) { 
+          if ((iz0 >= 0) && (iz0 < iz1-1) && (iz1-iz0 < max_hole_size)) {
+            RNScalar value0 = GridValue(ix, iy, iz0);
+            if (value0 == 0.0) continue;
+            RNScalar value1 = GridValue(ix, iy, iz1);
+            if (value1 == 0.0) continue;
+            for (int iz = iz0+1; iz < iz1; iz++) {
+              RNScalar t = (double) (iz - iz0) / (double) (iz1 - iz0);
+              RNScalar value = (1-t)*value0 + t*value1;
+              SetGridValue(ix, iy, iz, value);
+            }
+          }
+          iz0 = iz1;
+        }
+      }
+    }
+  }
+  
+  // Interpolate in y
+  for (int iz = 0; iz < ZResolution(); iz++) {
+    for (int ix = 0; ix < XResolution(); ix++) {
+      int iy0 = -1;
+      for (int iy1 = 0; iy1 < YResolution(); iy1++) {
+        if (GridValue(ix, iy1, iz) != 0.0) { 
+          if ((iy0 >= 0) && (iy0 < iy1-1) && (iy1-iy0 < max_hole_size)) {
+            RNScalar value0 = GridValue(ix, iy0, iz);
+            if (value0 == 0.0) continue;
+            RNScalar value1 = GridValue(ix, iy1, iz);
+            if (value1 == 0.0) continue;
+            for (int iy = iy0+1; iy < iy1; iy++) {
+              RNScalar t = (double) (iy - iy0) / (double) (iy1 - iy0);
+              RNScalar value = (1-t)*value0 + t*value1;
+              SetGridValue(ix, iy, iz, value);
+            }
+          }
+          iy0 = iy1;
+        }
+      }
+    }
+  }
+  
+  // Interpolate in x
+  for (int iy = 0; iy < YResolution(); iy++) {
+    for (int iz = 0; iz < ZResolution(); iz++) {
+      int ix0 = -1;
+      for (int ix1 = 0; ix1 < XResolution(); ix1++) {
+        if (GridValue(ix1, iy, iz) != 0.0) { 
+          if ((ix0 >= 0) && (ix0 < ix1-1) && (ix1-ix0 < max_hole_size)) {
+            RNScalar value0 = GridValue(ix0, iy, iz);
+            if (value0 == 0.0) continue;
+            RNScalar value1 = GridValue(ix1, iy, iz);
+            if (value1 == 0.0) continue;
+            for (int ix = ix0+1; ix < ix1; ix++) {
+              RNScalar t = (double) (ix - ix0) / (double) (ix1 - ix0);
+              RNScalar value = (1-t)*value0 + t*value1;
+              SetGridValue(ix, iy, iz, value);
+            }
+          }
+          ix0 = ix1;
+        }
+      }
+    }
   }
 }
 

@@ -238,9 +238,9 @@ Range(void) const
 
 
 RNScalar R2Grid::
-Median(void) const
+Percentile(RNScalar percentile) const
 {
-  // Return median
+  // Return value at given percentile
   if (grid_size == 0) return 0.0;
   int tmp_count = 0;
   RNScalar *tmp_values = new RNScalar [ grid_size ];
@@ -251,9 +251,10 @@ Median(void) const
   }
   if (tmp_count == 0) return R2_GRID_UNKNOWN_VALUE;
   qsort(tmp_values, tmp_count, sizeof(RNScalar), RNCompareScalars);
-  RNScalar median = tmp_values[tmp_count/2];
+  int percentile_index = percentile * tmp_count;
+  RNScalar value = tmp_values[percentile_index];
   delete [] tmp_values;
-  return median;
+  return value;
 }
 
 

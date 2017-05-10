@@ -26,6 +26,7 @@ public:
   RNScalar Median(void) const;
   RNScalar Maximum(void) const;
   RNScalar Minimum(void) const;
+  RNScalar Percentile(RNScalar percentile) const;
   RNInterval Range(void) const;
   RNScalar L1Norm(void) const;
   RNScalar L2Norm(void) const;
@@ -292,6 +293,15 @@ Maximum(void) const
 {
   // Return largest value
   return Range().Max();
+}
+
+
+
+inline RNScalar R2Grid::
+Median(void) const
+{
+  // Return median
+  return Percentile(0.5);
 }
 
 
