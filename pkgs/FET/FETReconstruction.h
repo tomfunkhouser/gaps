@@ -140,6 +140,7 @@ public:
   RNScalar min_curvature;
   RNScalar max_curvature;
   RNScalar min_salience;
+  RNBoolean opposite_facing_normals;
   RNBoolean discard_boundaries;
   RNBoolean discard_not_mutually_closest;
   RNBoolean discard_outliers;

@@ -132,7 +132,7 @@ private:
   RNArray<R3Brdf *> brdfs;
   RNArray<R2Texture *> textures;
   RNArray<R3Scene *> referenced_scenes;
-  RNSymbolTable<std::string> info;
+  RNSymbolTable<const char *> info;
   R3Viewer viewer;
   RNRgb ambient;
   RNRgb background;
@@ -212,9 +212,9 @@ inline const char *R3Scene::
 Info(const char *key) const
 {
   // Return info associated with key
-  std::string value;
+  const char *value;
   if (!info.Find(key, &value)) return NULL;
-  return value.c_str();
+  return value;
 }
 
 

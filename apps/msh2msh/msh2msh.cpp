@@ -22,6 +22,8 @@ RNLength max_edge_length = 0;
 char *xform_name = NULL;
 int scale_by_area = 0;
 int align_by_pca = 0;
+int align_principle_axes = 0;
+int center_at_origin = 0;
 int print_verbose = 0;
 
 
@@ -188,8 +190,10 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-flip")) flip_faces = 1;
       else if (!strcmp(*argv, "-clean")) clean = 1;
       else if (!strcmp(*argv, "-smooth")) smooth = 1;
-      else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
       else if (!strcmp(*argv, "-scale_by_area")) scale_by_area = 1;
+      else if (!strcmp(*argv, "-center_at_origin")) center_at_origin = 1;
+      else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
+      else if (!strcmp(*argv, "-align_principle_axes")) align_principle_axes = 1;
       else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform = R3identity_affine; xform.Scale(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-tx")) { argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-ty")) { argv++; argc--; xform = R3identity_affine; xform.YTranslate(atof(*argv)); xform.Transform(prev_xform);}
@@ -246,6 +250,34 @@ int main(int argc, char **argv)
   R3Mesh *mesh = ReadMesh(input_name);
   if (!mesh) exit(-1);
 
+  // Scale based on mesh area
+  if (scale_by_area) {
+    RNArea area = mesh->Area();
+    if (area > 0) xform.Scale(1 / sqrt(area));
+  }
+
+  // Center mesh at origin
+  if (center_at_origin) {
+    R3Point centroid = mesh->Centroid();
+    xform.Translate(-centroid.Vector());
+  }
+
+  // Rotate so that principle axes are aligned with canonical coordinate frame
+  if (align_principle_axes) {
+    R3Point centroid = mesh->Centroid();
+    R3Triad triad = mesh->PrincipleAxes(&centroid);
+    R3Affine rotation = R3identity_affine;
+    rotation.Translate(centroid.Vector());
+    rotation.Transform(R3Affine(triad.InverseMatrix()));
+    rotation.Translate(-centroid.Vector());
+    xform.Transform(rotation);
+  }
+
+  // Transform 
+  if (!xform.IsIdentity()) {
+    mesh->Transform(xform);
+  }
+
   // Clean 
   if (clean) {
     mesh->DeleteUnusedEdges();
@@ -274,21 +306,10 @@ int main(int argc, char **argv)
     mesh->CollapseShortEdges(min_edge_length);
   }
 
-  // Transform 
-  if (!xform.IsIdentity()) {
-    mesh->Transform(xform);
-  }
-
   // Normalize translation, rotation, and scale
   if (align_by_pca) {
     R3Affine xf = mesh->PCANormalizationTransformation();
     mesh->Transform(xf);
-  }
-
-  // Scale based on mesh area
-  if (scale_by_area) {
-    RNArea area = mesh->Area();
-    if (area > 0) xform.Scale(1 / sqrt(area));
   }
 
   // Transfer colors
@@ -302,19 +323,6 @@ int main(int argc, char **argv)
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

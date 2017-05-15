@@ -531,10 +531,12 @@ FETCompatibilityParameters(
   RNAngle max_normal_angle, 
   RNScalar min_distinction, 
   RNScalar min_salience, 
-  RNBoolean discard_boundaries)
+  RNBoolean discard_boundaries,
+  RNBoolean opposite_facing_normals)
   : min_distinction(min_distinction),
     min_salience(min_salience),
-    discard_boundaries(discard_boundaries)
+    discard_boundaries(discard_boundaries),
+    opposite_facing_normals(opposite_facing_normals)
 {
   if (max_euclidean_distance == RN_UNKNOWN) max_euclidean_distance_squared = RN_UNKNOWN;
   else max_euclidean_distance_squared = max_euclidean_distance * max_euclidean_distance;
@@ -573,6 +575,14 @@ AreFeaturesCompatible(FETFeature *feature1, FETFeature *feature2, void *data)
     R3Vector vector2 = feature2->Position(TRUE) - feature2->Shape()->Viewpoint();
     if (vector1.Dot(vector2) > 0) return 0;
   }
+  else if (compatibility->opposite_facing_normals &&
+    (((feature1->GeneratorType() == CONVEX_FEATURE_TYPE) && (feature2->GeneratorType() == CONCAVE_FEATURE_TYPE)) ||
+     ((feature1->GeneratorType() == CONCAVE_FEATURE_TYPE) && (feature2->GeneratorType() == CONVEX_FEATURE_TYPE)))) {
+  }
+  else if (compatibility->opposite_facing_normals &&
+    (((feature1->GeneratorType() == RIDGE_FEATURE_TYPE) && (feature2->GeneratorType() == VALLEY_FEATURE_TYPE)) ||
+     ((feature1->GeneratorType() == VALLEY_FEATURE_TYPE) && (feature2->GeneratorType() == RIDGE_FEATURE_TYPE)))) {
+  }
   else {
     // For other features, must be same generator type
     if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
@@ -586,7 +596,10 @@ AreFeaturesCompatible(FETFeature *feature1, FETFeature *feature2, void *data)
   // Check orientations
   if (compatibility->min_normal_dot_product != RN_UNKNOWN) {
     if ((feature1->ShapeType() == PLANE_FEATURE_SHAPE) && (feature2->ShapeType() == PLANE_FEATURE_SHAPE)) {
-      RNScalar normal_dot_product = feature1->normal.Dot(feature2->normal);
+      R3Vector normal1 = feature1->normal;
+      R3Vector normal2 = feature2->normal;
+      if (compatibility->opposite_facing_normals) normal2 = -normal2;
+      RNScalar normal_dot_product = normal1.Dot(normal2);
       if (normal_dot_product < compatibility->min_normal_dot_product) return 0;
     }
     else if ((feature1->ShapeType() == LINE_FEATURE_SHAPE) && (feature2->ShapeType() == LINE_FEATURE_SHAPE)) {

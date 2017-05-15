@@ -25,6 +25,7 @@ FETReconstruction(void)
     min_curvature(RN_UNKNOWN),
     max_curvature(RN_UNKNOWN),
     min_salience(RN_UNKNOWN),
+    opposite_facing_normals(FALSE),
     discard_boundaries(TRUE),
     discard_not_mutually_closest(FALSE),
     discard_outliers(TRUE),
@@ -61,6 +62,7 @@ FETReconstruction(const FETReconstruction& reconstruction)
     min_curvature(reconstruction.min_curvature),
     max_curvature(reconstruction.max_curvature),
     min_salience(reconstruction.min_salience),
+    opposite_facing_normals(reconstruction.opposite_facing_normals),
     discard_boundaries(reconstruction.discard_boundaries),
     discard_not_mutually_closest(reconstruction.discard_not_mutually_closest),
     discard_outliers(reconstruction.discard_outliers),
@@ -584,6 +586,14 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
     R3Vector vector2 = feature2->Position(TRUE) - feature2->Shape()->Viewpoint();
     if (vector1.Dot(vector2) > 0) return 0;
   }
+  else if (opposite_facing_normals &&
+    (((feature1->GeneratorType() == CONVEX_FEATURE_TYPE) && (feature2->GeneratorType() == CONCAVE_FEATURE_TYPE)) ||
+     ((feature1->GeneratorType() == CONCAVE_FEATURE_TYPE) && (feature2->GeneratorType() == CONVEX_FEATURE_TYPE)))) {
+  }
+  else if (opposite_facing_normals &&
+    (((feature1->GeneratorType() == RIDGE_FEATURE_TYPE) && (feature2->GeneratorType() == VALLEY_FEATURE_TYPE)) ||
+     ((feature1->GeneratorType() == VALLEY_FEATURE_TYPE) && (feature2->GeneratorType() == RIDGE_FEATURE_TYPE)))) {
+  }
   else {
     // For other features, must be same generator type
     if (feature1->GeneratorType() != feature2->GeneratorType()) return 0;
@@ -683,7 +693,9 @@ Affinity(FETFeature *feature1, FETFeature *feature2) const
       R3Vector normal2 = feature2->normal;
       shape1->Transform(normal1);
       shape2->Transform(normal2);
-      RNAngle normal_angle = R3InteriorAngle(normal1, normal2);
+      if (opposite_facing_normals) normal2 = -normal2;
+      RNScalar normal_dot_product = normal1.Dot(normal2);
+      RNAngle normal_angle = (normal_dot_product < 1.0) ? ((normal_dot_product > -1.0) ? acos(normal_dot_product) : RN_PI) : 0;
       if (normal_angle > max_normal_angle) return 0;
       normal_affinity = 1.0 - normal_angle / max_normal_angle;
       affinity *= normal_affinity;
@@ -865,7 +877,7 @@ CreateMeshFeatures(FETReconstruction *reconstruction, FETShape *shape,
   if (salience <= 0) salience = 1.0;
   
   // Create kdtree
-  FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  static const FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
   R3Kdtree<FETFeature *> kdtree(mesh->BBox(), position_offset);
 
   // Create vertex features
@@ -1667,18 +1679,18 @@ CreateCorrespondences(FETShape *shape1, FETShape *shape2, RNScalar num_correspon
   for (int i = 0; i < query_features2.NEntries(); i++) {
     FETFeature *feature2 = query_features2.Kth(i);
 
-    // Subsample features randomly
+   // Subsample features randomly
     if ((num_correspondences != RN_UNKNOWN) && (total_salience > 0)) {
       const RNScalar expected_inlier_probability = 0.1;
       RNScalar p = num_correspondences * feature2->Salience() / total_salience;
       p /= expected_inlier_probability;
       if ((p < 1.0) && (RNRandomScalar() > p)) continue;
     }
-
+    
     // Find closest feature on shape1
     FETFeature *feature1 = shape1->FindClosestFeature(feature2, shape2->Transformation(), 
       0.0, max_euclidean_distance, max_descriptor_distances, max_normal_angle,
-      min_distinction, min_salience, discard_boundaries);
+      min_distinction, min_salience, discard_boundaries, opposite_facing_normals);
     if (!feature1) continue;
 
     // Check if should discard because on boundary
@@ -1696,7 +1708,7 @@ CreateCorrespondences(FETShape *shape1, FETShape *shape2, RNScalar num_correspon
     if (discard_not_mutually_closest) {
       FETFeature *feature2a = shape2->FindClosestFeature(feature1, shape1->Transformation(), 
         0.0, max_euclidean_distance, max_descriptor_distances, max_normal_angle,
-        min_distinction, min_salience, discard_boundaries);
+        min_distinction, min_salience, discard_boundaries, opposite_facing_normals);
       if (feature2a != feature2) continue;
     }
 

@@ -94,7 +94,7 @@ private:
   RNArray<R3SceneNode *> children;
   RNArray<R3SceneElement *> elements;
   RNArray<R3SceneReference *> references;
-  RNSymbolTable<std::string> info;
+  RNSymbolTable<const char *> info;
   R3Affine transformation;
   R3Box bbox;
   char *name;
@@ -217,9 +217,9 @@ inline const char *R3SceneNode::
 Info(const char *key) const
 {
   // Return info associated with key
-  std::string value;
+  const char *value = NULL;
   if (!info.Find(key, &value)) return NULL;
-  return value.c_str();
+  return value;
 }
 
 

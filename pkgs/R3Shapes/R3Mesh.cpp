@@ -110,12 +110,21 @@ Centroid(void) const
   // Return centroid of mesh
   RNArea area = 0;
   R3Point centroid(0,0,0);
-  for (int i = 0; i < NFaces(); i++) {
-    R3MeshFace *face = Face(i);
-    RNArea face_area = FaceArea(face);
-    R3Point face_centroid = FaceCentroid(face);
-    centroid += face_area * face_centroid;
-    area += face_area;
+  if (NFaces() > 0) {
+    for (int i = 0; i < NFaces(); i++) {
+      R3MeshFace *face = Face(i);
+      RNArea face_area = FaceArea(face);
+      R3Point face_centroid = FaceCentroid(face);
+      centroid += face_area * face_centroid;
+      area += face_area;
+    }
+  }
+  else {
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      centroid += VertexPosition(vertex);
+      area += 1.0;
+    }
   }
 
   // Return centroid
@@ -212,23 +221,44 @@ PrincipleAxes(const R3Point *center, RNScalar *variances) const
   // Compute covariance matrix
   RNArea area = 0;
   RNScalar m[9] = { 0 };
-  for (int i = 0; i < NFaces(); i++) {
-    R3MeshFace *face = Face(i);
-    RNArea face_area = FaceArea(face);
-    R3Point face_centroid = FaceCentroid(face);
-    RNScalar x = face_centroid[0] - centroid[0];
-    RNScalar y = face_centroid[1] - centroid[1];
-    RNScalar z = face_centroid[2] - centroid[2];
-    m[0] += face_area * x*x;
-    m[4] += face_area * y*y;
-    m[8] += face_area * z*z;
-    m[1] += face_area * x*y;
-    m[3] += face_area * x*y;
-    m[2] += face_area * x*z;
-    m[6] += face_area * x*z;
-    m[5] += face_area * y*z;
-    m[7] += face_area * y*z;
-    area += face_area;
+  if (NFaces() > 0) {
+    for (int i = 0; i < NFaces(); i++) {
+      R3MeshFace *face = Face(i);
+      RNArea face_area = FaceArea(face);
+      R3Point face_centroid = FaceCentroid(face);
+      RNScalar x = face_centroid[0] - centroid[0];
+      RNScalar y = face_centroid[1] - centroid[1];
+      RNScalar z = face_centroid[2] - centroid[2];
+      m[0] += face_area * x*x;
+      m[4] += face_area * y*y;
+      m[8] += face_area * z*z;
+      m[1] += face_area * x*y;
+      m[3] += face_area * x*y;
+      m[2] += face_area * x*z;
+      m[6] += face_area * x*z;
+      m[5] += face_area * y*z;
+      m[7] += face_area * y*z;
+      area += face_area;
+    }
+  }
+  else {
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      R3Point position = VertexPosition(vertex);
+      RNScalar x = position[0] - centroid[0];
+      RNScalar y = position[1] - centroid[1];
+      RNScalar z = position[2] - centroid[2];
+      m[0] += x*x;
+      m[4] += y*y;
+      m[8] += z*z;
+      m[1] += x*y;
+      m[3] += x*y;
+      m[2] += x*z;
+      m[6] += x*z;
+      m[5] += y*z;
+      m[7] += y*z;
+      area += 1.0;
+    }
   }
 
   // Normalize covariance matrix
@@ -4194,7 +4224,8 @@ ReadObjFile(const char *filename)
         R3Vector normal(0, 0, 0);
         if ((ti > 0) && ((ti-1) < texture_coords.NEntries())) texcoords = *(texture_coords.Kth(ti-1));
         if ((ni > 0) && ((ni-1) < normals.NEntries())) normal = *(normals.Kth(ni-1));
-        if (!R2Contains(texcoords, VertexTextureCoords(v[i])) || !R3Contains(normal, VertexNormal(v[i])) ) {
+        if (((ti > 0) && !R2Contains(texcoords, VertexTextureCoords(v[i]))) ||
+            ((ni > 0) && !R3Contains(normal, VertexNormal(v[i])))) {
           v[i] = CreateVertex(VertexPosition(v[i]), normal, RNgray_rgb, texcoords);
         }
       }
@@ -5560,8 +5591,8 @@ WriteRayFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 
@@ -5675,7 +5706,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   ply_close(ply);
 
   // Return number of faces written
-  return NFaces();
+  return 1;
 }
 
 
@@ -5709,8 +5740,8 @@ WriteObjFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 
@@ -5748,8 +5779,8 @@ WriteOffFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 
@@ -5793,8 +5824,8 @@ WriteCattFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 
@@ -5871,8 +5902,8 @@ WriteIfsFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 
@@ -5911,8 +5942,8 @@ WriteSTLFile(const char *filename) const
   // Close file
   fclose(fp);
 
-  // Return number of faces written
-  return NFaces();
+  // Return success
+  return 1;
 }
 
 

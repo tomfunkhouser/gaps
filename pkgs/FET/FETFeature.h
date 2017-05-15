@@ -167,7 +167,8 @@ public:
     RNAngle max_normal_angle = RN_UNKNOWN,
     RNScalar min_distinction = RN_UNKNOWN,
     RNScalar min_salience = RN_UNKNOWN,
-    RNBoolean discard_boundaries = FALSE);
+    RNBoolean discard_boundaries = FALSE,
+    RNBoolean opposite_facing_normals = FALSE);
 public:
   RNLength max_euclidean_distance_squared;
   RNLength max_descriptor_distance_squared[NUM_FEATURE_TYPES];
@@ -175,6 +176,7 @@ public:
   RNScalar min_distinction;
   RNScalar min_salience;
   RNBoolean discard_boundaries;
+  RNBoolean opposite_facing_normals;
 };
 
 int AreFeaturesCompatible(FETFeature *feature1, FETFeature *feature2, void *data);

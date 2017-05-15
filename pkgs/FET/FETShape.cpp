@@ -735,7 +735,7 @@ UpdateKdtree(void)
   if (kdtree) return;
 
   // Build shape's feature kdtree 
-  FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  static const FETFeature tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
   kdtree = new R3Kdtree<FETFeature *>(features, position_offset);
   if (!kdtree) RNAbort("Cannot build kdtree");
 }
@@ -777,12 +777,14 @@ FETFeature *FETShape::
 FindClosestFeature(FETFeature *query_feature, const R3Affine& query_transformation,
   RNLength min_euclidean_distance, RNLength max_euclidean_distance, 
   RNLength *max_descriptor_distances, RNAngle max_normal_angle,
-  RNScalar min_distinction, RNScalar min_salience, RNBoolean discard_boundaries)
+  RNScalar min_distinction, RNScalar min_salience,
+  RNBoolean discard_boundaries, RNBoolean opposite_facing_normals)
 {
   // Load compatibility parameters
   FETCompatibilityParameters compatibility(max_euclidean_distance,
    max_descriptor_distances, max_normal_angle,
-   min_distinction, min_salience, discard_boundaries);
+   min_distinction, min_salience,
+   discard_boundaries, opposite_facing_normals);
 
   // Build kdtree 
   if (!kdtree) UpdateKdtree();
@@ -819,12 +821,13 @@ FindAllFeatures(FETFeature *query_feature, const R3Affine& query_transformation,
   RNLength min_euclidean_distance, RNLength max_euclidean_distance, 
   RNLength *max_descriptor_distances, RNAngle max_normal_angle,
   RNScalar min_distinction, RNScalar min_salience,
-  RNBoolean discard_boundaries) 
+  RNBoolean discard_boundaries, RNBoolean opposite_facing_normals)
 {
   // Load compatibility parameters
   FETCompatibilityParameters compatibility(max_euclidean_distance,
    max_descriptor_distances, max_normal_angle,
-   min_distinction, min_salience, discard_boundaries);
+   min_distinction, min_salience,
+   discard_boundaries, opposite_facing_normals);
 
   // Build shape's feature kdtree 
   if (!kdtree) UpdateKdtree();

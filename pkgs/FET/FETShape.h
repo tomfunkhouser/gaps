@@ -62,12 +62,12 @@ public:
     RNLength min_euclidean_distance = RN_UNKNOWN, RNLength max_euclidean_distance = RN_UNKNOWN, 
     RNLength *max_descriptor_distances = NULL, RNAngle max_normal_angle = RN_UNKNOWN,
     RNScalar min_distinction = RN_UNKNOWN, RNScalar min_salience = RN_UNKNOWN,
-    RNBoolean discard_boundaries = FALSE);
+    RNBoolean discard_boundaries = FALSE, RNBoolean opposite_facing_normals = FALSE);
   int FindAllFeatures(FETFeature *query_feature, const R3Affine& query_transformation, RNArray<FETFeature *>& result,
     RNLength min_euclidean_distance = RN_UNKNOWN, RNLength max_euclidean_distance = RN_UNKNOWN, 
     RNLength *max_descriptor_distances = NULL, RNAngle max_normal_angle = RN_UNKNOWN,
     RNScalar min_distinction = RN_UNKNOWN, RNScalar min_salience = RN_UNKNOWN,
-    RNBoolean discard_boundaries = FALSE);
+    RNBoolean discard_boundaries = FALSE, RNBoolean opposite_facing_normals = FALSE);
 
 public:
   // Internal properties

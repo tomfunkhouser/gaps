@@ -4681,6 +4681,8 @@ InterpolatedVertex(const R3Grid *grid, int ix0, int iy0, int iz0, int dim,
     R3Point p = (1.0-t)*p0 + t*p1;
     vertices[3*grid_index+dim] = mesh->CreateVertex(p);
   }
+
+  // Return vertex
   return vertices[3*grid_index+dim];
 }
 
