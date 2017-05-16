@@ -28,6 +28,7 @@ class R2Image {
 
   // Manipulation
   R2Image& operator=(const R2Image& image);
+  void Clear(const RNRgb& rgb = RNblack_rgb);
   void Add(const R2Image& image);
   void Subtract(const R2Image& image);
   void SetPixelRGB(int row, int column, const RNRgb& rgb);

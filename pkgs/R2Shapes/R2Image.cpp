@@ -157,6 +157,18 @@ operator=(const R2Image& image)
 
 
 void R2Image::
+Clear(const RNRgb& rgb)
+{
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++) {
+      SetPixelRGB(i, j, rgb);
+    }
+  }
+}
+
+
+
+void R2Image::
 Add(const R2Image& image)
 {
   int nbytes = rowsize * height;
