@@ -36,6 +36,7 @@ static int create_boundary_images = 0;
 static int create_normal_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
+static int capture_mesh_depth_images = 0;
 static int capture_object_images = 0;
 static int capture_category_images = 0;
 
@@ -621,6 +622,18 @@ Redraw(void)
     }
   }
 
+  if (capture_mesh_depth_images) {
+    RenderMesh(mesh, 1, target_viewpoint, target_towards);
+    R2Grid depth_image(width, height);
+    if (CaptureDepth(depth_image)) {
+      depth_image.Multiply(4000);
+      depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
+       char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
+      depth_image.WriteFile(output_image_filename);
+    }
+  }
+
   if (capture_object_images) {
     RenderMesh(mesh, 1, target_viewpoint, target_towards);
     R2Grid object_image(width, height);
@@ -780,6 +793,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_object_images")) { output = capture_object_images = 1; }
       else if (!strcmp(*argv, "-capture_category_images")) { output = capture_category_images = 1; }
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
