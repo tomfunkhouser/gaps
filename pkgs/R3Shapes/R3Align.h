@@ -4,6 +4,7 @@
 
 // Functions to align RNArray of points
 
+R3Box R3BoundingBox(const RNArray<R3Point *>& points);
 R3Point R3Centroid(const RNArray<R3Point *>& points, const RNScalar *weights = NULL);
 R3Triad R3PrincipleAxes(const R3Point& centroid, const RNArray<R3Point *>& points, const RNScalar *weights = NULL, RNScalar *variances = NULL);
 RNLength R3AverageDistance(const R3Point& center, const RNArray<R3Point *>& points, const RNScalar *weights = NULL);
@@ -21,6 +22,7 @@ R3Plane R3EstimatePlaneWithRansac(const RNArray<R3Point *>& points, const RNScal
 
 // Functions to align C array of points
 
+R3Box R3BoundingBox(int npoints, R3Point *points);
 R3Point R3Centroid(int npoints, R3Point *points, const RNScalar *weights = NULL);
 R3Triad R3PrincipleAxes(const R3Point& centroid, int npoints, R3Point *points, const RNScalar *weights = NULL, RNScalar *variances = NULL);
 RNLength R3AverageDistance(const R3Point& center, int npoints, R3Point *points, const RNScalar *weights = NULL);

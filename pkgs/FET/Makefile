@@ -12,6 +12,7 @@ NAME=FET
 
 CCSRCS=$(NAME).cpp \
   FETReconstruction.cpp \
+  FETSequence.cpp \
   FETMatch.cpp \
   FETShape.cpp \
   FETCorrespondence.cpp \

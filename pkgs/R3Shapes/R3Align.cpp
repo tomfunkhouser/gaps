@@ -8,6 +8,21 @@
 
 
 
+R3Box
+R3BoundingBox(const RNArray<R3Point *>& points)
+{
+  // Compute bounding box
+  R3Box bbox = R3null_box;
+  for (int i = 0; i < points.NEntries(); i++) {
+    bbox.Union(*points[i]);
+  }
+
+  // Return bounding box
+  return bbox;
+}
+
+
+
 R3Point 
 R3Centroid(const RNArray<R3Point *>& points, const RNScalar *weights)
 {
@@ -482,6 +497,16 @@ R3EstimatePlaneWithRansac(const RNArray<R3Point *>& points, const RNScalar *weig
 
 
 ////////////////////////////////////////////////////////////////////////
+
+
+
+R3Box 
+R3BoundingBox(int npoints, R3Point *points)
+{
+  RNArray<R3Point *> array;
+  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  return R3BoundingBox(array);
+}
 
 
 

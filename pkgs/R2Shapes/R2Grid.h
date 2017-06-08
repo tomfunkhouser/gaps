@@ -34,6 +34,10 @@ public:
   int Cardinality(void) const;
   R2Box GridBox(void) const;
   R2Box WorldBox(void) const;
+  R2Point GridCentroid(void) const;
+  R2Point WorldCentroid(void) const;
+  R2Diad GridPrincipleAxes(const R2Point *grid_centroid = NULL, RNScalar *variances = NULL) const;
+  R2Diad WorldPrincipleAxes(const R2Point *world_centroid = NULL, RNScalar *variances = NULL) const;
 
   // Transformation property functions
   const R2Affine& WorldToGridTransformation(void) const;
@@ -138,7 +142,7 @@ public:
   void RasterizeWorldBox(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
   void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value, int operation = 0);
   void RasterizeWorldTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value, int operation = 0);
-  void RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
+  void RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
   void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
   void RasterizeWorldTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
   void RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value, int operation = 0);
@@ -332,6 +336,33 @@ WorldBox(void) const
   R2Point p1(0, 0);
   R2Point p2(grid_resolution[0]-1, grid_resolution[1]-1);
   return R2Box(WorldPosition(p1), WorldPosition(p2));
+}
+
+
+
+inline R2Point R2Grid::
+WorldCentroid(void) const
+{
+  // Return centroid in world coordinates
+  R2Point grid_centroid = GridCentroid();
+  return WorldPosition(grid_centroid);
+}
+
+
+
+inline R2Diad R2Grid::
+WorldPrincipleAxes(const R2Point *world_centroid, RNScalar *variances) const
+{
+  // Return principle axes in world coordinates
+  R2Point grid_centroid = (world_centroid) ? GridPosition(*world_centroid) : GridCentroid();
+  R2Diad axes = GridPrincipleAxes(&grid_centroid, variances);
+  axes.Transform(grid_to_world_transform);
+  if (world_to_grid_scale_factor > 0) {
+    variances[0] /= world_to_grid_scale_factor;
+    variances[1] /= world_to_grid_scale_factor;
+    variances[2] /= world_to_grid_scale_factor;
+  }
+  return axes;
 }
 
 

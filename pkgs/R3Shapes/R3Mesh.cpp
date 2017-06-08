@@ -907,6 +907,9 @@ Empty(void)
   if (vertex_block) { delete [] vertex_block; vertex_block = NULL; }
   if (edge_block) { delete [] edge_block; edge_block = NULL; }
   if (face_block) { delete [] face_block; face_block = NULL; }
+
+  // Reset bounding box
+  bbox = R3null_box;
 }
 
 
@@ -4060,6 +4063,177 @@ TracePath(const R3MeshVertex *source_vertex, const R3Vector& tangent_direction, 
 
   // Return error
   return -1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// SHAPE CREATION FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+void R3Mesh::
+CreateBox(const R3Box& box)
+{
+  // Create box 
+  R3MeshVertex *v1 = CreateVertex(box.Corner(RN_NNP_OCTANT));
+  R3MeshVertex *v2 = CreateVertex(box.Corner(RN_PNP_OCTANT));
+  R3MeshVertex *v3 = CreateVertex(box.Corner(RN_NPP_OCTANT));
+  R3MeshVertex *v4 = CreateVertex(box.Corner(RN_PPP_OCTANT));
+  R3MeshVertex *v5 = CreateVertex(box.Corner(RN_NPN_OCTANT));
+  R3MeshVertex *v6 = CreateVertex(box.Corner(RN_PPN_OCTANT));
+  R3MeshVertex *v7 = CreateVertex(box.Corner(RN_NNN_OCTANT));
+  R3MeshVertex *v8 = CreateVertex(box.Corner(RN_PNN_OCTANT));
+  CreateFace(v1, v2, v4);
+  CreateFace(v1, v4, v3);
+  CreateFace(v3, v4, v6);
+  CreateFace(v3, v6, v5);
+  CreateFace(v5, v6, v8);
+  CreateFace(v5, v8, v7);
+  CreateFace(v7, v8, v2);
+  CreateFace(v7, v2, v1);
+  CreateFace(v2, v8, v6);
+  CreateFace(v2, v6, v4);
+  CreateFace(v7, v1, v3);
+  CreateFace(v7, v3, v5);
+}
+
+
+
+void R3Mesh::
+CreateOrientedBox(const R3OrientedBox& box)
+{
+  // Create mesh elements for an oriented box and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing)
+{
+  // Create mesh elements for a sphere and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateEllipsoid(const R3Ellipsoid& ellipsoid, RNLength vertex_spacing)
+{
+  // Create mesh elements for a ellipsoid and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateCone(const R3Cone& cone, RNLength vertex_spacing)
+{
+  // Create mesh elements for a cone and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateCylinder(const R3Cylinder& cylinder, RNLength vertex_spacing)
+{
+  // Determine number of vertices per circle
+  int n = 32;
+  if (vertex_spacing > 0) {
+    n = (int) (2.0 * RN_PI * cylinder.Radius() / vertex_spacing);
+    if (n < 8) n = 8;
+  }
+
+  // Allocate vertex pointers
+  R3MeshVertex ***vertices = new R3MeshVertex **[2];
+  vertices[0] = new R3MeshVertex * [ n ];
+  vertices[1] = new R3MeshVertex * [ n ];
+
+  // Create vertices
+  for (int i = 0; i < n; i++) {
+    RNAngle a = i*RN_TWO_PI/n;
+    RNScalar x = cylinder.Radius()*cos(a);
+    RNScalar y = cylinder.Radius()*sin(a);
+    vertices[0][i] = CreateVertex(R3Point(x, y, -0.5*cylinder.Height()));
+    vertices[1][i] = CreateVertex(R3Point(x, y,  0.5*cylinder.Height()));
+  }
+
+  // Create bottom faces
+  R3MeshVertex *v0c = CreateVertex(R3Point(0, 0, -0.5*cylinder.Height()));
+  for (int i = 0; i < n; i++) {
+    R3MeshVertex *v00 = vertices[0][i];
+    R3MeshVertex *v01 = vertices[0][(i+1)%n];
+    CreateFace(v0c, v01, v00);
+  }
+  
+  // Create top faces
+  R3MeshVertex *v1c = CreateVertex(R3Point(0, 0, 0.5*cylinder.Height()));
+  for (int i = 0; i < n; i++) {
+    R3MeshVertex *v10 = vertices[1][i];
+    R3MeshVertex *v11 = vertices[1][(i+1)%n];
+    CreateFace(v1c, v10, v11);
+  }
+  
+  // Create side faces
+  for (int i = 0; i < n; i++) {
+    R3MeshVertex *v00 = vertices[0][i];
+    R3MeshVertex *v01 = vertices[0][(i+1)%n];
+    R3MeshVertex *v10 = vertices[1][i];
+    R3MeshVertex *v11 = vertices[1][(i+1)%n];
+    CreateFace(v00, v01, v11);
+    CreateFace(v00, v11, v10);
+  }
+
+  // Delete vertex pointers
+  delete [] vertices[0];
+  delete [] vertices[1];
+  delete [] vertices;
+}
+
+
+
+void R3Mesh::
+CreateCircle(const R3Circle& circle, RNLength vertex_spacing)
+{
+  // Create mesh elements for a circle and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateEllipse(const R3Ellipse& ellipse, RNLength vertex_spacing)
+{
+  // Create mesh elements for a ellipse and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateRectangle(const R3Rectangle& rectangle)
+{
+  // Create mesh elements for a rectangle and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateTriangle(const R3Triangle& triangle)
+{
+  // Create mesh elements for a triangle and add to mesh
+  RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateTriangleArray(const R3TriangleArray& triangles)
+{
+  // Create mesh elements for a triangle array and add to mesh
+  RNAbort("Not implemented");
 }
 
 

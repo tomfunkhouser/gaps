@@ -11,7 +11,12 @@ public:
 
   // Reconstruction access
   FETReconstruction *Reconstruction(void) const;
-
+  int ReconstructionIndex(void) const;
+  
+  // Sequence access
+  FETSequence *Sequence(void) const;
+  int SequenceIndex(void) const;
+  
   // Shape access
   int NParents(void) const;
   FETShape *Parent(int k) const;
@@ -112,6 +117,10 @@ public:
   FETReconstruction *reconstruction;
   int reconstruction_index;
 
+  // Sequence
+  FETSequence *sequence;
+  int sequence_index;
+
   // Hierarchy
   RNArray<FETShape *> parents;
   RNArray<FETShape *> children;
@@ -179,6 +188,33 @@ Reconstruction(void) const
 {
   // Return reconstruction
   return reconstruction;
+}
+
+
+
+inline int FETShape::
+ReconstructionIndex(void) const
+{
+  // Return index of this shape in reconstruction
+  return reconstruction_index;
+}
+
+
+
+inline FETSequence *FETShape::
+Sequence(void) const
+{
+  // Return sequence
+  return sequence;
+}
+
+
+
+inline int FETShape::
+SequenceIndex(void) const
+{
+  // Return index of this shape in sequence
+  return sequence_index;
 }
 
 

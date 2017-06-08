@@ -14,6 +14,8 @@ FETShape::
 FETShape(FETReconstruction *reconstruction)
   : reconstruction(NULL),
     reconstruction_index(-1),
+    sequence(NULL),
+    sequence_index(-1),
     parents(),
     children(),
     features(),
@@ -48,6 +50,8 @@ FETShape::
 FETShape(const FETShape& shape)
   : reconstruction(NULL),
     reconstruction_index(-1),
+    sequence(NULL),
+    sequence_index(-1),
     parents(),
     children(),
     features(),
@@ -138,6 +142,9 @@ FETShape::
     kdtree = NULL;
   }
   
+  // Remove from sequence
+  if (sequence) sequence->RemoveShape(this);
+
   // Remove from reconstruction
   if (reconstruction) reconstruction->RemoveShape(this);
 }

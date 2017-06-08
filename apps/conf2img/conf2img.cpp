@@ -224,7 +224,10 @@ WriteImages(const char *output_directory)
 
     // Get image name
     char image_name_buffer[4096];
-    strncpy(image_name_buffer, image->DepthFilename(), 4096);
+    const char *filename = image->DepthFilename();
+    if (!filename) filename = image->ColorFilename();
+    if (!filename) filename = "default";
+    strncpy(image_name_buffer, filename, 4096);
     char *image_name = (strrchr(image_name_buffer, '/')) ? strrchr(image_name_buffer, '/')+1 : image_name_buffer;
     char *endp = strrchr(image_name, '.');
     if (endp) *endp = '\0';
@@ -468,7 +471,7 @@ RenderConfiguration(const RGBDConfiguration& configuration,
   glEnable(GL_DEPTH_TEST);
   glColor3d(1.0, 1.0, 1.0);
 
-  // Draw images
+  // Draw points
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     RNScalar affinity = Affinity(image->WorldViewpoint(), image->WorldTowards(), target_viewpoint, target_towards);
@@ -476,6 +479,14 @@ RenderConfiguration(const RGBDConfiguration& configuration,
     image->ReadChannels();
     image->DrawPoints(RGBD_PHOTO_COLOR_SCHEME);
     image->ReleaseChannels();
+  }
+
+  // Draw surfaces
+  for (int i = 0; i < configuration.NSurfaces(); i++) {
+    RGBDSurface *surface = configuration.Surface(i);
+    surface->ReadChannels();
+    surface->DrawTexture(RGBD_PHOTO_COLOR_SCHEME);
+    surface->ReleaseChannels();
   }
 }
 
@@ -534,8 +545,8 @@ LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
       // Load camera for image from configuration
       RGBDImage *image = configuration.Image(current_image_index);
       if (image->NPixels(RN_X) == 0) {
-        image->ReadDepthChannel();  // Temporary, just to read width/height :(
-        image->ReleaseDepthChannel();
+        image->ReadChannels();  // Temporary, just to read width/height :(
+        image->ReleaseChannels();
       }
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
@@ -579,7 +590,10 @@ Redraw(void)
   char *name = image_name_buffer;
   if (configuration.NImages() > 0) {
     RGBDImage *image = configuration.Image(current_image_index);
-    strncpy(image_name_buffer, image->DepthFilename(), 4096);
+    const char *filename = image->DepthFilename();
+    if (!filename) filename = image->ColorFilename();
+    if (!filename) filename = "default";
+    strncpy(image_name_buffer, filename, 4096);
     if (strrchr(image_name_buffer, '/')) name = strrchr(image_name_buffer, '/')+1;
     char *endp = strrchr(name, '.');
     if (endp) *endp = '\0';

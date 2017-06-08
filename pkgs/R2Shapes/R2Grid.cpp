@@ -325,6 +325,110 @@ Mean(void) const
 
 
 
+R2Point R2Grid::
+GridCentroid(void) const
+{
+  // Compute weighted sum
+  RNScalar total_value = 0;
+  R2Point centroid(0,0);
+  RNScalar *grid_valuesp = grid_values;
+  for (int j = 0; j < grid_resolution[1]; j++) {
+    for (int i = 0; i < grid_resolution[0]; i++) {
+      R2Vector position(i, j);
+      RNScalar value = *(grid_valuesp++);
+      centroid += value * position;
+      total_value += value;
+    }
+  }
+
+  // Divide by total value
+  if (total_value > 0) centroid /= total_value;
+
+  // Return centroid
+  return centroid;
+}
+
+
+
+R2Diad R2Grid::
+GridPrincipleAxes(const R2Point *grid_center, RNScalar *variances) const
+{
+  // Get centroid
+  R2Point center = (grid_center) ? *grid_center : GridCentroid();
+
+  // Compute covariance matrix
+  RNScalar m[4] = { 0, 0, 0, 0 };
+  RNScalar total_value = 0;
+  RNScalar *grid_valuesp = grid_values;
+  for (int j = 0; j < grid_resolution[1]; j++) {
+    for (int i = 0; i < grid_resolution[0]; i++) {
+      R2Point position(i, j);
+      RNScalar value = *(grid_valuesp++);
+      RNScalar x = position[0] - center[0];
+      RNScalar y = position[1] - center[1];
+      m[0] += value * x*x;
+      m[1] += value * x*y;
+      m[2] += value * x*y;
+      m[3] += value * y*y;
+      total_value += value;
+    }
+  }
+
+  // Normalize covariance matrix
+  if (total_value == 0) return R2xy_diad;
+  for (int i = 0; i < 4; i++) m[i] /= total_value;
+
+  // Compute eigenvalues and eigenvectors
+  RNScalar U[4];
+  RNScalar W[2];
+  RNScalar Vt[4];
+  RNSvdDecompose(2, 2, m, U, W, Vt);  // m == U . DiagonalMatrix(W) . Vt
+
+  // Copy principle axes into more convenient form
+  // W has eigenvalues (greatest to smallest) and Vt has eigenvectors (normalized)
+  R2Vector axes[3];
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      axes[i][j] = Vt[2*i+j];
+    }
+  }
+
+  // Find heavier side of first axis
+  grid_valuesp = grid_values;
+  RNScalar positive_count = 0;
+  RNScalar negative_count = 0;
+  for (int j = 0; j < grid_resolution[1]; j++) {
+    for (int i = 0; i < grid_resolution[0]; i++) {
+      R2Point position(i, j);
+      RNScalar value = *(grid_valuesp++);
+      R2Vector vector = position - center;
+      RNScalar dot = axes[0].Dot(vector);
+      if (dot > 0.0) positive_count += value;
+      else negative_count += value;
+    }
+  }
+
+  // Set second axis to form orthonormal triad with first one
+  if (positive_count < negative_count) axes[0].Flip();
+  axes[1] = axes[0]; axes[1].Rotate(RN_PI_OVER_TWO);
+
+  // Just checking
+  assert(RNIsEqual(axes[0].Length(), 1.0, RN_BIG_EPSILON));
+  assert(RNIsEqual(axes[1].Length(), 1.0, RN_BIG_EPSILON));
+  assert(RNIsZero(axes[0].Dot(axes[1]), RN_BIG_EPSILON));
+
+  // Return variances (eigenvalues)
+  if (variances) {
+    variances[0] = W[0];
+    variances[1] = W[1];
+  }
+
+  // Return triad
+  return R2Diad(axes[0], axes[1]);
+}
+
+
+
 RNScalar R2Grid::
 GridValue(RNScalar x, RNScalar y) const
 {
@@ -2494,15 +2598,16 @@ SetWorldToGridTransformation(const R2Box& world_box)
 
   // Compute scale
   RNScalar scale = FLT_MAX;
-  RNScalar xscale = grid_diagonal[0] / world_diagonal[0];
+  RNScalar xscale = (world_diagonal[0] > 0) ? grid_diagonal[0] / world_diagonal[0] : FLT_MAX;
   if (xscale < scale) scale = xscale;
-  RNScalar yscale = grid_diagonal[1] / world_diagonal[1];
+  RNScalar yscale = (world_diagonal[1] > 0) ? grid_diagonal[1] / world_diagonal[1] : FLT_MAX;
   if (yscale < scale) scale = yscale;
+  if (scale == FLT_MAX) scale = 1;
 
   // Compute world-to-grid transformation
   R2Affine affine(R2identity_affine);
   affine.Translate(grid_origin);
-  affine.Scale(scale);
+  if (scale != 1) affine.Scale(scale);
   affine.Translate(-world_origin);
 
   // Set transformations

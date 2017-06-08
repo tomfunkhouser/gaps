@@ -145,8 +145,27 @@ AverageFeatureRadius(void) const
 
 
 ////////////////////////////////////////////////////////////////////////
-// Shape access
+// Access
 ////////////////////////////////////////////////////////////////////////
+
+FETSequence *FETReconstruction::
+Sequence(const char *name) const
+{
+  // Check name
+  if (!name) return NULL;
+
+  // Return first sequence found with same name
+  for (int i = 0; i < NSequences(); i++) {
+    FETSequence *sequence = Sequence(i);
+    if (!sequence->Name()) continue;
+    if (!strcmp(name, sequence->Name())) return sequence;
+  }
+
+  // None found
+  return NULL;
+}
+
+
 
 FETShape *FETReconstruction::
 Shape(const char *name) const
@@ -163,6 +182,51 @@ Shape(const char *name) const
 
   // None found
   return NULL;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Sequence manipulation
+////////////////////////////////////////////////////////////////////////
+
+void FETReconstruction::
+InsertSequence(FETSequence *sequence)
+{
+  // Just checking
+  assert(sequence->reconstruction_index == -1);
+  assert(sequence->reconstruction == NULL);
+
+  // Insert sequence
+  sequence->reconstruction = this;
+  sequence->reconstruction_index = sequences.NEntries();
+  sequences.Insert(sequence);
+
+  // Update bounding box
+  if (!bbox.IsEmpty()) bbox.Union(sequence->BBox());
+}
+
+
+
+void FETReconstruction::
+RemoveSequence(FETSequence *sequence)
+{
+  // Just checking
+  assert(sequence->reconstruction_index >= 0);
+  assert(sequence->reconstruction_index < sequences.NEntries());
+  assert(sequence->reconstruction == this);
+
+  // Remove sequence
+  RNArrayEntry *entry = sequences.KthEntry(sequence->reconstruction_index);
+  FETSequence *tail = sequences.Tail();
+  tail->reconstruction_index = sequence->reconstruction_index;
+  sequences.EntryContents(entry) = tail;
+  sequences.RemoveTail();
+  sequence->reconstruction_index = -1;
+  sequence->reconstruction = NULL;
+
+  // Invalidate bounding box
+  InvalidateBBox();
 }
 
 
@@ -392,6 +456,18 @@ CopyContents(const FETReconstruction& reconstruction)
       InsertShape(shape2);
     }
     copied_shapes.Insert(shape2);
+  }
+
+  // Copy all sequences
+  RNArray<FETSequence *> copied_sequences;
+  for (int i = 0; i < reconstruction.NSequences(); i++) {
+    FETSequence *sequence1 = reconstruction.Sequence(i);
+    FETSequence *sequence2 = Sequence(sequence1->Name());
+    if (!sequence2) {
+      sequence2 = new FETSequence(*sequence1);
+      InsertSequence(sequence2);
+    }
+    copied_sequences.Insert(sequence2);
   }
 
   // Copy all matches
@@ -1331,14 +1407,16 @@ ReadAscii(FILE *fp)
   while (fscanf(fp, "%s", cmd) == (unsigned int) 1) {
     if (!strcmp(cmd, "H")) {
       int major_version, minor_version;
-      int nshapes, nmatches, nfeatures, ncorrespondences;
+      int nshapes, nmatches, nfeatures;
+      int ncorrespondences, nsequences;
       fscanf(fp, "%d", &major_version);
       fscanf(fp, "%d", &minor_version);
       fscanf(fp, "%d", &nshapes);
       fscanf(fp, "%d", &nmatches);
       fscanf(fp, "%d", &nfeatures);
       fscanf(fp, "%d", &ncorrespondences);
-      for (int i = 0; i < 4; i++) fscanf(fp, "%d", &dummy);
+      fscanf(fp, "%d", &nsequences);
+      for (int i = 0; i < 3; i++) fscanf(fp, "%d", &dummy);
     }
     else if (!strcmp(cmd, "X")) {
       // Read parameters
@@ -1360,6 +1438,10 @@ ReadAscii(FILE *fp)
     else if (!strcmp(cmd, "C")) {
       FETCorrespondence *correspondence = new FETCorrespondence(this);
       if (!correspondence->ReadAscii(fp)) return 0;
+    }
+    else if (!strcmp(cmd, "S")) {
+      FETSequence *sequence = new FETSequence(this);
+      if (!sequence->ReadAscii(fp)) return 0;
     }
     else if (!ParseExternalCommand(this, fp, cmd)) {
       fprintf(stderr, "Unrecognized command %s in reconstruction file\n", cmd);
@@ -1391,8 +1473,9 @@ WriteAscii(FILE *fp) const
   fprintf(fp, "%d ", NShapes());
   fprintf(fp, "%d ", NMatches());
   fprintf(fp, "%d ", NFeatures());
-  fprintf(fp, "%d   ", NCorrespondences());
-  for (int i = 0; i < 4; i++) fprintf(fp, "%d ", dummy);
+  fprintf(fp, "%d ", NCorrespondences());
+  fprintf(fp, "%d   ", NSequences());
+  for (int i = 0; i < 3; i++) fprintf(fp, "%d ", dummy);
   fprintf(fp, "\n");
 
   // Write parameters
@@ -1427,11 +1510,19 @@ WriteAscii(FILE *fp) const
     fprintf(fp, "\n");
   }
 
-   // Write correspondences
+  // Write correspondences
   for (int i = 0; i < NCorrespondences(); i++) {
     FETCorrespondence *correspondence = Correspondence(i);
     fprintf(fp, "C ");
     if (!correspondence->WriteAscii(fp)) return 0;
+    fprintf(fp, "\n");
+  }
+
+  // Write sequences
+  for (int i = 0; i < NSequences(); i++) {
+    FETSequence *sequence = Sequence(i);
+    fprintf(fp, "C ");
+    if (!sequence->WriteAscii(fp)) return 0;
     fprintf(fp, "\n");
   }
 
@@ -1508,12 +1599,13 @@ ReadBinary(FILE *fp)
   }
 
   // Read header
-  int nshapes, nmatches, nfeatures, ncorrespondences, dummy;
+  int nshapes, nmatches, nfeatures, ncorrespondences, nsequences, dummy;
   fread(&nshapes, sizeof(int), 1, fp);
   fread(&nmatches, sizeof(int), 1, fp);
   fread(&nfeatures, sizeof(int), 1, fp);
   fread(&ncorrespondences, sizeof(int), 1, fp);
-  for (int i = 0; i < 16; i++) fread(&dummy, sizeof(int), 1, fp);
+  fread(&nsequences, sizeof(int), 1, fp);
+  for (int i = 0; i < 15; i++) fread(&dummy, sizeof(int), 1, fp);
 
   // Read parameters
   fread(&avg_feature_radius, sizeof(RNLength), 1, fp);
@@ -1544,6 +1636,12 @@ ReadBinary(FILE *fp)
     if (!correspondence->ReadBinary(fp)) return 0;
   }
 
+  // Read sequences
+  for (int i = 0; i < nsequences; i++) {
+    FETSequence *sequence = new FETSequence(this);
+    if (!sequence->ReadBinary(fp)) return 0;
+  }
+
   // Update parameters
   if (avg_feature_radius <= 0) InitializeFeatureParameters();
   InitializeCorrespondenceParameters();
@@ -1566,13 +1664,15 @@ WriteBinary(FILE *fp) const
   int nmatches = NMatches();
   int nfeatures = NFeatures();
   int ncorrespondences = NCorrespondences();
+  int nsequences = NSequences();
   fwrite(&major_version, sizeof(int), 1, fp);
   fwrite(&minor_version, sizeof(int), 1, fp);
   fwrite(&nshapes, sizeof(int), 1, fp);
   fwrite(&nmatches, sizeof(int), 1, fp);
   fwrite(&nfeatures, sizeof(int), 1, fp);
   fwrite(&ncorrespondences, sizeof(int), 1, fp);
-  for (int i = 0; i < 16; i++) fwrite(&dummy, sizeof(int), 1, fp);
+  fwrite(&nsequences, sizeof(int), 1, fp);
+  for (int i = 0; i < 15; i++) fwrite(&dummy, sizeof(int), 1, fp);
 
   // Write parameters
   FETReconstruction *tmp = (FETReconstruction *) this;
@@ -1599,10 +1699,16 @@ WriteBinary(FILE *fp) const
     if (!feature->WriteBinary(fp)) return 0;
   }
 
-   // Write correspondences
+  // Write correspondences
   for (int i = 0; i < ncorrespondences; i++) {
     FETCorrespondence *correspondence = Correspondence(i);
     if (!correspondence->WriteBinary(fp)) return 0;
+  }
+
+  // Write sequences
+  for (int i = 0; i < nsequences; i++) {
+    FETSequence *sequence = Sequence(i);
+    if (!sequence->WriteBinary(fp)) return 0;
   }
 
   // Return success
@@ -2768,6 +2874,297 @@ SelectRandomFeature(const RNArray<FETFeature *>& features)
   // Select feature according to uniform distribution
   return features.Kth((int) RNRandomScalar() * features.NEntries());
 }
+
+
+
+#if 0
+static R3Affine
+ComputeTransformationWithRANSAC(FETReconstruction *reconstruction,
+  const RNArray<FETFeature *>& features1, const RNArray<FETFeature *>& features2,
+  R3Kdtree<FETFeature *>& kdtree1 = NULL, R3Kdtree<FETFeature *>& kdtree2)
+{
+  // Just checking
+  if (features1.NEntries() == 0) return R3identity_affine;
+  if (features2.NEntries() == 0) return R3identity_affine;
+
+  // Parameters
+  // int max_ransac_iterations_per_feature = 4;
+  int max_ransac_iterations_per_feature = 1;
+  int num_feature2_samples = 256;
+  int num_inlier_samples = 128;
+  RNScalar target_overlap = 0.1;
+  RNLength target_distance = target_overlap * shape1->BBox().DiagonalRadius();
+  RNLength generator_tolerance = reconstruction->max_euclidean_distance;
+  RNLength inlier_tolerance = reconstruction->max_euclidean_distance;
+  RNAngle max_normal_angle = reconstruction->max_normal_angle;
+  if (generator_tolerance < 0) generator_tolerance = RN_INFINITY;
+  if (inlier_tolerance < 0) generator_tolerance = RN_INFINITY;
+  
+  // Make arrays of features within each generator type and shape
+  RNArray<FETFeature *> features[NUM_FEATURE_TYPES][2];
+  for (int i = 0; i < 2; i++) {
+    RNArray<FETFeature *>& f = (i == 0) ? features1 : features2;
+    for (int j = 0; j < f.NEntries(); j++) {
+      FETFeature *feature = f.Kth(j);
+      int generator_type = feature->GeneratorType();
+      if (generator_type < 0) continue;
+      if (generator_type >= NUM_FEATURE_TYPES) continue;
+      features[generator_type][i].Insert(feature);
+    }
+  }
+
+  // Compute descriptor distance limits within each generator type
+  float max_descriptor_distance_squared[NUM_FEATURE_TYPES];
+  for (int i = 0; i < NUM_FEATURE_TYPES; i++) {
+    max_descriptor_distance_squared[i] = FLT_MAX;
+    int mdds = features[i][0].NEntries() + features[i][1].NEntries();
+    if (mdds > 2) {
+      int ndds = 0;
+      RNScalar *dds = new RNScalar [ mdds ];
+      for (int j = 0; j < 2; j++) {
+        for (int k = 0; k < features[i][j].NEntries(); k++) {
+          FETFeature *featureA = features[i][j][k];
+          FETFeature *featureB = features[i][j][(int) (RNRandomScalar() * features[i][j].NEntries())];
+          const FETDescriptor& descriptorA = featureA->Descriptor();
+          if (descriptorA.NValues() == 0) continue;
+          const FETDescriptor& descriptorB = featureB->Descriptor();
+          if (descriptorB.NValues() == 0) continue;
+          RNScalar dd = descriptorA.SquaredDistance(descriptorB);
+          assert(ndds < mdds);
+          dds[ndds++] = dd;
+        }
+      }
+      if (ndds > 0) {
+        qsort(dds, ndds, sizeof(RNScalar), RNCompareScalars);
+        max_descriptor_distance_squared[i] = dds[1 * features1.NEntries() / 10];
+      }
+      delete [] dds;
+    }
+  }
+  
+  // For N iterations
+  RNScalar best_score = 0;
+  R3Affine best_transformation = R3identity_affine;
+  int niterations = max_ransac_iterations_per_feature * features1.NEntries();
+  for (int i = 0; i < niterations; i++) {
+    FETFeature *features1[3] = { NULL, NULL, NULL };
+    FETFeature *features2[3] = { NULL, NULL, NULL };
+
+    ////////
+
+    // Get first feature point in features1
+    features1[0] = SelectRandomFeature(features1);
+    if (!features1[0]) continue;
+
+    // Get second feature point in features1
+    RNArray<FETFeature *> listA, listB;
+    RNLength d01 = (3*RNRandomScalar()/2 + 0.5) * target_distance;
+    shape1->FindAllFeatures(features1[0], R3identity_affine, listA, d01 - generator_tolerance, d01 + generator_tolerance);
+    if (listA.IsEmpty()) continue;
+    features1[1] = SelectRandomFeature(listA);
+    if (!features1[1]) continue;
+    if (features1[1] == features1[0]) continue;
+    R3Vector v01 = features1[1]->Position() - features1[0]->Position();
+    RNAngle angle010 = R3InteriorAngle(v01, features1[0]->normal);
+    RNAngle angle011 = R3InteriorAngle(v01, features1[1]->normal);
+    d01 = v01.Length();
+
+    // Get third feature point in features1
+    listA.Empty();
+    RNLength d02 = (3*RNRandomScalar()/2 + 0.5) * target_distance;
+    RNLength d12 = (3*RNRandomScalar()/2 + 0.5) * target_distance;
+    shape1->FindAllFeatures(features1[0], R3identity_affine, listA, d02 - generator_tolerance, d02 + generator_tolerance);
+    if (listA.IsEmpty()) continue;
+    listB.Empty();
+    for (int j = 0; j < listA.NEntries(); j++) {
+      FETFeature *feature = listA.Kth(j);     
+      if (feature == features1[0]) continue;
+      if (feature == features1[1]) continue;
+
+      // Check distance
+      RNScalar d = R3Distance(features1[1]->Position(), feature->Position());
+      if (d < d12 - generator_tolerance) continue;
+      if (d > d12 + generator_tolerance) continue;
+
+      // Passed tests
+      listB.Insert(feature);
+    }
+    if (listB.IsEmpty()) continue;
+    features1[2] = SelectRandomFeature(listB);
+    if (!features1[2]) continue;
+    R3Vector v02 = features1[2]->Position() - features1[0]->Position();
+    R3Vector v12 = features1[2]->Position() - features1[1]->Position();
+    RNAngle angle020 = R3InteriorAngle(v02, features1[0]->normal);
+    RNAngle angle022 = R3InteriorAngle(v02, features1[2]->normal);
+    RNAngle angle121 = R3InteriorAngle(v12, features1[1]->normal);
+    RNAngle angle122 = R3InteriorAngle(v12, features1[2]->normal);
+    d02 = v02.Length();
+    d12 = v12.Length();
+
+    ////////
+
+    // Get first feature point on shape2
+    // Do this with ANN
+    listA.Empty();
+    listB.Empty();
+    // for (int j = 0; j < shape2->NFeatures(); j++) {
+    //   FETFeature *feature = shape2->Feature(j);
+    int generator_type = features1[0]->GeneratorType();
+    RNScalar best_descriptor_distance_squared = max_descriptor_distance_squared[generator_type];
+    for (int j = 0; j < num_feature2_samples; j++) {
+      FETFeature *feature = SelectRandomFeature(features[generator_type][1]);
+      RNScalar descriptor_distance_squared = feature->descriptor.SquaredDistance(features1[0]->descriptor);
+      if (descriptor_distance_squared < best_descriptor_distance_squared) {
+        best_descriptor_distance_squared = descriptor_distance_squared;
+        features2[0] = feature;
+      }
+    }
+
+    // Check if found first feature
+    if (!features2[0]) continue;
+
+    // Get second feature point on shape2
+    listA.Empty();
+    listB.Empty();
+    FETFeature query1(*features2[0]);
+    query1.SetDescriptor(features1[1]->descriptor);
+    shape2->FindAllFeatures(&query1, R3identity_affine, listA, d01 - generator_tolerance, d01 + generator_tolerance);
+    if (listA.IsEmpty()) continue;
+    for (int j = 0; j < listA.NEntries(); j++) {
+      FETFeature *feature = listA.Kth(j);     
+      if (feature == features2[0]) continue;
+
+      // Check angle relationship to v01
+      if (max_normal_angle != RN_UNKNOWN) {
+        R3Vector v = feature->Position() - features2[0]->Position();
+        if (fabs(R3InteriorAngle(v, features2[0]->normal) - angle010) > max_normal_angle) continue;
+        if (fabs(R3InteriorAngle(v, feature->normal) - angle011) > max_normal_angle) continue;
+      }
+
+      // Check descriptor relationship to features1[1]
+      int generator_type = feature->GeneratorType();
+      if (max_descriptor_distance_squared[generator_type] < FLT_MAX) {
+        RNScalar descriptor_distance_squared = feature->descriptor.SquaredDistance(features1[1]->descriptor);
+        if (descriptor_distance_squared > max_descriptor_distance_squared[generator_type]) continue;
+      }
+
+      // Passed all tests
+      listB.Insert(feature);
+    }
+
+    // Check if found a second feature point on shape2
+    if (listB.IsEmpty()) continue;
+    features2[1] = SelectRandomFeature(listB);
+    if (!features2[1]) continue;
+
+    // Get third feature point on shape2
+    listA.Empty();
+    listB.Empty();
+    FETFeature query2(*features2[0]);
+    query2.SetDescriptor(features1[2]->descriptor);
+    shape2->FindAllFeatures(&query2, R3identity_affine, listA, d02 - generator_tolerance, d02 + generator_tolerance);
+    if (listA.IsEmpty()) continue;
+    for (int j = 0; j < listA.NEntries(); j++) {
+      FETFeature *feature = listA.Kth(j);     
+      if (feature == features2[0]) continue;
+      if (feature == features2[1]) continue;
+
+      // Check distance relationship 
+      RNLength d = R3Distance(feature->Position(), features2[0]->Position());
+      if (d < d12 - generator_tolerance) continue;
+      if (d > d12 + generator_tolerance) continue;
+
+      // Check angle relationship to v02
+      if (max_normal_angle != RN_UNKNOWN) {
+        R3Vector v = feature->Position() - features2[0]->Position();
+        if (fabs(R3InteriorAngle(v, features2[0]->normal) - angle020) > max_normal_angle) continue;
+        if (fabs(R3InteriorAngle(v, feature->normal) - angle022) > max_normal_angle) continue;
+      }
+
+      // Check angle relationship to v12
+      if (max_normal_angle != RN_UNKNOWN) {
+        R3Vector v = feature->Position() - features2[1]->Position();
+        if (fabs(R3InteriorAngle(v, features2[1]->normal) - angle121) > max_normal_angle) continue;
+        if (fabs(R3InteriorAngle(v, feature->normal) - angle122) > max_normal_angle) continue;
+      }
+
+      // Check descriptor relationship to features1[2]
+      int generator_type = feature->GeneratorType();
+      if (max_descriptor_distance_squared[generator_type] < FLT_MAX) {
+        RNScalar descriptor_distance_squared = feature->descriptor.SquaredDistance(features1[2]->descriptor);
+        if (descriptor_distance_squared > max_descriptor_distance_squared[generator_type]) continue;
+      }
+
+      // Passed all tests
+      listB.Insert(feature);
+    }
+
+    // Check if found a third feature point on shape2
+    if (listB.IsEmpty()) continue;
+    features2[2] = SelectRandomFeature(listB);
+    if (!features2[2]) continue;
+
+    // Find the transformation that minimizes the distance between the feature triplets
+    R3Point points1[3], points2[3];
+    points1[0] = features1[0]->Position();
+    points1[1] = features1[1]->Position();
+    points1[2] = features1[2]->Position();
+    points2[0] = features2[0]->Position();
+    points2[1] = features2[1]->Position();
+    points2[2] = features2[2]->Position();
+
+#if 1
+    R4Matrix matrix21 = R3AlignPoints(3, points1, points2, NULL, TRUE, TRUE, 0);
+    R3Affine transformation21(matrix21, 0);
+#else
+    R3CoordSystem cs1(points1[0], R3Triad(points1[1] - points1[0], points1[2] - points1[0]));
+    R3CoordSystem cs2(points2[0], R3Triad(points2[1] - points2[0], points2[2] - points2[0]));
+    R3Affine transformation21 = R3identity_affine;
+    transformation21.Transform(R3Affine(cs1.Matrix(), 0));
+    transformation21.InverseTransform(R3Affine(cs2.Matrix(), 0));
+#endif
+
+    // Check the normals for compatibility
+    if (max_normal_angle > 0) {
+      RNBoolean normals_are_compatible = TRUE;
+      for (int j = 0; j < 3; j++) {
+        R3Vector normal1 = features1[j]->Normal();
+        R3Vector normal2 = features2[j]->Normal();
+        normal2.Transform(transformation21);
+        RNAngle angle = R3InteriorAngle(normal1, normal2);
+        if (angle > max_normal_angle) {
+          normals_are_compatible = FALSE;
+          break;
+        }
+      }
+      if (!normals_are_compatible) continue;
+    }
+
+    // Count the inliers
+    RNScalar score = 0;
+    int inlier_skip = features1.NEntries() / num_inlier_samples + 1;
+    for (int j = 0; j < features1.NEntries(); j += inlier_skip) {
+      FETFeature *feature1 = features1.Kth(j);
+      R3Point position1 = feature1->Position();
+      position1.InverseTransform(transformation21);
+      if (shape2->FindClosestFeature(position1, 0, inlier_tolerance)) {
+        score += inlier_skip;
+      }
+    }
+
+    // printf("%d %g\n", i, score);
+
+    // Remember transformation, if best score
+    if (score > best_score) {
+      best_transformation = transformation21;
+      best_score = score;
+    }
+  }
+
+  // Return best transformation
+  return best_transformation;
+}
+#endif
 
 
 

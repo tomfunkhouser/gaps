@@ -47,10 +47,12 @@ R2Image(int width, int height, int ncomponents)
   rowsize = ncomponents * width;
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
   int nbytes = rowsize * height;
-  pixels = new unsigned char [nbytes];
-  assert(pixels);
-  unsigned char *p = pixels;
-  while (--nbytes) *(p++) = 0;
+  if (nbytes > 0) {
+    pixels = new unsigned char [nbytes];
+    assert(pixels);
+    unsigned char *p = pixels;
+    while (--nbytes) *(p++) = 0;
+  }
 }
 
 
@@ -67,10 +69,12 @@ R2Image(int width, int height, int ncomponents, unsigned char *data)
   rowsize = ncomponents * width;
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
   int nbytes = rowsize * height;
-  pixels = new unsigned char [nbytes];
-  assert(pixels);
-  unsigned char *p = pixels;
-  while (--nbytes) *(p++) = *(data++);
+  if (nbytes > 0) {
+    pixels = new unsigned char [nbytes];
+    assert(pixels);
+    unsigned char *p = pixels;
+    while (--nbytes) *(p++) = *(data++);
+  }
 }
 
 
@@ -85,11 +89,13 @@ R2Image(const R2Image& image)
 {
   // Copy pixels
   int nbytes = rowsize * height;
-  pixels = new unsigned char [nbytes];
-  assert(pixels);
-  unsigned char *p = pixels;
-  unsigned char *data = image.pixels;
-  while (--nbytes) *(p++) = *(data++);
+  if (nbytes > 0) {
+    pixels = new unsigned char [nbytes];
+    assert(pixels);
+    unsigned char *p = pixels;
+    unsigned char *data = image.pixels;
+    while (--nbytes) *(p++) = *(data++);
+  }
 }
 
 
@@ -198,6 +204,16 @@ Subtract(const R2Image& image)
     p1++;
     p2++;
   }
+}
+
+
+
+void R2Image::
+SetPixel(int x, int y, const unsigned char *value)
+{
+  // Set pixel color
+  unsigned char *pixel = &(pixels[y*rowsize + x*ncomponents]);
+  for (int i = 0; i < ncomponents; i++) *(pixel++) = *(value++);
 }
 
 

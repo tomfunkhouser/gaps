@@ -501,6 +501,30 @@ class R3Mesh {
     virtual void Transform(const R3Transformation& transformation);
       // Transform mesh
  
+    // SHAPE CREATION FUNCTIONS
+    void CreateBox(const R3Box& box);
+      // Create mesh elements for a box and add to mesh
+    void CreateOrientedBox(const R3OrientedBox& box);
+      // Create mesh elements for an oriented box and add to mesh
+    void CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing = 0);
+      // Create mesh elements for a sphere and add to mesh
+    void CreateEllipsoid(const R3Ellipsoid& ellipsoid, RNLength vertex_spacing = 0);
+      // Create mesh elements for a ellipsoid and add to mesh
+    void CreateCone(const R3Cone& cone, RNLength vertex_spacing = 0);
+      // Create mesh elements for a cone and add to mesh
+    void CreateCylinder(const R3Cylinder& cylinder, RNLength vertex_spacing = 0);
+      // Create mesh elements for a cylinder and add to mesh
+    void CreateCircle(const R3Circle& circle, RNLength vertex_spacing = 0);
+      // Create mesh elements for a circle and add to mesh
+    void CreateEllipse(const R3Ellipse& ellipse, RNLength vertex_spacing = 0);
+      // Create mesh elements for a ellipse and add to mesh
+    void CreateRectangle(const R3Rectangle& rectangle);
+      // Create mesh elements for a rectangle and add to mesh
+    void CreateTriangle(const R3Triangle& triangle);
+      // Create mesh elements for a triangle and add to mesh
+    void CreateTriangleArray(const R3TriangleArray& triangles);
+      // Create mesh elements for a triangle array and add to mesh
+
     // DRAW FUNCTIONS
     virtual void Draw(void) const;
       // Draws the faces
@@ -657,7 +681,9 @@ class R3Mesh {
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Flag definitions
+////////////////////////////////////////////////////////////////////////
 
 #define R3_MESH_BBOX_UPTODATE             1
 #define R3_MESH_VERTEX_ALLOCATED          1
@@ -675,7 +701,9 @@ class R3Mesh {
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Public variables
+////////////////////////////////////////////////////////////////////////
 
 extern RNMark R3mesh_mark;
 

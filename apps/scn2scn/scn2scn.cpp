@@ -78,7 +78,7 @@ WriteScene(R3Scene *scene, const char *filename)
 
   // Print statistics
   if (print_verbose) {
-    printf("Write scene to %s ...\n", filename);
+    printf("Wrote scene to %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Nodes = %d\n", scene->NNodes());
     printf("  # Lights = %d\n", scene->NLights());

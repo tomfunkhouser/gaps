@@ -55,6 +55,7 @@ static int snap_image_index = -1;
 static R2Point rubber_box_corners[2] = { R2Point(0,0), R2Point(0,0) };
 static RNBoolean rubber_box_active = FALSE;
 static int color_scheme = RGBD_PHOTO_COLOR_SCHEME;
+static RNRgb background(1,1,1);
 static R3Point center(0, 0, 0);
 static R3Viewer viewer;
 
@@ -1003,7 +1004,7 @@ void GLUTRedraw(void)
 
   // Clear window 
   // glClearColor(0.0, 0.0, 0.0, 1.0);
-  glClearColor(1.0, 1.0, 1.0, 1.0);
+  glClearColor(background.R(), background.G(), background.B(), 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Draw everything
@@ -1422,7 +1423,19 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-overlap_matrix")) { argc--; argv++; input_overlap_matrix = *argv; }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else if (!strcmp(*argv, "-window")) { 
+        argv++; argc--; GLUTwindow_width = atoi(*argv); 
+        argv++; argc--; GLUTwindow_height = atoi(*argv); 
+      }
+      else if (!strcmp(*argv, "-background")) { 
+        argv++; argc--; background[0] = atof(*argv); 
+        argv++; argc--; background[1] = atof(*argv); 
+        argv++; argc--; background[2] = atof(*argv);
+      }
+      else {
+        fprintf(stderr, "Invalid program argument: %s", *argv);
+        exit(1);
+      }
       argv++; argc--;
     }
     else {

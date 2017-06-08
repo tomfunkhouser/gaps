@@ -46,8 +46,8 @@ RGBDImage(const char *color_filename, const char *depth_filename,
     intrinsics(intrinsics_matrix),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     opengl_texture_id(-1),
-    color_filename((color_filename) ? strdup(color_filename) : NULL),
-    depth_filename((depth_filename) ? strdup(depth_filename) : NULL),
+    color_filename((color_filename && strcmp(color_filename, "-")) ? strdup(color_filename) : NULL),
+    depth_filename((depth_filename && strcmp(depth_filename, "-")) ? strdup(depth_filename) : NULL),
     color_resident_count(0),
     depth_resident_count(0)
 {
@@ -1020,7 +1020,7 @@ ReadColorChannels(void)
   }
 
   // Initialize image
-  R2Image color_image;
+  R2Image color_image(width, height, 3);
 
   // Check filename
   if (color_filename) {
@@ -1050,7 +1050,7 @@ ReadDepthChannel(void)
   }
 
   // Initialize image
-  R2Grid depth_image;
+  R2Grid depth_image(width, height);
 
   // Check filename
   if (depth_filename) {

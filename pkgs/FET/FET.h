@@ -16,6 +16,7 @@ struct FETFeature;
 struct FETCorrespondence;
 struct FETShape;
 struct FETMatch;
+struct FETSequence;
 struct FETReconstruction;
 
 
@@ -29,6 +30,7 @@ struct FETReconstruction;
 #include "FETCorrespondence.h"
 #include "FETShape.h"
 #include "FETMatch.h"
+#include "FETSequence.h"
 #include "FETReconstruction.h"
 
 

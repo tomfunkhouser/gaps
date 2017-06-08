@@ -9,6 +9,11 @@ public:
   FETReconstruction(const FETReconstruction& reconstruction);
   ~FETReconstruction(void);
 
+  // Sequence access
+  int NSequences(void) const;
+  FETSequence *Sequence(int k) const;
+  FETSequence *Sequence(const char *name) const;
+  
   // Shape access
   int NShapes(void) const;
   FETShape *Shape(int k) const;
@@ -56,6 +61,8 @@ public:
   FETCorrespondence *Correspondence(int k) const;
   
   // Internal manipulation
+  void InsertSequence(FETSequence *sequence);
+  void RemoveSequence(FETSequence *sequence);
   void InsertShape(FETShape *shape);
   void RemoveShape(FETShape *shape);
   void InsertMatch(FETMatch *match);
@@ -122,6 +129,7 @@ public:
   void InitializeOptimizationParameters(void);
 
 public:
+  RNArray<FETSequence *> sequences;
   RNArray<FETShape *> shapes;
   RNArray<FETMatch *> matches;
   RNArray<FETFeature *> features;
@@ -161,6 +169,24 @@ public:
 ////////////////////////////////////////////////////////////////////////
 // Inline functions
 ////////////////////////////////////////////////////////////////////////
+
+
+inline int FETReconstruction::
+NSequences(void) const
+{
+  // Return number of sequences
+  return sequences.NEntries();
+}
+
+
+
+inline FETSequence *FETReconstruction::
+Sequence(int k) const
+{
+  // Return kth sequence
+  return sequences.Kth(k);
+}
+
 
 
 inline int FETReconstruction::
