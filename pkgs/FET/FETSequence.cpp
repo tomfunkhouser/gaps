@@ -176,7 +176,7 @@ ReadAscii(FILE *fp)
 {
   // Read sequence
   int dummy = 0;
-  int r, sequence_type, nshapes;
+  int r, nshapes;
   char name_buffer[256];
   fscanf(fp, "%d", &r);
   fscanf(fp, "%s", name_buffer);
@@ -238,7 +238,7 @@ int FETSequence::
 ReadBinary(FILE *fp)
 {
   // Read sequence
-  int r, sequence_type, nshapes, dummy;
+  int r, nshapes, dummy;
   char name_buffer[256];
   fread(&r, sizeof(int), 1, fp);
   fread(name_buffer, sizeof(char), 256, fp);
