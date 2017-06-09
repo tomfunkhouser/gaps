@@ -468,6 +468,11 @@ CopyContents(const FETReconstruction& reconstruction)
       InsertSequence(sequence2);
     }
     copied_sequences.Insert(sequence2);
+    for (int j = 0; j < sequence1->NShapes(); j++) {
+      FETShape *shape1 = sequence1->Shape(j);
+      FETShape *shape2 = copied_shapes.Kth(shape1->ReconstructionIndex());
+      sequence2->InsertShape(shape2);
+    }
   }
 
   // Copy all matches
