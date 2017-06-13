@@ -105,8 +105,8 @@ ProjectionMatrix(RNScalar neardist, RNScalar fardist) const
   RNScalar W = NPixels(RN_X);
   RNScalar H = NPixels(RN_Y);
   return R4Matrix(
-    2*fx/W, 0, 2*(cx/W)-1, 0,
-    0, 2*fy/H, 2*(cy/H)-1, 0,
+    2*fx/W, 0, -2*(cx/W)+1, 0,
+    0, 2*fy/H, -2*(cy/H)+1, 0,
     0, 0, -(fardist + neardist) / (fardist - neardist),  -2.0 * neardist * fardist / (fardist - neardist),
     0, 0, -1, 0 );
 }
