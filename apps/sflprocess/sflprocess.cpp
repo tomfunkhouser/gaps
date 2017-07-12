@@ -615,6 +615,195 @@ LoadSurfelsList(R3SurfelScene *scene, const char *list_filename,
 
 
 static int
+LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename, 
+  const char *parent_object_name, const char *parent_node_name,
+  RNLength surfel_spacing = 0.01)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int surfel_count = 0;
+  int node_count = 0;
+
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) {
+    fprintf(stderr, "Scene has no tree\n");
+    return 0;
+  }    
+
+  // Get surfel database
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) {
+    fprintf(stderr, "Scene has no database\n");
+    return 0;
+  }    
+
+  // Find parent object
+  R3SurfelObject *parent_object = scene->FindObjectByName(parent_object_name);
+  if (!parent_object) {
+    fprintf(stderr, "Unable to find parent object with name %s\n", parent_object_name);
+    return 0;
+  }
+
+  // Find parent node
+  R3SurfelNode *parent_node = tree->FindNodeByName(parent_node_name);
+  if (!parent_node) {
+    fprintf(stderr, "Unable to find parent node with name %s\n", parent_node_name);
+    return 0;
+  }
+
+  // Read mesh file
+  R3Mesh mesh;
+  if (!mesh.ReadFile(mesh_filename)) {
+    fprintf(stderr, "Unable to read mesh from %s\n", mesh_filename);
+    return 0;
+  }
+
+  // Create surfels for every mesh segment
+  RNSeedRandomScalar();
+  RNArray<RNArray<R3Surfel *> *> surfels;
+  R3Point mesh_centroid = mesh.Centroid();
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    int segment_index = mesh.FaceSegment(face);
+    if (segment_index < 0) segment_index = 0; // continue;
+
+    // Get/create array of surfels for segment
+    while (surfels.NEntries() <= segment_index) surfels.Insert(NULL);
+    RNArray<R3Surfel *> *segment_surfels = surfels[segment_index];
+    if (!segment_surfels) {
+      segment_surfels = new RNArray<R3Surfel *>();
+      surfels[segment_index] = segment_surfels;
+    }
+
+    // Get vertex positions
+    R3MeshVertex *v0 = mesh.VertexOnFace(face, 0);
+    R3MeshVertex *v1 = mesh.VertexOnFace(face, 1);
+    R3MeshVertex *v2 = mesh.VertexOnFace(face, 2);
+    R3Point p0 = mesh.VertexPosition(v0);
+    R3Point p1 = mesh.VertexPosition(v1);
+    R3Point p2 = mesh.VertexPosition(v2);
+    const R3Vector& n0 = mesh.VertexNormal(v0);
+    const R3Vector& n1 = mesh.VertexNormal(v1);
+    const R3Vector& n2 = mesh.VertexNormal(v2);
+    const RNRgb& c0 = mesh.VertexColor(v0);
+    const RNRgb& c1 = mesh.VertexColor(v1);
+    const RNRgb& c2 = mesh.VertexColor(v2);
+
+    // Translate vertices by mesh centroid
+    p0 -= mesh_centroid.Vector();
+    p1 -= mesh_centroid.Vector();
+    p2 -= mesh_centroid.Vector();
+
+    // Determine number of surfels for face
+    RNScalar surfels_per_area = 4.0 / (RN_PI * surfel_spacing * surfel_spacing);
+    RNScalar ideal_face_nsurfels = surfels_per_area * mesh.FaceArea(face);
+    int face_nsurfels = (int) ideal_face_nsurfels;
+    RNScalar remainder = ideal_face_nsurfels - face_nsurfels;
+    if (remainder > RNRandomScalar()) face_nsurfels++;
+
+    // Generate random surfels on face
+    for (int j = 0; j < face_nsurfels; j++) {
+      RNScalar r1 = sqrt(RNRandomScalar());
+      RNScalar r2 = RNRandomScalar();
+      RNScalar t0 = (1.0 - r1);
+      RNScalar t1 = r1 * (1.0 - r2);
+      RNScalar t2 = r1 * r2;
+      R3Point position = t0*p0 + t1*p1 + t2*p2;
+      R3Vector normal = mesh.FaceNormal(face); // t0*n0 + t1*n1 + t2*n2; normal.Normalize();
+      RNRgb color = t0*c0 + t1*c1 + t2*c2; 
+      R3Surfel *surfel = new R3Surfel(position.X(), position.Y(), position.Z(),
+        normal.X(), normal.Y(), normal.Z(), surfel_spacing,
+        255*color.R(), 255*color.G(), 255*color.B(), R3_SURFEL_AERIAL_FLAG);
+      segment_surfels->Insert(surfel);
+    }
+  }
+
+  // Create surfel blocks/nodes
+  for (int i = 0; i < surfels.NEntries(); i++) {
+    RNArray<R3Surfel *> *segment_surfels = surfels.Kth(i);
+    if (!segment_surfels) continue;
+
+    // Compute segment name
+    char segment_name[1024];
+    sprintf(segment_name, "MESH_SEGMENT_%d", i);
+
+    // Create object
+    R3SurfelObject *object = new R3SurfelObject(segment_name);
+     if (!object) {
+      fprintf(stderr, "Unable to allocate object\n");
+      return 0;
+    }
+   
+    // Insert object into scene
+    scene->InsertObject(object, parent_object);
+
+    // Create node
+    R3SurfelNode *node = new R3SurfelNode(segment_name);
+    if (!node) {
+      fprintf(stderr, "Unable to allocate node\n");
+      return 0;
+    }
+            
+    // Insert node into tree
+    tree->InsertNode(node, parent_node);
+          
+    // Insert node into object
+    object->InsertNode(node);
+
+    // Create block
+    RNArray<const R3Surfel *>& tmp = *((RNArray<const R3Surfel *> *) segment_surfels);
+    R3SurfelBlock *block = new R3SurfelBlock(tmp, mesh_centroid);
+    if (!block) {
+      fprintf(stderr, "Unable to allocate block\n");
+      return 0;
+    }
+    
+    // Update block properties
+    block->UpdateProperties();
+          
+    // Insert block into database
+    database->InsertBlock(block);
+            
+    // Insert block into node
+    node->InsertBlock(block);
+          
+    // Update node properties
+    node->UpdateProperties();
+          
+    // Update object properties
+    object->UpdateProperties();
+
+    // Release block
+    database->ReleaseBlock(block);
+
+    // Delete segment surfel arreays
+    for (int j = 0; j < segment_surfels->NEntries(); j++)
+      delete segment_surfels->Kth(j);
+    delete segment_surfels;
+
+    // Increment statistics
+    surfel_count += block->NSurfels();
+    node_count++;
+  }
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Loaded surfels from mesh %s ...\n", mesh_filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Objects = %d\n", node_count);
+    printf("  # Surfels = %d\n", surfel_count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename, 
   const char *parent_node_name)
 {
@@ -2115,7 +2304,17 @@ int main(int argc, char **argv)
     else if (!strcmp(*argv, "-load_google")) { 
       argc--; argv++; char *list_filename = *argv; 
       argc--; argv++; char *parent_node_name = *argv; 
-      if (!LoadSurfelsFromGoogleStreetView(scene, list_filename, parent_node_name)) exit(-1);
+      if (!LoadSurfelsFromGoogleStreetView(scene, list_filename,
+        parent_node_name)) exit(-1);
+    }
+    else if (!strcmp(*argv, "-load_mesh")) { 
+      argc--; argv++; char *mesh_filename = *argv; 
+      argc--; argv++; char *parent_object_name = *argv; 
+      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; double surfel_spacing = atof(*argv); 
+      if (!LoadSurfelsFromMesh(scene, mesh_filename,
+        parent_object_name, parent_node_name,
+        surfel_spacing)) exit(-1);
     }
     else if (!strcmp(*argv, "-load_scene")) { 
       argc--; argv++; char *scene_filename = *argv; 

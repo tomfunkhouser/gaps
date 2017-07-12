@@ -68,6 +68,7 @@ R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   this->color[1] = g;
   this->color[2] = b;
   this->radius = (RNUInt16) (8192.0 * radius + 0.5);
+  this->flags |= R3_SURFEL_NORMAL_FLAG;
 }
 
 
