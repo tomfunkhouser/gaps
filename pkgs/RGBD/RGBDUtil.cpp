@@ -444,7 +444,7 @@ int RGBDCreateUndistortedColorImage(
         double nx = (undistorted_input_position.X() - distorted_camera.mx_color) / distorted_camera.fx_color;
         double ny = (undistorted_input_position.Y() - distorted_camera.my_color) / distorted_camera.fy_color;
         double rr = nx*nx + ny*ny; double rrrr = rr*rr;
-        double s = 1.0 + rr*distorted_camera.k1_depth + rrrr*distorted_camera.k2_depth + rrrr*rr*distorted_camera.k3_depth + rrrr*rrrr*distorted_camera.k4_depth;
+        double s = 1.0 + rr*distorted_camera.k1_color + rrrr*distorted_camera.k2_color + rrrr*rr*distorted_camera.k3_color + rrrr*rrrr*distorted_camera.k4_color;
         nx = s*nx + distorted_camera.p2_color*(rr + 2*nx*nx) + 2*distorted_camera.p1_color*nx*ny;
         ny = s*ny + distorted_camera.p1_color*(rr + 2*ny*ny) + 2*distorted_camera.p2_color*nx*ny;
         double x = nx*distorted_camera.fx_color + distorted_camera.mx_color;
