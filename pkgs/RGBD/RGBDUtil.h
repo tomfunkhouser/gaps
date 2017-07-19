@@ -14,7 +14,7 @@ int RGBDCreatePositionChannels(RGBDImage *image,
 
 int RGBDCreateNormalChannels(RGBDImage *image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
-  RNLength neighborhood_world_radius = 0.25, int neighborhood_pixel_radius = 8, RNBoolean neighborhood_search = TRUE,
+  RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE,
   RNBoolean world_coordinates = TRUE);
 
 int RGBDCreateBoundaryChannel(RGBDImage *image,
@@ -36,7 +36,7 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
   const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image, const R2Grid& boundary_image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image, R2Grid& output_radius_image,
   const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up,
-  RNLength neighborhood_world_radius = 0.25, int neighborhood_pixel_radius = 8, RNBoolean neighborhood_search = TRUE);
+  RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE);
 
 int RGBDCreateBoundaryChannel(
   const R2Grid& input_depth_image, R2Grid& output_boundary_image,
