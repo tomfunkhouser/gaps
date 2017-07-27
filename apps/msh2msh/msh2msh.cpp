@@ -16,6 +16,7 @@ const char *color_name = NULL;
 int flip_faces = 0;
 int clean = 0;
 int smooth = 0;
+int swap_edges = 0;
 R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1));
 RNLength min_edge_length = 0;
 RNLength max_edge_length = 0;
@@ -190,6 +191,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-flip")) flip_faces = 1;
       else if (!strcmp(*argv, "-clean")) clean = 1;
       else if (!strcmp(*argv, "-smooth")) smooth = 1;
+      else if (!strcmp(*argv, "-swap_edges")) swap_edges = 1;
       else if (!strcmp(*argv, "-scale_by_area")) scale_by_area = 1;
       else if (!strcmp(*argv, "-center_at_origin")) center_at_origin = 1;
       else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
@@ -304,6 +306,11 @@ int main(int argc, char **argv)
   // Split edges that are too long
   if (min_edge_length > 0) {
     mesh->CollapseShortEdges(min_edge_length);
+  }
+
+  // Swap edges
+  if (swap_edges) {
+    mesh->SwapEdges();
   }
 
   // Normalize translation, rotation, and scale
