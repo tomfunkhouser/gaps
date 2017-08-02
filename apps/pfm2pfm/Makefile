@@ -18,7 +18,7 @@ CCSRCS=$(NAME).cpp
 # Compile flags
 #
 
-USER_CFLAGS=-DRN_USE_CSPARSE
+#USER_CFLAGS=-DRN_USE_CSPARSE
 
 
 
@@ -26,7 +26,8 @@ USER_CFLAGS=-DRN_USE_CSPARSE
 # Libraries
 #
 
-PKG_LIBS=-lR2Shapes -lRNMath -lRNBasics -ljpeg -lpng -lCSparse
+#PKG_LIBS=-lR2Shapes -lRNMath -lRNBasics -ljpeg -lpng -lCSparse
+PKG_LIBS=-lR2Shapes -lRNMath -lRNBasics -ljpeg -lpng 
 
 
 
