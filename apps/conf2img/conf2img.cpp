@@ -586,7 +586,7 @@ Redraw(void)
   }
 
   // Get image name
-  char image_name_buffer[1024];
+  char image_name_buffer[4096];
   char *name = image_name_buffer;
   if (configuration.NImages() > 0) {
     RGBDImage *image = configuration.Image(current_image_index);
