@@ -148,7 +148,10 @@ void GLUTRedraw(void)
 
     // Draw faces
     if (show_faces) {
-      if (show_vertex_colors) glDisable(GL_LIGHTING);
+      if (show_materials) glDisable(GL_LIGHTING);
+      else if (show_segments) glDisable(GL_LIGHTING);
+      else if (show_categories) glDisable(GL_LIGHTING);
+      else if (show_vertex_colors) glDisable(GL_LIGHTING);
       else if (show_vertex_texcoords) glDisable(GL_LIGHTING);
       else { glEnable(GL_LIGHTING); glColor3d(0.8, 0.8, 0.8); }
       glBegin(GL_TRIANGLES);
@@ -158,7 +161,7 @@ void GLUTRedraw(void)
         else if (show_segments) RNLoadRgb(colors[1 + mesh->FaceSegment(face)%(ncolors-1)]); 
         else if (show_categories) RNLoadRgb(colors[1 + mesh->FaceCategory(face)%(ncolors-1)]); 
         else if (meshes.NEntries() > 1) RNLoadRgb(colors[1 + m%(ncolors-1)]); 
-        else if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
+        if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
           if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
