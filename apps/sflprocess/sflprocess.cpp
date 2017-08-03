@@ -666,7 +666,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
   R3Point mesh_centroid = mesh.Centroid();
   for (int i = 0; i < mesh.NFaces(); i++) {
     R3MeshFace *face = mesh.Face(i);
-    int segment_index = mesh.FaceSegment(face);
+    int segment_index = mesh.FaceMaterial(face);
     if (segment_index < 0) segment_index = 0; // continue;
 
     // Get/create array of surfels for segment

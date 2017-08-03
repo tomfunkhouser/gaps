@@ -12,8 +12,8 @@ class RGBDSurface {
 public:
   // Constructors/destructors
   RGBDSurface(void);
-  RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength world_texel_spacing);
-  RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength world_texel_spacing);
+  RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel_spacing);
+  RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing);
   virtual ~RGBDSurface(void);
 
   // Geometric property functions
@@ -114,7 +114,7 @@ private:
   int opengl_texture_id;
   char *texture_filename;
   char *mesh_filename;
-  RNLength world_texel_spacing;
+  R2Box surface_bbox;
   int color_resident_count;
 
 public: // temporary
@@ -296,7 +296,8 @@ inline RNLength RGBDSurface::
 WorldTexelSpacing(void) const
 {
   // Return world texel spacing
-  return world_texel_spacing;
+  if (width == 0) return 0;
+  return surface_bbox.XLength() / width;
 }
 
 

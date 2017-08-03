@@ -4763,6 +4763,7 @@ ReadPlyFile(const char *filename)
   typedef struct PlyVertex {
     float x, y, z;
     float nx, ny, nz;
+    float tx, ty;
     unsigned char red, green, blue;
   } PlyVertex;
 
@@ -4787,6 +4788,8 @@ ReadPlyFile(const char *filename)
     {(char *) "nx", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,nx), 0, 0, 0, 0},
     {(char *) "ny", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,ny), 0, 0, 0, 0},
     {(char *) "nz", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,nz), 0, 0, 0, 0},
+    {(char *) "tx", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,tx), 0, 0, 0, 0},
+    {(char *) "ty", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,ty), 0, 0, 0, 0},
     {(char *) "red", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,red), 0, 0, 0, 0},
     {(char *) "green", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,green), 0, 0, 0, 0},
     {(char *) "blue", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,blue), 0, 0, 0, 0}
@@ -4839,6 +4842,7 @@ ReadPlyFile(const char *filename)
 
       // set up for getting vertex elements 
       RNBoolean has_normals = 0;
+      RNBoolean has_texcoords = 0;
       RNBoolean has_colors = 0;
       for (j = 0; j < nprops; j++) {
 	if (equal_strings("x", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[0]);
@@ -4847,10 +4851,13 @@ ReadPlyFile(const char *filename)
 	else if (equal_strings("nx", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[3]); 
 	else if (equal_strings("ny", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[4]); 
 	else if (equal_strings("nz", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[5]);
-	else if (equal_strings("red", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[6]); 
-	else if (equal_strings("green", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[7]); 
-	else if (equal_strings("blue", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[8]);
+	else if (equal_strings("tx", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[6]); 
+	else if (equal_strings("ty", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[7]); 
+	else if (equal_strings("red", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[8]); 
+	else if (equal_strings("green", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[9]); 
+	else if (equal_strings("blue", plist[j]->name)) ply_get_property (ply, elem_name, &vert_props[10]);
 	if (equal_strings("nx", plist[j]->name)) has_normals = 1;
+	else if (equal_strings("tx", plist[j]->name)) has_texcoords = 1;
 	else if (equal_strings("red", plist[j]->name)) has_colors = 1;
       }
 
@@ -4866,6 +4873,10 @@ ReadPlyFile(const char *filename)
         if (has_normals) {
           R3Vector normal(plyvertex.nx, plyvertex.ny, plyvertex.nz);
           SetVertexNormal(v, normal);
+        }
+        if (has_texcoords) {
+          R2Point texcoords(plyvertex.tx, plyvertex.ty);
+          SetVertexTextureCoords(v, texcoords);
         }
         if (has_colors) {
           RNRgb color(plyvertex.red/255.0, plyvertex.green/255.0, plyvertex.blue/255.0);
@@ -5777,6 +5788,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   typedef struct PlyVertex {
     float x, y, z;
     float nx, ny, nz;
+    float tx, ty;
     unsigned char red, green, blue;
   } PlyVertex;
 
@@ -5799,6 +5811,8 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     {(char *) "nx", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,nx), 0, 0, 0, 0},
     {(char *) "ny", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,ny), 0, 0, 0, 0},
     {(char *) "nz", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,nz), 0, 0, 0, 0},
+    {(char *) "tx", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,tx), 0, 0, 0, 0},
+    {(char *) "ty", PLY_FLOAT, PLY_FLOAT, offsetof(PlyVertex,ty), 0, 0, 0, 0},
     {(char *) "red", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,red), 0, 0, 0, 0},
     {(char *) "green", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,green), 0, 0, 0, 0},
     {(char *) "blue", PLY_UCHAR, PLY_UCHAR, offsetof(PlyVertex,blue), 0, 0, 0, 0}
@@ -5829,6 +5843,8 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   ply_describe_property(ply, (char *) "vertex", &vert_props[6]);
   ply_describe_property(ply, (char *) "vertex", &vert_props[7]);
   ply_describe_property(ply, (char *) "vertex", &vert_props[8]);
+  ply_describe_property(ply, (char *) "vertex", &vert_props[9]);
+  ply_describe_property(ply, (char *) "vertex", &vert_props[10]);
 
   // Describe face properties
   ply_element_count(ply, (char *) "face", NFaces());
@@ -5846,6 +5862,7 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     R3MeshVertex *v = Vertex(i);
     const R3Point& p = VertexPosition(v);
     const R3Vector& n = VertexNormal(v);
+    const R2Point& t = VertexTextureCoords(v);
     const RNRgb& c = VertexColor(v);
     PlyVertex ply_vertex;
     ply_vertex.x = p.X();
@@ -5854,6 +5871,8 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     ply_vertex.nx = n.X();
     ply_vertex.ny = n.Y();
     ply_vertex.nz = n.Z();
+    ply_vertex.tx = t.X();
+    ply_vertex.ty = t.Y();
     ply_vertex.red = n.X();
     ply_vertex.red = (unsigned char) (255.0 * c.R());
     ply_vertex.green = (unsigned char) (255.0 * c.G());
@@ -5895,10 +5914,20 @@ WriteObjFile(const char *filename) const
     return 0;
   }
 
+  // Check if have texcoords
+  RNBoolean has_texcoords = FALSE;
+  for (int i = 0; i < NVertices(); i++) {
+    R3MeshVertex *vertex = Vertex(i);
+    const R2Point& t = VertexTextureCoords(vertex);
+    if (!t.IsZero()) { has_texcoords = TRUE; break; }
+  }
+
   // Write vertices
   for (int i = 0; i < NVertices(); i++) {
     R3MeshVertex *vertex = Vertex(i);
     const R3Point& p = VertexPosition(vertex);
+    const R2Point& t = VertexTextureCoords(vertex);
+    if (has_texcoords) fprintf(fp, "vt %g %g\n", t.X(), t.Y());
     fprintf(fp, "v %g %g %g\n", p.X(), p.Y(), p.Z());
   }
 
@@ -5908,7 +5937,15 @@ WriteObjFile(const char *filename) const
     R3MeshVertex *v0 = VertexOnFace(face, 0);
     R3MeshVertex *v1 = VertexOnFace(face, 1);
     R3MeshVertex *v2 = VertexOnFace(face, 2);
-    fprintf(fp, "f %d %d %d\n", v0->id + 1, v1->id + 1, v2->id + 1);
+    if (has_texcoords) {
+      fprintf(fp, "f %d/%d %d/%d %d/%d\n",
+        v0->id + 1, v1->id + 1, v2->id + 1,
+        v0->id + 1, v1->id + 1, v2->id + 1);
+    }
+    else {
+      fprintf(fp, "f %d %d %d\n",
+        v0->id + 1, v1->id + 1, v2->id + 1);
+    }
   }
 
   // Close file

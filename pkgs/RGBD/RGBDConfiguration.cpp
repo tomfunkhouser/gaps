@@ -461,7 +461,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
       RNLength ry = surface->rectangle->Radius(1);
       const char *texture_filename = (surface->TextureFilename()) ? surface->TextureFilename() : "-";
       fprintf(fp, "rectangle  %s  %g   %g %g %g   %g %g %g   %g %g %g   %g %g\n",
-        texture_filename, surface->world_texel_spacing,
+        texture_filename, surface->WorldTexelSpacing(),
         centroid.X(), centroid.Y(), centroid.Z(),
         normal.X(), normal.Y(), normal.Z(),
         up.X(), up.Y(), up.Z(), rx, ry);
@@ -469,7 +469,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
     else if (surface->mesh) {
       const char *texture_filename = (surface->TextureFilename()) ? surface->TextureFilename() : "-";
       const char *mesh_filename = (surface->MeshFilename()) ? surface->MeshFilename() : "-";
-      fprintf(fp, "mesh  %s  %s  %g\n", texture_filename, mesh_filename, surface->world_texel_spacing);
+      fprintf(fp, "mesh  %s  %s  %g\n", texture_filename, mesh_filename, surface->WorldTexelSpacing());
     }
   }
   

@@ -103,6 +103,12 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
     fprintf(stderr, "Unable to read channels for %s\n", filename);
     return 0;
   }
+#else
+  // Read all surface channels ... for now
+  for (int i = 0; i < configuration.NSurfaces(); i++) {
+    RGBDSurface *surface = configuration.Surface(i);
+    surface->ReadChannels();
+  }
 #endif
   
   // Set texel spacing if specified on command line                       

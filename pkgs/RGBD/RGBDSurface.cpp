@@ -26,7 +26,7 @@ RGBDSurface(void)
     opengl_texture_id(-1),
     texture_filename(NULL),
     mesh_filename(NULL),
-    world_texel_spacing(0),
+    surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
     rectangle(NULL),
     mesh(NULL),
@@ -45,7 +45,7 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel
     opengl_texture_id(-1),
     texture_filename(NULL),
     mesh_filename(NULL),
-    world_texel_spacing(texel_spacing),
+    surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
     rectangle(rectangle),
     mesh(NULL),
@@ -57,10 +57,17 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel
   // Set texture filename
   SetTextureFilename(texture_filename);
 
-  // Compute width and height from world_texel_spacing
-  if (world_texel_spacing <= 0) world_texel_spacing = 0.01;
-  width = (int) (2.0 * rectangle->Radius(0) / world_texel_spacing) + 1;
-  height = (int) (2.0 * rectangle->Radius(1) / world_texel_spacing) + 1;
+  // Compute coordinate stuff
+  RNLength xlength = 2*rectangle->Radius(0);
+  RNLength ylength = 2*rectangle->Radius(1);
+  if (texel_spacing <= 0) texel_spacing = 0.01;
+  width = (int) (xlength / texel_spacing + 0.5);
+  height = (int) (ylength / texel_spacing + 0.5);
+  if (width <= 0) width = 1;
+  if (height <= 0) height = 1;
+
+  // Compute bounding box of surface coordinates
+  surface_bbox.Reset(R2zero_point, R2Point(xlength, ylength));
 }
 
 
@@ -74,7 +81,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
     opengl_texture_id(-1),
     texture_filename(NULL),
     mesh_filename(NULL),
-    world_texel_spacing(texel_spacing),
+    surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
     rectangle(NULL),
     mesh(mesh),
@@ -88,8 +95,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
     return;
   }
 
-  // Compute bounding box of texture coordinates
-  R2Box surface_bbox = R2null_box;
+  // Compute bounding box of surface coordinates
   for (int i = 0; i < mesh->NVertices(); i++) {
     R3MeshVertex *vertex = mesh->Vertex(i);
     const R2Point& texcoords = mesh->VertexTextureCoords(vertex);
@@ -102,12 +108,12 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
     surface_bbox.Reset(R2zero_point, R2ones_point);
   }
 
-  // Compute width and height from world_texel_spacing
-  if (world_texel_spacing <= 0) world_texel_spacing = 0.01;
-  RNScalar world_to_surface_scale_factor = sqrt(surface_bbox.Area() / mesh_area);
-  RNLength surface_texel_spacing = world_to_surface_scale_factor * world_texel_spacing;
-  width = (int) (surface_bbox.XLength() / surface_texel_spacing) + 1;
-  height = (int) (surface_bbox.YLength() / surface_texel_spacing) + 1;
+  // Compute width and height from texel_spacing
+  if (texel_spacing <= 0) texel_spacing = 0.01;
+  width = (int) (surface_bbox.XLength() / texel_spacing + 0.5);
+  height = (int) (surface_bbox.YLength() / texel_spacing + 0.5);
+  if (width <= 0) width = 1;
+  if (height <= 0) height = 1;
 
   // Set texture filename
   SetTextureFilename(texture_filename);
@@ -394,18 +400,14 @@ SetMeshFilename(const char *filename)
 
 
 void RGBDSurface::
-SetWorldTexelSpacing(RNLength spacing)
+SetWorldTexelSpacing(RNLength texel_spacing)
 {
-  // Check spacings
-  if ((spacing == 0) || (this->world_texel_spacing == 0)) {
-    fprintf(stderr, "Zero pixel spacing");
-    return;
-  }
-
   // Compute new width and height
-  width *= world_texel_spacing / spacing;
-  height *= world_texel_spacing / spacing;
-
+  if (texel_spacing > 0) {
+    width = surface_bbox.XLength() / texel_spacing;
+    height = surface_bbox.YLength() / texel_spacing;
+  }
+  
   // Resample channels
   for (int i = 0; i < NChannels(); i++) {
     R2Grid *channel = Channel(i);
@@ -414,9 +416,6 @@ SetWorldTexelSpacing(RNLength spacing)
 
   // Invalidate mesh face index
   InvalidateMeshFaceIndex();
-
-  // Remember world texel spacing
-  this->world_texel_spacing = spacing;
 }
 
 
@@ -442,8 +441,11 @@ int RGBDSurface::
 TransformTextureToSurface(const R2Point& texture_position, R2Point& surface_position) const
 {
   // Transform from position in texture coordinates to surface coordinates
-  if (world_texel_spacing == 0) return 0;
-  surface_position = world_texel_spacing * texture_position;
+  if ((width == 0) || (height == 0)) return 0;
+  RNScalar xlength = surface_bbox.XLength();
+  RNScalar ylength = surface_bbox.YLength();
+  surface_position[0] = surface_bbox[0][0] + xlength * texture_position[0] / width;
+  surface_position[1] = surface_bbox[0][1] + ylength * texture_position[1] / height;
   return 1;
 }
 
@@ -453,8 +455,11 @@ int RGBDSurface::
 TransformSurfaceToTexture(const R2Point& surface_position, R2Point& texture_position) const
 {
   // Transform from position in surface coordinates to texture coordinates
-  if (world_texel_spacing == 0) return 0;
-  texture_position = surface_position / world_texel_spacing;
+  RNScalar xlength = surface_bbox.XLength();
+  RNScalar ylength = surface_bbox.YLength();
+  if ((xlength == 0) || (ylength == 0)) return 0;
+  texture_position[0] = width  * (surface_position[0] - surface_bbox[0][0]) / xlength;
+  texture_position[1] = height * (surface_position[1] - surface_bbox[0][1]) / ylength;
   return 1;
 }
 
@@ -616,21 +621,19 @@ DrawTexture(int color_scheme) const
     glEnd();
   }
   else if (mesh) {
-    // Get bounding box of texture coordinates
-    R2Box texbox = Channel(0)->WorldBox();
-    if (RNIsPositive(texbox.Area())) {
-      // Draw mesh
+    if ((width > 0) && (height > 0)) {
       glBegin(GL_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         for (int j = 0; j < 3; j ++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
-          const R3Point& position = mesh->VertexPosition(vertex);
-          R2Point texcoords = mesh->VertexTextureCoords(vertex);
-          texcoords[0] = (texcoords[0] - texbox.XMin()) / texbox.XLength();
-          texcoords[1] = (texcoords[1] - texbox.YMin()) / texbox.YLength();
-          R3LoadTextureCoords(texcoords);
-          R3LoadPoint(position);
+          const R3Point& world_position = mesh->VertexPosition(vertex);
+          R2Point texture_position, surface_position = mesh->VertexTextureCoords(vertex);
+          TransformSurfaceToTexture(surface_position, texture_position);
+          texture_position[0] = texture_position[0] / width;
+          texture_position[1] = texture_position[1] / height;
+          R3LoadTextureCoords(texture_position);
+          R3LoadPoint(world_position);
         }
       }
       glEnd();
@@ -706,7 +709,8 @@ ReadColorChannels(void)
 
     // Check image dimensions
     if ((rgb_image.Width() != width) || (rgb_image.Height() != height)) {
-      fprintf(stderr, "Mismatching image dimensions in %s\n", texture_filename);
+      fprintf(stderr, "Mismatching image dimensions (%d,%d) vs (%d,%d) in %s\n",
+        rgb_image.Width(), rgb_image.Height(), width, height, texture_filename);
       // return 0;
     }
   }
@@ -977,10 +981,10 @@ UpdateMeshFaceIndex(void)
   if (!mesh) return;
   if (width == 0) return;
   if (height == 0) return;
-  if (world_texel_spacing == 0) return;
-
+  if (RNIsZero(surface_bbox.Area())) return;
+  
   // Create face index
-  mesh_face_index = new R2Grid(width, height);
+  mesh_face_index = new R2Grid(width, height, surface_bbox);
 
   // Update mesh face index grid
   mesh_face_index->Clear(R2_GRID_UNKNOWN_VALUE);
@@ -989,10 +993,10 @@ UpdateMeshFaceIndex(void)
     R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
     R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
     R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
-    R2Point s0 = mesh->VertexTextureCoords(v0) / world_texel_spacing;
-    R2Point s1 = mesh->VertexTextureCoords(v1) / world_texel_spacing;
-    R2Point s2 = mesh->VertexTextureCoords(v2) / world_texel_spacing;
-    mesh_face_index->RasterizeGridTriangle(s0, s1, s2, i, R2_GRID_REPLACE_OPERATION);
+    R2Point s0 = mesh->VertexTextureCoords(v0);
+    R2Point s1 = mesh->VertexTextureCoords(v1);
+    R2Point s2 = mesh->VertexTextureCoords(v2);
+    mesh_face_index->RasterizeWorldTriangle(s0, s1, s2, i, R2_GRID_REPLACE_OPERATION);
   }
 
   // For debugging
