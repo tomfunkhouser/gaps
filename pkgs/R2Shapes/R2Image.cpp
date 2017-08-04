@@ -80,6 +80,43 @@ R2Image(int width, int height, int ncomponents, unsigned char *data)
 
 
 R2Image::
+R2Image(const R2Grid& red, const R2Grid& green, const R2Grid& blue)
+  : width(red.XResolution()), 
+    height(red.YResolution()),
+    ncomponents(3),
+    rowsize(0),
+    pixels(NULL)
+{
+  // Just checking
+  assert(red.XResolution() != green.XResolution());
+  assert(red.YResolution() != green.YResolution());
+  assert(red.XResolution() != blue.XResolution());
+  assert(red.YResolution() != blue.YResolution());
+
+  // Copy pixels (first pixel is lower-left)
+  rowsize = ncomponents * width;
+  if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
+  int nbytes = rowsize * height;
+  if (nbytes > 0) {
+    pixels = new unsigned char [nbytes];
+    assert(pixels);
+    for (int i = 0; i < width*height; i++) {
+      int r = 255.0 * red.GridValue(i);
+      int g = 255.0 * green.GridValue(i);
+      int b = 255.0 * blue.GridValue(i);
+      r = (r < 0) ? 0 : ((r > 255) ? 255 : r);
+      g = (g < 0) ? 0 : ((g > 255) ? 255 : g);
+      b = (b < 0) ? 0 : ((b > 255) ? 255 : b);
+      pixels[i*3+0] = r;
+      pixels[i*3+1] = g;
+      pixels[i*3+2] = b;
+    }
+  }
+}
+
+
+
+R2Image::
 R2Image(const R2Image& image)
   : width(image.width), 
     height(image.height),

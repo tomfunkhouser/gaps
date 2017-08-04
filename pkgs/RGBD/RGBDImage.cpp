@@ -26,6 +26,7 @@ RGBDImage(void)
     intrinsics(1,0,0, 0,1,0, 0,0,1),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     opengl_texture_id(-1),
+    name(NULL),
     color_filename(NULL),
     depth_filename(NULL),
     color_resident_count(0),
@@ -46,11 +47,15 @@ RGBDImage(const char *color_filename, const char *depth_filename,
     intrinsics(intrinsics_matrix),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     opengl_texture_id(-1),
-    color_filename((color_filename && strcmp(color_filename, "-")) ? strdup(color_filename) : NULL),
-    depth_filename((depth_filename && strcmp(depth_filename, "-")) ? strdup(depth_filename) : NULL),
+    name(NULL),
+    color_filename(NULL),
+    depth_filename(NULL),
     color_resident_count(0),
     depth_resident_count(0)
 {
+  // Set filenames
+  if (depth_filename) SetDepthFilename(depth_filename);
+  if (color_filename) SetColorFilename(color_filename);
 }
 
 
@@ -75,6 +80,7 @@ RGBDImage::
   }
 
   // Delete filenames
+  if (name) free(name);
   if (color_filename) free(color_filename);
   if (depth_filename) free(depth_filename);
 }
@@ -1219,6 +1225,17 @@ ReleaseDepthChannel(void)
 
 
 void RGBDImage::
+SetName(const char *name)
+{
+  // Set filename
+  if (this->name) free(this->name);
+  if (name && strcmp(name, "-")) this->name = strdup(name);
+  else this->name = NULL;
+}
+
+
+
+void RGBDImage::
 SetColorFilename(const char *filename)
 {
   // Set filename
@@ -1236,6 +1253,17 @@ SetDepthFilename(const char *filename)
   if (depth_filename) free(depth_filename);
   if (filename && strcmp(filename, "-")) depth_filename = strdup(filename);
   else depth_filename = NULL;
+
+  // Set name
+  if (!name && filename) {
+    char buffer[1024];
+    strncpy(buffer, filename, 1024);
+    char *startp = strrchr(buffer, '/');
+    if (!startp) startp = buffer;
+    char *endp = strrchr(startp, '.');
+    if (endp) *endp = '\0';
+    name = strdup(startp);
+  }
 }
 
 

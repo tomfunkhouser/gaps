@@ -107,10 +107,12 @@ public:
   virtual int CreateDepthChannel(const R2Grid& image);
   
   // Filename access functions
+  const char *Name(void) const;
   const char *ColorFilename(void) const;
   const char *DepthFilename(void) const;
 
   // Filename manipulation functions (do not read files)
+  virtual void SetName(const char *name);
   virtual void SetColorFilename(const char *filename);
   virtual void SetDepthFilename(const char *filename);
   
@@ -130,6 +132,7 @@ private:
   R3Matrix intrinsics;
   R3Box world_bbox;
   int opengl_texture_id;
+  char *name;
   char *color_filename;
   char *depth_filename;
   int color_resident_count;
@@ -374,6 +377,15 @@ Intrinsics(void) const
 {
   // Return intrinsics matrix
   return intrinsics;
+}
+
+
+
+inline const char *RGBDImage::
+Name(void) const
+{
+  // Return name
+  return name;
 }
 
 

@@ -11,6 +11,7 @@ class R2Image {
   R2Image(const char *filename);
   R2Image(int width, int height, int ncomponents = 3);
   R2Image(int width, int height, int ncomponents, unsigned char *data);
+  R2Image(const R2Grid& red, const R2Grid& green, const R2Grid& blue);
   R2Image(const R2Image& image);
   ~R2Image(void);
 
