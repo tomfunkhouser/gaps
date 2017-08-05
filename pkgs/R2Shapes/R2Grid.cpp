@@ -3277,6 +3277,7 @@ ReadFile(const char *filename)
   // Read file of appropriate type
   if (!strncmp(input_extension, ".raw", 4)) return ReadRAWFile(filename);
   else if (!strncmp(input_extension, ".pfm", 4)) return ReadPFMFile(filename);
+  else if (!strncmp(input_extension, ".pnm", 4)) return ReadPNMFile(filename);
   else if (!strncmp(input_extension, ".png", 4)) return ReadPNGFile(filename);
   else if (!strncmp(input_extension, ".grd", 4)) return ReadGridFile(filename);
   else  return ReadImage(filename);
@@ -3435,6 +3436,129 @@ WriteRAWFile(const char *filename) const
   return grid_size;
 }
 
+
+
+
+////////////////////////////////////////////////////////////////////////
+// PNM/PNG FORMAT READ/WRITE
+////////////////////////////////////////////////////////////////////////
+
+int R2Grid::
+ReadPNMFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open image: %s\n", filename);
+    return 0;
+  }
+
+  // Read magic header
+  int c;
+  c = fgetc(fp); if (c != 'P') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '5') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '\n') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+
+  // Read width
+  int width_count = 0;
+  char width_string[256];
+  for (int i = 0; i < 256; i++) { 
+    c = fgetc(fp); 
+    if ((c == ' ') && (width_count == 0)) { continue; }
+    else if ((c == ' ') || (c == '\n')) { width_string[width_count] = '\0'; break; }
+    else if (!isdigit(c)) { fprintf(stderr, "Bad width character %c in %s\n", c, filename); return 0; }
+    else width_string[width_count++] = c;
+  }
+
+  // Check width
+  if ((width_count == 0) || (width_count > 128)) {
+    fprintf(stderr, "Error reading width in %s\n", filename); 
+    return 0; 
+  }
+
+  // Read height
+  int height_count = 0;
+  char height_string[256];
+  for (int i = 0; i < 256; i++) { 
+    c = fgetc(fp); 
+    if ((c == ' ') && (height_count == 0)) { continue; }
+    else if ((c == ' ') || (c == '\n')) { height_string[height_count] = '\0'; break; }
+    else if (!isdigit(c)) { fprintf(stderr, "Bad height character %c in %s\n", c, filename); return 0; }
+    else height_string[height_count++] = c;
+  }
+
+  // Check height
+  if ((height_count == 0) || (height_count > 128)) {
+    fprintf(stderr, "Error reading height in %s\n", filename); 
+    return 0; 
+  }
+
+  // Read max_value
+  int max_value_count = 0;
+  char max_value_string[256];
+  for (int i = 0; i < 256; i++) { 
+    c = fgetc(fp); 
+    if ((c == ' ') && (max_value_count == 0)) { continue; }
+    else if ((c == ' ') || (c == '\n')) { max_value_string[max_value_count] = '\0'; break; }
+    if (!isdigit(c) && (c != '.') && (c != '-')) { fprintf(stderr, "Bad max_value character %c in %s\n", c, filename); return 0; }
+    max_value_string[max_value_count++] = c;
+  }
+
+  // Check max_value
+  if ((max_value_count == 0) || (max_value_count > 128)) {
+    fprintf(stderr, "Error reading max_value in %s\n", filename); 
+    return 0; 
+  }
+
+  // Parse values
+  int width = atoi(width_string);
+  int height = atoi(height_string);
+  unsigned int max_value = atoi(max_value_string);
+
+  // Fill in grid info
+  grid_resolution[0] = width;
+  grid_resolution[1] = height;
+  grid_row_size = width;
+  grid_size = width*height;
+  world_to_grid_scale_factor = 1;
+  world_to_grid_transform = R2identity_affine;
+  grid_to_world_transform = R2identity_affine;
+  if (grid_values) delete [] grid_values;
+  grid_values = new RNScalar [ grid_size ];
+  if (!grid_values) {
+    fprintf(stderr, "Unable to allocate %d pixels for %s\n", grid_size, filename);
+    return 0;
+  }
+
+  // Read pixels
+  for (int i = 0; i < grid_size; i++) {
+    if (max_value <= 0xFF) {
+      unsigned char value;
+      fread(&value, sizeof(unsigned char), 1, fp);
+      grid_values[i] = value;
+    }
+    else if (max_value <= 0xFFFF) {
+      unsigned short value;
+      fread(&value, sizeof(unsigned short), 1, fp);
+      grid_values[i] = value;
+    }
+    else if (max_value <= 0xFFFFFFFF) {
+      unsigned int value;
+      fread(&value, sizeof(unsigned int), 1, fp);
+      grid_values[i] = value;
+    }
+    else {
+      fprintf(stderr, "Unrecognized maximum value in %s\n", filename);
+      return 0;
+    }
+  }
+
+  // Close image
+  fclose(fp);
+
+  // Return success
+  return grid_size;
+}
 
 
 

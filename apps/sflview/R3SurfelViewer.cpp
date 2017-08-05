@@ -27,8 +27,9 @@ R3SurfelViewer(R3SurfelScene *scene)
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
-    backfacing_visibility(1),
-    background_visibility(1),
+    backfacing_visibility(0),
+    aerial_visibility(1),
+    terrestrial_visibility(1),
     object_property_visibility(0),
     object_label_visibility(0),
     object_name_visibility(0),
@@ -487,6 +488,10 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
 
+            // Check surfel type
+            if (!aerial_visibility && surfel->IsAerial()) continue;
+            if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
+
             // Check backfacing
             if (!backfacing_visibility) {
               R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
@@ -517,19 +522,23 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
 
-            // Check surfel
+            // Check surfel type
+            if (!aerial_visibility && surfel->IsAerial()) continue;
+            if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
+
+            // Check backfacing
             if (!backfacing_visibility) {
               R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
               if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
             }
 
             // Set color
+            glColor3ubv(surfel->Color());
 
             // Draw surfel
             double x = surfel->X() + block_origin.X();
             double y = surfel->Y() + block_origin.Y();
             double z = surfel->Z() + block_origin.Z();
-            glColor3ubv(surfel->Color());
             glVertex3d(x, y, z);
           }
         }
@@ -985,8 +994,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break; }
 
     case 'X':
+      SetTerrestrialVisibility(-1);
+      break;
+      
     case 'x':
-      SetBackgroundVisibility(-1);
+      SetAerialVisibility(-1);
       break;
       
     case 'Y':
@@ -1558,11 +1570,8 @@ RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy)
 R3SurfelNode *R3SurfelViewer::
 PickNode(int x, int y, R3Point *picked_position, 
   R3SurfelBlock **picked_block, const R3Surfel **picked_surfel,
-  RNBoolean exclude_nonobjects, RNBoolean exclude_aerial) 
+  RNBoolean exclude_nonobjects) 
 {
-  // XXX TEMPORARY XXX
-  exclude_aerial = TRUE;
-
   // How close the cursor has to be to a point (in pixels)
   int pick_tolerance = 10;
 
@@ -1600,7 +1609,12 @@ PickNode(int x, int y, R3Point *picked_position,
       glBegin(GL_POINTS);
       for (int k = 0; k < block->NSurfels(); k++) {
         const R3Surfel *surfel = block->Surfel(k);
-        if (exclude_aerial && surfel->IsAerial()) continue;
+        if (!aerial_visibility && surfel->IsAerial()) continue;
+        if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
+        if (!backfacing_visibility) {
+          R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
+          if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
+        }
         glVertex3fv(surfel->Coords());
       }
       glEnd();
@@ -1732,11 +1746,8 @@ PickNode(int x, int y, R3Point *picked_position,
 R3SurfelNode *R3SurfelViewer::
 PickNode(int x, int y, R3Point *picked_position, 
   R3SurfelBlock **picked_block, const R3Surfel **picked_surfel,
-  RNBoolean exclude_nonobjects, RNBoolean exclude_aerial) 
+  RNBoolean exclude_nonobjects) 
 {
-  // XXX TEMPORARY XXX
-  exclude_aerial = TRUE;
-
   // Initialize result
   if (picked_position) *picked_position = R3zero_point;
   if (picked_block) picked_block = NULL;
@@ -1780,7 +1791,8 @@ PickNode(int x, int y, R3Point *picked_position,
       glBegin(GL_POINTS);
       for (int k = 0; k < block->NSurfels(); k++) {
         const R3Surfel *surfel = block->Surfel(k);
-        if (exclude_aerial && surfel->IsAerial()) continue;
+        if (!aerial_visibility && surfel->IsAerial()) continue;
+        if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
         glVertex3fv(surfel->Coords());
       }
       glEnd();

@@ -59,7 +59,8 @@ public:
   int SurfelVisibility(void) const;
   int NormalVisibility(void) const;
   int BackfacingVisibility(void) const;
-  int BackgroundVisibility(void) const;
+  int AerialVisibility(void) const;
+  int TerrestrialVisibility(void) const;
   int ObjectPropertyVisibility(void) const;
   int ObjectLabelVisibility(void) const;
   int ObjectNameVisibility(void) const;
@@ -107,7 +108,8 @@ public:
   void SetSurfelVisibility(int visibility);
   void SetNormalVisibility(int visibility);
   void SetBackfacingVisibility(int visibility);
-  void SetBackgroundVisibility(int visibility);
+  void SetAerialVisibility(int visibility);
+  void SetTerrestrialVisibility(int visibility);
   void SetObjectPropertyVisibility(int visibility);
   void SetObjectLabelVisibility(int visibility);
   void SetObjectNameVisibility(int visibility);
@@ -143,7 +145,7 @@ public:
   // Pick utility functions
   R3SurfelNode *PickNode(int xcursor, int ycursor, 
     R3Point *hit_position = NULL, R3SurfelBlock **block = NULL, const R3Surfel **surfel = NULL,
-    RNBoolean exclude_nonobjects = FALSE, RNBoolean exclude_aerial = FALSE);
+    RNBoolean exclude_nonobjects = FALSE);
 
   // Object editing 
   int SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint, 
@@ -192,7 +194,8 @@ protected:
   int surfel_visibility;
   int normal_visibility;
   int backfacing_visibility;
-  int background_visibility;
+  int aerial_visibility;
+  int terrestrial_visibility;
   int object_property_visibility;
   int object_label_visibility;
   int object_name_visibility;
@@ -371,10 +374,19 @@ BackfacingVisibility(void) const
 
 
 inline int R3SurfelViewer::
-BackgroundVisibility(void) const
+AerialVisibility(void) const
 {
   // Return background visibililty
-  return background_visibility;
+  return aerial_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+TerrestrialVisibility(void) const
+{
+  // Return background visibililty
+  return terrestrial_visibility;
 }
 
 
@@ -669,12 +681,23 @@ SetBackfacingVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
-SetBackgroundVisibility(int visibility)
+SetAerialVisibility(int visibility)
 {
   // Set background visibililty
-  if (visibility == -1) background_visibility = 1 - background_visibility;
-  else if (visibility == 0) background_visibility = 0;
-  else background_visibility = 1;
+  if (visibility == -1) aerial_visibility = 1 - aerial_visibility;
+  else if (visibility == 0) aerial_visibility = 0;
+  else aerial_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetTerrestrialVisibility(int visibility)
+{
+  // Set background visibililty
+  if (visibility == -1) terrestrial_visibility = 1 - terrestrial_visibility;
+  else if (visibility == 0) terrestrial_visibility = 0;
+  else terrestrial_visibility = 1;
 }
 
 

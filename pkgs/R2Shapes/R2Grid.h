@@ -170,6 +170,7 @@ public:
   // Reading/writing
   int ReadFile(const char *filename);
   int ReadPFMFile(const char *filename);
+  int ReadPNMFile(const char *filename);
   int ReadRAWFile(const char *filename);
   int ReadGridFile(const char *filename);
   int ReadPNGFile(const char *filename);
