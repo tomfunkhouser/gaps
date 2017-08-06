@@ -494,6 +494,10 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Viewpoint = %g %g %g\n", scan->Viewpoint().X(), scan->Viewpoint().Y(), scan->Viewpoint().Z());
       printf("  Towards = %g %g %g\n", scan->Towards().X(), scan->Towards().Y(), scan->Towards().Z());
       printf("  Up = %g %g %g\n", scan->Up().X(), scan->Up().Y(), scan->Up().Z());
+      printf("  FOV = %g %g\n", scan->XFOV(), scan->YFOV());
+      printf("  Image dimensions = %d %d\n", scan->ImageWidth(), scan->ImageHeight());
+      printf("  Image center = %g %g\n", scan->ImageCenter().X(), scan->ImageCenter().Y());
+      printf("  Focal length = %g\n", scan->FocalLength());
       printf("  Timestamp = %g\n", scan->Timestamp());
       printf("  Node = %d\n", (scan->Node()) ? scan->Node()->TreeIndex() : -1);
       printf("\n");

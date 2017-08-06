@@ -9,6 +9,7 @@
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "R3SurfelViewer.h"
+#include "fglut/fglut.h"
 
 
 
@@ -24,6 +25,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     center_point(0,0,0),
     current_scan_index(-1),
+    current_scan_texture(),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -36,6 +38,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     node_bbox_visibility(0),
     block_bbox_visibility(0),
     scan_viewpoint_visibility(0),
+    scan_image_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
@@ -58,7 +61,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
-    image_name(NULL)
+    screenshot_name(NULL)
 {
   // Initialize mouse button state
   mouse_button[0] = 0;
@@ -94,32 +97,7 @@ R3SurfelViewer::
 
 
 ////////////////////////////////////////////////////////////////////////
-// Text drawing utility functions
-////////////////////////////////////////////////////////////////////////
-
-#include "fglut/fglut.h"
-
-static void 
-DrawText(const R2Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
-{
-  // Draw text string s and position p
-  glRasterPos2d(p[0], p[1]);
-  while (*s) glutBitmapCharacter(font, *(s++));
-}
-  
-
-
-static void 
-DrawText(const R3Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(font, *(s++));
-}
-  
-
-////////////////////////////////////////////////////////////////////////
-// Coloring utility functions
+// Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
 
 void
@@ -246,6 +224,26 @@ LoadViewingExtent(const R3SurfelViewer *viewer)
       }
     }
   }  
+}
+
+
+
+static void 
+DrawText(const R2Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
+{
+  // Draw text string s and position p
+  glRasterPos2d(p[0], p[1]);
+  while (*s) glutBitmapCharacter(font, *(s++));
+}
+  
+
+
+static void 
+DrawText(const R3Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
+{
+  // Draw text string s and position p
+  glRasterPos3d(p[0], p[1], p[2]);
+  while (*s) glutBitmapCharacter(font, *(s++));
 }
 
 
@@ -677,6 +675,34 @@ Redraw(void)
     glEnd();
   }
 
+  // Draw scan image
+  if ((scan_image_visibility) && (current_scan_texture.Image()) &&
+      (current_scan_index >= 0) && (current_scan_index < scene->NScans())) {
+    RNLength depth = 10;
+    glDisable(GL_LIGHTING);
+    RNLoadRgb(1.0, 1.0, 1.0);
+    R3SurfelScan *scan = scene->Scan(current_scan_index);
+    if ((scan->ImageWidth() > 0) && (scan->ImageHeight() > 0)) {
+      R3Point c = scan->Viewpoint() + depth * scan->Towards();
+      c -= ((scan->ImageCenter().X() - 0.5*scan->ImageWidth()) / (0.5*scan->ImageWidth())) * scan->Right() * depth;
+      c -= ((scan->ImageCenter().Y() - 0.5*scan->ImageHeight()) / (0.5*scan->ImageHeight())) * scan->Up() * depth;
+      R3Vector dx = depth * tan(scan->XFOV()) * scan->Right();
+      R3Vector dy = depth * tan(scan->YFOV()) * scan->Up();
+      current_scan_texture.Draw();
+      glBegin(GL_QUADS);
+      R3LoadTextureCoords(0.0, 0.0);
+      R3LoadPoint(c - dx - dy);
+      R3LoadTextureCoords(1.0, 0.0);
+      R3LoadPoint(c + dx - dy);
+      R3LoadTextureCoords(1.0, 1.0);
+      R3LoadPoint(c + dx + dy);
+      R3LoadTextureCoords(0.0, 1.0);
+      R3LoadPoint(c - dx + dy);
+      glEnd();
+      R2null_texture.Draw();
+    }
+  }
+
   // Draw center point
   if (center_point_visibility) {
     glEnable(GL_LIGHTING);
@@ -716,13 +742,13 @@ Redraw(void)
     glLineWidth(1);
   }
 
-  // Capture image and exit
-  if (image_name) {
+  // Capture image
+  if (screenshot_name) {
     R2Image image(viewer.Viewport().Width(), viewer.Viewport().Height(), 3);
     image.Capture();
-    image.Write(image_name);
-    free(image_name);
-    image_name = NULL;
+    image.Write(screenshot_name);
+    free(screenshot_name);
+    screenshot_name = NULL;
   }
 
   // Update the frame time
@@ -942,10 +968,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'I':
     case 'i':
-      SetObjectNameVisibility(-1);
+      SetScanImageVisibility(-1);
       break;
       
     case 'L':
+      SetObjectNameVisibility(-1);
+      break;
+
     case 'l':
       SetObjectLabelVisibility(-1);
       break;
@@ -1175,8 +1204,9 @@ JumpToNextScanViewpoint(int delta)
 
   // Set camera
   R3SurfelScan *scan = scene->Scan(current_scan_index);
-  viewer.RepositionCamera(scan->Viewpoint());
-  viewer.ReorientCamera(scan->Towards(), scan->Up());
+  R3Camera camera(scan->Viewpoint(), scan->Towards(), scan->Up(),
+    scan->XFOV(), scan->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
+  viewer.SetCamera(camera);
 
   // Update working set
   R3SurfelNode *node = scan->Node();
@@ -1187,6 +1217,24 @@ JumpToNextScanViewpoint(int delta)
     EmptyWorkingSet();
     center_point = node->Centroid();
     InsertIntoWorkingSet(node, TRUE);
+  }
+
+  // Update scan texture
+  if (scan_image_visibility) {
+    if ((current_scan_index >= 0) && (current_scan_index < scene->NScans())) {
+      char image_filename[4096];
+      const char *image_directory = "undistorted_color_images";
+      sprintf(image_filename, "%s/%s.jpg", image_directory, scan->Name());
+      char *s = strstr(image_filename, "_d");
+      if (s) *(s+1) = 'i';
+      if (RNFileExists(image_filename)) {
+        static R2Image image;
+        if (image.Read(image_filename)) { 
+          current_scan_texture.SetImage(&image);
+          printf("Read %s\n", image_filename);
+        }
+      }
+    }
   }
 }
 
@@ -1199,10 +1247,10 @@ WriteImage(const char *filename)
   if (!fp) return 0;
   else fclose(fp);
 
-  // Remember image name -- capture image next redraw
-  if (image_name) free(image_name);
-  if (!filename) image_name = NULL;
-  else image_name = strdup(filename);
+  // Remember screenshot image name -- capture image next redraw
+  if (screenshot_name) free(screenshot_name);
+  if (!filename) screenshot_name = NULL;
+  else screenshot_name = strdup(filename);
 
   // Return success
   return 1;

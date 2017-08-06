@@ -282,6 +282,32 @@ private:
 
 
 
+class R3SurfelViewConstraint : public R3SurfelConstraint {
+public:
+  // Constructor functions
+  R3SurfelViewConstraint(const R3Point& world_viewpoint,
+    const R3Vector& world_towards, const R3Vector& world_up,
+    int image_width, int image_height, // in pixels
+    RNScalar image_xfocal, RNScalar image_yfocal, // in pixels
+    RNScalar image_xcenter = -1, RNScalar image_ycenter = -1,
+    RNLength near_distance = RN_EPSILON, RNLength far_distance = RN_INFINITY, 
+    const R2Grid *image_mask = NULL);
+
+  // Surfel check functions
+  virtual int Check(const R3Box& box) const;
+  virtual int Check(const R3Point& point) const;
+
+private:
+  R4Matrix world_to_camera;
+  int w, h;
+  RNScalar fx, fy, cx, cy;
+  RNScalar neardist, fardist;
+  R3Halfspace frustum[2][3];
+  const R2Grid *image_mask;
+};
+
+
+
 class R3SurfelMeshConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions

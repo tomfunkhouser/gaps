@@ -67,6 +67,7 @@ public:
   int NodeBBoxVisibility(void) const;
   int BlockBBoxVisibility(void) const;
   int ScanViewpointVisibility(void) const;
+  int ScanImageVisibility(void) const;
   int CenterPointVisibility(void) const;
   int AxesVisibility(void) const;
 
@@ -116,6 +117,7 @@ public:
   void SetNodeBBoxVisibility(int visibility);
   void SetBlockBBoxVisibility(int visibility);
   void SetScanViewpointVisibility(int visibility);
+  void SetScanImageVisibility(int visibility);
   void SetCenterPointVisibility(int visibility);
   void SetAxesVisibility(int visibility);
 
@@ -188,6 +190,7 @@ protected:
   R3Box viewing_extent;
   R3Point center_point;
   int current_scan_index;
+  R2Texture current_scan_texture;
   RNScalar surfel_size;
 
   // Visibility properties
@@ -202,6 +205,7 @@ protected:
   int node_bbox_visibility;
   int block_bbox_visibility;
   int scan_viewpoint_visibility;
+  int scan_image_visibility;
   int center_point_visibility;
   int axes_visibility;
 
@@ -238,7 +242,7 @@ protected:
   RNScalar frame_time;
 
   // Image capture
-  char *image_name;
+  char *screenshot_name;
 };
 
 
@@ -441,6 +445,15 @@ ScanViewpointVisibility(void) const
 {
   // Return scan viewpoint visibililty
   return scan_viewpoint_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ScanImageVisibility(void) const
+{
+  // Return scan image visibililty
+  return scan_image_visibility;
 }
 
 
@@ -764,6 +777,17 @@ SetScanViewpointVisibility(int visibility)
   if (visibility == -1) scan_viewpoint_visibility = 1 - scan_viewpoint_visibility;
   else if (visibility == 0) scan_viewpoint_visibility = 0;
   else scan_viewpoint_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetScanImageVisibility(int visibility)
+{
+  // Set scan image visibililty
+  if (visibility == -1) scan_image_visibility = 1 - scan_image_visibility;
+  else if (visibility == 0) scan_image_visibility = 0;
+  else scan_image_visibility = 1;
 }
 
 

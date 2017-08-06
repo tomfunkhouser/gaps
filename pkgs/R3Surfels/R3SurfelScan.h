@@ -25,8 +25,6 @@ public:
   ////////////////////////////
 
   // Image property functions
-  int Width(void) const;
-  int Height(void) const;
   int ImageWidth(void) const;
   int ImageHeight(void) const;
   const R2Point& ImageCenter(void) const;

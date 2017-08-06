@@ -548,7 +548,7 @@ Check(const R3Point& point) const
 
 
 ////////////////////////////////////////////////////////////////////////
-// PLANAR GRID CONSTRAINT FUNCTIONS
+// OVERHEAD GRID CONSTRAINT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelOverheadGridConstraint::
@@ -618,6 +618,104 @@ Check(const R3Point& point) const
 
   // Did not pass test
   return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// VIEW CONSTRAINT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelViewConstraint::
+R3SurfelViewConstraint(const R3Point& world_viewpoint,
+  const R3Vector& world_towards, const R3Vector& world_up,
+  int w, int h,
+  RNScalar fx, RNScalar fy, RNScalar cx, RNScalar cy,
+  RNLength neardist, RNLength fardist, 
+  const R2Grid *image_mask)
+  : world_to_camera(),
+    w(w), h(h),
+    fx(fx), fy(fy),
+    cx(cx), cy(cy),
+    neardist(neardist), fardist(fardist),
+    image_mask(image_mask)
+{
+  // Compute default image center
+  if (this->cx <= 0) this->cx = 0.5*w;
+  if (this->cy <= 0) this->cy = 0.5*h;
+
+  // Compute default near and far distances
+  if (this->neardist <= 0) this->neardist = RN_EPSILON;
+  if (this->fardist <= 0) this->fardist = RN_INFINITY;
+
+  // Compute world_to_camera matrix
+  R3CoordSystem cs(world_viewpoint, R3Triad(world_towards, world_up));
+  world_to_camera = cs.InverseMatrix();
+  
+  // Compute frustum halfspaces (not implemented yet)
+  R3Vector world_normal;
+  RNScalar xfov = atan(0.5*w/fx);
+  RNScalar yfov = atan(0.5*h/fy);
+  R3Vector world_right = world_towards % world_up; world_right.Normalize();
+  world_normal = world_right;  world_normal.Rotate(world_up, xfov);
+  frustum[RN_LO][RN_X] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = -world_right;  world_normal.Rotate(world_up, -xfov);
+  frustum[RN_HI][RN_X] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = world_up;  world_normal.Rotate(world_right, -yfov);
+  frustum[RN_LO][RN_Y] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = -world_up;  world_normal.Rotate(world_right, yfov);
+  frustum[RN_HI][RN_Y] = R3Halfspace(world_viewpoint, world_normal);
+  frustum[RN_LO][RN_Z] = R3Halfspace(world_viewpoint + neardist*world_towards, world_towards);
+  frustum[RN_HI][RN_Z] = R3Halfspace(world_viewpoint + fardist*world_towards, -world_towards);
+}
+
+
+
+int R3SurfelViewConstraint::
+Check(const R3Box& box) const
+{
+  // Return whether any point in box can satisfy constraint (not implemented yet)
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (FALSE) {
+        if (!R3Intersects(frustum[dir][dim], box)) {
+          return R3_SURFEL_CONSTRAINT_FAIL;
+        }
+      }
+    }
+  }
+
+  // Passed all tests
+  return R3_SURFEL_CONSTRAINT_MAYBE;
+}
+
+
+
+int R3SurfelViewConstraint::
+Check(const R3Point& point) const
+{
+  // Transform into camera coordinates (z is negative)
+  R3Point camera_point = world_to_camera * point;
+  RNScalar depth = -camera_point.Z();
+
+  // Check if z is too near or far
+  if (depth < neardist) return R3_SURFEL_CONSTRAINT_FAIL;
+  if (depth > fardist) return R3_SURFEL_CONSTRAINT_FAIL;
+    
+  // Check if point is masked
+  if (image_mask) {
+    // Compute image position
+    int ix = (int) (cx + fx*camera_point.X()/depth);
+    if ((ix < 0) || (ix >= image_mask->XResolution())) return R3_SURFEL_CONSTRAINT_FAIL;
+    int iy = (int) (cy + fy*camera_point.Y()/depth);
+    if ((iy < 0) || (iy >= image_mask->YResolution())) return R3_SURFEL_CONSTRAINT_FAIL;
+    RNScalar mask_value = image_mask->GridValue(ix, iy);
+    if (mask_value == R2_GRID_UNKNOWN_VALUE) return R3_SURFEL_CONSTRAINT_FAIL;
+    if (mask_value == 0.0) return R3_SURFEL_CONSTRAINT_FAIL;
+  }
+
+  // Passed all tests
+  return R3_SURFEL_CONSTRAINT_PASS;
 }
 
 
