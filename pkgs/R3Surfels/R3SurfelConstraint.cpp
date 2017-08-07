@@ -677,14 +677,12 @@ Check(const R3Box& box) const
   // Return whether any point in box can satisfy constraint (not implemented yet)
   for (int dir = 0; dir < 2; dir++) {
     for (int dim = 0; dim < 3; dim++) {
-      if (FALSE) {
-        if (!R3Intersects(frustum[dir][dim], box)) {
-          return R3_SURFEL_CONSTRAINT_FAIL;
-        }
+      if (!R3Intersects(frustum[dir][dim], box)) {
+        return R3_SURFEL_CONSTRAINT_FAIL;
       }
     }
   }
-
+  
   // Passed all tests
   return R3_SURFEL_CONSTRAINT_MAYBE;
 }
@@ -701,19 +699,20 @@ Check(const R3Point& point) const
   // Check if z is too near or far
   if (depth < neardist) return R3_SURFEL_CONSTRAINT_FAIL;
   if (depth > fardist) return R3_SURFEL_CONSTRAINT_FAIL;
-    
+
+  // Compute image position
+  int ix = (int) (cx + fx*camera_point.X()/depth);
+  if ((ix < 0) || (ix >= w)) return R3_SURFEL_CONSTRAINT_FAIL;
+  int iy = (int) (cy + fy*camera_point.Y()/depth);
+  if ((iy < 0) || (iy >= h)) return R3_SURFEL_CONSTRAINT_FAIL;
+  
   // Check if point is masked
   if (image_mask) {
-    // Compute image position
-    int ix = (int) (cx + fx*camera_point.X()/depth);
-    if ((ix < 0) || (ix >= image_mask->XResolution())) return R3_SURFEL_CONSTRAINT_FAIL;
-    int iy = (int) (cy + fy*camera_point.Y()/depth);
-    if ((iy < 0) || (iy >= image_mask->YResolution())) return R3_SURFEL_CONSTRAINT_FAIL;
     RNScalar mask_value = image_mask->GridValue(ix, iy);
     if (mask_value == R2_GRID_UNKNOWN_VALUE) return R3_SURFEL_CONSTRAINT_FAIL;
     if (mask_value == 0.0) return R3_SURFEL_CONSTRAINT_FAIL;
   }
-
+  
   // Passed all tests
   return R3_SURFEL_CONSTRAINT_PASS;
 }
