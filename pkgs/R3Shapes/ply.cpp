@@ -2271,8 +2271,11 @@ void get_binary_item(
 
   ptr = (void *) c;
 
-  (void) fread (ptr, ply_type_size[type], 1, fp);
-
+  if (fread (ptr, ply_type_size[type], 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to read item from ply file\n");
+    return;
+  }
+  
   if ((file_type != native_binary_type) && (ply_type_size[type] > 1))
      swap_bytes((char *)ptr, ply_type_size[type]);
 
