@@ -2271,7 +2271,7 @@ void get_binary_item(
 
   ptr = (void *) c;
 
-  fread (ptr, ply_type_size[type], 1, fp);
+  (void) fread (ptr, ply_type_size[type], 1, fp);
 
   if ((file_type != native_binary_type) && (ply_type_size[type] > 1))
      swap_bytes((char *)ptr, ply_type_size[type]);

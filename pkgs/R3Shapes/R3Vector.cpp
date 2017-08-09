@@ -353,7 +353,8 @@ void R3Vector::
 Rotate(const R3Vector& axis, RNAngle theta)
 {
     // Rotate vector counterclockwise around axis (looking at axis end-on) (rz(xaxis) = yaxis)
-    // From Goldstein: v' = v cos t + a (v . a) [1 - cos t] - (v x a) sin t 
+    // From Goldstein: v' = v cos t + a (v . a) [1 - cos t] - (v x a) sin t
+    if (RNIsEqual(fabs(Dot(axis)), 1.0)) return;
     const RNScalar cos_theta = cos(theta);
     const RNScalar dot = this->Dot(axis);
     R3Vector cross = *this % axis;
