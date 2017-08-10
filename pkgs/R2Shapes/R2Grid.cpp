@@ -3530,6 +3530,12 @@ ReadPNMFile(const char *filename)
     return 0;
   }
 
+  // Check endian of this computer
+  // PNM files are big endian
+  const unsigned short endian_test = 1;
+  RNBoolean little_endian = (*((unsigned char *) &endian_test) == '\0') ? FALSE : TRUE;
+  printf("Endian = %d\n", little_endian);
+  
   // Read pixels
   for (int i = 0; i < grid_size; i++) {
     if (max_value <= 0xFF) {
@@ -3540,11 +3546,13 @@ ReadPNMFile(const char *filename)
     else if (max_value <= 0xFFFF) {
       unsigned short value;
       fread(&value, sizeof(unsigned short), 1, fp);
+      if (little_endian) { unsigned short x = value; value = (x<<8) | (x>>8); }
       grid_values[i] = value;
     }
     else if (max_value <= 0xFFFFFFFF) {
       unsigned int value;
       fread(&value, sizeof(unsigned int), 1, fp);
+      if (little_endian) { unsigned int x = value; value = (x<<24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x>>24); }
       grid_values[i] = value;
     }
     else {
