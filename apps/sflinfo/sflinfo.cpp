@@ -22,6 +22,9 @@ static int print_objects = 0;
 static int print_labels = 0;
 static int print_object_properties = 0;
 static int print_label_properties = 0;
+static int print_object_relationships = 0;
+static int print_label_relationships = 0;
+static int print_label_assignments = 0;
 static int print_tree = 0;
 static int print_nodes = 0;
 static int print_database = 0;
@@ -372,6 +375,61 @@ PrintInfo(R3SurfelScene *scene)
     printf("\n");
   }
 
+  // Print label relationship info
+  if (print_label_relationships) {
+    printf("Label Relationships:\n");
+    for (int i = 0; i < scene->NLabelRelationships(); i++) {
+      R3SurfelLabelRelationship *relationship = scene->LabelRelationship(i);
+      R3SurfelLabel *label0 = relationship->Label(0);
+      R3SurfelLabel *label1 = relationship->Label(1);
+      printf("  Label Relationship %d\n", i);
+      printf("    Type = %d\n", relationship->Type());
+      printf("    Label0 = %d\n", (label0) ? label0->SceneIndex() : -1);
+      printf("    Label1 = %d\n", (label1) ? label1->SceneIndex() : -1);
+      printf("    Operands = %d : ", relationship->NOperands());
+      for (int j = 0; j < relationship->NOperands(); j++) printf("%12.6f ", relationship->Operand(j));
+      printf("\n");
+      printf("\n");
+    }
+    printf("\n");
+  }
+
+  // Print object relationship info
+  if (print_object_relationships) {
+    printf("Object Relationships:\n");
+    for (int i = 0; i < scene->NObjectRelationships(); i++) {
+      R3SurfelObjectRelationship *relationship = scene->ObjectRelationship(i);
+      R3SurfelObject *object0 = relationship->Object(0);
+      R3SurfelObject *object1 = relationship->Object(1);
+      printf("  Object Relationship %d\n", i);
+      printf("    Type = %d\n", relationship->Type());
+      printf("    Object0 = %d\n", (object0) ? object0->SceneIndex() : -1);
+      printf("    Object1 = %d\n", (object1) ? object1->SceneIndex() : -1);
+      printf("    Operands = %d : ", relationship->NOperands());
+      for (int j = 0; j < relationship->NOperands(); j++) printf("%12.6f ", relationship->Operand(j));
+      printf("\n");
+      printf("\n");
+    }
+    printf("\n");
+  }
+
+  // Print label assignment info
+  if (print_label_assignments) {
+    printf("Label Assignments:\n");
+    for (int i = 0; i < scene->NLabelAssignments(); i++) {
+      R3SurfelLabelAssignment *assignment = scene->LabelAssignment(i);
+      R3SurfelObject *object = assignment->Object();
+      R3SurfelLabel *label = assignment->Label();
+      printf("  Label Assignment %d\n", i);
+      printf("    Object = %d\n", (object) ? object->SceneIndex() : -1);
+      printf("    Label = %d\n", (label) ? label->SceneIndex() : -1);
+      printf("    Confidence = %g\n", assignment->Confidence());
+      printf("    Originator = %d\n", assignment->Originator());
+      printf("\n");
+    }
+    printf("\n");
+  }
+
   // Print tree info
   if (print_tree) {
     const R3Box& bbox = tree->BBox();
@@ -543,6 +601,9 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-properties")) { print_object_properties = print_label_properties = 1; }
     else if (!strcmp(*argv, "-object_properties")) { print_object_properties = 1; }
     else if (!strcmp(*argv, "-label_properties")) { print_label_properties = 1; }
+    else if (!strcmp(*argv, "-object_relationships")) { print_object_relationships = 1; }
+    else if (!strcmp(*argv, "-label_relationships")) { print_label_relationships = 1; }
+    else if (!strcmp(*argv, "-assignments")) { print_label_assignments = 1; }
     else if (!strcmp(*argv, "-tree")) { print_tree = 1; }
     else if (!strcmp(*argv, "-nodes")) { print_nodes = 1; }
     else if (!strcmp(*argv, "-database")) { print_database = 1; }

@@ -684,9 +684,9 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     R3Point p0 = mesh.VertexPosition(v0);
     R3Point p1 = mesh.VertexPosition(v1);
     R3Point p2 = mesh.VertexPosition(v2);
-    const R3Vector& n0 = mesh.VertexNormal(v0);
-    const R3Vector& n1 = mesh.VertexNormal(v1);
-    const R3Vector& n2 = mesh.VertexNormal(v2);
+    // const R3Vector& n0 = mesh.VertexNormal(v0);
+    // const R3Vector& n1 = mesh.VertexNormal(v1);
+    // const R3Vector& n2 = mesh.VertexNormal(v2);
     const RNRgb& c0 = mesh.VertexColor(v0);
     const RNRgb& c1 = mesh.VertexColor(v1);
     const RNRgb& c2 = mesh.VertexColor(v2);
@@ -1883,6 +1883,249 @@ CreateMultiresolutionBlocks(R3SurfelScene *scene, const char *node_name,
 
 
 ////////////////////////////////////////////////////////////////////////
+// RELATIONSHIP FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+#define USE_GRID
+
+
+
+#ifndef USE_GRID
+
+struct SurfelPointCompatibilityParameters {
+  RNScalar max_gap_distance;
+  RNScalar max_normal_angle;
+  RNScalar max_plane_offset;
+};
+
+
+static int
+AreSurfelPointsCompatible(R3SurfelPoint *point0, R3SurfelPoint *point1, void *data)
+{
+  // Get parameters
+  SurfelPointCompatibilityParameters *p = (SurfelPointCompatibilityParameters *) data;
+  if (!p) return 1;
+
+  // Check normal angle
+  if (p->max_normal_angle > 0) {
+    const R3Vector& normal0 = point0->Normal();
+    const R3Vector& normal1 = point1->Normal();
+    RNAngle normal_angle = R3InteriorAngle(normal0, normal1);
+    if (normal_angle > p->max_normal_angle) return 0;
+  }
+
+  // Passed all tests
+  return 1;
+}
+
+#endif
+
+
+
+static int
+CreateOverlapObjectRelationships(R3SurfelScene *scene,
+  RNLength max_gap_distance, RNLength max_plane_offset, RNAngle max_normal_angle,
+  RNScalar min_overlap)
+{
+  // Check max gap
+  if (max_gap_distance == 0) return 1;
+  
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int count = 0;
+  if (print_verbose) {
+    printf("Creating object overlap relationships ...\n");
+    fflush(stdout);
+  }
+
+  // Create a pointset for each object
+  R3SurfelPointSet **pointsets = new R3SurfelPointSet * [ scene->NObjects() ];
+  RNScalar max_resolution = 8.0/(max_gap_distance*max_gap_distance);
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    R3SurfelNodeSet nodes;
+    pointsets[i] = new R3SurfelPointSet();
+    nodes.InsertNodes(object, max_resolution);
+    for (int j = 0; j < nodes.NNodes(); j++) {
+      R3SurfelNode *node = nodes.Node(j);
+      for (int k = 0; k < node->NBlocks(); k++) {
+        R3SurfelBlock *block = node->Block(k);
+        pointsets[i]->InsertPoints(block);
+      }
+    }
+  }
+
+  // Consider every object
+  for (int i0 = 0; i0 < scene->NObjects(); i0++) {
+    R3SurfelObject *object0 = scene->Object(i0);
+    R3SurfelPointSet *pointset0 = pointsets[i0];
+    if (pointset0->NPoints() == 0) continue;
+    const R3Box& bbox0 = pointset0->BBox();
+
+#ifdef USE_GRID
+    // Create grid
+    R3Grid *grid0 = CreateGrid(pointset0, max_gap_distance);
+    if (!grid0) continue;
+#else
+    // Create kdtree
+    RNArray<R3SurfelPoint *> array0;
+    for (int j = 0; j < pointset0->NPoints(); j++) array0.Insert(pointset0->Point(j));
+    R3Kdtree<R3SurfelPoint *> kdtree(array0, SurfelPointPosition);
+#endif
+                                     
+    // Consider every other object
+    for (int i1 = 0; i1 < scene->NObjects(); i1++) {
+      R3SurfelObject *object1 = scene->Object(i1);
+      if (object0 == object1) continue;
+      R3SurfelPointSet *pointset1 = pointsets[i1];
+      if (pointset1->NPoints() == 0) continue;
+      const R3Box& bbox1 = pointset1->BBox();
+
+      // Check bboxes for max_gap_distance
+      if (R3Distance(bbox0, bbox1) > max_gap_distance) continue;
+
+      // Check pointset1 for overlap with grid0
+      int npoints = 0;
+      for (int j1 = 0; j1 < pointset1->NPoints(); j1++) {
+        R3SurfelPoint *point1 = pointset1->Point(j1);
+#ifdef USE_GRID
+        // Check if point1 is in marked grid cell
+        const R3Point& world_position = point1->Position();
+        R3Point grid_position = grid0->GridPosition(world_position);
+        int ix = (int) (grid_position.X() + 0.5);
+        if ((ix < 0) || (ix >= grid0->XResolution())) continue;
+        int iy = (int) (grid_position.Y() + 0.5);
+        if ((iy < 0) || (iy >= grid0->YResolution())) continue;
+        int iz = (int) (grid_position.Z() + 0.5);
+        if ((iz < 0) || (iz >= grid0->ZResolution())) continue;
+        if (grid0->GridValue(ix, iy, iz) <= 0) continue;
+        // grid0->SetGridValue(ix, iy, iz, 0);
+#else
+        // Check if point1 is near compatible point in kdtree
+        SurfelPointCompatibilityParameters compatibility_parameters;
+        compatibility_parameters.max_gap_distance = max_gap_distance;
+        compatibility_parameters.max_normal_angle = max_normal_angle;
+        compatibility_parameters.max_plane_offset = max_plane_offset;
+        if (!kdtree.FindAny(point1, 0, max_gap_distance, AreSurfelPointsCompatible, &compatibility_parameters)) continue;
+#endif
+        npoints++;
+      }
+
+      // Compute/check overlap
+      RNScalar overlap = (RNScalar) npoints / (RNScalar) pointset1->NPoints();
+
+      // Create object relationship
+      if (overlap > min_overlap) {
+        RNScalar operands[] = { overlap };
+        int noperands = sizeof(operands) / sizeof(RNScalar);
+        R3SurfelObjectRelationship *relationship = new R3SurfelObjectRelationship(R3_SURFEL_OBJECT_OVERLAP_RELATIONSHIP, object0, object1, operands, noperands);
+        scene->InsertObjectRelationship(relationship);
+        count++;
+      }
+    }
+
+#ifdef USE_GRID
+    // Delete grid
+    delete grid0;
+#endif
+  }
+
+  // Delete pointsets
+  for (int i = 0; i < scene->NObjects(); i++) {
+    delete pointsets[i];
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Objects = %d\n", scene->NObjects());
+    printf("  # Relationships = %d\n", count);
+    fflush(stdout);
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+#if 0
+static int
+CreatePlaneObjectRelationships(R3SurfelScene *scene, RNLength max_gap_distance, RNLength max_plane_offset, RNAngle max_normal_angle)
+{
+  // Consider all objects0
+  for (int i0 = 0; i0 < scene->NObjects(); i0++) {
+    R3SurfelObject *object0 = scene->Object(i0);
+    R3SurfelObjectProperty *property0 = object0->FindObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY);
+    if (!property0) continue;
+    R3Point centroid0(property->Operand(0), property->Operand(1), property->Operand(2));
+    R3Vector majoraxis0(property->Operand(3), property->Operand(4), property->Operand(5));
+    R3Vector minoraxis0(property->Operand(6), property->Operand(7), property->Operand(8));
+    R3Vector normal0(property->Operand(9), property->Operand(10), property->Operand(11));
+    R3Plane plane0(centroi0, normal0);
+    R3Vector stddev0(property->Operand(12), property->Operand(13), property->Operand(14));
+    R3Box extent0(property->Operand(15), property->Operand(16), property->Operand(17),
+                  property->Operand(18), property->Operand(19), property->Operand(20));
+    
+    // Consider all other objects1
+    for (int i1 = i0+1; i1 < scene->NObjects(); i1++) {
+      R3SurfelObject *object1 = scene->Object(i1);
+      R3SurfelObjectProperty *property1 = object1->FindObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY);
+      if (!property1) continue;
+      R3Point centroid1(property->Operand(0), property->Operand(1), property->Operand(2));
+      R3Vector majoraxis1(property->Operand(3), property->Operand(4), property->Operand(5));
+      R3Vector minoraxis1(property->Operand(6), property->Operand(7), property->Operand(8));
+      R3Vector normal1(property->Operand(9), property->Operand(10), property->Operand(11));
+      R3Plane plane1(centroi1, normal1);
+      R3Vector stddev1(property->Operand(12), property->Operand(13), property->Operand(14));
+      R3Box extent1(property->Operand(15), property->Operand(16), property->Operand(17),
+                    property->Operand(18), property->Operand(19), property->Operand(20));
+
+      // Check if closest points are close enough 
+      if (max_gap_distance > 0) {
+        RNLength gap = xxx;
+        if (gap > max_gap_distance) continue;
+      }
+
+      // Check if centroids are withing max offset of others' planes
+      if (max_offset > 0) {
+        RNLength offset0 = R3Distance(plane0, centroid1);
+        if (offset0 > max_offset) continue;
+        RNLength offset1 = R3Distance(plane1, centroid0);
+        if (offset1 > max_offset) continue;
+      }
+
+      // Check if normals are within max angle
+      if (max_angle) {
+        RNAngle angle = R3InteriorAngle(normal0, normal1);
+        if (angle > max_angle) continue;
+      }
+    }
+  }
+  
+  // Return success
+  return 1;
+}
+#endif
+
+
+
+static int
+CreateObjectRelationships(R3SurfelScene *scene,
+  RNLength max_gap_distance, RNLength max_plane_offset, RNAngle max_normal_angle,
+  RNScalar min_overlap)
+{
+  // Create object relationships
+  if (!CreateOverlapObjectRelationships(scene, max_gap_distance, max_plane_offset, max_normal_angle, min_overlap)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // SEGMENTATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -2354,6 +2597,13 @@ int main(int argc, char **argv)
       argc--; argv++; char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename)) exit(-1);
     }
+    else if (!strcmp(*argv, "-create_object_relationships")) { 
+      argc--; argv++; double max_gap_distance = atof(*argv);
+      argc--; argv++; double max_plane_offset = atof(*argv);
+      argc--; argv++; double max_normal_angle = atof(*argv);
+      argc--; argv++; double min_overlap = atof(*argv);
+      if (!CreateObjectRelationships(scene, max_gap_distance, max_plane_offset, max_normal_angle, min_overlap)) exit(-1);
+    }
     else if (!strcmp(*argv, "-create_cluster_objects")) { 
       argc--; argv++; char *parent_object_name = *argv; 
       argc--; argv++; char *parent_node_name = *argv; 
@@ -2390,7 +2640,7 @@ int main(int argc, char **argv)
         exit(-1);
       }
     }
-    else if (!strcmp(*argv, "-create_default_hierarchy")) { 
+    else if (!strcmp(*argv, "-create_multiresolution_hierarchy")) { 
       const char *node_name = "Root";
       int max_parts_per_node = 8;
       int max_blocks_per_node = 32;

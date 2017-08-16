@@ -958,6 +958,14 @@ void Redraw(void)
         sprintf(output_image_filename, "%s/%s_room_surface.png", output_image_directory, name);
         image.WriteFile(output_image_filename);
       }
+      image.Clear(0);
+      if (CaptureDepth(image)) {
+        image.Multiply(1000);
+        image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_room_surface_depth.png", output_image_directory, name);
+        image.WriteFile(output_image_filename);
+      }
     }
   }
 
