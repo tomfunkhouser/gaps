@@ -24,6 +24,7 @@ R3SurfelScan(const char *name)
     timestamp(0),
     image_width(0), 
     image_height(0),
+    image_center(0,0),
     name((name) ? strdup(name) : NULL),
     flags(0),
     data(NULL)
@@ -42,6 +43,7 @@ R3SurfelScan(const R3SurfelScan& scan)
     timestamp(scan.timestamp),
     image_width(scan.image_width), 
     image_height(scan.image_height),
+    image_center(scan.image_center),
     name((scan.name) ? strdup(scan.name) : NULL),
     flags(0),
     data(NULL)

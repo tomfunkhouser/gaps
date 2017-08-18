@@ -48,6 +48,14 @@ public:
   RNScalar Operand(int k) const;
 
 
+  ///////////////////////////
+  //// DISPLAY FUNCTIONS ////
+  ///////////////////////////
+
+  // Draw function
+  virtual void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+
+
   ////////////////////////////////////////////////////////////////////////
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
@@ -79,7 +87,12 @@ protected:
 
 enum {
   R3_SURFEL_OBJECT_NULL_RELATIONSHIP,
-  R3_SURFEL_OBJECT_SIMILARITY_RELATIONSHIP,
+  R3_SURFEL_OBJECT_SIMILAR_RELATIONSHIP,
+  R3_SURFEL_OBJECT_OVERLAP_RELATIONSHIP,
+  R3_SURFEL_OBJECT_NEIGHBOR_RELATIONSHIP,
+  R3_SURFEL_OBJECT_COPLANAR_RELATIONSHIP,
+  R3_SURFEL_OBJECT_PARALLEL_RELATIONSHIP,
+  R3_SURFEL_OBJECT_PERPENDICULAR_RELATIONSHIP,
   R3_SURFEL_OBJECT_NUM_RELATIONSHIPS
 };
 

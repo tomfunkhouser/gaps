@@ -12,6 +12,7 @@ RNLength R2Distance(const R2Point& point, const R2Halfspace& halfspace);
 RNLength R2Distance(const R2Point& point, const R2Arc& arc);
 RNLength R2Distance(const R2Point& point, const R2Arc& arc);
 RNLength R2Distance(const R2Point& point, const R2Polyline& polyline);
+RNLength R2Distance(const R2Point& point, const R2Polygon& polygon);
 RNLength R2Distance(const R2Point& point, const R2Box& box);
 RNLength R2Distance(const R2Point& point, const R2Circle& circle);
 RNLength R2SquaredDistance(const R2Point& point1, const R2Point& point2);
@@ -59,6 +60,8 @@ RNLength R2Distance(const R2Halfspace& halfspace, const R2Circle& circle);
 RNLength R2Distance(const R2Arc& arc, const R2Point& point);
 
 RNLength R2Distance(const R2Polyline& polyline, const R2Point& point);
+
+RNLength R2Distance(const R2Polygon& polygon, const R2Point& point);
 
 RNLength R2Distance(const R2Box& box, const R2Point& point);
 RNLength R2Distance(const R2Box& box, const R2Line& line);
@@ -172,6 +175,14 @@ inline RNLength R2Distance(const R2Polyline& polyline, const R2Point& point)
 {
     // Distance is commutative
     return R2Distance(point, polyline);
+}
+
+
+
+inline RNLength R2Distance(const R2Polygon& polygon, const R2Point& point)
+{
+    // Distance is commutative
+    return R2Distance(point, polygon);
 }
 
 

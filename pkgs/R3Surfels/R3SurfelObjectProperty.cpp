@@ -98,6 +98,14 @@ Draw(RNFlags flags) const
       RNScalar extent12 = operands[19];
       RNScalar extent13 = operands[20];
 
+      // Draw normal
+      glLineWidth(5);
+      glBegin(GL_LINES);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 0, 1);
+      R3LoadPoint(centroid);
+      R3LoadPoint(centroid + extent13*axis3);
+      glEnd();
+
       // Draw stddevs
       glLineWidth(2);
       glBegin(GL_LINES);
@@ -168,6 +176,25 @@ UpdateOperands(void)
     RNScalar variances[3];
     R3Point centroid = pointset->Centroid();
     R3Triad triad = pointset->PrincipleAxes(&centroid, variances);
+
+    // Check if positive z of triad is facing away from viewpoint(s)
+    int npositive = 0, nnegative = 0;
+    R3Plane plane(centroid, triad.Axis(2));
+    for (int i = 0; i < pointset->NPoints(); i++) {
+      R3SurfelPoint *point = pointset->Point(i);
+      R3SurfelBlock *block = point->Block();
+      if (!block) continue;
+      R3SurfelNode *node = block->Node();
+      if (!node) continue;
+      R3SurfelScan *scan = node->Scan();
+      if (!scan) continue;
+      RNScalar d = R3SignedDistance(plane, scan->Viewpoint());
+      if (d < 0) nnegative++;
+      else if (d > 0) npositive++;
+    }
+
+    // Rotate triad so that z is not backfacing to viewpoints
+    if (nnegative > npositive) triad = R3Triad(triad[0], -triad[1], -triad[2]);
 
     // Find extents
     R3Box extent = R3null_box;

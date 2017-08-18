@@ -66,6 +66,28 @@ SquaredXYDistance(const R3Point& point, const R3Box& box)
 
 
 void R3SurfelNodeSet::
+InsertNodes(R3SurfelObject *object, RNScalar max_resolution)
+{
+  // Insert cut at nodes rooted at object
+  for (int i = 0; i < object->NNodes(); i++) {
+    R3SurfelNode *node = object->Node(i);
+    InsertNodes(node, max_resolution);
+  }
+}
+
+
+
+void R3SurfelNodeSet::InsertNodes(R3SurfelNode *node, RNScalar max_resolution)
+{
+  // Insert cut of tree rooted at node
+  R3SurfelTree *tree = node->Tree();
+  if (!tree) return;
+  InsertNodes(tree, node, R3zero_point, 0, -FLT_MAX, FLT_MAX, max_resolution, max_resolution, 0);
+}
+
+
+
+void R3SurfelNodeSet::
 InsertNodes(R3SurfelTree *tree, R3SurfelNode *node,
   const R3Point& xycenter, RNLength xyradius, 
   RNCoord zmin, RNCoord zmax,
@@ -76,7 +98,7 @@ InsertNodes(R3SurfelTree *tree, R3SurfelNode *node,
   if (node->BBox().ZMin() > zmax) return;
   if (node->BBox().ZMax() < zmin) return;
   RNLength squared_xydistance = SquaredXYDistance(xycenter, node->BBox());
-  if (squared_xydistance > xyradius * xyradius) return;
+  if ((xyradius > 0) && (squared_xydistance > xyradius * xyradius)) return;
 
   // Check if this node is a leaf
   if (node->NParts() == 0) {

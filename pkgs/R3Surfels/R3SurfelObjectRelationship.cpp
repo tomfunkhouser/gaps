@@ -107,6 +107,30 @@ R3SurfelObjectRelationship::
 
 
 ////////////////////////////////////////////////////////////////////////
+// DISPLAY FUNCDTIONS
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelObjectRelationship::
+Draw(RNFlags flags) const
+{
+  // Draw property based on type
+  switch (type) {
+  case R3_SURFEL_OBJECT_OVERLAP_RELATIONSHIP: 
+    // Draw line between objects
+    if (objects.NEntries() == 2) {
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 1, 0);
+      glBegin(GL_LINES);
+      R3LoadPoint(objects[0]->Centroid());
+      R3LoadPoint(objects[1]->Centroid());
+      glEnd();
+      break;
+    }
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // INTERNAL FUNCDTIONS
 ////////////////////////////////////////////////////////////////////////
 

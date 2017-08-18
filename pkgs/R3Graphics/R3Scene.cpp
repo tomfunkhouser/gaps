@@ -4094,7 +4094,7 @@ ReadSUNCGModelFile(const char *filename)
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
         if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
-          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(strdup(keys[j]), strdup(values[j]));
         }
       }
 
@@ -4110,17 +4110,17 @@ ReadSUNCGModelFile(const char *filename)
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
         if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
-          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(strdup(keys[j]), strdup(values[j]));
           break;
         }
       }
     }
 
-    // Assign key-value info to root node of referenced scenes matching model_id
+    // Assign key-value info to root node of referenced scene matching model_id
     R3Scene *model = ReferencedScene(model_id);
     if (model) {
       for (int i = 0; i < keys.NEntries(); i++) {
-        model->Root()->InsertInfo(keys[i], values[i]);
+        model->Root()->InsertInfo(strdup(keys[i]), strdup(values[i]));
       }
     }
   }

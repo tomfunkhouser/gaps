@@ -48,6 +48,10 @@ public:
   /////////////////////////////////////////
 
   // High-level manipulation functions
+  virtual void InsertNodes(R3SurfelObject *object, RNScalar max_resolution = 0);
+  virtual void InsertNodes(R3SurfelNode *node, RNScalar max_resolution = 0);
+
+  // Medium-level manipulation functions
   virtual void InsertNodes(R3SurfelTree *tree);
   virtual void InsertNodes(R3SurfelTree *tree, 
     const R3Point& xycenter, RNLength xyradius, 

@@ -967,6 +967,24 @@ void Redraw(void)
         image.WriteFile(output_image_filename);
       }
     }
+    if (DrawSceneWithOpenGL(*camera, scene, XNORMAL_COLOR_SCHEME, TRUE)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_room_surface_xnormal.png", output_image_directory, name);
+      if (!CaptureInteger(image)) return;
+      image.WriteFile(output_image_filename);
+    }
+    if (DrawSceneWithOpenGL(*camera, scene, YNORMAL_COLOR_SCHEME, TRUE)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_room_surface_ynormal.png", output_image_directory, name);
+      if (!CaptureInteger(image)) return;
+      image.WriteFile(output_image_filename);
+    }
+    if (DrawSceneWithOpenGL(*camera, scene, ZNORMAL_COLOR_SCHEME, TRUE)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_room_surface_znormal.png", output_image_directory, name);
+      if (!CaptureInteger(image)) return;
+      image.WriteFile(output_image_filename);
+    }
   }
 
   // Capture and write vertex color image 

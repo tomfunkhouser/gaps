@@ -123,6 +123,28 @@ RNLength R2Distance(const R2Point& point, const R2Polyline& polyline)
 }
 
 
+RNLength R2Distance(const R2Point& point, const R2Polygon& polygon)
+{
+    // Check if polygon contains point
+    if (R2Contains(polygon, point)) return 0;
+  
+    // Compute distance to each segment
+    // This could be a lot faster
+    RNLength closest_distance = FLT_MAX;
+    for (int i = 0; i < polygon.NPoints(); i++) {
+        const R2Point& p0 = polygon.Point(i);
+        const R2Point& p1 = polygon.Point((i+1)%polygon.NPoints());
+        R2Span span(p0, p1);
+        RNLength d = R2Distance(span, point);
+        if (d < closest_distance) closest_distance = d;
+    }
+
+    // Return distance
+    return closest_distance;
+}
+
+
+
 
 RNLength R2Distance(const R2Point& point, const R2Arc& arc)
 {
