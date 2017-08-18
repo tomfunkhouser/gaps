@@ -588,6 +588,8 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
       else if (color_scheme == ROOM_SURFACE_COLOR_SCHEME) {
         if (!node->Name()) LoadInteger(0);
         else if (!strncmp(node->Name(), "Wall#", 5)) LoadInteger(1);
+        else if (!strncmp(node->Name(), "WallInside#", 11)) LoadInteger(1);
+        else if (!strncmp(node->Name(), "WallOutside#", 12)) LoadInteger(1);
         else if (!strncmp(node->Name(), "Ceiling#", 8)) LoadInteger(2);
         else if (!strncmp(node->Name(), "Floor#", 6)) LoadInteger(3);
         else LoadInteger(0);
