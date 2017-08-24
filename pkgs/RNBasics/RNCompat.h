@@ -140,3 +140,16 @@ Compatability definitions
   typedef float               RNScalar32;
   typedef double              RNScalar64;
 #endif
+
+
+/* This is needed to avoid error in compiling glu.h in some installations of cygwin */
+#ifdef __CYGWIN__
+# ifndef CALLBACK
+#   if defined(_ARM_)
+#     define CALLBACK
+#   else
+#     define CALLBACK __stdcall
+#   endif
+# endif
+#endif
+

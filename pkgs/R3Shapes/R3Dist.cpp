@@ -453,7 +453,6 @@ RNLength R3Distance(const R3Span& span1, const R3Span& span2)
     }
     else {
 	// Find closest points
-	R3Point span1_point, span2_point;
 	const R3Vector p1 = span1.Start().Vector();
 	const R3Vector p2 = span2.Start().Vector();
 	RNScalar p1v1 = v1.Dot(p1);
@@ -462,14 +461,23 @@ RNLength R3Distance(const R3Span& span1, const R3Span& span2)
 	RNScalar p2v1 = v1.Dot(p2);
 	RNScalar span1_t = (v1v2*p2v2 + v2v2*p1v1 - v1v2*p1v2 - v2v2*p2v1) / denom;
 	RNScalar span2_t = (v1v2*p1v1 + v1v1*p2v2 - v1v2*p2v1 - v1v1*p1v2) / denom;
-        if (span1_t <= 0) span1_point = span1.Start();
-        else if (span1_t >= span1.Length()) span1_point = span1.End();
-        else span1_point = span1.Point(span1_t);
-        if (span2_t <= 0) span2_point = span2.Start();
-        else if (span2_t >= span2.Length()) span2_point = span2.End();
-        else span2_point = span2.Point(span2_t);
-	RNLength distance = R3Distance(span1_point, span2_point);
-	return distance;
+        if ((span1_t >= 0) && (span1_t <= span1.Length()) &&
+            (span2_t >= 0) && (span2_t <= span2.Length())) {
+	    return R3Distance(span1.Point(span1_t), span2.Point(span2_t));
+        }
+        else {
+            // There has to be a better way!!!
+            RNLength d1A = R3Distance(span1.Start(), span2);
+            RNLength d1B = R3Distance(span1.End(), span2);
+            RNLength d2A = R3Distance(span2.Start(), span1);
+            RNLength d2B = R3Distance(span2.End(), span1);
+            RNLength d = FLT_MAX;
+            if (d1A < d) d = d1A;
+            if (d1B < d) d = d1B;
+            if (d2A < d) d = d2A;
+            if (d2B < d) d = d2B;
+            return d;
+        }
     }
 }
 

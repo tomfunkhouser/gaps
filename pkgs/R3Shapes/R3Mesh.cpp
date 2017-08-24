@@ -4798,6 +4798,7 @@ ReadPlyFile(const char *filename)
   // List of property information for a face 
   static PlyProperty face_props[] = { 
     {(char *) "vertex_indices", PLY_INT, PLY_INT, offsetof(PlyFace,verts), 1, PLY_UCHAR, PLY_UCHAR, offsetof(PlyFace,nverts)},
+    {(char *) "vertex_index", PLY_INT, PLY_INT, offsetof(PlyFace,verts), 1, PLY_UCHAR, PLY_UCHAR, offsetof(PlyFace,nverts)},
     {(char *) "material_id", PLY_INT, PLY_INT, offsetof(PlyFace,material), 0, 0, 0, 0},
     {(char *) "segment_id", PLY_INT, PLY_INT, offsetof(PlyFace,segment), 0, 0, 0, 0},
     {(char *) "category_id", PLY_INT, PLY_INT, offsetof(PlyFace,category), 0, 0, 0, 0}
@@ -4891,9 +4892,10 @@ ReadPlyFile(const char *filename)
       // set up for getting face elements 
       for (j = 0; j < nprops; j++) {
 	if (equal_strings("vertex_indices", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[0]);
-	else if (equal_strings("material_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[1]);
-	else if (equal_strings("segment_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[2]);
-	else if (equal_strings("category_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[3]);
+	else if (equal_strings("vertex_index", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[1]);
+	else if (equal_strings("material_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[2]);
+	else if (equal_strings("segment_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[3]);
+	else if (equal_strings("category_id", plist[j]->name)) ply_get_property (ply, elem_name, &face_props[4]);
       }
 
       // Create stuff for degenerate triangles
