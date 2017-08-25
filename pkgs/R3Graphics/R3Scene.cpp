@@ -4034,10 +4034,10 @@ ReadSUNCGModelFile(const char *filename)
   char key_buffer[4096];
   RNArray<char *> keys;
   if (fgets(key_buffer, 4096, fp)) {
-    char *token = strtok(key_buffer, ",\n");
+    char *token = strtok(key_buffer, ",\r\n");
     while (token) {
-      keys.Insert(token);
-      token = strtok(NULL, ",\n");
+      keys.Insert(strdup(token));
+      token = strtok(NULL, ",\r\n");
     }
   }
 
@@ -4063,10 +4063,10 @@ ReadSUNCGModelFile(const char *filename)
 
     // Read values
     RNArray<char *> values;
-    char *token = strtok(value_buffer, ",\n");
+    char *token = strtok(value_buffer, ",\r\n");
     while (token) {
-      values.Insert(token);
-      token = strtok(NULL, ",\n");
+      values.Insert(strdup(token));
+      token = strtok(NULL, ",\r\n");
     }
 
     // Check number of values
@@ -4094,7 +4094,7 @@ ReadSUNCGModelFile(const char *filename)
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
         if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
-          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(strdup(keys[j]), strdup(values[j]));
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
         }
       }
 
@@ -4110,7 +4110,7 @@ ReadSUNCGModelFile(const char *filename)
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
         if (!strcmp(node_name, model_id) || !strcmp(model_name, model_id)) {
-          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(strdup(keys[j]), strdup(values[j]));
+          for (int j = 0; j < keys.NEntries(); j++) node->InsertInfo(keys[j], values[j]);
           break;
         }
       }
@@ -4120,7 +4120,7 @@ ReadSUNCGModelFile(const char *filename)
     R3Scene *model = ReferencedScene(model_id);
     if (model) {
       for (int i = 0; i < keys.NEntries(); i++) {
-        model->Root()->InsertInfo(strdup(keys[i]), strdup(values[i]));
+        model->Root()->InsertInfo(keys[i], values[i]);
       }
     }
   }

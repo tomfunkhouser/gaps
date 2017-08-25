@@ -33,6 +33,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     aerial_visibility(1),
     terrestrial_visibility(1),
     object_property_visibility(0),
+    object_relationship_visibility(0),
     object_label_visibility(0),
     object_name_visibility(0),
     node_bbox_visibility(0),
@@ -119,8 +120,8 @@ LoadColor(int k)
     RNRgb(0.3, 0, 0), RNRgb(0, 0.3, 0), RNRgb(0, 0, 0.3), 
     RNRgb(0.3, 0.3, 0), RNRgb(0, 0.3, 0.3), RNRgb(0.3, 0, 0.3),
     RNRgb(1, 0.3, 0.3), RNRgb(0.3, 1, 0.3), RNRgb(0.3, 0.3, 1), 
-    RNRgb(1, 1, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1), 
-    RNRgb(1, 0.5, 0.3), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1), 
+    RNRgb(1, 0.0, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1), 
+    RNRgb(1, 0.2, 0.7), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1), 
     RNRgb(0.5, 1, 0.3), RNRgb(0.3, 0.5, 1), RNRgb(1, 0.3, 0.5), 
     RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), RNRgb(0.3, 0.3, 0.5), 
     RNRgb(0.5, 0.5, 0.3), RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5),
@@ -343,7 +344,7 @@ Redraw(void)
         R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
-        node->Draw(0); 
+        node->Draw(0);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL) {
@@ -581,6 +582,15 @@ Redraw(void)
     for (int i = 0; i < scene->NObjectProperties(); i++) {
       R3SurfelObjectProperty *property = scene->ObjectProperty(i);
       property->Draw(0);
+    }
+  }
+
+  // Draw object properties
+  if (object_relationship_visibility) {
+    RNLoadRgb(1.0, 1.0, 1.0);
+    for (int i = 0; i < scene->NObjectRelationships(); i++) {
+      R3SurfelObjectRelationship *relationship = scene->ObjectRelationship(i);
+      relationship->Draw();
     }
   }
 
@@ -996,7 +1006,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case 'R':
     case 'r':
-      SetCenterPoint(scene->Centroid());
+      SetObjectRelationshipVisibility(-1);
       break;
 
     case 'S':

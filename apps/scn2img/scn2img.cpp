@@ -22,12 +22,12 @@
 
 // Filename program variables
 
-static char *input_scene_name = NULL;
-static char *input_cameras_name = NULL;
-static char *input_lights_name = NULL;
-static char *input_categories_name = NULL;
-static char *output_image_directory = NULL;
-static char *output_nodes_filename = NULL;
+static const char *input_scene_name = NULL;
+static const char *input_cameras_name = NULL;
+static const char *input_lights_name = NULL;
+static const char *input_categories_name = NULL;
+static const char *output_image_directory = NULL;
+static const char *output_nodes_filename = NULL;
 
 
 // Image capture program variables

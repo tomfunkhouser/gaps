@@ -277,9 +277,20 @@ PrintNodes(R3Scene *scene, R3SceneNode *node, int index, int level)
   printf("%s  # Elements = %d\n", indent, node->NElements());
   printf("%s  # References = %d\n", indent, node->NReferences());
   printf("%s  # Facets = %g\n", indent, node->NFacets().Mid());
+
+  // Print properties
   printf("%s  Area = %g\n", indent, node->Area());
   printf("%s  Centroid = %g %g %g\n", indent, centroid[0], centroid[1], centroid[2]);
   printf("%s  BBox = ( %g %g %g ) ( %g %g %g )\n", indent, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+
+  // Print categories
+  if (node->Info("index")) printf("%s  Category index = %s\n", indent, node->Info("index"));
+  if (node->Info("model_id")) printf("%s  Category model id = %s\n", indent, node->Info("model_id"));
+  if (node->Info("fine_grained_class")) printf("%s  Fine grained class = %s\n", indent, node->Info("fine_grained_class"));
+  if (node->Info("coarse_grained_class")) printf("%s  Coarse grained class = %s\n", indent, node->Info("coarse_grained_class"));
+  if (node->Info("nyuv2_40class")) printf("%s  NYUv2 40 class = %s\n", indent, node->Info("nyuv2_40class"));
+
+  // Print transformation
   printf("%s  Transformation matrix = \n", indent);
   printf("%s    %12.3g %12.3g %12.3g %12.3g\n", indent, m[0][0], m[0][1], m[0][2], m[0][3]);
   printf("%s    %12.3g %12.3g %12.3g %12.3g\n", indent, m[1][0], m[1][1], m[1][2], m[1][3]);
