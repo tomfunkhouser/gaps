@@ -272,6 +272,62 @@ BBox(void) const
 
 
 
+R3Box R3SceneNode::
+WorldBBox(void) const
+{
+  // This returns bounding box in world coordinate frame
+  // Note that BBox() returns bounding box after xform (in parent's coordinate frame)
+  // Note that this bbox will be over-estimating, since it is a transformed AABB
+
+  // Start for bbox in parent's coordinate frame
+  R3Box box = BBox();
+
+  // Transform box
+  R3SceneNode *ancestor = Parent();
+  while (ancestor) {
+    box.Transform(ancestor->Transformation());
+    ancestor = ancestor->Parent();
+  }
+
+  // Return box;
+  return bbox;
+}
+
+
+
+R3Box R3SceneNode::
+LocalBBox(void) const
+{
+  // This returns bounding box in this node's coordinate frame (before transformation)
+  // Note that BBox() returns bounding box after xform (in parent's coordinate frame)
+  
+  // Compute bounding box in local coordinates
+  R3Box bbox = R3null_box;
+
+  // Include elements
+  for (int i = 0; i < NElements(); i++) {
+    R3SceneElement *element = Element(i);
+    bbox.Union(element->BBox());
+  }
+
+  // Include references
+  for (int i = 0; i < NReferences(); i++) {
+    R3SceneReference *reference = Reference(i);
+    bbox.Union(reference->BBox());
+  }
+
+  // Include elements
+  for (int i = 0; i < NChildren(); i++) {
+    R3SceneNode *child = Child(i);
+    bbox.Union(child->BBox());
+  }
+
+  // Return box
+  return bbox;
+}
+
+
+
 const R3Point R3SceneNode::
 Centroid(void) const
 {

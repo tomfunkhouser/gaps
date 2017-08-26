@@ -81,6 +81,10 @@ public:
     const RNArray<R3Material *> *materials = NULL) const;
 
 public:
+  // Useful bbox functions
+  R3Box WorldBBox(void) const;
+  R3Box LocalBBox(void) const;
+  
   // Internal update functions
   void UpdateBBox(void);
   void InvalidateBBox(void);

@@ -2241,10 +2241,12 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Insert shape into element
       element->InsertShape(cylinder);
     }
-    else if (!strcmp(cmd, "begin")) {
+    else if (!strcmp(cmd, "begin") || !strcmp(cmd, "group")) {
       // Read data
       int m;
       double matrix[16];
+      char group_name[4096] = { '\0' };
+      if (!strcmp(cmd, "group")) fscanf(fp, "%s", group_name);
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, 
         &matrix[0], &matrix[1], &matrix[2], &matrix[3], 
         &matrix[4], &matrix[5], &matrix[6], &matrix[7], 
@@ -2262,6 +2264,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Create new node
       R3SceneNode *node = new R3SceneNode(this);
+      if (group_name[0]) node->SetName(group_name);
       node->SetTransformation(R3Affine(R4Matrix(matrix)));
       group_nodes[depth]->InsertChild(node);
 
@@ -2691,9 +2694,10 @@ WritePrincetonNode(const R3Scene *scene, const R3SceneNode *node,
   // Don't write root separately, unless transformed
   RNBoolean print_node = (node != scene->Root()) || (!node->Transformation().IsIdentity());
   if (print_node) {
-    // Write begin
+    // Write group start
     fprintf(fp, "\n");
-    fprintf(fp, "%sbegin -1\n", indent);
+    if (!node->Name()) fprintf(fp, "%sbegin -1\n", indent);
+    else fprintf(fp, "%sgroup %s -1\n", indent, node->Name());
 
     // Write node transformation
     const R4Matrix& m = node->Transformation().Matrix();

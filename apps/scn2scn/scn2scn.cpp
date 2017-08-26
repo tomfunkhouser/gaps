@@ -14,6 +14,8 @@ static const char *input_name = NULL;
 static const char *output_name = NULL;
 static char *input_categories_name = NULL;
 static char *input_lights_name = NULL;
+static const char *select_nodes_in_subtree_name = NULL;
+static R3Box select_nodes_in_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 static R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0);
 static int remove_references = 0;
 static int remove_hierarchy = 0;
@@ -171,6 +173,83 @@ ReadMatrix(R4Matrix& m, const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// PROCESSING
+////////////////////////////////////////////////////////////////////////
+
+static void
+RemoveNodes(R3Scene *scene, R3SceneNode *node,
+  R3SceneNode *select_subtree_node, const R3Box& select_bbox)
+{
+  // Copy array of children -- because will be edited as iterate
+  RNArray<R3SceneNode *> children;
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    children.Insert(child);
+  }
+
+  // Visit children recursively in post order
+  for (int i = 0; i < children.NEntries(); i++) {
+    R3SceneNode *child = children.Kth(i);
+    RemoveNodes(scene, child, select_subtree_node, select_bbox);
+  }
+
+  // Innocent until proven guilty
+  RNBoolean remove = FALSE;
+
+  // Check if should remove based on bbox selection
+  if (!select_bbox.IsEmpty()) {
+    if (!R3Intersects(node->WorldBBox(), select_bbox)) {
+      remove = TRUE;
+    }
+  }
+
+  // Check if should remove based on subtree selection
+  if (select_subtree_node) {
+    if (node != select_subtree_node) {
+      if (!node->IsAncestor(select_subtree_node)) { 
+        if (!node->IsDecendent(select_subtree_node)) {
+          remove = TRUE;
+        }
+      }
+    }
+  }
+
+  // Check if should parden based on topology
+  if (node->NChildren() > 0) remove= FALSE;
+  if (node == scene->Root()) remove = FALSE;
+
+  // Delete node 
+  if (remove) delete node;
+}
+
+
+
+static int
+RemoveNodes(R3Scene *scene)
+{
+  // Check if selecting nodes
+  if (select_nodes_in_bbox.IsEmpty() && !select_nodes_in_subtree_name) return 1;
+
+  // Find select subtree node
+  R3SceneNode *select_subtree_node = NULL;
+  if (select_nodes_in_subtree_name) {
+    select_subtree_node = scene->Node(select_nodes_in_subtree_name);
+    if (!select_subtree_node) {
+      fprintf(stderr, "Unable to find select subtree node %s\n", select_nodes_in_subtree_name);
+      return 0;
+    }
+  }
+
+  // Remove nodes recursively in post order
+  RemoveNodes(scene, scene->Root(), select_subtree_node, select_nodes_in_bbox);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROGRAM ARGUMENT PARSING
 ////////////////////////////////////////////////////////////////////////
 
@@ -186,21 +265,63 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
-      else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform.Scale(atof(*argv)); }
-      else if (!strcmp(*argv, "-tx")) { argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform); }
-      else if (!strcmp(*argv, "-ty")) { argv++; argc--; xform = R3identity_affine; xform.YTranslate(atof(*argv)); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-tz")) { argv++; argc--; xform = R3identity_affine; xform.ZTranslate(atof(*argv)); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-sx")) { argv++; argc--; xform = R3identity_affine; xform.XScale(atof(*argv)); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-sy")) { argv++; argc--; xform = R3identity_affine; xform.YScale(atof(*argv)); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-sz")) { argv++; argc--; xform = R3identity_affine; xform.ZScale(atof(*argv)); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-rx")) { argv++; argc--; xform = R3identity_affine; xform.XRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-ry")) { argv++; argc--; xform = R3identity_affine; xform.YRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-rz")) { argv++; argc--; xform = R3identity_affine; xform.ZRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);}
-      else if (!strcmp(*argv, "-xform")) { argv++; argc--; R4Matrix m;  if (ReadMatrix(m, *argv)) { xform = R3identity_affine; xform.Transform(R3Affine(m)); xform.Transform(prev_xform);} } 
-      else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
-      else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_name = *argv; }
-      else if (!strcmp(*argv, "-lights")) { argv++; argc--; input_lights_name = *argv; }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else if (!strcmp(*argv, "-select_nodes_in_subtree")) {
+        argv++; argc--; select_nodes_in_subtree_name = *argv;
+      }
+      else if (!strcmp(*argv, "-select_nodes_in_bbox")) {
+        argv++; argc--; select_nodes_in_bbox[0][0] = atof(*argv);
+        argv++; argc--; select_nodes_in_bbox[0][1] = atof(*argv);
+        argv++; argc--; select_nodes_in_bbox[0][2] = atof(*argv);
+        argv++; argc--; select_nodes_in_bbox[1][0] = atof(*argv);
+        argv++; argc--; select_nodes_in_bbox[1][1] = atof(*argv);
+        argv++; argc--; select_nodes_in_bbox[1][2] = atof(*argv);
+      }
+      else if (!strcmp(*argv, "-scale")) {
+        argv++; argc--; xform.Scale(atof(*argv));
+      }
+      else if (!strcmp(*argv, "-tx")) {
+        argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-ty")) {
+        argv++; argc--; xform = R3identity_affine; xform.YTranslate(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-tz")) {
+        argv++; argc--; xform = R3identity_affine; xform.ZTranslate(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-sx")) {
+        argv++; argc--; xform = R3identity_affine; xform.XScale(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-sy")) {
+        argv++; argc--; xform = R3identity_affine; xform.YScale(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-sz")) {
+        argv++; argc--; xform = R3identity_affine; xform.ZScale(atof(*argv)); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-rx")) {
+        argv++; argc--; xform = R3identity_affine; xform.XRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-ry")) {
+        argv++; argc--; xform = R3identity_affine; xform.YRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-rz")) {
+        argv++; argc--; xform = R3identity_affine; xform.ZRotate(RN_PI*atof(*argv)/180.0); xform.Transform(prev_xform);
+      }
+      else if (!strcmp(*argv, "-xform")) {
+        argv++; argc--; R4Matrix m;  if (ReadMatrix(m, *argv)) { xform = R3identity_affine; xform.Transform(R3Affine(m)); xform.Transform(prev_xform);}
+      } 
+      else if (!strcmp(*argv, "-max_edge_length")) {
+        argv++; argc--; max_edge_length = atof(*argv);
+      }
+      else if (!strcmp(*argv, "-categories")) {
+        argc--; argv++; input_categories_name = *argv;
+      }
+      else if (!strcmp(*argv, "-lights")) {
+        argv++; argc--; input_lights_name = *argv;
+      }
+      else {
+        fprintf(stderr, "Invalid program argument: %s", *argv);
+        exit(1);
+      }
       argv++; argc--;
     }
     else {
@@ -244,6 +365,11 @@ int main(int argc, char **argv)
   // Read lights
   if (input_lights_name) {
     if (!ReadLights(scene, input_lights_name)) exit(-1);
+  }
+
+  // Remove unselected nodes
+  if (!select_nodes_in_bbox.IsEmpty() || select_nodes_in_subtree_name) {
+    if (!RemoveNodes(scene)) exit(-1);
   }
 
   // Transform scene
