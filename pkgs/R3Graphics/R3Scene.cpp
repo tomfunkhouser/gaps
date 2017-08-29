@@ -955,6 +955,9 @@ WriteFile(const char *filename) const
   else if (!strncmp(extension, ".obj", 4)) {
     if (!WriteObjFile(filename)) return 0;
   }
+  else if (!strncmp(extension, ".json", 4)) {
+    if (!WriteSUNCGFile(filename)) return 0;
+  }
   else {
     fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
@@ -3723,11 +3726,23 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
           // Create node for ground
           sprintf(obj_name, "%s/room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
           if (!hideFloor && RNFileExists(obj_name)) {
-            R3SceneNode *node = new R3SceneNode(this);
+            R3Scene *model = new R3Scene();
+            if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Ground#%s", node_id);
+            model->SetName(node_name);
+            model->Root()->SetName(node_name);
+            model->SetFilename(obj_name);
+            InsertReferencedScene(model);
+            R3SceneNode *node = new R3SceneNode(this);
+            node->InsertReference(new R3SceneReference(model, materials));
             node->SetName(node_name);
-            if (!ReadObj(this, node, obj_name)) return 0;
+            node->SetTransformation(transformation);
             level_node->InsertChild(node);
+            // R3SceneNode *node = new R3SceneNode(this);
+            // sprintf(node_name, "Ground#%s", node_id);
+            // node->SetName(node_name);
+            // if (!ReadObj(this, node, obj_name)) return 0;
+            // level_node->InsertChild(node);
             created_nodes[index] = node;
           }
         }
@@ -3736,37 +3751,72 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
           R3SceneNode *room_node = new R3SceneNode(this);
           sprintf(node_name, "Room#%s", node_id);
           room_node->SetName(node_name);
+          // room_node->SetTransformation(transformation);
           level_node->InsertChild(room_node);
           created_nodes[index] = room_node;
+          RNArray<R3Material *> materials;
           
            // Create node for floor
           sprintf(obj_name, "%s/room/%s/%sf.obj", input_data_directory, scene_id, modelId); 
           if (!hideFloor && RNFileExists(obj_name)) {
-            R3SceneNode *node = new R3SceneNode(this);
+            R3Scene *model = new R3Scene();
+            if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Floor#%s", node_id);
+            model->SetName(node_name);
+            model->Root()->SetName(node_name);
+            model->SetFilename(obj_name);
+            InsertReferencedScene(model);
+            R3SceneNode *node = new R3SceneNode(this);
+            node->InsertReference(new R3SceneReference(model, materials));
             node->SetName(node_name);
-            if (!ReadObj(this, node, obj_name)) return 0;
             room_node->InsertChild(node);
+            // R3SceneNode *node = new R3SceneNode(this);
+            // sprintf(node_name, "Floor#%s", node_id);
+            // node->SetName(node_name);
+            // if (!ReadObj(this, node, obj_name)) return 0;
+            // room_node->InsertChild(node);
           }
 
           // Create node for ceiling
           sprintf(obj_name, "%s/room/%s/%sc.obj", input_data_directory, scene_id, modelId); 
           if (!hideCeiling && RNFileExists(obj_name)) {
-            R3SceneNode *node = new R3SceneNode(this);
+            R3Scene *model = new R3Scene();
+            if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Ceiling#%s", node_id);
+            model->SetName(node_name);
+            model->Root()->SetName(node_name);
+            model->SetFilename(obj_name);
+            InsertReferencedScene(model);
+            R3SceneNode *node = new R3SceneNode(this);
+            node->InsertReference(new R3SceneReference(model, materials));
             node->SetName(node_name);
-            if (!ReadObj(this, node, obj_name)) return 0;
             room_node->InsertChild(node);
+            // R3SceneNode *node = new R3SceneNode(this);
+            // sprintf(node_name, "Ceiling#%s", node_id);
+            // node->SetName(node_name);
+            // if (!ReadObj(this, node, obj_name)) return 0;
+            // room_node->InsertChild(node);
           }
 
           // Create node for walls
           sprintf(obj_name, "%s/room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
           if (!hideWalls && RNFileExists(obj_name)) {
-            R3SceneNode *node = new R3SceneNode(this);
+            R3Scene *model = new R3Scene();
+            if (!ReadObj(model, model->Root(), obj_name)) return 0;
             sprintf(node_name, "Wall#%s", node_id);
+            model->SetName(node_name);
+            model->Root()->SetName(node_name);
+            model->SetFilename(obj_name);
+            InsertReferencedScene(model);
+            R3SceneNode *node = new R3SceneNode(this);
+            node->InsertReference(new R3SceneReference(model, materials));
             node->SetName(node_name);
-            if (!ReadObj(this, node, obj_name)) return 0;
             room_node->InsertChild(node);
+            // R3SceneNode *node = new R3SceneNode(this);
+            // sprintf(node_name, "Wall#%s", node_id);
+            // node->SetName(node_name);
+            // if (!ReadObj(this, node, obj_name)) return 0;
+            // room_node->InsertChild(node);
           }        
         }
         else if (!strcmp(node_type, "Object")) {
@@ -3861,6 +3911,186 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
     }
   }
     
+  // Return success
+  return 1;
+}
+
+
+
+//////
+
+static int
+WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
+{
+  // Check node
+  if (!node->Name()) return 0;
+
+  // NOTE: THE SCENE GRAPH MUST FOLLOW THE SUNCG HIERARCHY CONVENTIONS
+  // ROOT -> LEVEL* -> OBJECT* | BOX* | GROUND* | (ROOM -> OBJECT*)*
+  
+  // Check node name
+  static int counter = 0;
+  if (!strncmp(node->Name(), "Level#", 6)) {
+    // Write header
+    counter = 0;
+    const char *id = &(node->Name()[6]);
+    const R3Box& b = node->WorldBBox();
+    fprintf(fp, "  {\n");
+    fprintf(fp, "    \"id\":\"%s\",\n", id);
+    fprintf(fp, "    \"valid\":1,\n");
+    fprintf(fp, "    \"bbox\":{\"min\":[%g,%g,%g],\"max\":[%g,%g,%g]},\n", b[0][0], b[0][1], b[0][2], b[1][0], b[1][1], b[1][2]);
+
+    // Write children
+    fprintf(fp, "    \"nodes\":[\n");
+    for (int i = 0; i < node->NChildren(); i++) {
+      R3SceneNode *child = node->Child(i);
+      if (!WriteSUNCGNode(scene, child, fp)) return 0;
+    }
+    fprintf(fp, "    ]\n");
+    
+    // Write trailer
+    fprintf(fp, "  }");
+    if (node->ParentIndex() < node->Parent()->NChildren()-1) fprintf(fp, ",");
+    fprintf(fp, "\n");
+  }
+  else if (!strncmp(node->Name(), "Ground#", 7) || !strncmp(node->Name(), "Room#", 5)) {
+    // Get id and type
+    char nodetype[4096];
+    strncpy(nodetype, node->Name(), 4096);
+    char *id = strchr(nodetype, '#');
+    if (!id) return 0;
+    else *(id++) = '\0';
+
+    // Get modelId
+    char modelId[4096], buffer[4096];
+    strncpy(buffer, id, 4096);
+    char *level = strtok(buffer, "_\n");
+    if (!level) return 0;
+    char *idx = strtok(NULL, "\n");
+    if (!idx) return 0;
+    sprintf(modelId, "fr_%srm_%s", level, idx);
+
+    // Write json
+    const R3Box& b = node->WorldBBox();
+    if (counter++ > 0) fprintf(fp, ",\n");
+    fprintf(fp, "      {\n");
+    fprintf(fp, "        \"id\":\"%s\",\n", id);
+    fprintf(fp, "        \"type\":\"%s\",\n", nodetype);
+    fprintf(fp, "        \"modelId\":\"%s\",\n", modelId);
+    fprintf(fp, "        \"valid\":1,\n");
+    fprintf(fp, "        \"bbox\":{\"min\":[%g,%g,%g],\"max\":[%g,%g,%g]}\n",
+      b[0][0], b[0][1], b[0][2], b[1][0], b[1][1], b[1][2]);
+
+#if 0
+    // Write node indices
+    int first = 1;
+    fprintf(fp, "        \"nodeIndices\":[");
+    for (int i = 0; i < node->NChildren(); i++) {
+      R3SceneNode *child = node->Child(i);
+      if (!child->Name()) continue;
+      if (strncmp(child->Name(), "Object#", 7)) continue;
+      const char *s = strrchr(child->Name(), '_');
+      if (!s) continue;
+      if (!first) fprintf(fp, ","); 
+      fprintf(fp, "%s", xxx <- needs to be index of the json entry in the level);
+      first = 0;       
+    }
+    fprintf(fp, "]\n");
+#endif
+    
+    fprintf(fp, "      }");
+
+    // Write children
+    for (int i = 0; i < node->NChildren(); i++) {
+      R3SceneNode *child = node->Child(i);
+      if (!WriteSUNCGNode(scene, child, fp)) return 0;
+    }
+  }
+  else if (!strncmp(node->Name(), "Object#", 7)) {
+    // Get id and type
+    char nodetype[4096];
+    strncpy(nodetype, node->Name(), 4096);
+    char *id = strchr(nodetype, '#');
+    if (!id) return 0;
+    else *(id++) = '\0';
+
+    // Get modelId
+    char modelId[4096];
+    if (node->NReferences() == 0) return 0; 
+    R3SceneReference *reference = node->Reference(0);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    if (!referenced_scene->Name()) return 0;
+    if (strncmp(referenced_scene->Root()->Name(), "Model#", 6)) return 0;
+    strncpy(modelId, &(referenced_scene->Root()->Name()[6]), 4096);
+
+    // Write json
+    const R3Box& b = node->WorldBBox();
+    R4Matrix matrix = node->Transformation().Matrix();
+    RNBoolean is_mirrored = node->Transformation().IsMirrored();
+    if (counter++ > 0) fprintf(fp, ",\n");
+    fprintf(fp, "      {\n");
+    fprintf(fp, "        \"id\":\"%s\",\n", id);
+    fprintf(fp, "        \"type\":\"%s\",\n", nodetype);
+    fprintf(fp, "        \"modelId\":\"%s\",\n", modelId);
+    fprintf(fp, "        \"valid\":1,\n");
+    fprintf(fp, "        \"isMirrored\":%d,\n", is_mirrored);
+    fprintf(fp, "        \"bbox\":{\"min\":[%g,%g,%g],\"max\":[%g,%g,%g]},\n",
+      b[0][0], b[0][1], b[0][2], b[1][0], b[1][1], b[1][2]);
+    fprintf(fp, "        \"transform\":[");
+    for (int j = 0; j < 4; j++) {
+      for (int i = 0; i < 4; i++) {
+        if ((i > 0) || (j > 0)) fprintf(fp, ", ");
+        fprintf(fp, "%g", matrix[i][j]);
+      }
+    }
+    fprintf(fp, "]\n");
+    fprintf(fp, "      }");
+  }
+  else if (!strncmp(node->Name(), "Box#", 4)) {
+    fprintf(stderr, "Warning: skipping %s\n", node->Name());
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+int R3Scene::
+WriteSUNCGFile(const char *filename) const
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "w"))) {
+    fprintf(stderr, "Unable to open file %s", filename);
+    return 0;
+  }
+
+  // Write header
+  fprintf(fp, "{\n");
+  fprintf(fp, "  \"version\":\"suncg@1.0.0\",\n");
+  if (root->Name()) fprintf(fp, "  \"id\":\"%s\",\n", root->Name());
+  fprintf(fp, "  \"up\":[0,1,0],\n");
+  fprintf(fp, "  \"front\":[0,0,1],\n");
+  fprintf(fp, "  \"scaleToMeters\":1,\n");  
+  fprintf(fp, "  \"levels\":[\n");  
+
+  // Write nodes recursively
+  for (int i = 0; i < root->NChildren(); i++) {
+    R3SceneNode *child = root->Child(i);
+    if (!WriteSUNCGNode(this, child, fp)) {
+      fclose(fp);
+      return 0;
+    }
+  }
+
+  // Write trailer
+  fprintf(fp, "\n  ]\n");
+  fprintf(fp, "}\n");
+  
+  // Close file
+  fclose(fp);
+  
   // Return success
   return 1;
 }
@@ -4157,3 +4387,4 @@ ReadSUNCGModelFile(const char *filename)
   // Return success
   return 1;
 }
+

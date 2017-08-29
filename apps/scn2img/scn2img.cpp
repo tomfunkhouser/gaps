@@ -120,7 +120,7 @@ static int next_image_index = 0;
 ////////////////////////////////////////////////////////////////////////
 
 static R3Scene *
-ReadScene(char *filename)
+ReadScene(const char *filename)
 {
   // Start statistics
   RNTime start_time;

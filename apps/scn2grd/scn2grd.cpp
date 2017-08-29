@@ -10,11 +10,13 @@
 
 // Program arguments
 
-static const char *input_scene_name = NULL;
-static const char *output_grid_name = NULL;
+static const char *input_scene_filename = NULL;
+static const char *output_grid_filename = NULL;
+static const char *selected_node_name = NULL;
 static double grid_spacing = 0.01;
 static double grid_boundary_radius = 0.05;
-static int grid_max_resolution = 256;
+static int grid_min_resolution = 8;
+static int grid_max_resolution = 512;
 static int print_verbose = 0;
 
 
@@ -124,6 +126,13 @@ RasterizeTriangles(R3Grid *grid, R3Scene *scene, R3SceneNode *node, const R3Affi
     }
   }
 
+  // Rasterize references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    RasterizeTriangles(grid, referenced_scene, referenced_scene->Root(), transformation);
+  }
+
   // Rasterize children
   for (int i = 0; i < node->NChildren(); i++) {
     R3SceneNode *child = node->Child(i);
@@ -134,43 +143,47 @@ RasterizeTriangles(R3Grid *grid, R3Scene *scene, R3SceneNode *node, const R3Affi
 
 
 static R3Grid *
-CreateGrid(R3Scene *scene)
+CreateGrid(R3Scene *scene, R3SceneNode *node)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
   // Get bounding box
-  R3Box bbox = scene->BBox();
+  R3Box bbox = node->WorldBBox();
   if (grid_boundary_radius > 0) {
     bbox[0] -= R3Vector(grid_boundary_radius, grid_boundary_radius, grid_boundary_radius);
     bbox[1] += R3Vector(grid_boundary_radius, grid_boundary_radius, grid_boundary_radius);
   }
 
-  // Compute grid spacing
-  RNLength diameter = bbox.LongestAxisLength();
-  RNLength min_grid_spacing = (grid_max_resolution > 0) ? diameter / grid_max_resolution : RN_EPSILON;
-  if (grid_spacing == 0) grid_spacing = diameter / 64;
-  if (grid_spacing < min_grid_spacing) grid_spacing = min_grid_spacing;
-
-  // Compute grid resolution
-  int xres = (int) (bbox.XLength() / grid_spacing + 0.5); if (xres == 0) xres = 1;
-  int yres = (int) (bbox.YLength() / grid_spacing + 0.5); if (yres == 0) yres = 1;
-  int zres = (int) (bbox.ZLength() / grid_spacing + 0.5); if (zres == 0) zres = 1;
-    
   // Allocate grid
-  R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
+  R3Grid *grid = new R3Grid(bbox, grid_spacing, grid_min_resolution, grid_max_resolution);
   if (!grid) {
     fprintf(stderr, "Unable to allocate grid\n");
     return NULL;
   }
 
   // Rasterize scene into grid
-  RasterizeTriangles(grid, scene, scene->Root(), R3identity_affine);
+  RasterizeTriangles(grid, scene, node, node->CumulativeParentTransformation());
 
   // Threshold grid (to compensate for possible double rasterization)
   grid->Threshold(0.5, 0.0, 1.0);
  
+  // Print statistics
+  if (print_verbose) {
+    printf("Rasterized grid ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  Resolution = %d %d %d\n", grid->XResolution(), grid->YResolution(), grid->ZResolution());
+    printf("  Spacing = %g\n", grid->GridToWorldScaleFactor());
+    printf("  Cardinality = %d\n", grid->Cardinality());
+    RNInterval grid_range = grid->Range();
+    printf("  Minimum = %g\n", grid_range.Min());
+    printf("  Maximum = %g\n", grid_range.Max());
+    printf("  L1Norm = %g\n", grid->L1Norm());
+    printf("  L2Norm = %g\n", grid->L2Norm());
+    fflush(stdout);
+  }
+
   // Return grid
   return grid;
 }
@@ -188,22 +201,23 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-spacing")) { argc--; argv--; grid_spacing = atof(*argv); }
-      else if (!strcmp(*argv, "-boundary_radius")) { argc--; argv--; grid_boundary_radius = atof(*argv); }
-      else if (!strcmp(*argv, "-max_resolution")) { argc--; argv--; grid_max_resolution = atoi(*argv); }
+      else if (!strcmp(*argv, "-node")) { argc--; argv++; selected_node_name = *argv; }
+      else if (!strcmp(*argv, "-spacing")) { argc--; argv++; grid_spacing = atof(*argv); }
+      else if (!strcmp(*argv, "-boundary_radius")) { argc--; argv++; grid_boundary_radius = atof(*argv); }
+      else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; grid_max_resolution = atoi(*argv); }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
-      if (!input_scene_name) input_scene_name = *argv;
-      else if (!output_grid_name) output_grid_name = *argv;
+      if (!input_scene_filename) input_scene_filename = *argv;
+      else if (!output_grid_filename) output_grid_filename = *argv;
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
-  if (!input_scene_name || !output_grid_name) {
+  if (!input_scene_filename || !output_grid_filename) {
     fprintf(stderr, "Usage: scn2grd inputscenefile outputgridfile [options]\n");
     return 0;
   }
@@ -224,15 +238,25 @@ int main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read scene
-  R3Scene *scene = ReadScene(input_scene_name);
+  R3Scene *scene = ReadScene(input_scene_filename);
   if (!scene) exit(-1);
 
+  // Get root node
+  R3SceneNode *node = scene->Root();
+  if (selected_node_name) {
+    node = scene->Node(selected_node_name);
+    if (!node) {
+      fprintf(stderr, "Unable to find selected node %s\n", selected_node_name);
+      exit(-1);
+    }
+  }
+
   // Create grid
-  R3Grid *grid = CreateGrid(scene);
+  R3Grid *grid = CreateGrid(scene, node);
   if (!grid) exit(-1);
 
   // Write grid
-  if (!WriteGrid(grid, output_grid_name)) exit(-1);
+  if (!WriteGrid(grid, output_grid_filename)) exit(-1);
 
   // Return success 
   return 0;

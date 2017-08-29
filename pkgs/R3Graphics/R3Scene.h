@@ -111,6 +111,7 @@ public:
   int ReadRectangleFile(const char *filename, R3SceneNode *parent_node = NULL);
   int WriteFile(const char *filename) const;
   int WriteObjFile(const char *filename) const;
+  int WriteSUNCGFile(const char *filename) const;
   int WritePrincetonFile(const char *filename) const;
 
   // Draw functions

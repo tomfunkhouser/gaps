@@ -15,6 +15,7 @@ static const char *output_name = NULL;
 static char *input_categories_name = NULL;
 static char *input_lights_name = NULL;
 static const char *select_nodes_in_subtree_name = NULL;
+static const char *select_nodes_in_grid_filename = NULL;
 static R3Box select_nodes_in_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 static R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0);
 static int remove_references = 0;
@@ -93,6 +94,49 @@ WriteScene(R3Scene *scene, const char *filename)
 
   // Return success
   return 1;
+}
+
+
+
+static R3Grid *
+ReadGrid(const char *input_name)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Allocate a grid
+  R3Grid *grid = new R3Grid();
+  if (!grid) {
+    RNFail("Unable to allocate grid");
+    return NULL;
+  }
+
+  // Read grid
+  int status = grid->ReadFile(input_name);
+  if (!status) {
+    RNFail("Unable to read grid file %s", input_name);
+    return NULL;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read grid ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  Resolution = %d %d %d\n", grid->XResolution(), grid->YResolution(), grid->ZResolution());
+    printf("  Spacing = %g\n", grid->GridToWorldScaleFactor());
+    printf("  Cardinality = %d\n", grid->Cardinality());
+    printf("  Volume = %g\n", grid->Volume());
+    RNInterval grid_range = grid->Range();
+    printf("  Minimum = %g\n", grid_range.Min());
+    printf("  Maximum = %g\n", grid_range.Max());
+    printf("  L1Norm = %g\n", grid->L1Norm());
+    printf("  L2Norm = %g\n", grid->L2Norm());
+    fflush(stdout);
+  }
+
+  // Return success
+  return grid;
 }
 
 
@@ -178,7 +222,7 @@ ReadMatrix(R4Matrix& m, const char *filename)
 
 static void
 RemoveNodes(R3Scene *scene, R3SceneNode *node,
-  R3SceneNode *select_subtree_node, const R3Box& select_bbox)
+  R3SceneNode *select_subtree_node, R3Grid *select_grid, const R3Box& select_bbox)
 {
   // Copy array of children -- because will be edited as iterate
   RNArray<R3SceneNode *> children;
@@ -190,11 +234,16 @@ RemoveNodes(R3Scene *scene, R3SceneNode *node,
   // Visit children recursively in post order
   for (int i = 0; i < children.NEntries(); i++) {
     R3SceneNode *child = children.Kth(i);
-    RemoveNodes(scene, child, select_subtree_node, select_bbox);
+    RemoveNodes(scene, child, select_subtree_node, select_grid, select_bbox);
   }
 
   // Innocent until proven guilty
   RNBoolean remove = FALSE;
+
+  // Check if should remove based on emptiness
+  if ((node->NChildren() == 0) && (node->NReferences() == 0) && (node->NElements() == 0)) {
+    remove = TRUE;
+  }
 
   // Check if should remove based on bbox selection
   if (!select_bbox.IsEmpty()) {
@@ -214,7 +263,14 @@ RemoveNodes(R3Scene *scene, R3SceneNode *node,
     }
   }
 
-  // Check if should parden based on topology
+  // Check if should remove based on grid selection
+  if (select_grid) {
+    R3Point centroid = node->WorldBBox().Centroid();
+    RNScalar grid_value = select_grid->WorldValue(centroid);
+    if (RNIsNegativeOrZero(grid_value)) remove = TRUE;
+  }
+  
+  // Check if should pardon based on topology
   if (node->NChildren() > 0) remove= FALSE;
   if (node == scene->Root()) remove = FALSE;
 
@@ -227,9 +283,6 @@ RemoveNodes(R3Scene *scene, R3SceneNode *node,
 static int
 RemoveNodes(R3Scene *scene)
 {
-  // Check if selecting nodes
-  if (select_nodes_in_bbox.IsEmpty() && !select_nodes_in_subtree_name) return 1;
-
   // Find select subtree node
   R3SceneNode *select_subtree_node = NULL;
   if (select_nodes_in_subtree_name) {
@@ -240,8 +293,15 @@ RemoveNodes(R3Scene *scene)
     }
   }
 
+  // Read select grid
+  R3Grid *select_grid = NULL;
+  if (select_nodes_in_grid_filename) {
+    select_grid = ReadGrid(select_nodes_in_grid_filename);
+    if (!select_grid) return 0;
+  }
+
   // Remove nodes recursively in post order
-  RemoveNodes(scene, scene->Root(), select_subtree_node, select_nodes_in_bbox);
+  RemoveNodes(scene, scene->Root(), select_subtree_node, select_grid, select_nodes_in_bbox);
 
   // Return success
   return 1;
@@ -267,6 +327,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
       else if (!strcmp(*argv, "-select_nodes_in_subtree")) {
         argv++; argc--; select_nodes_in_subtree_name = *argv;
+      }
+      else if (!strcmp(*argv, "-select_nodes_in_grid")) {
+        argv++; argc--; select_nodes_in_grid_filename = *argv;
       }
       else if (!strcmp(*argv, "-select_nodes_in_bbox")) {
         argv++; argc--; select_nodes_in_bbox[0][0] = atof(*argv);
@@ -368,7 +431,7 @@ int main(int argc, char **argv)
   }
 
   // Remove unselected nodes
-  if (!select_nodes_in_bbox.IsEmpty() || select_nodes_in_subtree_name) {
+  if (select_nodes_in_subtree_name || select_nodes_in_grid_filename || !select_nodes_in_bbox.IsEmpty()) {
     if (!RemoveNodes(scene)) exit(-1);
   }
 

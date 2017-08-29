@@ -12,15 +12,18 @@
 
 typedef enum {
   NOP_OPERATION,
+  ABS_OPERATION,
   SQUARE_OPERATION,
   SQRT_OPERATION,
   NEGATE_OPERATION,
   INVERT_OPERATION,
+  GRADIENT_MAGNITUDE_OPERATION,
   NORMALIZE_OPERATION,
   EDGE_DETECT_OPERATION,
   SIGNED_DISTANCE_OPERATION,
   SQUARED_DISTANCE_OPERATION,
   VORONOI_OPERATION,
+  FILL_HOLES_OPERATION,
   CLEAR_OPERATION,
   ADD_OPERATION,
   SUBTRACT_OPERATION,
@@ -51,8 +54,8 @@ struct Operation {
 
 // Program variables
 
-static char *input_name = NULL;
-static char *output_name = NULL;
+static const char *input_name = NULL;
+static const char *output_name = NULL;
 static const int max_operations = 100;
 static Operation operations[max_operations];
 static int noperations = 0;
@@ -62,7 +65,7 @@ static int print_debug = 0;
 
 
 static R3Grid *
-ReadGrid(char *input_name)
+ReadGrid(const char *input_name)
 {
   // Start statistics
   RNTime start_time;
@@ -165,15 +168,18 @@ ApplyOperations(R3Grid *grid, Operation *operations, int noperations)
     // Apply operation
     switch (operation->type) {
     case NOP_OPERATION: break;
+    case ABS_OPERATION: grid->Abs(); break;
     case SQUARE_OPERATION: grid->Square(); break;
     case SQRT_OPERATION: grid->Sqrt(); break;
     case NEGATE_OPERATION: grid->Negate(); break;
     case INVERT_OPERATION: grid->Invert(); break;
     case NORMALIZE_OPERATION: grid->Normalize(); break;
+    case GRADIENT_MAGNITUDE_OPERATION: grid->GradientMagnitude(); break;
     case EDGE_DETECT_OPERATION: grid->DetectEdges(); break;
     case SIGNED_DISTANCE_OPERATION: grid->SignedDistanceTransform(); break;
     case SQUARED_DISTANCE_OPERATION: grid->SquaredDistanceTransform(); break;
     case VORONOI_OPERATION: grid->Voronoi(); break;
+    case FILL_HOLES_OPERATION: grid->FillHoles(); break;
     case CLEAR_OPERATION: grid->Clear(atof(operation->operand1)); break;
     case ADD_OPERATION: grid->Add(atof(operation->operand1)); break;
     case SUBTRACT_OPERATION: grid->Subtract(atof(operation->operand1)); break;
@@ -242,6 +248,11 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-debug")) {
         print_debug = 1; 
       }
+      else if (!strcmp(*argv, "-abs")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = ABS_OPERATION;
+      }
       else if (!strcmp(*argv, "-square")) {
         assert(noperations < max_operations);
         Operation *operation = &operations[noperations++];
@@ -261,6 +272,11 @@ ParseArgs(int argc, char **argv)
         assert(noperations < max_operations);
         Operation *operation = &operations[noperations++];
         operation->type = INVERT_OPERATION;
+      }
+      else if (!strcmp(*argv, "-gradient_magnitude")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = GRADIENT_MAGNITUDE_OPERATION;
       }
       else if (!strcmp(*argv, "-normalize")) {
         assert(noperations < max_operations);
@@ -286,6 +302,11 @@ ParseArgs(int argc, char **argv)
         assert(noperations < max_operations);
         Operation *operation = &operations[noperations++];
         operation->type = VORONOI_OPERATION;
+      }
+      else if (!strcmp(*argv, "-fill_holes")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = FILL_HOLES_OPERATION;
       }
       else if (!strcmp(*argv, "-clear")) {
         assert(noperations < max_operations);
