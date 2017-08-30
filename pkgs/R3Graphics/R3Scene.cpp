@@ -3473,6 +3473,7 @@ ParseSUNCGMaterials(R3Scene *scene,
 
       // Create output material
       output_material = new R3Material(output_brdf, output_texture);
+      output_material->SetName(material_name);
       scene->InsertMaterial(output_material);
     }
 
@@ -4032,18 +4033,46 @@ WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
     fprintf(fp, "        \"id\":\"%s\",\n", id);
     fprintf(fp, "        \"type\":\"%s\",\n", nodetype);
     fprintf(fp, "        \"modelId\":\"%s\",\n", modelId);
-    fprintf(fp, "        \"valid\":1,\n");
     fprintf(fp, "        \"isMirrored\":%d,\n", is_mirrored);
     fprintf(fp, "        \"bbox\":{\"min\":[%g,%g,%g],\"max\":[%g,%g,%g]},\n",
       b[0][0], b[0][1], b[0][2], b[1][0], b[1][1], b[1][2]);
-    fprintf(fp, "        \"transform\":[");
-    for (int j = 0; j < 4; j++) {
-      for (int i = 0; i < 4; i++) {
-        if ((i > 0) || (j > 0)) fprintf(fp, ", ");
-        fprintf(fp, "%g", matrix[i][j]);
+    if (reference->NMaterials() > 0) {
+      fprintf(fp, "        \"materials\":[");
+      for (int i = 0; i < reference->NMaterials(); i++) {
+        R3Material *material = reference->Material(i);
+        const char *material_name = (material) ? material->Name() : "none";
+        const R3Brdf *brdf = (material) ? material->Brdf() : NULL;
+        const R2Texture *texture = (material) ? material->Texture() : NULL;
+        if (i > 0) fprintf(fp, ", ");
+        fprintf(fp, "{ \"name\":\"%s\"", material_name);
+        if (brdf) {
+          const RNRgb& diffuse = brdf->Diffuse();
+          int r = 255.0 * diffuse.R() + 0.5;
+          int g = 255.0 * diffuse.G() + 0.5;
+          int b = 255.0 * diffuse.B() + 0.5;
+          r = (r < 255) ? ((r > 0) ? r : 0) : 255;
+          g = (g < 255) ? ((g > 0) ? g : 0) : 255;
+          b = (b < 255) ? ((b > 0) ? b : 0) : 255;
+          fprintf(fp, ", \"diffuse\":\"#%02x%02x%02x\"", r, g, b);
+        }
+        if (texture && texture->Name()) {
+          fprintf(fp, ", \"texture\":\"%s\"", texture->Name());
+        }
+        fprintf(fp, " }");
       }
+      fprintf(fp, "],\n");
     }
-    fprintf(fp, "]\n");
+    if (!matrix.IsIdentity()) {
+      fprintf(fp, "        \"transform\":[");
+      for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+          if ((i > 0) || (j > 0)) fprintf(fp, ", ");
+          fprintf(fp, "%g", matrix[i][j]);
+        }
+      }
+      fprintf(fp, "],\n");
+    }
+    fprintf(fp, "        \"valid\":1\n");
     fprintf(fp, "      }");
   }
   else if (!strncmp(node->Name(), "Box#", 4)) {

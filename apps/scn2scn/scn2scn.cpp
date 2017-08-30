@@ -221,6 +221,63 @@ ReadMatrix(R4Matrix& m, const char *filename)
 ////////////////////////////////////////////////////////////////////////
 
 static void
+CountOverlapAreas(R3SceneNode *node, R3Grid *grid, const R3Affine& parent_transformation, RNArea& overlap_area, RNArea& total_area)
+{
+  // Update transformation
+  R3Affine transformation = R3identity_affine;
+  transformation.Transform(parent_transformation);
+  transformation.Transform(node->Transformation());
+
+  // Count overlapping triangle areas in references
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    CountOverlapAreas(referenced_scene->Root(), grid, transformation, overlap_area, total_area);
+  }
+
+  // Count overlapping triangle areas in elements
+  for (int i = 0; i < node->NElements(); i++) {
+    R3SceneElement *element = node->Element(i);
+    for (int j = 0; j < element->NShapes(); j++) {
+      R3Shape *shape = element->Shape(j);
+      if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+        R3TriangleArray *triangles = (R3TriangleArray *) shape;
+        for (int k = 0; k < triangles->NTriangles(); k++) {
+          R3Triangle *triangle = triangles->Triangle(k);
+          R3Point centroid = triangle->Centroid();
+          centroid.Transform(transformation);
+          RNScalar grid_value = grid->WorldValue(centroid);
+          RNArea area = triangle->Area();
+          if (grid_value > RN_EPSILON) overlap_area += area;
+          total_area += area;
+        }
+      }
+    }
+  }
+  
+  // Count overlapping triangle areas in children
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    CountOverlapAreas(child, grid, transformation, overlap_area, total_area);
+  }
+}
+
+
+
+static RNScalar
+Overlap(R3SceneNode *node, R3Grid *grid)
+{
+  RNScalar overlap_area = 0;
+  RNScalar total_area = 0;
+  R3Affine parent_transformation = node->CumulativeParentTransformation();
+  CountOverlapAreas(node, grid, parent_transformation, overlap_area, total_area);
+  if (total_area < RN_EPSILON) return 0;
+  return overlap_area / total_area;
+}
+
+
+
+static void
 RemoveNodes(R3Scene *scene, R3SceneNode *node,
   R3SceneNode *select_subtree_node, R3Grid *select_grid, const R3Box& select_bbox)
 {
@@ -231,11 +288,15 @@ RemoveNodes(R3Scene *scene, R3SceneNode *node,
     children.Insert(child);
   }
 
-  // Visit children recursively in post order
+  // Visit children recursively 
   for (int i = 0; i < children.NEntries(); i++) {
     R3SceneNode *child = children.Kth(i);
     RemoveNodes(scene, child, select_subtree_node, select_grid, select_bbox);
   }
+
+  // Check if node must remain
+  if (node == scene->Root()) return;
+  if (node->NChildren() > 0) return;
 
   // Innocent until proven guilty
   RNBoolean remove = FALSE;
@@ -265,15 +326,14 @@ RemoveNodes(R3Scene *scene, R3SceneNode *node,
 
   // Check if should remove based on grid selection
   if (select_grid) {
-    R3Point centroid = node->WorldBBox().Centroid();
-    RNScalar grid_value = select_grid->WorldValue(centroid);
-    if (RNIsNegativeOrZero(grid_value)) remove = TRUE;
+    RNArea min_overlap = 0.5;
+    RNScalar overlap = Overlap(node, select_grid);
+    if (overlap < min_overlap) remove = TRUE;
+    // R3Point centroid = node->WorldBBox().Centroid();
+    // RNScalar grid_value = select_grid->WorldValue(centroid);
+    // if (RNIsNegativeOrZero(grid_value)) remove = TRUE;
   }
   
-  // Check if should pardon based on topology
-  if (node->NChildren() > 0) remove= FALSE;
-  if (node == scene->Root()) remove = FALSE;
-
   // Delete node 
   if (remove) delete node;
 }
