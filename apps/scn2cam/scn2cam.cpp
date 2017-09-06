@@ -36,6 +36,7 @@ static char *output_nodes_filename = NULL;
 
 static int create_object_cameras = 0;
 static int create_room_cameras = 0;
+static int create_interior_cameras = 0;
 static int create_world_in_hand_cameras = 0;
 static int create_path_in_room_cameras = 0;
 static int interpolate_camera_trajectory = 0;
@@ -729,7 +730,7 @@ IsObject(R3SceneNode *node)
 
 
 static RNScalar
-ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node)
+ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = NULL)
 {
   // Allocate points
   const int max_npoints = 1024;
@@ -809,7 +810,7 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node)
 
 
 static RNScalar
-SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *room_node = NULL)
+SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *subtree = NULL, RNBoolean suncg = FALSE)
 {
   // Allocate image for scoring
   R2Grid image(width, height);
@@ -843,8 +844,8 @@ SceneCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *room_nod
   int node_count = 0;
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
-    if (!IsObject(node)) continue;
-    if (room_node && !node->IsDecendent(room_node)) continue;
+    if (suncg && !IsObject(node)) continue;
+    if (subtree && !node->IsDecendent(subtree)) continue;
     if (node_pixel_counts[i] <= min_pixel_count_per_object) continue;
     sum += log(node_pixel_counts[i] / min_pixel_count_per_object);
     node_count++;
@@ -1264,7 +1265,7 @@ CreateRoomCameras(void)
           R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
 
           // Compute score for camera
-          camera.SetValue(SceneCoverageScore(camera, scene, room_node));
+          camera.SetValue(SceneCoverageScore(camera, scene, room_node, TRUE));
           if (camera.Value() == 0) continue;
           if (camera.Value() < min_score) continue;
 
@@ -1394,6 +1395,89 @@ CreatePathInRoomCameras(void)
   // Print statistics
   if (print_verbose) {
     printf("Created room cameras ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Cameras = %d\n", camera_count++);
+    fflush(stdout);
+  }
+}
+
+
+
+static void
+CreateInteriorCameras(void)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int camera_count = 0;
+
+  // Get useful variables
+  RNScalar neardist = 0.01 * scene->BBox().DiagonalRadius();
+  RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
+  RNScalar aspect = (RNScalar) height / (RNScalar) width;
+  RNAngle yfov = atan(aspect * tan(xfov));
+  R3Box bbox = scene->BBox();
+
+  // Sample directions
+  int nangles = (int) (RN_TWO_PI / angle_sampling + 0.5);
+  RNScalar angle_spacing = (nangles > 1) ? RN_TWO_PI / nangles : RN_TWO_PI;
+  for (int j = 0; j < nangles; j++) {
+    // Choose one camera for each direction 
+    R3Camera best_camera;
+
+    // Sample positions 
+    for (RNScalar y = bbox.YMin(); y < bbox.YMax(); y += position_sampling) {
+      for (RNScalar x = bbox.XMin(); x < bbox.XMax(); x += position_sampling) {
+        // Compute position
+        R2Point position(x + position_sampling*RNRandomScalar(), y + position_sampling*RNRandomScalar());
+
+        // Compute height
+        RNScalar z = bbox.ZMin() + eye_height;
+        z += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+        if (z > bbox.ZMax()) continue;
+
+        // Compute direction
+        RNScalar angle = (j+RNRandomScalar()) * angle_spacing;
+        R2Vector direction = R2posx_vector;
+        direction.Rotate(angle);
+        direction.Normalize();
+
+        // Compute camera
+        R3Point viewpoint(position[0], position[1], z);
+        R3Vector towards(direction.X(), direction.Y(), -0.2);
+        towards.Normalize();
+        R3Vector right = towards % R3posz_vector;
+        right.Normalize();
+        R3Vector up = right % towards;
+        up.Normalize();
+        R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+        // Compute score for camera
+        camera.SetValue(SceneCoverageScore(camera, scene));
+        if (camera.Value() == 0) continue;
+        if (camera.Value() < min_score) continue;
+
+        // Remember best camera
+        if (camera.Value() > best_camera.Value()) {
+          best_camera = camera;
+        }
+      }
+    }
+
+    // Insert best camera for direction
+    if (best_camera.Value() > 0) {
+      if (print_debug) printf("INTERIOR %d : %g\n", j, best_camera.Value());
+      char name[1024];
+      sprintf(name, "C_%d", j);
+      Camera *camera = new Camera(best_camera, name);
+      cameras.Insert(camera);
+      camera_count++;
+    }
+  }
+        
+  // Print statistics
+  if (print_verbose) {
+    printf("Created interior cameras ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Cameras = %d\n", camera_count++);
     fflush(stdout);
@@ -1584,9 +1668,12 @@ CreateAndWriteCameras(void)
 {
   // Create cameras
   if (create_object_cameras) CreateObjectCameras();
+  if (create_interior_cameras) CreateInteriorCameras();
+  if (create_world_in_hand_cameras) CreateWorldInHandCameras();
+
+  // Create specialized cameras (for SUNCG)
   if (create_room_cameras) CreateRoomCameras();
   if (create_path_in_room_cameras) CreatePathInRoomCameras();
-  if (create_world_in_hand_cameras) CreateWorldInHandCameras();
 
   // Create trajectory from cameras
   if (interpolate_camera_trajectory) {
@@ -1723,6 +1810,10 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_object_cameras") || !strcmp(*argv, "-create_leaf_node_cameras")) {
         create_cameras = create_object_cameras = 1;
         angle_sampling = RN_PI / 6.0;
+      }
+      else if (!strcmp(*argv, "-create_interior_cameras")) {
+        create_cameras = create_interior_cameras = 1;
+        angle_sampling = RN_PI / 2.0;
       }
       else if (!strcmp(*argv, "-create_room_cameras")) {
         create_cameras = create_room_cameras = 1;
