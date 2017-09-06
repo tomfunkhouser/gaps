@@ -160,7 +160,7 @@ void GLUTRedraw(void)
         if (show_materials) RNLoadRgb(colors[1 + mesh->FaceMaterial(face)%(ncolors-1)]); 
         else if (show_segments) RNLoadRgb(colors[1 + mesh->FaceSegment(face)%(ncolors-1)]); 
         else if (show_categories) RNLoadRgb(colors[1 + mesh->FaceCategory(face)%(ncolors-1)]); 
-        else if (meshes.NEntries() > 1) RNLoadRgb(colors[1 + m%(ncolors-1)]); 
+        // else if (meshes.NEntries() > 1) RNLoadRgb(colors[1 + m%(ncolors-1)]); 
         if (!show_vertex_colors) R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
@@ -473,6 +473,10 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case '3':
   case '4':
   case '5':
+  case '6':
+  case '7':
+  case '8':
+  case '9':
     if (key == '0') current_mesh = -1;
     else if (key - '1' < meshes.NEntries()) current_mesh = key - '1';
     else printf("Unable to select mesh %d\n", key - '1');

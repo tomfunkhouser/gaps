@@ -60,7 +60,6 @@ static R3Point center(0, 0, 0);
 static R3Viewer viewer;
 
 
-
 // Display variables
 
 static int show_cameras = 1;
