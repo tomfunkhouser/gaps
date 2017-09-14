@@ -524,6 +524,8 @@ class R3Mesh {
       // Create mesh elements for a triangle and add to mesh
     void CreateTriangleArray(const R3TriangleArray& triangles);
       // Create mesh elements for a triangle array and add to mesh
+    void CreateCopy(const R3Mesh& mesh);
+      // Create mesh elements for a copy of mesh
 
     // DRAW FUNCTIONS
     virtual void Draw(void) const;

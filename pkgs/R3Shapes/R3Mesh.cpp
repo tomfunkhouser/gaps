@@ -86,6 +86,9 @@ R3Mesh(const R3Mesh& mesh)
     R3MeshVertex *copy_v2 = this->Vertex(i2);
     R3MeshFace *copy_face = this->CreateFace(copy_v0, copy_v1, copy_v2, &face_block[i]);
     if (this->FaceID(copy_face) != i) RNAbort("Mismatching face id"); 
+    this->SetFaceMaterial(copy_face, mesh.FaceMaterial(face));
+    this->SetFaceSegment(copy_face, mesh.FaceSegment(face));
+    this->SetFaceCategory(copy_face, mesh.FaceCategory(face));
   }
 }
 
@@ -4234,6 +4237,57 @@ CreateTriangleArray(const R3TriangleArray& triangles)
 {
   // Create mesh elements for a triangle array and add to mesh
   RNAbort("Not implemented");
+}
+
+
+
+void R3Mesh::
+CreateCopy(const R3Mesh& mesh)
+{
+  // Copy vertices
+  RNArray<R3MeshVertex *> verts;
+  for (int i = 0; i < mesh.NVertices(); i++) {
+    R3MeshVertex *vertex = mesh.Vertex(i);
+    const R3Point& position = mesh.VertexPosition(vertex);
+    const R3Vector& normal = mesh.VertexNormal(vertex);
+    const RNRgb& color = mesh.VertexColor(vertex);
+    const R2Point& texcoords = mesh.VertexTextureCoords(vertex);
+    R3MeshVertex *copy_vertex = this->CreateVertex(position, normal, color, texcoords);
+    if (!copy_vertex) return;
+    verts.Insert(copy_vertex);
+  }
+
+  // Copy edges
+  for (int i = 0; i < mesh.NEdges(); i++) {
+    R3MeshEdge *edge = mesh.Edge(i);
+    R3MeshVertex *v0 = mesh.VertexOnEdge(edge, 0);
+    R3MeshVertex *v1 = mesh.VertexOnEdge(edge, 1);
+    int i0 = mesh.VertexID(v0);
+    int i1 = mesh.VertexID(v1);
+    R3MeshVertex *copy_v0 = verts.Kth(i0);
+    R3MeshVertex *copy_v1 = verts.Kth(i1);
+    R3MeshEdge *copy_edge = this->CreateEdge(copy_v0, copy_v1);
+    if (!copy_edge) return;
+  }
+
+  // Copy faces
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    R3MeshVertex *v0 = mesh.VertexOnFace(face, 0);
+    R3MeshVertex *v1 = mesh.VertexOnFace(face, 1);
+    R3MeshVertex *v2 = mesh.VertexOnFace(face, 2);
+    int i0 = mesh.VertexID(v0);
+    int i1 = mesh.VertexID(v1);
+    int i2 = mesh.VertexID(v2);
+    R3MeshVertex *copy_v0 = verts.Kth(i0);
+    R3MeshVertex *copy_v1 = verts.Kth(i1);
+    R3MeshVertex *copy_v2 = verts.Kth(i2);
+    R3MeshFace *copy_face = this->CreateFace(copy_v0, copy_v1, copy_v2);
+    if (!copy_face) return;
+    this->SetFaceMaterial(copy_face, mesh.FaceMaterial(face));
+    this->SetFaceSegment(copy_face, mesh.FaceSegment(face));
+    this->SetFaceCategory(copy_face, mesh.FaceCategory(face));
+  }
 }
 
 
