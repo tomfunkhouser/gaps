@@ -78,6 +78,34 @@ R3OrientedBox(const R3Point& center,
 
 
 
+R3OrientedBox::
+R3OrientedBox(const RNArray<R3Point *>& points, RNScalar *weights)
+{
+    // Compute coordinate system
+    R3Point centroid = R3Centroid(points, weights);
+    R3Triad axes = R3PrincipleAxes(centroid, points, weights);
+
+    // Compute ranges
+    R3Box r = R3null_box;
+    for (int i = 0; i < points.NEntries(); i++) {
+      R3Point *point = points.Kth(i);
+      R3Vector v = *point - centroid;
+      RNLength r0 = v.Dot(axes[0]);
+      RNLength r1 = v.Dot(axes[1]);
+      RNLength r2 = v.Dot(axes[2]);
+      r.Union(R3Point(r0, r1, r2));
+    }
+
+    // Compute center
+    R3Point c = r.Centroid();
+    R3Point center = centroid + axes[0]*c[0] + axes[1]*c[1] + axes[2]*c[2];
+
+    // Initialize everything
+    Reset(center, axes[0], axes[1], r.XRadius(), r.YRadius(), r.ZRadius());
+}
+
+
+
 const R3Plane R3OrientedBox::
 Plane(RNDirection dir, RNDimension dim) const
 {
