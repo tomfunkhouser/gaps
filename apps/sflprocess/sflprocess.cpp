@@ -662,6 +662,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
 
   // Create surfels for every mesh segment
   RNSeedRandomScalar();
+  RNArray<R3SurfelLabel *> labels;
   RNArray<RNArray<R3Surfel *> *> surfels;
   R3Point mesh_centroid = mesh.Centroid();
   for (int i = 0; i < mesh.NFaces(); i++) {
@@ -669,7 +670,15 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     int segment_index = mesh.FaceMaterial(face);
     if (segment_index < 0) segment_index = 0; // continue;
 
+    // Get label
+    int label_index = mesh.FaceCategory(face);
+    if ((label_index >= 0) && (label_index < scene->NLabels())) {
+      R3SurfelLabel *label = scene->Label(label_index);
+      labels[segment_index] = label;
+    }
+
     // Get/create array of surfels for segment
+    while (labels.NEntries() <= segment_index) labels.Insert(NULL);
     while (surfels.NEntries() <= segment_index) surfels.Insert(NULL);
     RNArray<R3Surfel *> *segment_surfels = surfels[segment_index];
     if (!segment_surfels) {
@@ -722,6 +731,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
 
   // Create surfel blocks/nodes
   for (int i = 0; i < surfels.NEntries(); i++) {
+    R3SurfelLabel *label = labels.Kth(i);
     RNArray<R3Surfel *> *segment_surfels = surfels.Kth(i);
     if (!segment_surfels) continue;
 
@@ -775,10 +785,17 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     // Update object properties
     object->UpdateProperties();
 
+    // Create label assignment
+    if (label) {
+      int originator = R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR;
+      R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, 1.0, originator);
+      scene->InsertLabelAssignment(assignment);
+    }
+
     // Release block
     database->ReleaseBlock(block);
 
-    // Delete segment surfel arreays
+    // Delete segment surfel arrays    
     for (int j = 0; j < segment_surfels->NEntries(); j++)
       delete segment_surfels->Kth(j);
     delete segment_surfels;

@@ -79,11 +79,14 @@ R3OrientedBox(const R3Point& center,
 
 
 R3OrientedBox::
-R3OrientedBox(const RNArray<R3Point *>& points, RNScalar *weights)
+R3OrientedBox(const RNArray<R3Point *>& points)
 {
+#if 0
+    // This is correct, but produces bboxes that are too big (diagonal)
+  
     // Compute coordinate system
-    R3Point centroid = R3Centroid(points, weights);
-    R3Triad axes = R3PrincipleAxes(centroid, points, weights);
+    R3Point centroid = R3Centroid(points);
+    R3Triad axes = R3PrincipleAxes(centroid, points);
 
     // Compute ranges
     R3Box r = R3null_box;
@@ -102,6 +105,52 @@ R3OrientedBox(const RNArray<R3Point *>& points, RNScalar *weights)
 
     // Initialize everything
     Reset(center, axes[0], axes[1], r.XRadius(), r.YRadius(), r.ZRadius());
+#else
+    // Get centroid 
+    R3Point centroid = R3Centroid(points);
+
+    // Search for best axes
+    R3Box best_range = R3null_box;
+    R3Triad best_axes = R3xyz_triad;
+    int nxsteps = 2;
+    int nysteps = 2;
+    int nzsteps = 4;
+    for (int ix = 0; ix < nxsteps; ix++) {
+      for (int iy = 0; iy < nysteps; iy++) {
+        for (int iz = 0; iz < nzsteps; iz++) {
+          R3Triad axes = R3xyz_triad;
+          axes.Rotate(RN_Z, ix*0.5*RN_PI/nxsteps);
+          axes.Rotate(RN_Z, iy*0.5*RN_PI/nysteps);
+          axes.Rotate(RN_Z, iz*0.5*RN_PI/nzsteps);
+    
+          // Compute ranges
+          R3Box range = R3null_box;
+          for (int i = 0; i < points.NEntries(); i++) {
+            R3Point *point = points.Kth(i);
+            R3Vector v = *point - centroid;
+            RNLength r0 = v.Dot(axes[0]);
+            RNLength r1 = v.Dot(axes[1]);
+            RNLength r2 = v.Dot(axes[2]);
+            range.Union(R3Point(r0, r1, r2));
+          }
+
+          // Check if range is best
+          if (best_range.IsEmpty() || (range.Volume() < best_range.Volume())) {
+            best_range = range;
+            best_axes = axes;
+          }
+        }
+      }
+    }
+      
+    // Compute center
+    if (best_range.IsEmpty()) best_range = R3zero_box;
+    R3Point c = best_range.Centroid();
+    R3Point center = centroid + best_axes[0]*c[0] + best_axes[1]*c[1] + best_axes[2]*c[2];
+           
+    // Initialize everything
+    Reset(center, best_axes[0], best_axes[1], best_range.XRadius(), best_range.YRadius(), best_range.ZRadius());
+#endif
 }
 
 

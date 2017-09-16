@@ -18,7 +18,7 @@ class R3OrientedBox : public R3Solid {
         R3OrientedBox(const R3OrientedBox& box);
         R3OrientedBox(const R3Point& center, const R3Vector& axis0, const R3Vector& axis1, const R3Vector& axis2);
         R3OrientedBox(const R3Point& center, const R3Vector& axis0, const  R3Vector& axis1, RNScalar radius0, RNScalar radius1, RNScalar radius2); 
-        R3OrientedBox(const RNArray<R3Point *>& points, RNScalar *weights = NULL);
+        R3OrientedBox(const RNArray<R3Point *>& points);
 
         // OrientedBox propetry functions/operators
         const R3Point& Center(void) const;

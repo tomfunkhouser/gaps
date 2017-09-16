@@ -14,7 +14,7 @@ static int RGBD_active_count = 0;
 
 
 
-int R2InitShapes(void)
+int RGBDInit(void)
 {
     // Check whether are already initialized 
     if ((RGBD_active_count++) > 0) return TRUE;
@@ -28,7 +28,7 @@ int R2InitShapes(void)
 
 
 
-void R2StopShapes(void)
+void RGBDStop(void)
 {
     // Check whether have been initialized 
     if ((--RGBD_active_count) > 0) return;

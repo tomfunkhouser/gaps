@@ -76,6 +76,7 @@ R3Triad(const R3Vector& towards, const R3Vector& up)
     axis[0] = up % axis[2];
     axis[0].Normalize();
     axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
@@ -147,6 +148,11 @@ Rotate(const R3Vector& rotaxis, RNAngle radians)
     axis[0].Rotate(rotaxis, radians);
     axis[1].Rotate(rotaxis, radians);
     axis[2].Rotate(rotaxis, radians);
+    axis[2].Normalize();
+    axis[0] = axis[1] % axis[2];
+    axis[0].Normalize();
+    axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
@@ -159,6 +165,11 @@ Rotate(const R3Vector& from, const R3Vector& to)
     R3Vector rotaxis = from % to;
     rotaxis.Normalize();
     Rotate(rotaxis, angle);
+    axis[2].Normalize();
+    axis[0] = axis[1] % axis[2];
+    axis[0].Normalize();
+    axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
@@ -170,6 +181,11 @@ Mirror(const R3Plane& plane)
     axis[0].Mirror(plane);
     axis[1].Mirror(plane);
     axis[2].Mirror(plane);
+    axis[2].Normalize();
+    axis[0] = axis[1] % axis[2];
+    axis[0].Normalize();
+    axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
@@ -181,6 +197,11 @@ Transform(const R3Transformation& transformation)
     axis[0].Transform(transformation);
     axis[1].Transform(transformation);
     axis[2].Transform(transformation);
+    axis[2].Normalize();
+    axis[0] = axis[1] % axis[2];
+    axis[0].Normalize();
+    axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
@@ -192,6 +213,11 @@ InverseTransform(const R3Transformation& transformation)
     axis[0].InverseTransform(transformation);
     axis[1].InverseTransform(transformation);
     axis[2].InverseTransform(transformation);
+    axis[2].Normalize();
+    axis[0] = axis[1] % axis[2];
+    axis[0].Normalize();
+    axis[1] = axis[2] % axis[0];
+    axis[1].Normalize();
 }
 
 
