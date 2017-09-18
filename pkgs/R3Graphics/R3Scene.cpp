@@ -1890,7 +1890,7 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3SceneNode *node = new R3SceneNode(this);
     if (!InsertSceneElement(this, node, NULL, vertices, *tris)) return 0;
     node->SetName(node_name.c_str());
-    char *category_separator = strchr(node_name.c_str(), '_');
+    const char *category_separator = strchr(node_name.c_str(), '_');
     if (category_separator) node->InsertInfo("index", strdup(category_separator+1));
     parent_node->InsertChild(node);
     for (int i = 0; i < tris->NEntries(); i++) delete tris->Kth(i);
