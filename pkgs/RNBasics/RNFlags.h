@@ -26,6 +26,7 @@ class RNFlags /* : public RNBase */ {
   	int operator[](const RNFlags flags) const;
 
         // Manipulation functions/operators
+        void XOR(const RNFlags flags);
         void Add(const RNFlags flags);
         void Remove(const RNFlags flags);
 	void Intersect(const RNFlags flags);
@@ -87,6 +88,15 @@ operator[] (const RNFlags flags) const
 {
     // Return whether flags intersect
     return this->Intersects(flags);
+}
+
+
+
+inline void RNFlags::
+XOR(const RNFlags flags)
+{
+    // Union this set of flags with ones passed in
+    this->flags ^= flags;
 }
 
 

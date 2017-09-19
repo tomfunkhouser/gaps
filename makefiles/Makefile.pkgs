@@ -57,7 +57,7 @@ release:
 	    mkdir $(RELEASE_DIR)/pkgs/$(NAME)1
 	    cp *\.[!o]* $(RELEASE_DIR)/pkgs/$(NAME)1
 	    cp Makefile $(RELEASE_DIR)/pkgs/$(NAME)1
-	    cp $(NAME).vcxproj $(RELEASE_DIR)/pkgs/$(NAME)1
+	    # cp $(NAME).vcxproj $(RELEASE_DIR)/pkgs/$(NAME)1
 	    rm -r -f $(RELEASE_DIR)/pkgs/$(NAME)
 	    mv $(RELEASE_DIR)/pkgs/$(NAME)1 $(RELEASE_DIR)/pkgs/$(NAME)
 
