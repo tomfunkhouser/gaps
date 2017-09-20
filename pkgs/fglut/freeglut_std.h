@@ -32,6 +32,17 @@
     extern "C" {
 #endif
 
+/* This is needed to avoid error in compiling glu.h in some installations of cygwin */
+#ifdef __CYGWIN__
+# ifndef CALLBACK
+#   if defined(_ARM_)
+#     define CALLBACK
+#   else
+#     define CALLBACK __stdcall
+#   endif
+# endif
+#endif
+
 /*
  * Under windows, we have to differentiate between static and dynamic libraries
  */
