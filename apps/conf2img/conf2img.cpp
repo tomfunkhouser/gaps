@@ -8,6 +8,7 @@
 
 #include "R3Graphics/R3Graphics.h"
 #include "RGBD/RGBD.h"
+#include "RGBDSegmentation.cpp"
 #ifdef USE_MESA
 #  include "GL/osmesa.h"
 #else
@@ -34,6 +35,7 @@ static const char *output_image_directory = NULL;
 static int create_position_images = 0;
 static int create_boundary_images = 0;
 static int create_normal_images = 0;
+static int create_segmentation_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
 static int capture_mesh_depth_images = 0;
@@ -41,10 +43,15 @@ static int capture_object_images = 0;
 static int capture_category_images = 0;
 
 
+// Image selection options
+
+static int load_every_kth_image = 1;
+
+
 // Other parameter program variables
 
-static int width = 1280;
-static int height = 1024;
+static int width = 0;
+static int height = 0;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
 static int glut = 1;
@@ -87,7 +94,7 @@ ReadConfiguration(const char *filename)
   }
 
   // Read file
-  if (!configuration.ReadFile(filename)) {
+  if (!configuration.ReadFile(filename, load_every_kth_image)) {
     fprintf(stderr, "Unable to read configuration from %s\n", filename);
     return 0;
   }
@@ -99,6 +106,23 @@ ReadConfiguration(const char *filename)
     return 0;
   }
 #endif
+
+  // Set width and height
+  if ((width == 0) || (height == 0)) {
+    if (configuration.NImages() > 0) {
+      RGBDImage *image0 = configuration.Image(0);
+      if ((image0->NPixels(RN_X) == 0) || (image0->NPixels(RN_Y) == 0)) {
+        image0->ReadColorChannels();
+        image0->ReleaseColorChannels();
+      }
+      width = image0->NPixels(RN_X);
+      height = image0->NPixels(RN_Y);
+    }
+  }
+
+  // Double-check to make sure width and height are not zero
+  if (width == 0) width = 1280;
+  if (height == 0) height = 1024;;
   
   // Print statistics
   if (print_verbose) {
@@ -203,7 +227,7 @@ static int
 WriteImages(const char *output_directory)
 {
   // Check parameters
-  if (!create_position_images && !create_boundary_images && !create_normal_images) return 1;
+  if (!create_position_images && !create_boundary_images && !create_normal_images && !create_segmentation_images) return 1;
 
   // Start statistics
   RNTime start_time;
@@ -232,6 +256,14 @@ WriteImages(const char *output_directory)
     char *endp = strrchr(image_name, '.');
     if (endp) *endp = '\0';
 
+    // Print timing message
+    RNTime step_time;
+    if (print_debug) {
+      printf("    A %s\n", image_name);
+      fflush(stdout);
+      step_time.Read();
+    }
+
     // Create depth image
     if (!image->ReadDepthChannel()) return 0;
     R2Grid depth_image = *(image->DepthChannel());
@@ -239,10 +271,17 @@ WriteImages(const char *output_directory)
     height = (int) ((double) image->NPixels(RN_Y) * width / (double) image->NPixels(RN_X) + 0.5);
     RGBDResampleDepthImage(depth_image, intrinsics_matrix, width, height);
     if (!image->ReleaseDepthChannel()) return 0;
-    
+
+    // Print timing message
+    if (print_debug) {
+      printf("    B %g %d %d %g\n", step_time.Elapsed(), depth_image.XResolution(), depth_image.YResolution(), depth_image.Mean());
+      fflush(stdout);
+      step_time.Read();
+    }
+
     // Create boundary image
     R2Grid boundary_image;
-    if (create_boundary_images || create_normal_images) {
+    if (create_boundary_images || create_normal_images || create_segmentation_images) {
       if (!RGBDCreateBoundaryChannel(depth_image, boundary_image)) return 0;
       if (create_boundary_images) {
         // Write boundary images
@@ -252,9 +291,16 @@ WriteImages(const char *output_directory)
       }
     }
 
+    // Print timing message
+    if (print_debug) {
+      printf("    C %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+
     // Create position images (in camera coordinates)
     R2Grid px_image, py_image, pz_image;
-    if (create_position_images || create_normal_images) {
+    if (create_position_images || create_normal_images || create_segmentation_images) {
       if (!RGBDCreatePositionChannels(depth_image, px_image, py_image, pz_image,
           intrinsics_matrix, R4identity_matrix)) return 0;
       if (create_position_images) {
@@ -269,9 +315,16 @@ WriteImages(const char *output_directory)
       }
     }
 
+    // Print timing message
+    if (print_debug) {
+      printf("    D %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+
     // Create normal images (in camera coordinates)
     R2Grid nx_image, ny_image, nz_image, radius_image;
-    if (create_normal_images) {
+    if (create_normal_images || create_segmentation_images) {
       RGBDCreateNormalChannels(depth_image,
         px_image, py_image, pz_image, boundary_image,
         nx_image, ny_image, nz_image, radius_image,
@@ -295,9 +348,53 @@ WriteImages(const char *output_directory)
       }
     }
 
-    // Print debug message
-    if (print_debug) { printf("  %s\n", image_name); fflush(stdout); }
-  }
+    // Print timing message
+    if (print_debug) {
+      printf("    E %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+
+    // Create segmentation image
+    R2Grid segmentation_image;
+    if (create_segmentation_images) {
+      // Create color image
+      if (!image->ReadColorChannels()) return 0;
+      R2Image color_image(width, height, 3);
+      for (int iy = 0; iy < height; iy++) {
+        for (int ix = 0; ix < width; ix++) {
+          color_image.SetPixelRGB(ix, iy, image->PixelColor(ix, iy));
+        }
+      }
+      if (!image->ReleaseColorChannels()) return 0;
+      R3Matrix color_intrinsics_matrix = image->Intrinsics();
+      RGBDResampleColorImage(color_image, color_intrinsics_matrix, width, height);
+
+      // Create segmentation
+      char output_ascii_filename[4096];
+      sprintf(output_ascii_filename, "%s/%s_segmentation.txt", output_directory, image_name);
+      RGBDCreateSegmentationChannel(depth_image,
+        px_image, py_image, pz_image, boundary_image,
+        nx_image, ny_image, nz_image, radius_image,
+        color_image, segmentation_image,
+        R3zero_point, R3negz_vector, R3posy_vector,
+        output_ascii_filename);
+
+      // Write segmentation
+      if (create_segmentation_images) {
+        char output_image_filename[4096];
+        sprintf(output_image_filename, "%s/%s_segmentation.png", output_directory, image_name);
+        segmentation_image.WriteFile(output_image_filename);
+      }
+    }
+
+    // Print timing message
+    if (print_debug) {
+      printf("    F %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+}
 
   // Print statistics
   if (print_verbose) {
@@ -766,6 +863,9 @@ RenderImagesWithMesa(const char *output_image_directory)
 static int
 RenderImages(const char *output_image_directory)
 {
+  // Check parameters
+  if (!capture_color_images && !capture_depth_images && !capture_mesh_depth_images && !capture_object_images && !capture_category_images) return 1;
+
   // Create output directory
   char cmd[1024];
   sprintf(cmd, "mkdir -p %s", output_image_directory);
@@ -791,7 +891,7 @@ ParseArgs(int argc, char **argv)
 {
   // Initialize variables to track whether to assign defaults
   int output = 0;
-  
+
   // Parse arguments
   argc--; argv++;
   while (argc > 0) {
@@ -802,9 +902,11 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-cameras")) { argc--; argv++; input_camera_filename = *argv; }
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-create_position_images")) { output = create_position_images = 1; }
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
+      else if (!strcmp(*argv, "-create_segmentation_images")) { output = create_segmentation_images = 1; }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }

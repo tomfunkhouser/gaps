@@ -101,8 +101,9 @@ public:
   virtual int ReleaseDepthChannel(void);
 
 public:
-  // Mesh construction (unlike channels, you should delete the mesh when you are done with it)
-  R3Mesh *Mesh(void) const;
+  // Mesh/image construction (unlike channels, you should delete the returned result when you are done with it)
+  // R3Mesh *Mesh(void) const;
+  // R2Image *Image(void) const;
 
   // Channel creation
   virtual int CreateColorChannels(const R2Image& color_image);

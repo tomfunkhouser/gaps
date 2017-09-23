@@ -259,6 +259,7 @@ ReadFile(const char *filename, int read_every_kth_image)
         fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
+
       // Set dataset format
       SetDatasetFormat(name);
     }
