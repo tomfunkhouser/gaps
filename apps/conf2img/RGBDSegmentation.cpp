@@ -206,7 +206,7 @@ RGBDWriteSegmentation(Segmentation *segmentation, const char *filename)
   for (int i = 0; i < segmentation->clusters.NEntries(); i++) {
     Cluster *cluster = segmentation->clusters.Kth(i);
     fprintf(fp, "%d %d %g %g %d  %g %g %g  %g %g %g %g  %g %g %g\n",
-            i, cluster->points.NEntries(),
+            i+1, cluster->points.NEntries(),
             cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
             cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
             cluster->primitive.plane.A(), cluster->primitive.plane.B(), cluster->primitive.plane.C(), cluster->primitive.plane.D(),
@@ -249,7 +249,7 @@ RGBDCreateSegmentationChannel(const R2Grid& depth_image,
       if (RNIsNegativeOrZero(point->depth)) continue;
       if (point->data_index < 0) continue;
       if (point->data_index >= output_segmentation_image.NEntries()) continue;
-      output_segmentation_image.SetGridValue(point->data_index, i);
+      output_segmentation_image.SetGridValue(point->data_index, i+1);
     }
   }
 

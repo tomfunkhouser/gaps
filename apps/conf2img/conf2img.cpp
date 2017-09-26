@@ -36,6 +36,7 @@ static int create_position_images = 0;
 static int create_boundary_images = 0;
 static int create_normal_images = 0;
 static int create_segmentation_images = 0;
+static int create_patchwork_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
 static int capture_mesh_depth_images = 0;
@@ -356,7 +357,6 @@ WriteImages(const char *output_directory)
     }
 
     // Create segmentation image
-    R2Grid segmentation_image;
     if (create_segmentation_images) {
       // Create color image
       if (!image->ReadColorChannels()) return 0;
@@ -370,7 +370,8 @@ WriteImages(const char *output_directory)
       R3Matrix color_intrinsics_matrix = image->Intrinsics();
       RGBDResampleColorImage(color_image, color_intrinsics_matrix, width, height);
 
-      // Create segmentation
+      // Create segmentation image
+      R2Grid segmentation_image;
       char output_ascii_filename[4096];
       sprintf(output_ascii_filename, "%s/%s_segmentation.txt", output_directory, image_name);
       RGBDCreateSegmentationChannel(depth_image,
@@ -380,7 +381,7 @@ WriteImages(const char *output_directory)
         R3zero_point, R3negz_vector, R3posy_vector,
         output_ascii_filename);
 
-      // Write segmentation
+      // Write segmentation image
       if (create_segmentation_images) {
         char output_image_filename[4096];
         sprintf(output_image_filename, "%s/%s_segmentation.png", output_directory, image_name);
@@ -408,6 +409,156 @@ WriteImages(const char *output_directory)
   // Return success
   return 1;
 }
+
+
+
+#if 0
+static int
+WritePatchworkImages(const char *output_directory)
+{
+  // Check parameters
+  if (!create_patchwork_images) return 1;
+
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Writing patchwork images to %s ...\n", output_directory);
+    fflush(stdout);
+  }
+
+  // Write images
+  for (int i = 0; i < configuration.NImages(); i++) {
+    RGBDImage *image = configuration.Image(i);
+
+    // Get image name
+    char image_name_buffer[4096];
+    const char *filename = image->DepthFilename();
+    if (!filename) filename = image->ColorFilename();
+    if (!filename) filename = "default";
+    strncpy(image_name_buffer, filename, 4096);
+    char *image_name = (strrchr(image_name_buffer, '/')) ? strrchr(image_name_buffer, '/')+1 : image_name_buffer;
+    char *endp = strrchr(image_name, '.');
+    if (endp) *endp = '\0';
+
+    // Print timing message
+    RNTime step_time;
+    if (print_debug) {
+      printf("    A %s\n", image_name);
+      fflush(stdout);
+      step_time.Read();
+    }
+
+    // Read dependency images
+    char input_image_filename[4096];
+    R2Grid nx_image, ny_image, nz_image, radius_image, boundary_image;
+    sprintf(input_image_filename, "%s/%s_nx.png", output_directory, image_name);
+    if (!nx_image.ReadFile(input_image_filename)) return 0;
+    nx_image.Divide(32768); nx_image.Subtract(1);
+    sprintf(input_image_filename, "%s/%s_ny.png", output_directory, image_name);
+    if (!ny_image.ReadFile(input_image_filename)) return 0;
+    ny_image.Divide(32768); ny_image.Subtract(1);
+    sprintf(input_image_filename, "%s/%s_nz.png", output_directory, image_name);
+    if (!nz_image.ReadFile(input_image_filename)) return 0;
+    nz_image.Divide(32768); nz_image.Subtract(1);
+    sprintf(input_image_filename, "%s/%s_radius.png", output_directory, image_name);
+    if (!radius_image.ReadFile(input_image_filename)) return 0;
+    radius_image.Divide(4000); 
+    sprintf(input_image_filename, "%s/%s_boundary.png", output_directory, image_name);
+    if (!boundary_image.ReadFile(input_image_filename)) return 0;
+
+    // Print timing message
+    if (print_debug) {
+      printf("    B %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+
+    // Create patchwork images
+    R2Grid patchwork_depth_image, patchwork_radius_image,;
+    R2Grid patchwork_dx_image, patchwork_dy_image, patchwork_ld_image;
+    R2Grid patchwork_lx_image, patchwork_ly_image, patchwork_lz_image;
+    R2Grid patchwork_nx_image, patchwork_ny_image, patchwork_nz_image, patchwork_nd_image;
+    RGBDCreatePatchworkImages(depth_image,
+      nx_image, ny_image, nz_image, radius_image, boundary_image, 
+      patchwork_depth_image, patchwork_radius_image,
+      patchwork_dx_image, patchwork_dy_image, patchwork_ld_image,
+      patchwork_lx_image, patchwork_ly_image, patchwork_lz_image,
+      patchwork_nx_image, patchwork_ny_image, patchwork_nz_image, patchwork_nd_image,
+      R3zero_point, R3negz_vector, R3posy_vector);
+
+
+    // Print timing message
+    if (print_debug) {
+      printf("    C %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+
+    // Write patchwork images
+    R2Grid tmp;
+    char output_image_filename[4096];
+    sprintf(output_image_filename, "%s/%s_patchwork_depth.png", output_directory, image_name);
+    tmp = patchwork_depth_image;  tmp.Multiply(1000);
+    if (configuration.DatasetFormat() && !strcmp(configuration.DatasetFormat(), "matterport")) tmp.Multiply(4);
+    else if (configuration.DatasetFormat() && !strcmp(configuration.DatasetFormat(), "tum")) tmp.Multiply(5);
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_radius.png", output_directory, image_name);
+    tmp = patchwork_radius_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_dx.png", output_directory, image_name);
+    tmp = patchwork_dx_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_dy.png", output_directory, image_name);
+    tmp = patchwork_dy_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_ld.png", output_directory, image_name);
+    tmp = patchwork_ld_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_lx.png", output_directory, image_name);
+    tmp = patchwork_lx_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_ly.png", output_directory, image_name);
+    tmp = patchwork_ly_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_lz.png", output_directory, image_name);
+    tmp = patchwork_lz_image;  tmp.Multiply(4000); 
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_nx.png", output_directory, image_name);
+    tmp = patchwork_nx_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_ny.png", output_directory, image_name);
+    tmp = patchwork_ny_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_nz.png", output_directory, image_name);
+    tmp = patchwork_nz_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+    tmp.WriteFile(output_image_filename);
+    sprintf(output_image_filename, "%s/%s_patchwork_nd.png", output_directory, image_name);
+    tmp = patchwork_nd_image;  tmp.Multiply(1000);
+    if (configuration.DatasetFormat() && !strcmp(configuration.DatasetFormat(), "matterport")) tmp.Multiply(4);
+    else if (configuration.DatasetFormat() && !strcmp(configuration.DatasetFormat(), "tum")) tmp.Multiply(5);
+    tmp.WriteFile(output_image_filename);
+
+    // Print timing message
+    if (print_debug) {
+      printf("    D %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Wrote patchwork images to %s\n", output_directory);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration.NImages());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+#endif
 
 
 
@@ -907,6 +1058,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
       else if (!strcmp(*argv, "-create_segmentation_images")) { output = create_segmentation_images = 1; }
+      else if (!strcmp(*argv, "-create_patchwork_images")) { output = create_patchwork_images = 1; }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }
@@ -934,6 +1086,13 @@ ParseArgs(int argc, char **argv)
     }
   }
 
+  // Resolve dependencies
+  if (create_patchwork_images) {
+    create_position_images = 1;
+    create_boundary_images = 1;
+    create_normal_images = 1;
+  }
+  
   // Set default capture options
   if (!output) {
     capture_color_images = 1;
