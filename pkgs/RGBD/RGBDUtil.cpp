@@ -632,6 +632,7 @@ int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres,
   // Just checking
   if ((xres == 0) || (yres == 0)) return 0;
   if ((image.XResolution() == 0) || (image.YResolution() == 0)) return 0;
+  if ((image.XResolution() == xres) && (image.YResolution() == yres)) return 1;
 
   // Compute scale factors
   double xscale = (double) image.XResolution() / (double) xres;

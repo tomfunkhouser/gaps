@@ -3283,7 +3283,7 @@ ReadFile(const char *filename)
   else  return ReadImage(filename);
   
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  fprintf(stderr, "Unrecognized image file extension\n");
   return 0;
 }
 
@@ -3307,7 +3307,7 @@ WriteFile(const char *filename) const
   else return WriteImage(filename);
 
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  fprintf(stderr, "Unrecognized image file extension\n");
   return 0;
 }
 

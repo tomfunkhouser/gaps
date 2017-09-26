@@ -191,7 +191,7 @@ R3Vector RGBDImage::
 PixelWorldNormal(int ix, int iy) const
 {
   // Allocate buffer of points
-  const int r = 64;
+  const int r = 2;
   R3Point *points = new R3Point[(2*r+1) * (2*r+1)];
   int npoints = 0;
   
@@ -1109,12 +1109,11 @@ ReadDepthChannel(void)
       if (!strcmp(configuration->DatasetFormat(), "sunrgbd") ||
           !strcmp(configuration->DatasetFormat(), "sun3d") ||
           !strcmp(configuration->DatasetFormat(), "nyu") ||
+          !strcmp(configuration->DatasetFormat(), "tum") ||
           !strcmp(configuration->DatasetFormat(), "princeton")) {
         RNScalar d_sigma = 0.05;
         RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
-        // depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
         depth_image.BilateralFilter(xy_sigma, d_sigma);
-        // depth_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
       }
     }
   }
@@ -1180,9 +1179,21 @@ WriteDepthChannel(void)
   if (dirname) sprintf(full_filename, "%s/%s", dirname, depth_filename);
   else sprintf(full_filename, "%s", depth_filename);
   
-  // Write depth image  
+  // Get depth image  
   R2Grid depth_image(*(channels[RGBD_DEPTH_CHANNEL]));
-  if (strstr(depth_filename, ".png")) depth_image.Multiply(1000.0);
+  if (strstr(depth_filename, ".png")) {
+    depth_image.Multiply(1000.0);
+    if (configuration && configuration->DatasetFormat()) {
+      if (!strcmp(configuration->DatasetFormat(), "matterport")) {
+        depth_image.Multiply(4);
+      }
+      else if (!strcmp(configuration->DatasetFormat(), "tum")) {
+        depth_image.Multiply(5);
+      }
+    }
+  }
+    
+  // Write depth image  
   if (!depth_image.WriteFile(depth_filename)) return 0;
 
   // Return success
