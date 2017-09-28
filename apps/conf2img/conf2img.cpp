@@ -335,13 +335,13 @@ WriteImages(const char *output_directory)
         R2Grid tmp;
         char output_image_filename[4096];
         sprintf(output_image_filename, "%s/%s_nx.png", output_directory, image_name);
-        tmp = nx_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+        tmp = nx_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(0, 0, R2_GRID_KEEP_VALUE); tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
         tmp.WriteFile(output_image_filename);
         sprintf(output_image_filename, "%s/%s_ny.png", output_directory, image_name);
-        tmp = ny_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+        tmp = ny_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(0, 0, R2_GRID_KEEP_VALUE); tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
         tmp.WriteFile(output_image_filename);
         sprintf(output_image_filename, "%s/%s_nz.png", output_directory, image_name);
-        tmp = nz_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+        tmp = nz_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(0, 0, R2_GRID_KEEP_VALUE); tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
         tmp.WriteFile(output_image_filename);
         sprintf(output_image_filename, "%s/%s_radius.png", output_directory, image_name);
         tmp = radius_image;  tmp.Multiply(4000); 
@@ -710,7 +710,7 @@ Affinity(const R3Point& source_viewpoint, const R3Vector& source_towards,
 static void
 RenderConfiguration(const RGBDConfiguration& configuration,
   const R3Point& target_viewpoint, const R3Vector& target_towards,
-  RNScalar min_affinity = 0.1)
+  RNScalar min_affinity = 0.01, RNScalar min_affinity_ratio = 0.25)
 {
   // Clear window
   glViewport(0, 0, width, height);
@@ -719,16 +719,51 @@ RenderConfiguration(const RGBDConfiguration& configuration,
   glEnable(GL_DEPTH_TEST);
   glColor3d(1.0, 1.0, 1.0);
 
-  // Draw points
-  for (int i = 0; i < configuration.NImages(); i++) {
-    RGBDImage *image = configuration.Image(i);
-    RNScalar affinity = Affinity(image->WorldViewpoint(), image->WorldTowards(), target_viewpoint, target_towards);
-    if (affinity < min_affinity) continue;
-    image->ReadChannels();
-    image->DrawPoints(RGBD_PHOTO_COLOR_SCHEME);
-    image->ReleaseChannels();
-  }
+  // Draw images
+  if (configuration.NImages() > 0) {
+    // Create array of affinities
+    RNArray<RGBDImage *> images;
+    RNScalar *affinities = new RNScalar [ configuration.NImages() ];
+    for (int i = 0; i < configuration.NImages(); i++) {
+      RGBDImage *image = configuration.Image(i);
+      RNScalar affinity = Affinity(image->WorldViewpoint(), image->WorldTowards(), target_viewpoint, target_towards);
+      if (affinity < min_affinity) continue;
+      affinities[images.NEntries()] = affinity;
+      images.Insert(image);
+    }
 
+    // Sort images based on affinity
+    for (int i = 0; i < images.NEntries(); i++) {
+      for (int j = i+1; j < images.NEntries(); j++) {
+        if (affinities[j] > affinities[i]) {
+          RGBDImage *swap_image = images[j];
+          images[j] = images[i];
+          images[i] = swap_image;
+          RNScalar swap_affinity = affinities[j];
+          affinities[j] = affinities[i];
+          affinities[i] = swap_affinity;
+        }
+      }
+    }
+
+    // Draw images with best affinity
+    RNScalar best_affinity = affinities[0];
+    if (best_affinity > 0) {
+      for (int i = 0; i < images.NEntries(); i++) {
+        RGBDImage *image = images.Kth(i);
+        RNScalar affinity = affinities[i];
+        if ((min_affinity_ratio > 0) && (affinity < min_affinity_ratio * best_affinity)) continue;
+        image->ReadChannels();
+        image->DrawSurfels(RGBD_PHOTO_COLOR_SCHEME);
+        image->ReleaseChannels();
+        printf("%d %s %g\n", i, image->Name(), affinity);
+      }
+    }
+
+    // Delete array of affinities
+    delete [] affinities;
+  }
+  
   // Draw surfaces
   for (int i = 0; i < configuration.NSurfaces(); i++) {
     RGBDSurface *surface = configuration.Surface(i);

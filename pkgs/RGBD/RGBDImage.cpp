@@ -738,8 +738,75 @@ DrawPoints(int color_scheme, int skip) const
 
 
 void RGBDImage::
+DrawSurfels(int color_scheme, int skip) const
+{
+  // Get info about current view
+  GLint viewport[4];
+  GLdouble modelview_matrix[16];
+  GLdouble projection_matrix[16];
+  R3Point c0(0, 0, 0), w0;
+  R3Point c1(0, 0, -1), w1;
+  R3Point c2(1, 0, -1), w2;
+  R3Point c3(0, 1, -1), w3;
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+  glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+  gluUnProject(c0[0], c0[1], c0[2], modelview_matrix, projection_matrix, viewport, &(w0[0]), &(w0[1]), &(w0[2]));
+  gluUnProject(c1[0], c1[1], c1[2], modelview_matrix, projection_matrix, viewport, &(w1[0]), &(w1[1]), &(w1[2]));
+  gluUnProject(c2[0], c2[1], c2[2], modelview_matrix, projection_matrix, viewport, &(w2[0]), &(w2[1]), &(w2[2]));
+  gluUnProject(c3[0], c3[1], c3[2], modelview_matrix, projection_matrix, viewport, &(w3[0]), &(w3[1]), &(w3[2]));
+  R3Vector view_towards = w1 - w0; view_towards.Normalize();
+  R3Vector view_right = w2 - w1; view_right.Normalize();
+  R3Vector view_up = w3 - w1; view_up.Normalize();
+
+  // Enable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_LIGHTING);
+  }
+
+  // Draw color
+  LoadColor(color_scheme);
+
+  // Draw little quads
+  glBegin(GL_QUADS);
+  R3Point world_position;
+  for (int ix = 0; ix < NPixels(RN_X)-1; ix += skip) {
+    for (int iy = 0; iy < NPixels(RN_Y)-1; iy += skip) {
+      RNScalar depth = PixelDepth(ix, iy);
+      if (RNIsZero(depth)) continue;
+      if (!RGBDTransformImageToWorld(R2Point(ix, iy), world_position, this)) continue;
+      RNScalar r = depth / Intrinsics()[0][0];
+      if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
+      R3LoadPoint(world_position - r*view_right - r*view_up);
+      R3LoadPoint(world_position + r*view_right - r*view_up);
+      R3LoadPoint(world_position + r*view_right + r*view_up);
+      R3LoadPoint(world_position - r*view_right + r*view_up);
+    }
+  }
+  glEnd();
+  
+  // Disable lighting and material
+  if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+  }
+}
+
+
+
+void RGBDImage::
 DrawQuads(int color_scheme, int skip) const
 {
+  // Get info about current view
+  GLint viewport[4];
+  GLdouble modelview_matrix[16];
+  GLdouble projection_matrix[16];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+  glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+
   // Push transformation
   CameraToWorld().Push();
 
@@ -762,12 +829,12 @@ DrawQuads(int color_scheme, int skip) const
       if (!RGBDTransformImageToCamera(R2Point(ix+skip, iy), p2, this)) continue;
       if (!RGBDTransformImageToCamera(R2Point(ix+skip, iy+skip), p3, this)) continue;
       if (!RGBDTransformImageToCamera(R2Point(ix, iy+skip), p4, this)) continue;
-      if ((fabs(p1.Z() - p2.Z())/-p1.Z() < 0.05) &&
-          (fabs(p2.Z() - p3.Z())/-p2.Z() < 0.05) &&
-          (fabs(p3.Z() - p1.Z())/-p3.Z() < 0.05)) {
-        R3Plane plane(p1, p2, p3);
-        RNScalar dot = plane.Normal().Dot(p1.Vector());
-        if (dot < -0.5 ) {
+      R3Plane plane(p1, p2, p3);
+      RNScalar dot = plane.Normal().Dot(p1.Vector());
+      if (dot < -0.5) {
+        if ((fabs(p1.Z() - p2.Z())/-p1.Z() < 0.05) &&
+            (fabs(p2.Z() - p3.Z())/-p2.Z() < 0.05) &&
+            (fabs(p3.Z() - p1.Z())/-p3.Z() < 0.05)) {
           R3LoadNormal(plane.Normal());
           if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
           R3LoadPoint(p1);
@@ -776,13 +843,9 @@ DrawQuads(int color_scheme, int skip) const
           if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix+skip, iy+skip));
           R3LoadPoint(p3);
         }
-      }
-      if ((fabs(p1.Z() - p3.Z())/-p1.Z() < 0.05) &&
-          (fabs(p3.Z() - p4.Z())/-p3.Z() < 0.05) &&
-          (fabs(p4.Z() - p1.Z())/-p4.Z() < 0.05)) {
-        R3Plane plane(p1, p3, p4);
-        RNScalar dot = plane.Normal().Dot(p1.Vector());
-        if (dot < -0.5 ) {
+        if ((fabs(p1.Z() - p3.Z())/-p1.Z() < 0.05) &&
+            (fabs(p3.Z() - p4.Z())/-p3.Z() < 0.05) &&
+            (fabs(p4.Z() - p1.Z())/-p4.Z() < 0.05)) {
           R3LoadNormal(plane.Normal());
           if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) RNLoadRgb(PixelColor(ix, iy));
           R3LoadPoint(p1);

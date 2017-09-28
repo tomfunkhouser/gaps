@@ -66,6 +66,7 @@ static int show_cameras = 1;
 static int show_bboxes = 0;
 static int show_images = 0;
 static int show_points = 0;
+static int show_surfels = 0;
 static int show_quads = 0;
 static int show_faces = 0;
 static int show_edges = 0;
@@ -498,6 +499,20 @@ DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 
 
 static void
+DrawSurfels(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
+{
+  // Draw pixels of all images as surfels in world space
+  for (int i = 0; i < configuration.NImages(); i++) {
+    RGBDImage *image = configuration.Image(i);
+    if (!image->DepthChannel()) continue;
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) image->DrawSurfels(RGBD_HIGHLIGHT_COLOR_SCHEME, skip);
+    else image->DrawSurfels(color_scheme, skip);
+  }
+}
+
+
+
+static void
 DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 {
   // Draw pixels of all images as quads in world space
@@ -724,6 +739,7 @@ Pick(int x, int y,
     if (show_cameras) DrawCameras(RGBD_INDEX_COLOR_SCHEME);
     if (show_bboxes) DrawBBoxes(RGBD_INDEX_COLOR_SCHEME);
     if (show_points) DrawPoints(RGBD_INDEX_COLOR_SCHEME);
+    if (show_surfels) DrawSurfels(RGBD_INDEX_COLOR_SCHEME);
     if (show_quads) DrawQuads(RGBD_INDEX_COLOR_SCHEME);
   }
   if (picked_surface || !picked_image) {
@@ -1019,6 +1035,7 @@ void GLUTRedraw(void)
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
   if (show_points) DrawPoints(color_scheme);
+  if (show_surfels) DrawSurfels(color_scheme);
   if (show_quads) DrawQuads(color_scheme);
   if (show_textures) DrawTextures(color_scheme);
   if (show_overlaps) DrawOverlaps();
@@ -1308,6 +1325,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'q':
   case 'Q':
     show_quads = !show_quads;
+    break;
+
+  case 's':
+  case 'S':
+    show_surfels = !show_surfels;
     break;
 
   case 'T':
