@@ -927,12 +927,15 @@ Affinity(Point *point) const
     }
     else if (primitive.primitive_type == PLANE_PRIMITIVE_TYPE) {
       RNScalar dot = primitive.plane.Normal().Dot(point->normal);
-      RNAngle normal_angle = (dot < 1) ? acos(dot) : 0;
+      RNAngle normal_angle = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
       if (seed_point && (seed_point->depth > 0)) normal_angle /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_cluster_normal_angle * max_cluster_normal_angle));
       affinity *= normal_angle_affinity;
     }
   }
+
+  // Just checking
+  assert(affinity >= 0);
 
   // Return affinity
   return affinity;
@@ -954,6 +957,7 @@ Affinity(Cluster *cluster) const
     color_difference += fabs(color.R() - cluster->color.R());
     RNScalar color_difference_affinity = exp(color_difference * color_difference / (-2.0 * 0.25 * max_pair_color_difference * max_pair_color_difference));
     affinity *= color_difference_affinity;
+    assert(affinity >= 0);
   }
 
   // Compute centroid distance
@@ -961,6 +965,7 @@ Affinity(Cluster *cluster) const
     RNLength centroid_distance = R3Distance(primitive.centroid, cluster->primitive.centroid);
     RNScalar centroid_distance_affinity = exp(centroid_distance * centroid_distance / (-2.0 * 0.25 * max_pair_centroid_distance * max_pair_centroid_distance));
     affinity *= centroid_distance_affinity;
+    assert(affinity >= 0);
   }
 
   // Compute primitive distances
@@ -970,12 +975,14 @@ Affinity(Cluster *cluster) const
     if (seed_point && (seed_point->depth > 0)) primitive0_distance  /= seed_point->depth;
     RNScalar primitive0_distance_affinity = exp(primitive0_distance * primitive0_distance / (-2.0 * 0.25 * max_pair_primitive_distance * max_pair_primitive_distance));
     affinity *= primitive0_distance_affinity;
+    assert(affinity >= 0);
 
     // Compute point1-primitive0 distance
     RNLength primitive1_distance = cluster->primitive.Distance(primitive.centroid);
     if (seed_point && (seed_point->depth > 0)) primitive1_distance  /= seed_point->depth;
     RNScalar primitive1_distance_affinity = exp(primitive1_distance * primitive1_distance / (-2.0 * 0.25 * max_pair_primitive_distance * max_pair_primitive_distance));
     affinity *= primitive1_distance_affinity;
+    assert(affinity >= 0);
   }
 
   // Compute normal angle
@@ -986,6 +993,7 @@ Affinity(Cluster *cluster) const
       if (seed_point && (seed_point->depth > 0)) normal_angle  /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_pair_normal_angle * max_pair_normal_angle));
       affinity *= normal_angle_affinity;
+      assert(affinity >= 0);
     }
     else if ((primitive.primitive_type == PLANE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == LINE_PRIMITIVE_TYPE)) {
       RNScalar dot = fabs(primitive.plane.Normal().Dot(cluster->primitive.line.Vector()));
@@ -993,6 +1001,7 @@ Affinity(Cluster *cluster) const
       if (seed_point && (seed_point->depth > 0)) normal_angle  /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_pair_normal_angle * max_pair_normal_angle));
       affinity *= normal_angle_affinity;
+      assert(affinity >= 0);
     }
     else if ((primitive.primitive_type == LINE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == PLANE_PRIMITIVE_TYPE)) {
       RNScalar dot = fabs(primitive.line.Vector().Dot(cluster->primitive.plane.Normal()));
@@ -1000,13 +1009,15 @@ Affinity(Cluster *cluster) const
       if (seed_point && (seed_point->depth > 0)) normal_angle  /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_pair_normal_angle * max_pair_normal_angle));
       affinity *= normal_angle_affinity;
+      assert(affinity >= 0);
     }
     else if ((primitive.primitive_type == PLANE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == PLANE_PRIMITIVE_TYPE)) {
       RNScalar dot = primitive.plane.Normal().Dot(cluster->primitive.plane.Normal());
-      RNAngle normal_angle = (dot < 1) ? acos(dot) : 0;
+      RNAngle normal_angle = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
       if (seed_point && (seed_point->depth > 0)) normal_angle  /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_pair_normal_angle * max_pair_normal_angle));
       affinity *= normal_angle_affinity;
+      assert(affinity >= 0);
     }
   }
 
@@ -1020,6 +1031,7 @@ Affinity(Cluster *cluster) const
       RNScalar avg_points_per_cluster = (RNScalar) segmentation_npoints / (RNScalar) segmentation_nclusters;
       RNScalar balance_affinity =  avg_points_per_cluster / smaller_npoints;
       affinity *= balance_affinity;
+      assert(affinity >= 0);
     }
   }
   
@@ -1027,18 +1039,23 @@ Affinity(Cluster *cluster) const
   if (balance_cluster_sizes) {
     RNScalar balance_affinity = 1.0;
     if (points.NEntries() == 0) return 0;
-    if (points.NEntries() == 0) return 0;
+    if (cluster->points.NEntries() == 0) return 0;
     if (points.NEntries() < cluster->points.NEntries()) balance_affinity = (RNScalar) points.NEntries() / (RNScalar) cluster->points.NEntries();
-    else balance_affinity = (RNScalar) points.NEntries() / (RNScalar) cluster->points.NEntries();
+    else balance_affinity = (RNScalar) cluster->points.NEntries() / (RNScalar) points.NEntries();
     affinity *= balance_affinity;
+    assert(affinity >= 0);
   }
   
   // Compute fraction of points in smallest cluster
   if (favor_convex_clusters) {
     RNScalar convexity_affinity = MergedConvexity(this, cluster);
     affinity *= convexity_affinity;
+    assert(affinity >= 0);
   }
   
+  // Just checking
+  assert(affinity >= 0);
+
   // Return affinity
   return affinity;
 }
