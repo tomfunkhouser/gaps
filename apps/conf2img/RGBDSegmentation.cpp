@@ -156,7 +156,7 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
   // Adjust segmentation parameters ???
   min_cluster_points = 10 * depth_image.NEntries() / (640 * 480);
   max_reassignment_iterations = 1;
-  max_refinement_iterations = 1;
+  max_refinement_iterations = 3;
   
   // Allocate segmentation
   Segmentation *segmentation = new Segmentation();

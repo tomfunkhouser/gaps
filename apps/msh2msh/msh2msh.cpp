@@ -13,6 +13,7 @@
 const char *input_name = NULL;
 const char *output_name = NULL;
 const char *color_name = NULL;
+const char *merge_list_name = NULL;
 int flip_faces = 0;
 int clean = 0;
 int smooth = 0;
@@ -128,6 +129,34 @@ ReadMatrix(R4Matrix& m, const char *filename)
 ////////////////////////////////////////////////////////////////////////
 
 static int
+MergeList(R3Mesh *mesh, const char *filename)
+{
+  // Open list file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open list %s\n", filename);
+    return 0;
+  }
+
+  // Merge meshes from list
+  char src_filename[4096];
+  while (fscanf(fp, "%s", src_filename) == (unsigned int) 1) {
+    // Read mesh
+    R3Mesh src_mesh;
+    if (!src_mesh.ReadFile(src_filename)) return 0;
+    mesh->CreateCopy(src_mesh);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 CopyColors(R3Mesh *mesh, const char *source_mesh_name)
 {
   // Read source mesh
@@ -210,6 +239,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-min_edge_length")) { argv++; argc--; min_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
+      else if (!strcmp(*argv, "-merge_list")) { argv++; argc--; merge_list_name = *argv; }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -251,6 +281,11 @@ int main(int argc, char **argv)
   // Read mesh
   R3Mesh *mesh = ReadMesh(input_name);
   if (!mesh) exit(-1);
+
+  // Merge meshes from list
+  if (merge_list_name) {
+    if (!MergeList(mesh, merge_list_name)) exit(-1);
+  }
 
   // Scale based on mesh area
   if (scale_by_area) {

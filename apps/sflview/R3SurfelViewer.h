@@ -62,6 +62,7 @@ public:
   int AerialVisibility(void) const;
   int TerrestrialVisibility(void) const;
   int ObjectPropertyVisibility(void) const;
+  int ObjectRelationshipVisibility(void) const;
   int ObjectLabelVisibility(void) const;
   int ObjectNameVisibility(void) const;
   int NodeBBoxVisibility(void) const;
@@ -112,6 +113,7 @@ public:
   void SetAerialVisibility(int visibility);
   void SetTerrestrialVisibility(int visibility);
   void SetObjectPropertyVisibility(int visibility);
+  void SetObjectRelationshipVisibility(int visibility);
   void SetObjectLabelVisibility(int visibility);
   void SetObjectNameVisibility(int visibility);
   void SetNodeBBoxVisibility(int visibility);
@@ -200,6 +202,7 @@ protected:
   int aerial_visibility;
   int terrestrial_visibility;
   int object_property_visibility;
+  int object_relationship_visibility;
   int object_label_visibility;
   int object_name_visibility;
   int node_bbox_visibility;
@@ -400,6 +403,15 @@ ObjectPropertyVisibility(void) const
 {
   // Return object property visibililty
   return object_property_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ObjectRelationshipVisibility(void) const
+{
+  // Return object relationship visibililty
+  return object_relationship_visibility;
 }
 
 
@@ -722,6 +734,17 @@ SetObjectPropertyVisibility(int visibility)
   if (visibility == -1) object_property_visibility = 1 - object_property_visibility;
   else if (visibility == 0) object_property_visibility = 0;
   else object_property_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetObjectRelationshipVisibility(int visibility)
+{
+  // Set object relationship visibililty
+  if (visibility == -1) object_relationship_visibility = 1 - object_relationship_visibility;
+  else if (visibility == 0) object_relationship_visibility = 0;
+  else object_relationship_visibility = 1;
 }
 
 

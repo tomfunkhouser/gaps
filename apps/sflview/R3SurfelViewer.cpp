@@ -1217,7 +1217,7 @@ JumpToNextScanViewpoint(int delta)
   R3Camera camera(scan->Viewpoint(), scan->Towards(), scan->Up(),
     scan->XFOV(), scan->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
   viewer.SetCamera(camera);
-
+  
   // Update working set
   R3SurfelNode *node = scan->Node();
   if (!node) {
