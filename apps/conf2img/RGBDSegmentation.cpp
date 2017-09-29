@@ -154,7 +154,7 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
   const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up)
 {
   // Adjust segmentation parameters ???
-  min_cluster_points = 20 * depth_image.NEntries() / (640 * 480);
+  min_cluster_points = 10 * depth_image.NEntries() / (640 * 480);
   
   // Allocate segmentation
   Segmentation *segmentation = new Segmentation();
