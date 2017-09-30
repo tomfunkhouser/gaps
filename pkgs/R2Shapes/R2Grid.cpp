@@ -965,7 +965,7 @@ AddNoise(RNScalar sigma_fraction)
 
 
 void R2Grid::
-BilateralFilter(RNLength grid_sigma, RNLength value_sigma)
+BilateralFilter(RNLength grid_sigma, RNLength value_sigma, RNBoolean value_sigma_is_fraction)
 {
   // Make copy of grid
   R2Grid copy(*this);
@@ -977,8 +977,8 @@ BilateralFilter(RNLength grid_sigma, RNLength value_sigma)
   }
 
   // Get convenient variables
-  double grid_denom = 2.0 * grid_sigma * grid_sigma;
-  double value_denom = 2.0 * value_sigma * value_sigma;
+  double grid_denom = -2.0 * grid_sigma * grid_sigma;
+  double value_denom = -2.0 * value_sigma * value_sigma;
   RNScalar grid_radius = 3 * grid_sigma;
   int r = (int) (grid_radius + 1);
   int r_squared = r * r;
@@ -989,6 +989,9 @@ BilateralFilter(RNLength grid_sigma, RNLength value_sigma)
       // Check if current value is unknown - if so, don't update
       RNScalar value = copy.GridValue(cx, cy);
       if (value != R2_GRID_UNKNOWN_VALUE) {
+        if (value_sigma_is_fraction && (value > 0)) {
+          value_denom = -2.0 * value_sigma * value_sigma * value * value;
+        }
         RNScalar sum = 0;
         RNScalar weight = 0;
         int ymin = cy - r;
@@ -1009,7 +1012,7 @@ BilateralFilter(RNLength grid_sigma, RNLength value_sigma)
             if (sample == R2_GRID_UNKNOWN_VALUE) continue;
             RNScalar value_distance_squared = value - sample;
             value_distance_squared *= value_distance_squared;
-            RNScalar w = exp(-grid_distance_squared/grid_denom) * exp(-value_distance_squared/value_denom);
+            RNScalar w = exp(grid_distance_squared/grid_denom) * exp(value_distance_squared/value_denom);
             sum += w * sample;
             weight += w;
           }

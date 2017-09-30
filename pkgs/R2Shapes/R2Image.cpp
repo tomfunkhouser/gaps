@@ -88,10 +88,10 @@ R2Image(const R2Grid& red, const R2Grid& green, const R2Grid& blue)
     pixels(NULL)
 {
   // Just checking
-  assert(red.XResolution() != green.XResolution());
-  assert(red.YResolution() != green.YResolution());
-  assert(red.XResolution() != blue.XResolution());
-  assert(red.YResolution() != blue.YResolution());
+  assert(red.XResolution() == green.XResolution());
+  assert(red.YResolution() == green.YResolution());
+  assert(red.XResolution() == blue.XResolution());
+  assert(red.YResolution() == blue.YResolution());
 
   // Copy pixels (first pixel is lower-left)
   rowsize = ncomponents * width;

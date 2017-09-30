@@ -1153,20 +1153,36 @@ ReadDepthChannel(void)
 
     // Read depth image
     if (!depth_image.ReadFile(full_filename)) return 0;
+
+
+    // Shift 3 bits (to compensate for shift done by SUNRGBD capture)
+    if (configuration && configuration->DatasetFormat()) {
+      if (!strcmp(configuration->DatasetFormat(), "sun3d") || !strcmp(configuration->DatasetFormat(), "sunrgbd")) {
+        for (int i = 0; i < depth_image.NEntries(); i++) {
+          unsigned int d = (unsigned int) (depth_image.GridValue(i) + 0.5);
+          d = ((d >> 3) & 0x1FFF) | ((d & 0x7) << 13);
+          depth_image.SetGridValue(i, d);
+        }
+      }
+    }
+
+    // Substite unknown for zero
     depth_image.Substitute(0, R2_GRID_UNKNOWN_VALUE);
-    if (strstr(depth_filename, ".png")) depth_image.Multiply(0.001);
     // MaskBoundaries(depth_image);
 
     // Perform dataset-dependent processing
-    if (configuration && configuration->DatasetFormat()) {
-      if (!strcmp(configuration->DatasetFormat(), "matterport")) {
-        depth_image.Multiply(0.25);
-      }
-      else if (!strcmp(configuration->DatasetFormat(), "tum")) {
-        depth_image.Multiply(0.2);
-      }
-      else if (!strcmp(configuration->DatasetFormat(), "icl")) {
-        depth_image.Multiply(0.2);
+    if (strstr(depth_filename, ".png")) {
+      depth_image.Multiply(0.001);
+      if (configuration && configuration->DatasetFormat()) {
+        if (!strcmp(configuration->DatasetFormat(), "matterport")) {
+          depth_image.Multiply(0.25);
+        }
+        else if (!strcmp(configuration->DatasetFormat(), "tum")) {
+          depth_image.Multiply(0.2);
+        }
+        else if (!strcmp(configuration->DatasetFormat(), "icl")) {
+          depth_image.Multiply(0.2);
+        }
       }
     }
 
@@ -1177,9 +1193,9 @@ ReadDepthChannel(void)
           !strcmp(configuration->DatasetFormat(), "nyu") ||
           !strcmp(configuration->DatasetFormat(), "tum") ||
           !strcmp(configuration->DatasetFormat(), "princeton")) {
-        RNScalar d_sigma = 0.05;
+        RNScalar d_sigma_fraction = 0.015;
         RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
-        depth_image.BilateralFilter(xy_sigma, d_sigma);
+        depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);
       }
     }
   }

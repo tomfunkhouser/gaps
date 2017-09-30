@@ -81,7 +81,7 @@ public:
   void Blur(RNDimension dim, RNScalar grid_sigma);
   void AddNoise(RNScalar sigma_fraction = 0.05);
   void HarrisCornerFilter(int grid_radius = 3, RNScalar kappa = 0.05);
-  void BilateralFilter(RNLength grid_sigma = 2, RNScalar value_sigma = -1);
+  void BilateralFilter(RNLength grid_sigma = 2, RNScalar value_sigma = -1, RNBoolean value_sigma_is_fraction = FALSE);
   void AnisotropicDiffusion(RNLength grid_sigma = 2, RNScalar gradient_sigma = -1);
   void PercentileFilter(RNLength grid_radius, RNScalar percentile);
   void MinFilter(RNLength grid_radius);
