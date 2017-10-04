@@ -60,8 +60,8 @@ class R3Camera {
         void SetRight(const R3Vector& right);
         void SetLeft(const R3Vector& left);
         void SetPitch(RNAngle pitch);
-        void SetYaw(RNAngle pitch);
-        void SetRoll(RNAngle pitch);
+        void SetYaw(RNAngle yaw);
+        void SetRoll(RNAngle roll);
         void SetFOV(RNAngle xfov, RNAngle yfov);
         void SetXFOV(RNAngle xfov);
         void SetYFOV(RNAngle yfov);

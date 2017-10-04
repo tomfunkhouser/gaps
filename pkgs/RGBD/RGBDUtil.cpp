@@ -641,7 +641,8 @@ int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres,
   // Copy original image and then initialize to zeroes
   R2Grid copy_image(image);
   image = R2Grid(xres, yres);
-
+  image.Clear(R2_GRID_UNKNOWN_VALUE);
+  
   // Resample images
   for (int iy = 0; iy < yres; iy++) {
     double cy = yscale * iy;
@@ -763,3 +764,76 @@ int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Alignment Functions
+////////////////////////////////////////////////////////////////////////
+
+#if 0
+R3Affine RGBDAlignmentTransformation(RGBDImage *image0, RGBDImage *image1, const R3Affine& initial_transformation,
+  RNLength start_max_distance, RNLength end_max_distance, int max_iterations)
+{
+  // Initialize transformation from world coordinates of image1 to world coordinates of image0
+  R3Affine transformation = initial_transformation;
+
+  // Check max iterations
+  if (max_iterations == 0) return transformation;
+  
+  // Create points for image0
+  RNArray<R3Point *> points0;
+  for (int iy = 0; iy < image0->NPixels(RN_Y); iy++) {
+    for (int ix = 0; ix < image0->NPixels(RN_X); ix++) {
+      R3Point world_position = image0->PixelWorldPosition(ix, iy);
+      points0.Insert(new R3Point(world_position));
+    }
+  }
+
+  // Create points for image1
+  RNArray<R3Point *> points1;
+  for (int iy = 0; iy < image1->NPixels(RN_Y); iy++) {
+    for (int ix = 0; ix < image1->NPixels(RN_X); ix++) {
+      R3Point world_position = image1->PixelWorldPosition(ix, iy);
+      points1.Insert(new R3Point(world_position));
+    }
+  }
+
+  // Check numbers of points
+  if ((points0.NEntries() > 128) && (points1.NEntries() > 128)) {
+    // Create kdtree for image0
+    R3Kdtree<R3Point *> kdtree0(points0);
+
+    // Iteratively align closest points
+    RNLength max_distance = start_max_distance;
+    RNLength max_distance_step_factor = pow(end_max_distance / start_max_distance, 1.0 / max_iterations);
+    for (int i = 0; i < max_iterations; i++) {
+      // Find correspondences
+      RNArray<R3Point *> correspondences0, correspondences1;
+      for (int j = 0; j < points1.NEntries(); j++) {
+        R3Point *point1 = points1.Kth(j);
+        R3Point transformed_point1 = *point1;
+        transformed_point1.Transform(transformation);
+        R3Point *point0 = kdtree0.FindClosest(&transformed_point1, 0, max_distance);
+        if (!point0) continue;
+        correspondences0.Insert(point0);
+        correspondences1.Insert(point1);
+      }
+
+      // Check number of correspondences
+      if (correspondences0.NEntries() < 128) break;
+    
+      // Update transformation
+      R4Matrix matrix = R3AlignPoints(correspondences0, correspondences1, NULL, TRUE, TRUE, FALSE);
+      transformation.Reset(matrix, 0);
+
+      // Update max distance
+      max_distance *= max_distance_step_factor;
+    }
+  }
+  
+  // Delete points
+  for (int i = 0; i < points0.NEntries(); i++) delete points0[i];
+  for (int i = 0; i < points1.NEntries(); i++) delete points1[i];
+
+  // Return transformation from world coordinates of image1 to world coordinates of image0
+  return transformation;
+}
+#endif

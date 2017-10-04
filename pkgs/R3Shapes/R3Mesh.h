@@ -391,6 +391,8 @@ class R3Mesh {
       // Returns kth face connected to face
   
     // TOPOLOGY QUERY FUNCTIONS
+    RNBoolean IsEmpty(void) const;
+      // Returns whether mesh has any vertices
     RNBoolean IsVertexOnEdge(const R3MeshVertex *vertex, const R3MeshEdge *edge) const;
       // Returns whether vertex lies on edge
     RNBoolean IsVertexOnFace(const R3MeshVertex *vertex, const R3MeshFace *face) const;
@@ -1688,6 +1690,15 @@ FaceOnFace(const R3MeshFace *f, int k) const
 ////////////////////////////////////////////////////////////////////////
 // TOPOLOGY QUERY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
+
+inline RNBoolean R3Mesh:: 
+IsEmpty(void) const
+{
+  // Returns whether mesh has any vertices
+  return vertices.IsEmpty();
+}
+
+
 
 inline RNBoolean R3Mesh:: 
 IsVertexOnEdge(const R3MeshVertex *v, const R3MeshEdge *e) const

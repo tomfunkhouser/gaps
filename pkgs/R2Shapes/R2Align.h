@@ -11,7 +11,7 @@ R2Affine R2NormalizationTransformation(const RNArray<R2Point *>& points,
   RNBoolean align_center = TRUE, RNBoolean align_rotation = TRUE, int align_scale = 1);
 RNScalar R2AlignError(const RNArray<R2Point *>& points1, const RNArray<R2Point *>& points2, 
   const R3Matrix& matrix = R3identity_matrix, const RNScalar* weights = NULL);
-R3Matrix R2AlignPoints(const RNArray<R2Point *>& points1, const RNArray<R2Point *>& poitns2, const RNScalar* weights = NULL, 
+R3Matrix R2AlignPoints(const RNArray<R2Point *>& points1, const RNArray<R2Point *>& points2, const RNScalar* weights = NULL, 
   RNBoolean align_center = TRUE, RNBoolean align_rotation = TRUE, int align_scale = 1);
 
 

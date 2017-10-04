@@ -39,13 +39,20 @@ static int create_segmentation_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
 static int capture_mesh_depth_images = 0;
-static int capture_object_images = 0;
-static int capture_category_images = 0;
+static int capture_mesh_position_images = 0;
+static int capture_mesh_wposition_images = 0;
+static int capture_mesh_normal_images = 0;
+static int capture_mesh_wnormal_images = 0;
+static int capture_mesh_ndotv_images = 0;
+static int capture_mesh_material_images = 0;
+static int capture_mesh_segment_images = 0;
+static int capture_mesh_category_images = 0;
 
 
 // Image selection options
 
 static int load_every_kth_image = 1;
+static int skip_removed_faces = 0;
 
 
 // Other parameter program variables
@@ -75,6 +82,37 @@ static RGBDConfiguration configuration;
 static RNArray<R3Camera *> cameras;
 static R3Mesh mesh;
 static int current_image_index = -1;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////
+
+// Rendering scheme constants
+
+enum {
+  BLACK_RENDERING,
+  MATERIAL_RENDERING,
+  SEGMENT_RENDERING,
+  CATEGORY_RENDERING,
+  CAMERA_PX_RENDERING,
+  CAMERA_PY_RENDERING,
+  CAMERA_PZ_RENDERING,
+  WORLD_PX_RENDERING,
+  WORLD_PY_RENDERING,
+  WORLD_PZ_RENDERING,
+  CAMERA_NX_RENDERING,
+  CAMERA_NY_RENDERING,
+  CAMERA_NZ_RENDERING,
+  CAMERA_ND_RENDERING,
+  WORLD_NX_RENDERING,
+  WORLD_NY_RENDERING,
+  WORLD_NZ_RENDERING,
+  WORLD_ND_RENDERING,
+  NDOTV_RENDERING,
+  NUM_RENDERING_SCHEMES
+};
 
 
 
@@ -456,10 +494,11 @@ LoadInteger(int value)
 {
   // Set color to represent an integer (24 bits)
   unsigned char color[4];
-  color[0] = (value >> 16) & 0xFF;
-  color[1] = (value >>  8) & 0xFF;
-  color[2] = (value      ) & 0xFF;
-  glColor3ubv(color);
+  color[0] = (value >> 24) & 0xFF;
+  color[1] = (value >> 16) & 0xFF;
+  color[2] = (value >>  8) & 0xFF;
+  color[3] = (value      ) & 0xFF;
+  glColor4ubv(color);
 }
 
 
@@ -468,10 +507,10 @@ static int
 CaptureInteger(R2Grid& image)
 {
   // Allocate pixel buffer
-  unsigned char *pixels = new unsigned char [ 3 * width * height ];
+  unsigned char *pixels = new unsigned char [ 4 * width * height ];
 
   // Read pixels
-  glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
   // Fill image
   unsigned char *pixelp = pixels;
@@ -480,10 +519,12 @@ CaptureInteger(R2Grid& image)
       unsigned int red = *pixelp++;
       unsigned int green = *pixelp++;
       unsigned int blue = *pixelp++;
+      unsigned int alpha = *pixelp++;
       unsigned int value = 0;
-      value |= red << 16;
-      value |= green <<  8;
-      value |= blue;
+      value |= red << 24;
+      value |= green << 16;
+      value |= blue <<  8;
+      value |= alpha;
       image.SetGridValue(ix, iy, value);
     }
   }
@@ -582,7 +623,7 @@ Affinity(const R3Point& source_viewpoint, const R3Vector& source_towards,
 
 static void
 RenderConfiguration(const RGBDConfiguration& configuration,
-  const R3Point& target_viewpoint, const R3Vector& target_towards,
+  const R3Point& target_viewpoint, const R3Vector& target_towards, const R3Vector& target_up,
   RNScalar min_affinity = 0.01, RNScalar min_affinity_ratio = 0.25)
 {
   // Clear window
@@ -649,9 +690,8 @@ RenderConfiguration(const RGBDConfiguration& configuration,
 
 
 static void
-RenderMesh(const R3Mesh& mesh, int color_scheme,
-  const R3Point& target_viewpoint, const R3Vector& target_towards,
-  RNScalar min_affinity = 0.1)
+RenderMesh(const R3Mesh& mesh, int rendering_scheme,
+  const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up)
 {
   // Clear window
   glViewport(0, 0, width, height);
@@ -660,16 +700,104 @@ RenderMesh(const R3Mesh& mesh, int color_scheme,
   glEnable(GL_DEPTH_TEST);
   glColor3d(1.0, 1.0, 1.0);
 
+  // Get world to camera matrix
+  R3CoordSystem cs(viewpoint, R3Triad(towards, up));
+  R4Matrix world_to_camera = cs.InverseMatrix();
+
   // Draw mesh
   glBegin(GL_TRIANGLES);
   for (int i = 0; i < mesh.NFaces(); i++) {
     R3MeshFace *face = mesh.Face(i);
-    if (color_scheme == 1) LoadInteger(mesh.FaceSegment(face)+1);
-    else if (color_scheme == 2) LoadInteger(mesh.FaceMaterial(face)+1);
-    for (int j = 0; j < 3; j++) {
-      R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
-      const R3Point& p = mesh.VertexPosition(vertex);
-      R3LoadPoint(p);
+    if (skip_removed_faces) {
+      // This is a hack to skip faces marked for removal in the matterport dataset
+      int category_index = mesh.FaceCategory(face);
+      if (category_index == 9) continue;
+      if (category_index == 64) continue;
+    }
+    if ((rendering_scheme >= CAMERA_PX_RENDERING) && (rendering_scheme <= WORLD_PZ_RENDERING)) {
+      // Set color per vertex
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        RNScalar position_coordinate = 0;
+        const R3Point& world_position = mesh.VertexPosition(vertex);
+        R3Point camera_position = world_to_camera * world_position;
+        if (rendering_scheme == CAMERA_PX_RENDERING) position_coordinate = camera_position.X();
+        else if (rendering_scheme == CAMERA_PY_RENDERING) position_coordinate = camera_position.Y();
+        else if (rendering_scheme == CAMERA_PZ_RENDERING) position_coordinate = camera_position.Z();
+        else if (rendering_scheme == WORLD_PX_RENDERING) position_coordinate = world_position.X() - viewpoint.X();
+        else if (rendering_scheme == WORLD_PY_RENDERING) position_coordinate = world_position.Y() - viewpoint.Y();
+        else if (rendering_scheme == WORLD_PZ_RENDERING) position_coordinate = world_position.Z() - viewpoint.Z();
+        int position_value = 2000 * position_coordinate + 32768;
+        if (position_value < 0) position_value = 0;
+        else if (position_value > 65535) position_value = 65535;
+        LoadInteger(position_value);
+        R3LoadPoint(world_position);
+      }
+    }
+    else if (((rendering_scheme >= CAMERA_NX_RENDERING) && (rendering_scheme <= CAMERA_NZ_RENDERING)) ||
+             ((rendering_scheme >= WORLD_NX_RENDERING) && (rendering_scheme <= WORLD_NZ_RENDERING)) ||
+             (rendering_scheme == NDOTV_RENDERING)) {
+      // Set color per face based on normal
+      RNScalar normal_coordinate = 0;
+      R3Vector world_normal = mesh.FaceNormal(face);
+      R3Vector camera_normal = world_to_camera * world_normal; camera_normal.Normalize();
+      if (rendering_scheme == CAMERA_NX_RENDERING) normal_coordinate = camera_normal.X();
+      else if (rendering_scheme == CAMERA_NY_RENDERING) normal_coordinate = camera_normal.Y();
+      else if (rendering_scheme == CAMERA_NZ_RENDERING) normal_coordinate = camera_normal.Z();
+      else if (rendering_scheme == WORLD_NX_RENDERING) normal_coordinate = world_normal.X();
+      else if (rendering_scheme == WORLD_NY_RENDERING) normal_coordinate = world_normal.Y();
+      else if (rendering_scheme == WORLD_NZ_RENDERING) normal_coordinate = world_normal.Z();
+      else if (rendering_scheme == NDOTV_RENDERING) normal_coordinate = -(towards.Dot(world_normal));
+      int normal_value = 32768 * (normal_coordinate + 1.0);
+      if (normal_value < 0) normal_value = 0;
+      else if (normal_value > 65535) normal_value = 65535;
+      LoadInteger(normal_value);
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& position = mesh.VertexPosition(vertex);
+        R3LoadPoint(position);
+      }
+    }
+    else if ((rendering_scheme >= CAMERA_NX_RENDERING) && (rendering_scheme <= NDOTV_RENDERING)) {
+      RNScalar offset_coordinate = 0;
+      R3Vector world_normal = mesh.FaceNormal(face);
+      R3Point world_position = mesh.FaceCentroid(face);
+      if (rendering_scheme == CAMERA_ND_RENDERING) {
+        R3Point camera_position = world_to_camera * world_position;
+        R3Vector camera_normal = world_to_camera * world_normal; camera_normal.Normalize();
+        offset_coordinate = -camera_position.X()*camera_normal.X() - camera_position.Y()*camera_normal.Y() - camera_position.Z()*camera_normal.Z();
+      }
+      else if (rendering_scheme == WORLD_ND_RENDERING) {
+        offset_coordinate = -world_position.X()*world_normal.X() - world_position.Y()*world_normal.Y() - world_position.Z()*world_normal.Z();
+      }
+      int offset_value = 2000 * offset_coordinate + 32768;
+      if (offset_value < 0) offset_value = 0;
+      else if (offset_value > 65535) offset_value = 65535;
+      LoadInteger(offset_value);
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& position = mesh.VertexPosition(vertex);
+        R3LoadPoint(position);
+      }
+    }
+    else if ((rendering_scheme >= MATERIAL_RENDERING) && (rendering_scheme <= CATEGORY_RENDERING)) {
+      // Set color per face based on face attributes
+      if (rendering_scheme == MATERIAL_RENDERING) LoadInteger((mesh.FaceMaterial(face)+1) % 65536);
+      else if (rendering_scheme == SEGMENT_RENDERING) LoadInteger((mesh.FaceSegment(face)+1) % 65536);
+      else if (rendering_scheme == CATEGORY_RENDERING) LoadInteger((mesh.FaceCategory(face)+1) % 65536);
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& position = mesh.VertexPosition(vertex);
+        R3LoadPoint(position);
+      }
+    }
+    else {
+      LoadInteger(0);
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& position = mesh.VertexPosition(vertex);
+        R3LoadPoint(position);
+      }
     }
   }
   glEnd();
@@ -678,7 +806,7 @@ RenderMesh(const R3Mesh& mesh, int color_scheme,
 
 
 static int
-LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
+LoadNextCamera(R3Point& viewpoint, R3Vector& towards, R3Vector& up)
 {
   // Update next image index
   current_image_index++;
@@ -693,6 +821,7 @@ LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
       camera->Load();
       viewpoint = camera->Origin();
       towards = camera->Towards();
+      up = camera->Up();
       return 1;
     }
   }
@@ -701,8 +830,9 @@ LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
       // Load camera for image from configuration
       RGBDImage *image = configuration.Image(current_image_index);
       if (image->NPixels(RN_X) == 0) {
-        image->ReadChannels();  // Temporary, just to read width/height :(
-        image->ReleaseChannels();
+        image->SetNPixels(width, height);
+        // image->ReadChannels();  // Temporary, just to read width/height :(
+        // image->ReleaseChannels();
       }
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
@@ -712,6 +842,7 @@ LoadNextCamera(R3Point& viewpoint, R3Vector& towards)
       image->CameraToWorld().InverseMatrix().Load();
       viewpoint = image->WorldViewpoint();
       towards = image->WorldTowards();
+      up = image->WorldUp();
       return 1;
     }
   }
@@ -731,8 +862,8 @@ Redraw(void)
 
   // Get camera and name for next image
   R3Point target_viewpoint;
-  R3Vector target_towards;
-  if (!LoadNextCamera(target_viewpoint, target_towards)) {
+  R3Vector target_towards, target_up;
+  if (!LoadNextCamera(target_viewpoint, target_towards, target_up)) {
     if (print_verbose) {
       printf("  Time = %.2f seconds\n", start_time.Elapsed());
       printf("  # Images = %d\n", current_image_index);
@@ -767,7 +898,7 @@ Redraw(void)
   // Capture and write depth image 
   if (capture_depth_images || capture_color_images) {
     // Draw configuration
-    RenderConfiguration(configuration, target_viewpoint, target_towards);
+    RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
 
     // Capture and write depth image
     if (capture_depth_images) {
@@ -792,34 +923,144 @@ Redraw(void)
     }
   }
 
-  if (capture_mesh_depth_images) {
-    RenderMesh(mesh, 1, target_viewpoint, target_towards);
+  if (!mesh.IsEmpty() && capture_mesh_depth_images) {
+    RenderMesh(mesh, BLACK_RENDERING, target_viewpoint, target_towards, target_up);
     R2Grid depth_image(width, height);
     if (CaptureDepth(depth_image)) {
       depth_image.Multiply(4000);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
-       char output_image_filename[1024];
+      char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
       depth_image.WriteFile(output_image_filename);
     }
   }
 
-  if (capture_object_images) {
-    RenderMesh(mesh, 1, target_viewpoint, target_towards);
-    R2Grid object_image(width, height);
-    if (CaptureInteger(object_image)) {
-      char output_image_filename[1024];
-      sprintf(output_image_filename, "%s/%s_object.png", output_image_directory, name);
-      object_image.WriteFile(output_image_filename);
+  if (!mesh.IsEmpty() && capture_mesh_position_images) {
+    R2Grid position_image(width, height);
+    char output_image_filename[1024];
+    RenderMesh(mesh, CAMERA_PX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_px.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, CAMERA_PY_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_py.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, CAMERA_PZ_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_pz.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
     }
   }
 
-  if (capture_category_images) {
-    RenderMesh(mesh, 2, target_viewpoint, target_towards);
+  if (!mesh.IsEmpty() && capture_mesh_wposition_images) {
+    R2Grid position_image(width, height);
+    char output_image_filename[1024];
+    RenderMesh(mesh, WORLD_PX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wpx.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, WORLD_PY_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wpy.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, WORLD_PZ_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(position_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wpz.png", output_image_directory, name);
+      position_image.WriteFile(output_image_filename);
+    }
+  }
+
+  if (!mesh.IsEmpty() && capture_mesh_normal_images) {
+    R2Grid normal_image(width, height);
+    char output_image_filename[1024];
+    RenderMesh(mesh, CAMERA_NX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_nx.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, CAMERA_NY_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_ny.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, CAMERA_NZ_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_nz.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, CAMERA_ND_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_nd.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+  }
+
+  if (!mesh.IsEmpty() && capture_mesh_wnormal_images) {
+    R2Grid normal_image(width, height);
+    char output_image_filename[1024];
+    RenderMesh(mesh, WORLD_NX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wnx.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, WORLD_NY_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wny.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, WORLD_NZ_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wnz.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+    RenderMesh(mesh, WORLD_ND_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(normal_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_wnd.png", output_image_directory, name);
+      normal_image.WriteFile(output_image_filename);
+    }
+  }
+
+  if (!mesh.IsEmpty() && capture_mesh_ndotv_images) {
+    R2Grid ndotv_image(width, height);
+    char output_image_filename[1024];
+    RenderMesh(mesh, NDOTV_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(ndotv_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_ndotv.png", output_image_directory, name);
+      ndotv_image.WriteFile(output_image_filename);
+    }
+  }
+  
+  if (!mesh.IsEmpty() && capture_mesh_material_images) {
+    R2Grid material_image(width, height);
+    RenderMesh(mesh, MATERIAL_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(material_image)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_mesh_material.png", output_image_directory, name);
+      material_image.WriteFile(output_image_filename);
+    }
+  }
+
+  if (!mesh.IsEmpty() && capture_mesh_segment_images) {
+    R2Grid segment_image(width, height);
+    RenderMesh(mesh, SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(segment_image)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
+      segment_image.WriteFile(output_image_filename);
+    }
+  }
+
+  if (!mesh.IsEmpty() && capture_mesh_category_images) {
     R2Grid category_image(width, height);
+    RenderMesh(mesh, CATEGORY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(category_image)) {
       char output_image_filename[1024];
-      sprintf(output_image_filename, "%s/%s_category.png", output_image_directory, name);
+      sprintf(output_image_filename, "%s/%s_mesh_category.png", output_image_directory, name);
       category_image.WriteFile(output_image_filename);
     }
   }
@@ -849,7 +1090,7 @@ RenderImagesWithGlut(const char *output_image_directory)
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(width, height);
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); 
+  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA); 
   glutCreateWindow("Configuration Image Capture");
 
   // Initialize GLUT callback functions 
@@ -923,7 +1164,12 @@ static int
 RenderImages(const char *output_image_directory)
 {
   // Check parameters
-  if (!capture_color_images && !capture_depth_images && !capture_mesh_depth_images && !capture_object_images && !capture_category_images) return 1;
+  if (!capture_color_images && !capture_depth_images &&
+      !capture_mesh_depth_images &&
+      !capture_mesh_position_images && !capture_mesh_wposition_images &&
+      !capture_mesh_normal_images && !capture_mesh_wnormal_images &&
+      !capture_mesh_ndotv_images && !capture_mesh_material_images &&
+      !capture_mesh_segment_images && !capture_mesh_category_images) return 1;
 
   // Create output directory
   char cmd[1024];
@@ -959,8 +1205,12 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-debug")) print_debug = 1;
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
+      else if (!strcmp(*argv, "-skip_removed_faces")) skip_removed_faces = 1;
       else if (!strcmp(*argv, "-cameras")) { argc--; argv++; input_camera_filename = *argv; }
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
+      else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
+      else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-create_position_images")) { output = create_position_images = 1; }
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
@@ -969,11 +1219,25 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }
-      else if (!strcmp(*argv, "-capture_object_images")) { output = capture_object_images = 1; }
-      else if (!strcmp(*argv, "-capture_category_images")) { output = capture_category_images = 1; }
-      else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
-      else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
-      else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
+      else if (!strcmp(*argv, "-capture_mesh_position_images")) { output = capture_mesh_position_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_wposition_images")) { output = capture_mesh_wposition_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_normal_images")) { output = capture_mesh_normal_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_wnormal_images")) { output = capture_mesh_wnormal_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_ndotv_images")) { output = capture_mesh_ndotv_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_material_images")) { output = capture_mesh_material_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_segment_images")) { output = capture_mesh_segment_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_category_images")) { output = capture_mesh_category_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_images")) { output = 1;
+        capture_mesh_depth_images = 1;
+        capture_mesh_position_images = 1;
+        capture_mesh_wposition_images = 1; 
+        capture_mesh_normal_images = 1;
+        capture_mesh_wnormal_images = 1; 
+        capture_mesh_ndotv_images = 1; 
+        capture_mesh_material_images = 1; 
+        capture_mesh_segment_images = 1; 
+        capture_mesh_category_images = 1; 
+      }
       else if (!strcmp(*argv, "-background")) {
         argc--; argv++; background[0] = atof(*argv);
         argc--; argv++; background[1] = atof(*argv);

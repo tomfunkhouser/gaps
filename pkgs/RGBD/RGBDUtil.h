@@ -67,3 +67,14 @@ int RGBDCreateUndistortedDepthImage(
 int RGBDResampleDepthImage(R2Grid& image, R3Matrix& intrinsics_matrix, int xres, int yres);
 
 int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres, int yres);
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Alignment Functions
+////////////////////////////////////////////////////////////////////////
+
+#if 0
+R3Affine RGBDAlignmentTransformation(RGBDImage *image0, RGBDImage *image1, 
+  RNLength start_max_distance = 0.25, RNLength end_max_distance = 0.05, int max_iterations = 16);
+#endif
