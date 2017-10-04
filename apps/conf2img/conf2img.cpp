@@ -44,6 +44,7 @@ static int capture_mesh_wposition_images = 0;
 static int capture_mesh_normal_images = 0;
 static int capture_mesh_wnormal_images = 0;
 static int capture_mesh_ndotv_images = 0;
+static int capture_mesh_face_images = 0;
 static int capture_mesh_material_images = 0;
 static int capture_mesh_segment_images = 0;
 static int capture_mesh_category_images = 0;
@@ -93,9 +94,10 @@ static int current_image_index = -1;
 
 enum {
   BLACK_RENDERING,
-  MATERIAL_RENDERING,
-  SEGMENT_RENDERING,
-  CATEGORY_RENDERING,
+  FACE_INDEX_RENDERING,
+  FACE_MATERIAL_RENDERING,
+  FACE_SEGMENT_RENDERING,
+  FACE_CATEGORY_RENDERING,
   CAMERA_PX_RENDERING,
   CAMERA_PY_RENDERING,
   CAMERA_PZ_RENDERING,
@@ -780,11 +782,12 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         R3LoadPoint(position);
       }
     }
-    else if ((rendering_scheme >= MATERIAL_RENDERING) && (rendering_scheme <= CATEGORY_RENDERING)) {
+    else if ((rendering_scheme >= FACE_INDEX_RENDERING) && (rendering_scheme <= FACE_CATEGORY_RENDERING)) {
       // Set color per face based on face attributes
-      if (rendering_scheme == MATERIAL_RENDERING) LoadInteger((mesh.FaceMaterial(face)+1) % 65536);
-      else if (rendering_scheme == SEGMENT_RENDERING) LoadInteger((mesh.FaceSegment(face)+1) % 65536);
-      else if (rendering_scheme == CATEGORY_RENDERING) LoadInteger((mesh.FaceCategory(face)+1) % 65536);
+      if (rendering_scheme == FACE_INDEX_RENDERING) LoadInteger(mesh.FaceID(face)+1);
+      else if (rendering_scheme == FACE_MATERIAL_RENDERING) LoadInteger((mesh.FaceMaterial(face)+1) % 65536);
+      else if (rendering_scheme == FACE_SEGMENT_RENDERING) LoadInteger((mesh.FaceSegment(face)+1) % 65536);
+      else if (rendering_scheme == FACE_CATEGORY_RENDERING) LoadInteger((mesh.FaceCategory(face)+1) % 65536);
       for (int j = 0; j < 3; j++) {
         R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
         const R3Point& position = mesh.VertexPosition(vertex);
@@ -1035,9 +1038,19 @@ Redraw(void)
     }
   }
   
+  if (!mesh.IsEmpty() && capture_mesh_face_images) {
+    R2Grid face_image(width, height);
+    RenderMesh(mesh, FACE_INDEX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(face_image)) {
+      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_mesh_face.pfm", output_image_directory, name);
+      face_image.WriteFile(output_image_filename);
+    }
+  }
+
   if (!mesh.IsEmpty() && capture_mesh_material_images) {
     R2Grid material_image(width, height);
-    RenderMesh(mesh, MATERIAL_RENDERING, target_viewpoint, target_towards, target_up);
+    RenderMesh(mesh, FACE_MATERIAL_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(material_image)) {
       char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_material.png", output_image_directory, name);
@@ -1047,7 +1060,7 @@ Redraw(void)
 
   if (!mesh.IsEmpty() && capture_mesh_segment_images) {
     R2Grid segment_image(width, height);
-    RenderMesh(mesh, SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
+    RenderMesh(mesh, FACE_SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(segment_image)) {
       char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
@@ -1057,7 +1070,7 @@ Redraw(void)
 
   if (!mesh.IsEmpty() && capture_mesh_category_images) {
     R2Grid category_image(width, height);
-    RenderMesh(mesh, CATEGORY_RENDERING, target_viewpoint, target_towards, target_up);
+    RenderMesh(mesh, FACE_CATEGORY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(category_image)) {
       char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_category.png", output_image_directory, name);
@@ -1167,8 +1180,8 @@ RenderImages(const char *output_image_directory)
   if (!capture_color_images && !capture_depth_images &&
       !capture_mesh_depth_images &&
       !capture_mesh_position_images && !capture_mesh_wposition_images &&
-      !capture_mesh_normal_images && !capture_mesh_wnormal_images &&
-      !capture_mesh_ndotv_images && !capture_mesh_material_images &&
+      !capture_mesh_normal_images && !capture_mesh_wnormal_images && !capture_mesh_ndotv_images &&
+      !capture_mesh_face_images && !capture_mesh_material_images &&
       !capture_mesh_segment_images && !capture_mesh_category_images) return 1;
 
   // Create output directory
@@ -1224,6 +1237,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_mesh_normal_images")) { output = capture_mesh_normal_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_wnormal_images")) { output = capture_mesh_wnormal_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_ndotv_images")) { output = capture_mesh_ndotv_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_face_images")) { output = capture_mesh_face_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_material_images")) { output = capture_mesh_material_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_segment_images")) { output = capture_mesh_segment_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_category_images")) { output = capture_mesh_category_images = 1; }
@@ -1234,6 +1248,7 @@ ParseArgs(int argc, char **argv)
         capture_mesh_normal_images = 1;
         capture_mesh_wnormal_images = 1; 
         capture_mesh_ndotv_images = 1; 
+        capture_mesh_face_images = 1; 
         capture_mesh_material_images = 1; 
         capture_mesh_segment_images = 1; 
         capture_mesh_category_images = 1; 
