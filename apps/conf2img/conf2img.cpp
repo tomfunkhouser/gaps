@@ -760,7 +760,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         R3LoadPoint(position);
       }
     }
-    else if ((rendering_scheme >= CAMERA_NX_RENDERING) && (rendering_scheme <= NDOTV_RENDERING)) {
+    else if ((rendering_scheme == CAMERA_ND_RENDERING) || (rendering_scheme == WORLD_ND_RENDERING)) {
       RNScalar offset_coordinate = 0;
       R3Vector world_normal = mesh.FaceNormal(face);
       R3Point world_position = mesh.FaceCentroid(face);
@@ -833,9 +833,8 @@ LoadNextCamera(R3Point& viewpoint, R3Vector& towards, R3Vector& up)
       // Load camera for image from configuration
       RGBDImage *image = configuration.Image(current_image_index);
       if (image->NPixels(RN_X) == 0) {
-        image->SetNPixels(width, height);
-        // image->ReadChannels();  // Temporary, just to read width/height :(
-        // image->ReleaseChannels();
+        image->ReadChannels();  // Temporary, just to read width/height :(
+        image->ReleaseChannels();
       }
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
