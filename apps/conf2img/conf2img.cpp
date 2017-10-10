@@ -861,6 +861,7 @@ Redraw(void)
   // Statistics variables
   static RNTime start_time;
   if (current_image_index == -1) start_time.Read(); 
+  char output_image_filename[1024];
 
   // Get camera and name for next image
   R3Point target_viewpoint;
@@ -897,49 +898,47 @@ Redraw(void)
     fflush(stdout);
   }
 
-  // Capture and write depth image 
-  if (capture_depth_images || capture_color_images) {
-    // Draw configuration
-    RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
-
-    // Capture and write depth image
-    if (capture_depth_images) {
-      R2Grid depth_image(width, height);
-      if (CaptureDepth(depth_image)) {
-        depth_image.Multiply(4000);
-        depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
-        char output_image_filename[1024];
-        sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
-        depth_image.WriteFile(output_image_filename);
-      }
-    }
-
-    // Capture and write color image 
-    if (capture_color_images) {
-      R2Image color_image(width, height, 3);
-      if (CaptureColor(color_image)) {
-        char output_image_filename[1024];
-        sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
-        color_image.Write(output_image_filename);
-      }
-    }
-  }
-
-  if (!mesh.IsEmpty() && capture_mesh_depth_images) {
-    RenderMesh(mesh, BLACK_RENDERING, target_viewpoint, target_towards, target_up);
+  // Capture and write depth image
+  sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
+  if (capture_depth_images && !RNFileExists(output_image_filename)) {
     R2Grid depth_image(width, height);
+    RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
     if (CaptureDepth(depth_image)) {
       depth_image.Multiply(4000);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
-      char output_image_filename[1024];
+      sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
+      depth_image.WriteFile(output_image_filename);
+    }
+  }
+
+  // Capture and write color image
+  sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
+  if (capture_color_images && !RNFileExists(output_image_filename)) {
+    R2Image color_image(width, height, 3);
+    RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
+    if (CaptureColor(color_image)) {
+      sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
+      color_image.Write(output_image_filename);
+    }
+  }
+
+  // Capture and write mesh depth image
+  sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_depth_images && !RNFileExists(output_image_filename)) {
+    R2Grid depth_image(width, height);
+    RenderMesh(mesh, BLACK_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureDepth(depth_image)) {
+      depth_image.Multiply(4000);
+      depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
       sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
       depth_image.WriteFile(output_image_filename);
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_position_images) {
+  // Capture and write mesh position images (in camera coordinates)
+  sprintf(output_image_filename, "%s/%s_mesh_pz.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_position_images && !RNFileExists(output_image_filename)) {
     R2Grid position_image(width, height);
-    char output_image_filename[1024];
     RenderMesh(mesh, CAMERA_PX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
       sprintf(output_image_filename, "%s/%s_mesh_px.png", output_image_directory, name);
@@ -957,9 +956,10 @@ Redraw(void)
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_wposition_images) {
+  // Capture and write mesh position images (in world coordinates)
+  sprintf(output_image_filename, "%s/%s_mesh_wpz.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_wposition_images && !RNFileExists(output_image_filename)) {
     R2Grid position_image(width, height);
-    char output_image_filename[1024];
     RenderMesh(mesh, WORLD_PX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
       sprintf(output_image_filename, "%s/%s_mesh_wpx.png", output_image_directory, name);
@@ -977,9 +977,10 @@ Redraw(void)
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_normal_images) {
+  // Capture and write mesh normal images (in camera coordinates)
+  sprintf(output_image_filename, "%s/%s_mesh_nd.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_normal_images && !RNFileExists(output_image_filename)) {
     R2Grid normal_image(width, height);
-    char output_image_filename[1024];
     RenderMesh(mesh, CAMERA_NX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
       sprintf(output_image_filename, "%s/%s_mesh_nx.png", output_image_directory, name);
@@ -1002,9 +1003,10 @@ Redraw(void)
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_wnormal_images) {
+  // Capture and write mesh normal images (in world coordinates)
+  sprintf(output_image_filename, "%s/%s_mesh_wnd.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_wnormal_images && !RNFileExists(output_image_filename)) {
     R2Grid normal_image(width, height);
-    char output_image_filename[1024];
     RenderMesh(mesh, WORLD_NX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
       sprintf(output_image_filename, "%s/%s_mesh_wnx.png", output_image_directory, name);
@@ -1027,9 +1029,10 @@ Redraw(void)
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_ndotv_images) {
+  // Capture and write mesh ndotv image
+  sprintf(output_image_filename, "%s/%s_mesh_ndotv.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_ndotv_images && !RNFileExists(output_image_filename)) {
     R2Grid ndotv_image(width, height);
-    char output_image_filename[1024];
     RenderMesh(mesh, NDOTV_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(ndotv_image)) {
       sprintf(output_image_filename, "%s/%s_mesh_ndotv.png", output_image_directory, name);
@@ -1037,41 +1040,45 @@ Redraw(void)
     }
   }
   
-  if (!mesh.IsEmpty() && capture_mesh_face_images) {
+  // Capture and write mesh face ID image
+  sprintf(output_image_filename, "%s/%s_mesh_face.pfm", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_face_images && !RNFileExists(output_image_filename)) {
     R2Grid face_image(width, height);
     RenderMesh(mesh, FACE_INDEX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(face_image)) {
-      char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_face.pfm", output_image_directory, name);
       face_image.WriteFile(output_image_filename);
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_material_images) {
+  // Capture and write mesh material ID image
+  sprintf(output_image_filename, "%s/%s_mesh_material.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_material_images && !RNFileExists(output_image_filename)) {
     R2Grid material_image(width, height);
     RenderMesh(mesh, FACE_MATERIAL_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(material_image)) {
-      char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_material.png", output_image_directory, name);
       material_image.WriteFile(output_image_filename);
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_segment_images) {
+  // Capture and write mesh segment ID image
+  sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_segment_images && !RNFileExists(output_image_filename)) {
     R2Grid segment_image(width, height);
     RenderMesh(mesh, FACE_SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(segment_image)) {
-      char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
       segment_image.WriteFile(output_image_filename);
     }
   }
 
-  if (!mesh.IsEmpty() && capture_mesh_category_images) {
+  // Capture and write mesh category ID image
+  sprintf(output_image_filename, "%s/%s_mesh_category.png", output_image_directory, name);
+  if (!mesh.IsEmpty() && capture_mesh_category_images && !RNFileExists(output_image_filename)) {
     R2Grid category_image(width, height);
     RenderMesh(mesh, FACE_CATEGORY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(category_image)) {
-      char output_image_filename[1024];
       sprintf(output_image_filename, "%s/%s_mesh_category.png", output_image_directory, name);
       category_image.WriteFile(output_image_filename);
     }
