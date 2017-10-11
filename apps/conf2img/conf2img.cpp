@@ -729,7 +729,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         else if (rendering_scheme == WORLD_PX_RENDERING) position_coordinate = world_position.X() - viewpoint.X();
         else if (rendering_scheme == WORLD_PY_RENDERING) position_coordinate = world_position.Y() - viewpoint.Y();
         else if (rendering_scheme == WORLD_PZ_RENDERING) position_coordinate = world_position.Z() - viewpoint.Z();
-        int position_value = 2000 * position_coordinate + 32768;
+        int position_value = 4000 * position_coordinate + 32768;
         if (position_value < 0) position_value = 0;
         else if (position_value > 65535) position_value = 65535;
         LoadInteger(position_value);
@@ -772,7 +772,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
       else if (rendering_scheme == WORLD_ND_RENDERING) {
         offset_coordinate = -world_position.X()*world_normal.X() - world_position.Y()*world_normal.Y() - world_position.Z()*world_normal.Z();
       }
-      int offset_value = 2000 * offset_coordinate + 32768;
+      int offset_value = 4000 * offset_coordinate + 32768;
       if (offset_value < 0) offset_value = 0;
       else if (offset_value > 65535) offset_value = 65535;
       LoadInteger(offset_value);
