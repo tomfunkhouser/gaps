@@ -494,6 +494,9 @@ CaptureColor(R2Image& image)
 static void
 LoadInteger(int value)
 {
+  // Just checking
+  assert(value >= 0);
+  
   // Set color to represent an integer (24 bits)
   unsigned char color[4];
   color[0] = (value >> 24) & 0xFF;
@@ -630,7 +633,7 @@ RenderConfiguration(const RGBDConfiguration& configuration,
 {
   // Clear window
   glViewport(0, 0, width, height);
-  glClearColor(background.R(), background.G(), background.B(), 1.0);
+  glClearColor(background.R(), background.G(), background.B(), 0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
   glColor3d(1.0, 1.0, 1.0);
@@ -697,7 +700,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
 {
   // Clear window
   glViewport(0, 0, width, height);
-  glClearColor(0, 0, 0, 1);
+  glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
   glColor3d(1.0, 1.0, 1.0);
