@@ -1249,7 +1249,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_mesh_category_images")) { output = capture_mesh_category_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_images")) { output = 1;
         capture_mesh_depth_images = 1;
-        capture_mesh_position_images = 1;
+        // capture_mesh_position_images = 1;
         // capture_mesh_wposition_images = 1; 
         capture_mesh_normal_images = 1;
         capture_mesh_wnormal_images = 1; 
