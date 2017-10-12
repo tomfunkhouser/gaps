@@ -356,6 +356,32 @@ ReadFile(const char *filename, int read_every_kth_image)
       RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m));
       InsertImage(image);
     }
+    else if (!strcmp(cmd, "frame")) {
+      // Update/check image count
+      if ((read_every_kth_image > 1) && ((++image_count % read_every_kth_image) != 1)) continue;
+
+      // Check intrinsics matrix
+      if (intrinsics_matrix.IsIdentity()) {
+        fprintf(stderr, "Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
+        return 0;
+      }
+      
+      // Parse image names and alignment transformation
+      RNScalar m[16];
+      double depth_timestamp, color_timestamp;
+      char depth_filename[4096], color_filename[4096];
+      if (sscanf(buffer, "%s%s%lf%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
+         depth_filename, &depth_timestamp, color_filename, &color_timestamp,
+         &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
+         &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 21) {
+        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create RGBD image
+      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m));
+      InsertImage(image);
+    }
     else if (!strcmp(cmd, "rectangle")) {
       // Parse surface
       char texture_filename[4096];
