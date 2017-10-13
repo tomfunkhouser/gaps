@@ -190,6 +190,7 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
 
 
 
+#if 0
 static int
 RGBDWriteSegmentation(Segmentation *segmentation, const char *filename)
 {
@@ -217,7 +218,7 @@ RGBDWriteSegmentation(Segmentation *segmentation, const char *filename)
   // Return success
   return 1;
 }
-
+#endif
 
 
 
@@ -253,7 +254,8 @@ RGBDCreateSegmentationChannel(const R2Grid& depth_image,
 
   // Write segmentation file (this is a hack)
   if (output_segmentation_filename) {
-    if (!RGBDWriteSegmentation(segmentation, output_segmentation_filename)) return 0;
+    // if (!RGBDWriteSegmentation(segmentation, output_segmentation_filename)) return 0;
+    if (!segmentation->WriteFile(output_segmentation_filename)) return 0;
   }
   
   // Delete segmentation

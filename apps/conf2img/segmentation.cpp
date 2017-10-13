@@ -89,7 +89,8 @@ public:
   Cluster(Point *seed_point, const Primitive& primitive);
   Cluster(Cluster *child1, Cluster *child2);
   ~Cluster(void);
-  RNScalar Coverage(void);
+  RNScalar Coverage(void) const;
+  R3Triad PrincipleAxes(R3Point *returned_centroid = NULL, RNScalar *returned_variances = NULL) const;
   void EmptyPoints(void);
   void InsertPoint(Point *point, RNScalar affinity = 1.0);
   void RemovePoint(Point *point);
@@ -142,6 +143,7 @@ public:
   int MergeClusters(void);  
   int SplitClusters(void);
   int RefineBoundaries(void);
+  int WriteFile(const char *filename) const;
 public:
   RNArray<Point *> points;
   R3Kdtree<Point *> *kdtree;
@@ -618,11 +620,48 @@ Cluster::
 
 
 RNScalar Cluster::
-Coverage(void)
+Coverage(void) const
 {
   // Return metric of how well cluster covers points
   if (possible_affinity == 0) return 0;
   return total_affinity / possible_affinity;
+}
+
+
+
+R3Triad Cluster::
+PrincipleAxes(R3Point *returned_center, RNScalar *returned_variances) const
+{
+  // Check if there are at least three points
+  if (points.NEntries() < 3) {
+    if (returned_center) *returned_center = primitive.centroid;
+    if (returned_variances) returned_variances[0] = returned_variances[1] = returned_variances[2] = 0;
+    return R3xyz_triad;
+  }
+
+  // Fill arrays of point positions and weights
+  RNArray<R3Point *> positions;
+  for (int i = 0; i < points.NEntries(); i++) {
+    positions.Insert(&points[i]->position);
+  }
+
+  // Compute center (should be nearly same as primitive.centroid)
+  R3Point center = R3Centroid(positions);
+  if (returned_center) *returned_center = center;
+
+  // Compute principle axes
+  R3Triad axes = R3PrincipleAxes(center, positions, NULL, returned_variances);
+
+  // Check if orientation is compatible with primitive
+  if (primitive.primitive_type == LINE_PRIMITIVE_TYPE) {
+    if (primitive.line.Vector().Dot(axes[0]) < 0) axes.Reset(-axes[0], -axes[1], axes[2]);
+  }
+  else if (primitive.primitive_type == PLANE_PRIMITIVE_TYPE) {
+    if (primitive.plane.Normal().Dot(axes[2]) < 0) axes.Reset(-axes[0], axes[1], -axes[2]);
+  }
+
+  // Return principle axes
+  return axes;
 }
 
 
@@ -1842,6 +1881,42 @@ CreateClusters(int primitive_type)
   // Return success
   return 1;
 }
+
+
+
+int Segmentation::
+WriteFile(const char *filename) const
+{
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Unable to open segmentation file %s\n", filename);
+    return 0;
+  }
+
+  // Write clusters to file
+  for (int i = 0; i < clusters.NEntries(); i++) {
+    Cluster *cluster = clusters.Kth(i);
+    R3Point center;
+    RNScalar variances[3];
+    R3Triad axes = cluster->PrincipleAxes(&center, variances);
+    fprintf(fp, "%d %d %g %d  %g %g %g  %g %g %g %g  %g %g %g   %g %g %g  %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
+            i+1, cluster->points.NEntries(), cluster->total_affinity, cluster->primitive.primitive_type,
+            cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
+            cluster->primitive.plane.A(), cluster->primitive.plane.B(), cluster->primitive.plane.C(), cluster->primitive.plane.D(),
+            center.X(), center.Y(), center.Z(),
+            axes[0][0], axes[0][1], axes[0][2], axes[1][0], axes[1][1], axes[1][2], axes[2][0], axes[2][1], axes[2][2],
+            variances[0], variances[1], variances[2], 
+            cluster->color.R(), cluster->color.G(), cluster->color.B());
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
 
 
 

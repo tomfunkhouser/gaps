@@ -36,6 +36,10 @@ static int create_position_images = 0;
 static int create_boundary_images = 0;
 static int create_normal_images = 0;
 static int create_segmentation_images = 0;
+static int create_mesh_face_images = 0;
+static int create_mesh_material_images = 0;
+static int create_mesh_segment_images = 0;
+static int create_mesh_category_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
 static int capture_mesh_depth_images = 0;
@@ -54,6 +58,7 @@ static int capture_mesh_category_images = 0;
 
 static int load_every_kth_image = 1;
 static int skip_removed_faces = 0;
+static int mask_by_filled_depth = 0;
 
 
 // Other parameter program variables
@@ -260,6 +265,103 @@ ReadMesh(const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Image creation functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+IsFaceCompatible(const R3Point& query_position, const R3Vector& query_normal, R3Mesh *mesh, R3MeshFace *face, void *data)
+{
+  // Check if should skip face
+  if (skip_removed_faces) {
+    // This is a hack to skip faces marked for removal in the matterport dataset
+    int category_index = mesh->FaceCategory(face);
+    if (category_index == 9) return 0;
+    if (category_index == 64) return 0;
+  }
+
+#if 0
+  // Check normal compatibility
+  R3Vector face_normal = mesh->FaceNormal(face);
+  if (face_normal.Dot(query_normal) < 0) return 0;
+#endif
+
+  // Passed all tests
+  return 1;
+}
+
+  
+
+static int
+CreateMeshChannels(RGBDImage *image, const R2Grid& depth_image,
+  const R2Grid& px_image, const R2Grid& py_image, const R2Grid& pz_image, const R2Grid& boundary_image,
+  const R2Grid& nx_image, const R2Grid& ny_image, const R2Grid& nz_image, const R2Grid& radius_image,
+  R2Grid& mesh_face_image, R2Grid& mesh_material_image, R2Grid& mesh_segment_image, R2Grid& mesh_category_image,
+  const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up, const R3Mesh& mesh,
+  RNLength max_world_distance_factor = 0.05)
+{
+  // Create kdtree for mesh
+  R3MeshSearchTree kdtree((R3Mesh *) &mesh);
+
+  // Initialize output images
+  mesh_face_image.Resample(depth_image.XResolution(), depth_image.YResolution());
+  mesh_material_image.Resample(depth_image.XResolution(), depth_image.YResolution());
+  mesh_segment_image.Resample(depth_image.XResolution(), depth_image.YResolution());
+  mesh_category_image.Resample(depth_image.XResolution(), depth_image.YResolution());
+
+  // Compute output images
+  for (int iy = 0; iy < depth_image.YResolution(); iy++) {
+    for (int ix = 0; ix < depth_image.XResolution(); ix++) {
+      // Check depth
+      RNScalar depth = depth_image.GridValue(ix, iy);
+      if (depth == R2_GRID_UNKNOWN_VALUE) continue;
+
+      // Get world position
+      RNScalar px = px_image.GridValue(ix, iy);
+      if (px == R2_GRID_UNKNOWN_VALUE) continue;
+      RNScalar py = py_image.GridValue(ix, iy);
+      if (py == R2_GRID_UNKNOWN_VALUE) continue;
+      RNScalar pz = pz_image.GridValue(ix, iy);
+      if (pz == R2_GRID_UNKNOWN_VALUE) continue;
+      R3Point world_position(px, py, pz);
+      world_position.Transform(image->CameraToWorld());
+
+#if 0
+      // Get world normal
+      RNScalar nx = nx_image.GridValue(ix, iy);
+      if (nx == R2_GRID_UNKNOWN_VALUE) continue;
+      RNScalar ny = ny_image.GridValue(ix, iy);
+      if (ny == R2_GRID_UNKNOWN_VALUE) continue;
+      RNScalar nz = nz_image.GridValue(ix, iy);
+      if (nz == R2_GRID_UNKNOWN_VALUE) continue;
+      R3Vector world_normal(nx, ny, nz);
+      world_normal.Transform(image->CameraToWorld());
+#else
+      R3Vector world_normal(0,0,0);
+#endif
+      
+      // Find closest compatible face on mesh
+      R3MeshIntersection closest;
+      RNScalar max_world_distance = max_world_distance_factor * depth;
+      kdtree.FindClosest(world_position, world_normal, closest, 0, max_world_distance, IsFaceCompatible);
+      if (closest.type == R3_MESH_NULL_TYPE) continue;
+      R3MeshFace *face = closest.face;
+      if (!face) continue;
+
+      // Assign face properties to pixel of output images
+      mesh_face_image.SetGridValue(ix, iy, mesh.FaceID(face)+1);
+      mesh_material_image.SetGridValue(ix, iy, (mesh.FaceMaterial(face)%65535)+1);
+      mesh_segment_image.SetGridValue(ix, iy, (mesh.FaceSegment(face)%65535)+1);
+      mesh_category_image.SetGridValue(ix, iy, (mesh.FaceCategory(face)%65535)+1);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Image write functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -267,7 +369,8 @@ static int
 WriteImages(const char *output_directory)
 {
   // Check parameters
-  if (!create_position_images && !create_boundary_images && !create_normal_images && !create_segmentation_images) return 1;
+  RNBoolean create_mesh_images = create_mesh_face_images || create_mesh_material_images || create_mesh_segment_images || create_mesh_category_images;
+  if (!create_position_images && !create_boundary_images && !create_normal_images && !create_segmentation_images && !create_mesh_images) return 1;
 
   // Start statistics
   RNTime start_time;
@@ -318,6 +421,26 @@ WriteImages(const char *output_directory)
       sprintf(output_image_filename, "%s/%s_segmentation.png", output_directory, image_name);
       if (!RNFileExists(output_image_filename)) done = FALSE;
     }
+    if (done && create_mesh_face_images) {
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_face.pfm", output_directory, image_name);
+      if (!RNFileExists(output_image_filename)) done = FALSE;
+    }
+    if (done && create_mesh_material_images) {
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_material.png", output_directory, image_name);
+      if (!RNFileExists(output_image_filename)) done = FALSE;
+    }
+    if (done && create_mesh_segment_images) {
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_segment.png", output_directory, image_name);
+      if (!RNFileExists(output_image_filename)) done = FALSE;
+    }
+    if (done && create_mesh_category_images) {
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_category.png", output_directory, image_name);
+      if (!RNFileExists(output_image_filename)) done = FALSE;
+    }
     if (done) continue;
 
     // Print timing message
@@ -345,7 +468,7 @@ WriteImages(const char *output_directory)
 
     // Create boundary image
     R2Grid boundary_image;
-    if (create_boundary_images || create_normal_images || create_segmentation_images) {
+    if (create_boundary_images || create_normal_images || create_segmentation_images || create_mesh_images) {
       if (!RGBDCreateBoundaryChannel(depth_image, boundary_image)) return 0;
       if (create_boundary_images) {
         // Write boundary images
@@ -364,7 +487,7 @@ WriteImages(const char *output_directory)
 
     // Create position images (in camera coordinates)
     R2Grid px_image, py_image, pz_image;
-    if (create_position_images || create_normal_images || create_segmentation_images) {
+    if (create_position_images || create_normal_images || create_segmentation_images || create_mesh_images) {
       if (!RGBDCreatePositionChannels(depth_image, px_image, py_image, pz_image,
           intrinsics_matrix, R4identity_matrix)) return 0;
       if (create_position_images) {
@@ -389,6 +512,7 @@ WriteImages(const char *output_directory)
     // Create normal images (in camera coordinates)
     R2Grid nx_image, ny_image, nz_image, radius_image;
     if (create_normal_images || create_segmentation_images) {
+    // if (create_normal_images || create_segmentation_images || create_mesh_images) {
       RGBDCreateNormalChannels(depth_image,
         px_image, py_image, pz_image, boundary_image,
         nx_image, ny_image, nz_image, radius_image,
@@ -458,7 +582,53 @@ WriteImages(const char *output_directory)
       fflush(stdout);
       step_time.Read();
     }
-}
+
+    // Create mesh images
+    if (create_mesh_images && (mesh.NFaces() > 0)) {
+      // Create mesh images
+      R2Grid mesh_face_image, mesh_material_image, mesh_segment_image, mesh_category_image;
+      CreateMeshChannels(image, depth_image,
+        px_image, py_image, pz_image, boundary_image,
+        nx_image, ny_image, nz_image, radius_image,
+        mesh_face_image, mesh_material_image, mesh_segment_image, mesh_category_image,
+        R3zero_point, R3negz_vector, R3posy_vector, mesh);
+
+      // Write mesh face image
+      if (create_mesh_face_images) {
+        char output_image_filename[4096];
+        sprintf(output_image_filename, "%s/%s_face.pfm", output_directory, image_name);
+        mesh_face_image.WriteFile(output_image_filename);
+      }
+
+      // Write mesh material image
+      if (create_mesh_material_images) {
+        char output_image_filename[4096];
+        sprintf(output_image_filename, "%s/%s_material.png", output_directory, image_name);
+        mesh_material_image.WriteFile(output_image_filename);
+      }
+
+      // Write mesh segment image
+      if (create_mesh_segment_images) {
+        char output_image_filename[4096];
+        sprintf(output_image_filename, "%s/%s_segment.png", output_directory, image_name);
+        mesh_segment_image.WriteFile(output_image_filename);
+      }
+
+      // Write mesh category image
+      if (create_mesh_category_images) {
+        char output_image_filename[4096];
+        sprintf(output_image_filename, "%s/%s_category.png", output_directory, image_name);
+        mesh_category_image.WriteFile(output_image_filename);
+      }
+    }
+
+    // Print timing message
+    if (print_debug) {
+      printf("    G %g\n", step_time.Elapsed());
+      fflush(stdout);
+      step_time.Read();
+    }
+  }
 
   // Print statistics
   if (print_verbose) {
@@ -901,6 +1071,37 @@ Redraw(void)
     fflush(stdout);
   }
 
+  // Create mask image
+  R2Grid *mask_image = NULL;
+  if (mask_by_filled_depth && !mesh.IsEmpty()) {
+    // Get filled depth image
+    RGBDImage *image = configuration.Image(current_image_index);
+    if (!image->ReadDepthChannel()) RNAbort("Unable to read depth channel for %s", name);
+    R2Grid filled_depth_image(*image->DepthChannel());
+    if (!image->ReleaseDepthChannel()) RNAbort("Unable to release depth channel for %s", name);
+    filled_depth_image.Substitute(0.0, R2_GRID_UNKNOWN_VALUE);
+    filled_depth_image.FillHoles();
+
+    // Get rendered depth image
+    R2Grid rendered_depth_image(width, height);
+    RenderMesh(mesh, BLACK_RENDERING, target_viewpoint, target_towards, target_up);
+    if (!CaptureDepth(rendered_depth_image)) RNAbort("Unable to capture depth for %s", name);
+
+    // Create mask
+    mask_image = new R2Grid(width, height);
+    for (int i = 0; i < width*height; i++) {
+      RNScalar filled_depth_value = filled_depth_image.GridValue(i);
+      if (filled_depth_value == R2_GRID_UNKNOWN_VALUE) continue;
+      if (filled_depth_value == 0) continue;
+      RNScalar rendered_depth_value = rendered_depth_image.GridValue(i);
+      if (rendered_depth_value == R2_GRID_UNKNOWN_VALUE) continue;
+      if (rendered_depth_value == 0) continue;
+      RNScalar ratio = filled_depth_value / rendered_depth_value;
+      if ((ratio < 0.8) || (ratio > 1.25)) continue;
+      mask_image->SetGridValue(i, 1);
+    }
+  }
+
   // Capture and write depth image
   sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
   if (capture_depth_images && !RNFileExists(output_image_filename)) {
@@ -909,7 +1110,7 @@ Redraw(void)
     if (CaptureDepth(depth_image)) {
       depth_image.Multiply(4000);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
-      sprintf(output_image_filename, "%s/%s_depth.png", output_image_directory, name);
+      if (mask_image) depth_image.Mask(*mask_image);
       depth_image.WriteFile(output_image_filename);
     }
   }
@@ -933,6 +1134,7 @@ Redraw(void)
     if (CaptureDepth(depth_image)) {
       depth_image.Multiply(4000);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
+      if (mask_image) depth_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
       depth_image.WriteFile(output_image_filename);
     }
@@ -944,16 +1146,19 @@ Redraw(void)
     R2Grid position_image(width, height);
     RenderMesh(mesh, CAMERA_PX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_px.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, CAMERA_PY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_py.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, CAMERA_PZ_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_pz.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
@@ -965,16 +1170,19 @@ Redraw(void)
     R2Grid position_image(width, height);
     RenderMesh(mesh, WORLD_PX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wpx.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, WORLD_PY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wpy.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, WORLD_PZ_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(position_image)) {
+      if (mask_image) position_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wpz.png", output_image_directory, name);
       position_image.WriteFile(output_image_filename);
     }
@@ -986,21 +1194,25 @@ Redraw(void)
     R2Grid normal_image(width, height);
     RenderMesh(mesh, CAMERA_NX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_nx.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, CAMERA_NY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_ny.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, CAMERA_NZ_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_nz.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, CAMERA_ND_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_nd.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
@@ -1012,21 +1224,25 @@ Redraw(void)
     R2Grid normal_image(width, height);
     RenderMesh(mesh, WORLD_NX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wnx.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, WORLD_NY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wny.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, WORLD_NZ_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wnz.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
     RenderMesh(mesh, WORLD_ND_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(normal_image)) {
+      if (mask_image) normal_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_wnd.png", output_image_directory, name);
       normal_image.WriteFile(output_image_filename);
     }
@@ -1038,6 +1254,7 @@ Redraw(void)
     R2Grid ndotv_image(width, height);
     RenderMesh(mesh, NDOTV_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(ndotv_image)) {
+      if (mask_image) ndotv_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_ndotv.png", output_image_directory, name);
       ndotv_image.WriteFile(output_image_filename);
     }
@@ -1049,6 +1266,7 @@ Redraw(void)
     R2Grid face_image(width, height);
     RenderMesh(mesh, FACE_INDEX_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(face_image)) {
+      if (mask_image) face_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_face.pfm", output_image_directory, name);
       face_image.WriteFile(output_image_filename);
     }
@@ -1060,6 +1278,7 @@ Redraw(void)
     R2Grid material_image(width, height);
     RenderMesh(mesh, FACE_MATERIAL_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(material_image)) {
+      if (mask_image) material_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_material.png", output_image_directory, name);
       material_image.WriteFile(output_image_filename);
     }
@@ -1071,6 +1290,7 @@ Redraw(void)
     R2Grid segment_image(width, height);
     RenderMesh(mesh, FACE_SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(segment_image)) {
+      if (mask_image) segment_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
       segment_image.WriteFile(output_image_filename);
     }
@@ -1082,10 +1302,14 @@ Redraw(void)
     R2Grid category_image(width, height);
     RenderMesh(mesh, FACE_CATEGORY_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureInteger(category_image)) {
+      if (mask_image) category_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_category.png", output_image_directory, name);
       category_image.WriteFile(output_image_filename);
     }
   }
+
+  // Delete mask image
+  if (mask_image) delete mask_image;
     
 #ifdef USE_GLUT
   // Redraw
@@ -1228,6 +1452,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-skip_removed_faces")) skip_removed_faces = 1;
+      else if (!strcmp(*argv, "-mask_by_filled_depth")) mask_by_filled_depth = 1;
       else if (!strcmp(*argv, "-cameras")) { argc--; argv++; input_camera_filename = *argv; }
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
@@ -1238,6 +1463,12 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
       else if (!strcmp(*argv, "-create_segmentation_images")) { output = create_segmentation_images = 1; }
+      else if (!strcmp(*argv, "-create_mesh_images")) { output = 1;
+        create_mesh_face_images = 1; 
+        create_mesh_material_images = 1; 
+        create_mesh_segment_images = 1; 
+        create_mesh_category_images = 1; 
+      }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }
@@ -1312,9 +1543,6 @@ main(int argc, char **argv)
   // Read configuration
   if (!ReadConfiguration(input_configuration_filename)) exit(-1);
 
-  // Write images for configuration cameras
-  if (!WriteImages(output_image_directory)) return 0;
-
   // Read cameras
   if (input_camera_filename) {
     if (!ReadCameras(input_camera_filename)) exit(-1);
@@ -1324,6 +1552,9 @@ main(int argc, char **argv)
   if (input_mesh_filename) {
     if (!ReadMesh(input_mesh_filename)) exit(-1);
   }
+
+  // Write images for configuration cameras
+  if (!WriteImages(output_image_directory)) return 0;
 
   // Render images
   if (!RenderImages(output_image_directory)) exit(-1);

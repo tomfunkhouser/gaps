@@ -10,6 +10,11 @@
 
 /* Public variables */
 
+const R3Triad R3null_triad(
+    R3Vector(0.0, 0.0, 0.0),
+    R3Vector(0.0, 0.0, 0.0),
+    R3Vector(0.0, 0.0, 0.0));
+
 const R3Triad R3xyz_triad(
     R3Vector(1.0, 0.0, 0.0),
     R3Vector(0.0, 1.0, 0.0),
@@ -53,17 +58,8 @@ R3Triad(const R3Triad& triad)
 R3Triad::
 R3Triad(const R3Vector& xaxis, const R3Vector& yaxis, const R3Vector& zaxis)
 {
-    // Just checking ...
-    assert(xaxis.IsNormalized());
-    assert(yaxis.IsNormalized());
-    assert(zaxis.IsNormalized());
-    assert(R3Perpendicular(xaxis, yaxis));
-    assert(R3Contains(xaxis % yaxis, zaxis));
-
-    // Assign axes
-    axis[0] = xaxis;
-    axis[1] = yaxis;
-    axis[2] = zaxis;
+    // Reset axes
+    Reset(xaxis, yaxis, zaxis);
 }
 
 
@@ -222,9 +218,21 @@ InverseTransform(const R3Transformation& transformation)
 
 
 
+void R3Triad::
+Reset(const R3Vector& xaxis, const R3Vector& yaxis, const R3Vector& zaxis)
+{
+    // Just checking ...
+    assert(xaxis.IsNormalized());
+    assert(yaxis.IsNormalized());
+    assert(zaxis.IsNormalized());
+    assert(R3Perpendicular(xaxis, yaxis));
+    assert(R3Contains(xaxis % yaxis, zaxis));
 
-
-
+    // Assign axes
+    axis[0] = xaxis;
+    axis[1] = yaxis;
+    axis[2] = zaxis;
+}
 
 
 

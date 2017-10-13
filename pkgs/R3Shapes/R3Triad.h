@@ -35,6 +35,7 @@ class R3Triad /* : public R3Base */ {
 	void Mirror(const R3Plane& plane);
         void Transform(const R3Transformation& transformation);
         void InverseTransform(const R3Transformation& transformation);
+	void Reset(const R3Vector& xaxis, const R3Vector& yaxis, const R3Vector& zaxis);
 	R3Triad& operator=(const R3Triad& triad);
 
 	// Draw functions/operators
@@ -49,6 +50,7 @@ class R3Triad /* : public R3Base */ {
 
 /* Public variables */
 
+extern const R3Triad R3null_triad;
 extern const R3Triad R3xyz_triad;
 
 
