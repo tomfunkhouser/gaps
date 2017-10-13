@@ -1900,14 +1900,14 @@ WriteFile(const char *filename) const
     R3Point center;
     RNScalar variances[3];
     R3Triad axes = cluster->PrincipleAxes(&center, variances);
-    fprintf(fp, "%d %d %g %d  %g %g %g  %g %g %g %g  %g %g %g   %g %g %g  %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
-            i+1, cluster->points.NEntries(), cluster->total_affinity, cluster->primitive.primitive_type,
+    fprintf(fp, "%d %d %g %g %d  %g %g %g   %g %g %g %g   %g %g %g   %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
+            i+1, cluster->points.NEntries(), cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
             cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
             cluster->primitive.plane.A(), cluster->primitive.plane.B(), cluster->primitive.plane.C(), cluster->primitive.plane.D(),
+            cluster->color.R(), cluster->color.G(), cluster->color.B(),
             center.X(), center.Y(), center.Z(),
             axes[0][0], axes[0][1], axes[0][2], axes[1][0], axes[1][1], axes[1][2], axes[2][0], axes[2][1], axes[2][2],
-            variances[0], variances[1], variances[2], 
-            cluster->color.R(), cluster->color.G(), cluster->color.B());
+            variances[0], variances[1], variances[2]);
   }
 
   // Close file
