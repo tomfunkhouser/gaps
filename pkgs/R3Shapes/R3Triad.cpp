@@ -12,7 +12,6 @@
 
 const R3Triad R3null_triad(
     R3Vector(0.0, 0.0, 0.0),
-    R3Vector(0.0, 0.0, 0.0),
     R3Vector(0.0, 0.0, 0.0));
 
 const R3Triad R3xyz_triad(
