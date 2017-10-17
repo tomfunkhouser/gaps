@@ -668,6 +668,7 @@ UpdateWorldBBox(void)
   // Union image bounding boxes
   for (int i = 0; i < NImages(); i++) {
     RGBDImage *image = Image(i);
+    world_bbox.Union(image->WorldViewpoint());
     if (!image->world_bbox.IsEmpty()) {
       world_bbox.Union(image->world_bbox);
     }

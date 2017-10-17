@@ -604,7 +604,7 @@ DrawCamera(int color_scheme, RNLength radius) const
   // Load color
   if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
   else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
-  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
+  else if (color_scheme != RGBD_NO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Draw camera
   glBegin(GL_LINES);
@@ -623,7 +623,7 @@ DrawBBox(int color_scheme) const
   // Load color
   if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
   else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
-  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
+  else if (color_scheme != RGBD_NO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Outline bounding box
   WorldBBox().Outline();
