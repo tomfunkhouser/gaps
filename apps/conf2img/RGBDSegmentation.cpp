@@ -174,12 +174,14 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
 
   // Check points
   if (segmentation->points.NEntries() == 0) {
+    fprintf(stderr, "Zero points for segmentation.\n");
     delete segmentation;
     return 0;
   }
 
   // Create clusters
   if (!segmentation->CreateClusters(PLANE_PRIMITIVE_TYPE)) {
+    fprintf(stderr, "Unable to create clusters for segmentation.\n");
     delete segmentation;
     return 0;
   }
@@ -239,6 +241,9 @@ RGBDCreateSegmentationChannel(const R2Grid& depth_image,
     px_image, py_image, pz_image, nx_image, ny_image, nz_image, 
     depth_image, radius_image, boundary_image, color_image, 
     viewpoint, towards, up);
+
+  // Check segmentation
+  if (!segmentation) return 0;
 
   // Fill segmentation image
   for (int i = 0; i < segmentation->clusters.NEntries(); i++) {
