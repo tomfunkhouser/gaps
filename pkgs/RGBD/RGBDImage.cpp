@@ -1187,16 +1187,10 @@ ReadDepthChannel(void)
     }
 
     // Smooth depth image
-    if (configuration && configuration->DatasetFormat()) {
-      if (!strcmp(configuration->DatasetFormat(), "sunrgbd") ||
-          !strcmp(configuration->DatasetFormat(), "sun3d") ||
-          !strcmp(configuration->DatasetFormat(), "nyu") ||
-          !strcmp(configuration->DatasetFormat(), "tum") ||
-          !strcmp(configuration->DatasetFormat(), "princeton")) {
-        RNScalar d_sigma_fraction = 0.015;
-        RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
-        depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);
-      }
+    if (!configuration || !configuration->DatasetFormat() || strcmp(configuration->DatasetFormat(), "processed")) {
+      RNScalar d_sigma_fraction = 0.015;
+      RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
+      depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);
     }
   }
   
