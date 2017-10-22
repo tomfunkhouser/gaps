@@ -32,6 +32,7 @@ static const char *output_image_directory = NULL;
 
 // Image capture program variables
 
+static int create_depth_images = 0;
 static int create_position_images = 0;
 static int create_boundary_images = 0;
 static int create_normal_images = 0;
@@ -370,7 +371,7 @@ WriteImages(const char *output_directory)
 {
   // Check parameters
   RNBoolean create_mesh_images = create_mesh_face_images || create_mesh_material_images || create_mesh_segment_images || create_mesh_category_images;
-  if (!create_position_images && !create_boundary_images && !create_normal_images && !create_segmentation_images && !create_mesh_images) return 1;
+  if (!create_depth_images && !create_position_images && !create_boundary_images && !create_normal_images && !create_segmentation_images && !create_mesh_images) return 1;
 
   // Start statistics
   RNTime start_time;
@@ -401,6 +402,11 @@ WriteImages(const char *output_directory)
 
     // Check if already done
     RNBoolean done = TRUE;
+    if (done && create_depth_images) {
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_depth.png", output_directory, image_name);
+      if (!RNFileExists(output_image_filename)) done = FALSE;
+    }
     if (done && create_boundary_images) {
       char output_image_filename[4096];
       sprintf(output_image_filename, "%s/%s_boundary.png", output_directory, image_name);
@@ -458,6 +464,13 @@ WriteImages(const char *output_directory)
     height = (int) ((double) image->NPixels(RN_Y) * width / (double) image->NPixels(RN_X) + 0.5);
     RGBDResampleDepthImage(depth_image, intrinsics_matrix, width, height);
     if (!image->ReleaseDepthChannel()) return 0;
+    if (create_depth_images) {
+      // Write depth image
+      R2Grid tmp = depth_image; tmp.Multiply(1000);
+      char output_image_filename[4096];
+      sprintf(output_image_filename, "%s/%s_depth.png", output_directory, image_name);
+      tmp.WriteFile(output_image_filename);
+    }
 
     // Print timing message
     if (print_debug) {
@@ -471,7 +484,7 @@ WriteImages(const char *output_directory)
     if (create_boundary_images || create_normal_images || create_segmentation_images || create_mesh_images) {
       if (!RGBDCreateBoundaryChannel(depth_image, boundary_image)) return 0;
       if (create_boundary_images) {
-        // Write boundary images
+        // Write boundary image
         char output_image_filename[4096];
         sprintf(output_image_filename, "%s/%s_boundary.png", output_directory, image_name);
         boundary_image.WriteFile(output_image_filename);
@@ -1459,6 +1472,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
       else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
+      else if (!strcmp(*argv, "-create_depth_images")) { output = create_depth_images = 1; }
       else if (!strcmp(*argv, "-create_position_images")) { output = create_position_images = 1; }
       else if (!strcmp(*argv, "-create_normal_images")) { output = create_normal_images = 1; }
       else if (!strcmp(*argv, "-create_boundary_images")) { output = create_boundary_images = 1; }
