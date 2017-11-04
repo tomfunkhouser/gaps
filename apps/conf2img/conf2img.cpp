@@ -1300,12 +1300,32 @@ Redraw(void)
   // Capture and write mesh segment ID image
   sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
   if (!mesh.IsEmpty() && capture_mesh_segment_images && !RNFileExists(output_image_filename)) {
-    R2Grid segment_image(width, height);
-    RenderMesh(mesh, FACE_SEGMENT_RENDERING, target_viewpoint, target_towards, target_up);
-    if (CaptureInteger(segment_image)) {
-      if (mask_image) segment_image.Mask(*mask_image);
-      sprintf(output_image_filename, "%s/%s_mesh_segment.png", output_image_directory, name);
-      segment_image.WriteFile(output_image_filename);
+    R2Grid face_image(width, height);
+    RenderMesh(mesh, FACE_INDEX_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureInteger(face_image)) {
+      if (mask_image) face_image.Mask(*mask_image);
+      R2Image segment_image(width, height, 3);
+      for (int ix = 0; ix < width; ix++) {
+        for (int iy = 0; iy < height; iy++) { 
+          RNScalar face_value = face_image.GridValue(ix, iy);
+          if ((face_value == R2_GRID_UNKNOWN_VALUE) || (face_value == 0)) continue;
+          int face_index = (int) (face_value - 1.0 + 0.5);
+          assert((face_index >= 0) && (face_index < mesh.NFaces()));
+          R3MeshFace *face = mesh.Face(face_index);
+          int segment = mesh.FaceSegment(face);
+          if (segment < 0) continue;
+          int region_index = (segment / 1000000) + 1;
+          assert(region_index < 256);
+          int object_index = (segment % 1000000) + 1;
+          assert((object_index >> 8) < 256);
+          unsigned char pixel[4];
+          pixel[0] = region_index;
+          pixel[1] = (object_index>>8) & 0xFF;
+          pixel[2] = object_index & 0xFF;
+          segment_image.SetPixel(ix, iy, pixel);
+        }
+      }
+      segment_image.Write(output_image_filename);
     }
   }
 
