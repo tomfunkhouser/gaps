@@ -923,8 +923,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
       }
     }
     else if (((rendering_scheme >= CAMERA_NX_RENDERING) && (rendering_scheme <= CAMERA_NZ_RENDERING)) ||
-             ((rendering_scheme >= WORLD_NX_RENDERING) && (rendering_scheme <= WORLD_NZ_RENDERING)) ||
-             (rendering_scheme == NDOTV_RENDERING)) {
+             ((rendering_scheme >= WORLD_NX_RENDERING) && (rendering_scheme <= WORLD_NZ_RENDERING))) {
       // Set color per face based on normal
       RNScalar normal_coordinate = 0;
       R3Vector world_normal = mesh.FaceNormal(face);
@@ -935,7 +934,6 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
       else if (rendering_scheme == WORLD_NX_RENDERING) normal_coordinate = world_normal.X();
       else if (rendering_scheme == WORLD_NY_RENDERING) normal_coordinate = world_normal.Y();
       else if (rendering_scheme == WORLD_NZ_RENDERING) normal_coordinate = world_normal.Z();
-      else if (rendering_scheme == NDOTV_RENDERING) normal_coordinate = -(towards.Dot(world_normal));
       int normal_value = 32768 * (normal_coordinate + 1.0);
       if (normal_value < 0) normal_value = 0;
       else if (normal_value > 65535) normal_value = 65535;
@@ -966,6 +964,21 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
         const R3Point& position = mesh.VertexPosition(vertex);
         R3LoadPoint(position);
+      }
+    }
+    else if (rendering_scheme == NDOTV_RENDERING) {
+      // Set color per vertex
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& world_position = mesh.VertexPosition(vertex);
+        R3Vector n = mesh.FaceNormal(face);
+        R3Vector v = viewpoint - world_position; v.Normalize();
+        RNScalar ndotv = n.Dot(v);
+        int ndotv_value = 32768 * (ndotv + 1.0);
+        if (ndotv_value < 0) ndotv_value = 0;
+        else if (ndotv_value > 65535) ndotv_value = 65535;
+        LoadInteger(ndotv_value);
+        R3LoadPoint(world_position);
       }
     }
     else if ((rendering_scheme >= FACE_INDEX_RENDERING) && (rendering_scheme <= FACE_CATEGORY_RENDERING)) {

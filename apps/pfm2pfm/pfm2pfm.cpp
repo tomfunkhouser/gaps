@@ -75,6 +75,8 @@ typedef enum {
   THRESHOLD_GRID_OPERATION,
   SUN3D_BITSHIFT_OPERATION,
   POISSON_OPERATION,
+  DU_OPERATION,
+  DV_OPERATION,
   TMP_OPERATION,
   NUM_OPERATIONS
 } OperationType;
@@ -399,6 +401,40 @@ void SUN3DBitshift(R2Grid *grid)
 
 
 
+void DU(R2Grid *grid)
+{
+  R2Grid f(*grid);
+  grid->Clear(R2_GRID_UNKNOWN_VALUE);
+  for (int iy = 0; iy < grid->YResolution(); iy++) {
+    for (int ix = 0; ix < grid->XResolution()-1; ix++) {
+      RNScalar d0 = f.GridValue(ix, iy);
+      if (RNIsZero(d0) || (d0 == R2_GRID_UNKNOWN_VALUE)) continue;
+      RNScalar d1 = f.GridValue(ix+1, iy);
+      if (RNIsZero(d1) || (d1 == R2_GRID_UNKNOWN_VALUE)) continue;
+      grid->SetGridValue(ix, iy, d1 - d0);
+    }
+  }
+}
+
+
+
+void DV(R2Grid *grid)
+{
+  R2Grid f(*grid);
+  grid->Clear(R2_GRID_UNKNOWN_VALUE);
+  for (int iy = 0; iy < grid->YResolution()-1; iy++) {
+    for (int ix = 0; ix < grid->XResolution(); ix++) {
+      RNScalar d0 = f.GridValue(ix, iy);
+      if (RNIsZero(d0) || (d0 == R2_GRID_UNKNOWN_VALUE)) continue;
+      RNScalar d1 = f.GridValue(ix, iy+1);
+      if (RNIsZero(d1) || (d1 == R2_GRID_UNKNOWN_VALUE)) continue;
+      grid->SetGridValue(ix, iy, d1 - d0);
+    }
+  }
+}
+
+
+
 void Tmp(R2Grid *grid)
 {
 #if 0
@@ -523,6 +559,8 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
     case OVERLAY_GRID_OPERATION: grid->Overlay(*grid1); break;
     case SUN3D_BITSHIFT_OPERATION: SUN3DBitshift(grid); break;
     case POISSON_OPERATION: Poisson(grid, grid1, grid2); break;
+    case DU_OPERATION: DU(grid); break;
+    case DV_OPERATION: DV(grid); break;
     case TMP_OPERATION: Tmp(grid); break;
 
     case REFINE_OPERATION: {
@@ -1002,6 +1040,16 @@ ParseArgs(int argc, char **argv)
         operation->type = POISSON_OPERATION;
         argc--; argv++; operation->operand1 = *argv; 
         argc--; argv++; operation->operand2 = *argv; 
+      }
+      else if (!strcmp(*argv, "-du")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = DU_OPERATION;
+      }
+      else if (!strcmp(*argv, "-dv")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = DV_OPERATION;
       }
       else if (!strcmp(*argv, "-tmp")) {
         assert(noperations < max_operations);
