@@ -2046,14 +2046,21 @@ PartialDerivative(const RNScalar *x, int variable) const
     RNScalar d1 = operands[1]->PartialDerivative(x, variable);
     return (d0*v1 - v0*d1) / v1_squared; }
   
-  case RN_POW_OPERATION: {
+  case RN_POW_OPERATION: 
     // Power rule
-    RNScalar v0 = operands[0]->Evaluate(x);
-    if (RNIsZero(v0, RN_SMALL_EPSILON)) return RN_INFINITY;
-    RNScalar v1 = operands[1]->Evaluate(x);
-    RNScalar d0 = operands[0]->PartialDerivative(x, variable);
-    RNScalar d1 = operands[1]->PartialDerivative(x, variable);
-    return (d0*v1/v0 + d1*log(v0)); }
+    if (operands[1]->IsConstant()) {
+      RNScalar v0 = operands[0]->Evaluate(x);
+      RNScalar v1 = operands[1]->Evaluate(x);
+      return v1*pow(v0, v1-1.0); 
+    }
+    else {
+      RNScalar v0 = operands[0]->Evaluate(x);
+      if (RNIsZero(v0, RN_SMALL_EPSILON)) return RN_INFINITY;
+      RNScalar v1 = operands[1]->Evaluate(x);
+      RNScalar d0 = operands[0]->PartialDerivative(x, variable);
+      RNScalar d1 = operands[1]->PartialDerivative(x, variable);
+      return (d0*v1/v0 + d1*log(v0));
+    }
   }    
 
   // Should never get here
@@ -2098,14 +2105,21 @@ PartialDerivative(double const* const* x, int variable) const
     RNScalar d1 = operands[1]->PartialDerivative(x, variable);
     return (d0*v1 - v0*d1) / v1_squared; }
   
-  case RN_POW_OPERATION: {
+  case RN_POW_OPERATION: 
     // Power rule
-    RNScalar v0 = operands[0]->Evaluate(x);
-    if (RNIsZero(v0, RN_SMALL_EPSILON)) return RN_INFINITY;
-    RNScalar v1 = operands[1]->Evaluate(x);
-    RNScalar d0 = operands[0]->PartialDerivative(x, variable);
-    RNScalar d1 = operands[1]->PartialDerivative(x, variable);
-    return (d0*v1/v0 + d1*log(v0)); }
+    if (operands[1]->IsConstant()) {
+      RNScalar v0 = operands[0]->Evaluate(x);
+      RNScalar v1 = operands[1]->Evaluate(x);
+      return v1*pow(v0, v1-1.0); 
+    }
+    else {
+      RNScalar v0 = operands[0]->Evaluate(x);
+      if (RNIsZero(v0, RN_SMALL_EPSILON)) return RN_INFINITY;
+      RNScalar v1 = operands[1]->Evaluate(x);
+      RNScalar d0 = operands[0]->PartialDerivative(x, variable);
+      RNScalar d1 = operands[1]->PartialDerivative(x, variable);
+      return (d0*v1/v0 + d1*log(v0)); 
+    }
   }    
 
   // Should never get here
