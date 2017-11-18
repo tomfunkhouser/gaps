@@ -34,12 +34,20 @@ public:
 
   // Access functions
   RNEquation *Equation(int k) const;
+  RNScalar LowerBound(int variable) const;
+  RNScalar UpperBound(int variable) const;
 
   // Manipulation functions
   void InsertEquation(RNPolynomial *polynomial);
   void InsertEquation(RNAlgebraic *algebraic);
   void InsertEquation(RNEquation *equation);
   void RemoveEquation(RNEquation *equation);
+
+  // Variable constraints
+  void SetLowerBound(int variable, RNScalar bound);
+  void SetUpperBound(int variable, RNScalar bound);
+  void RemoveLowerBound(int variable);
+  void RemoveUpperBound(int variable);
 
   // Evaluation functions
   void EvaluateResiduals(const RNScalar *x, RNScalar *y) const;
@@ -52,6 +60,7 @@ public:
   void PrintEquations(FILE *fp = stdout) const;
   void PrintValues(const RNScalar *x, FILE *fp = stdout) const;
   void PrintResiduals(const RNScalar *x, FILE *fp = stdout) const;
+  void PrintPartialDerivatives(const RNScalar *x, FILE *fp = stdout) const;
   void Print(FILE *fp = stdout) const;
 
 public:
@@ -59,12 +68,15 @@ public:
   void InsertEquation(RNPolynomial *polynomial, RNScalar residual_threshold);
   void InsertEquation(RNAlgebraic *algebraic, RNScalar residual_threshold);
   
-
 public:
   int *index_to_variable;
   int *variable_to_index;
   int *variable_marks;
   int current_mark;
+
+public:
+  RNScalar *lower_bounds;
+  RNScalar *upper_bounds;
 
 private:
   int nvariables;
@@ -100,6 +112,46 @@ Equation(int k) const
 {
   // Return Kth equation
   return equations.Kth(k);
+}
+
+
+
+inline RNScalar RNSystemOfEquations::
+LowerBound(int variable) const
+{
+  // Return lower bound on variable (or FLT_MAX if there is none)
+  assert((variable >= 0) && (variable < nvariables));
+  if (!lower_bounds) return FLT_MAX;
+  return lower_bounds[variable];
+}
+
+
+
+inline RNScalar RNSystemOfEquations::
+UpperBound(int variable) const
+{
+  // Return upper bound on variable (or FLT_MAX if there is none)
+  assert((variable >= 0) && (variable < nvariables));
+  if (!upper_bounds) return FLT_MAX;
+  return upper_bounds[variable];
+}
+
+
+
+inline void RNSystemOfEquations::
+RemoveLowerBound(int variable)
+{
+  // Remove bound
+  SetLowerBound(variable, -FLT_MAX);
+}
+
+
+
+inline void RNSystemOfEquations::
+RemoveUpperBound(int variable)
+{
+  // Remove upper bound
+  SetUpperBound(variable, FLT_MAX);
 }
 
 
@@ -250,6 +302,22 @@ MinimizeCERES(const RNSystemOfEquations *system, RNScalar *io, RNScalar toleranc
     problem->AddResidualBlock(cost_function, loss_function, variable_ptr);
   }
 
+  // Set lower bounds
+  if (system->lower_bounds) {
+    for (int i = 0; i < n; i++) {
+      if (system->lower_bounds[i] == -FLT_MAX) continue;
+      problem->SetParameterLowerBound(&x[i], 0, system->lower_bounds[i]);
+    }
+  }
+  
+  // Set upper bounds
+  if (system->upper_bounds) {
+    for (int i = 0; i < n; i++) {
+      if (system->upper_bounds[i] == -FLT_MAX) continue;
+      problem->SetParameterUpperBound(&x[i], 0, system->upper_bounds[i]);
+    }
+  }
+  
   // Run the solver
   // options->max_num_iterations = 128;
   options->num_threads = 12;
@@ -418,7 +486,7 @@ MinimizeSPLM(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance
   
   // Run the solver
   double info[SPLM_INFO_SZ];
-  int status = sparselm_derccs(SPLMFunction, SPLMJacobian, x, y, n, 0, m, jnnz, -1, 100, NULL, info, (void *) system);
+  int status = sparselm_derccs(SPLMFunction, SPLMJacobian, x, y, n, 0, m, jnnz, -1, 16, NULL, info, (void *) system);
   if (status == SPLM_ERROR) fprintf(stderr, "Error in SPLM solver\n");
   else { for (int i = 0; i < n; i++) io[i] = x[i]; }
 

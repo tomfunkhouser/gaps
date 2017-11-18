@@ -16,7 +16,9 @@
 
 RNSystemOfEquations::
 RNSystemOfEquations(int nvariables)
-  : nvariables(nvariables),
+  : lower_bounds(NULL),
+    upper_bounds(NULL),
+    nvariables(nvariables),
     equations()
 {
   // Allocate memory for variable counting
@@ -31,7 +33,9 @@ RNSystemOfEquations(int nvariables)
 
 RNSystemOfEquations::
 RNSystemOfEquations(const RNSystemOfEquations& system)
-  : nvariables(system.nvariables),
+  : lower_bounds(NULL),
+    upper_bounds(NULL),
+    nvariables(system.nvariables),
     equations()
 {
   // Allocate memory for variable counting
@@ -46,6 +50,22 @@ RNSystemOfEquations(const RNSystemOfEquations& system)
   for (int i = 0; i < system.NEquations(); i++) {
     RNEquation *equation = system.Equation(i);
     InsertEquation(new RNEquation(*equation));
+  }
+
+  // Copy lower bounds
+  if (system.lower_bounds) {
+    lower_bounds = new RNScalar [ nvariables ];
+    for (int i = 0; i < nvariables; i++) {
+      lower_bounds[i] = system.lower_bounds[i];
+    }
+  }
+  
+  // Copy upper bounds
+  if (system.upper_bounds) {
+    upper_bounds = new RNScalar [ nvariables ];
+    for (int i = 0; i < nvariables; i++) {
+      upper_bounds[i] = system.upper_bounds[i];
+    }
   }
 }
 
@@ -65,6 +85,10 @@ RNSystemOfEquations::
     RemoveEquation(equation);
     delete equation;
   }
+
+  // Delete all bounds
+  if (lower_bounds) delete [] lower_bounds;
+  if (upper_bounds) delete [] upper_bounds;
 }
 
 
@@ -254,6 +278,46 @@ RemoveEquation(RNEquation *equation)
 
 
 void RNSystemOfEquations::
+SetLowerBound(int variable, RNScalar bound)
+{
+  // Just checking
+  assert((variable >= 0) && (variable < nvariables));
+  
+  // Allocate lower bounds
+  if (!lower_bounds) {
+    lower_bounds = new RNScalar [ nvariables ];
+    for (int i = 0; i < nvariables; i++) {
+      lower_bounds[i] = -FLT_MAX;
+    }
+  }
+
+  // Set lower bound
+  lower_bounds[variable] = bound;
+}
+
+
+
+void RNSystemOfEquations::
+SetUpperBound(int variable, RNScalar bound)
+{
+  // Just checking
+  assert((variable >= 0) && (variable < nvariables));
+  
+  // Allocate upper bounds
+  if (!upper_bounds) {
+    upper_bounds = new RNScalar [ nvariables ];
+    for (int i = 0; i < nvariables; i++) {
+      upper_bounds[i] = -FLT_MAX;
+    }
+  }
+
+  // Set upper bound
+  upper_bounds[variable] = bound;
+}
+
+
+
+void RNSystemOfEquations::
 EvaluateResiduals(const RNScalar *x, RNScalar *y) const
 {
   // Evaluate equations
@@ -343,6 +407,23 @@ PrintResiduals(const RNScalar *x, FILE *fp) const
   }
   fprintf(fp, "%g\n", sum);
   delete [] y;
+}
+
+
+
+void RNSystemOfEquations::
+PrintPartialDerivatives(const RNScalar *x, FILE *fp) const
+{
+  // Check file
+  if (!fp) fp = stdout;
+  
+  // Print partial derivatives
+  for (int j = 0; j < NEquations(); j++) {
+    RNEquation *equation = Equation(j);
+    for (int i = 0; i < NVariables(); i++) 
+      fprintf(fp, "(%d %d : %g)  ", j, i, equation->PartialDerivative(x, i));
+    fprintf(fp, "\n");
+  }
 }
 
 

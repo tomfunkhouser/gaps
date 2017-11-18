@@ -22,6 +22,7 @@ static const char *input_mesh_filename = NULL;
 static const char *input_overlap_filename = NULL;
 static const char *input_overlap_matrix = NULL;
 static int load_every_kth_image = 1;
+static int read_all_channels = 0;
 static double texel_spacing = 0;
 static int print_verbose = 0;
 
@@ -97,17 +98,20 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
     return 0;
   }
 
-#if 0
   // Read all channels ... for now
-  if (!configuration.ReadChannels()) {
-    fprintf(stderr, "Unable to read channels for %s\n", filename);
-    return 0;
+  if (read_all_channels) {
+    if (!configuration.ReadChannels()) {
+      fprintf(stderr, "Unable to read channels for %s\n", filename);
+      return 0;
+    }
   }
-#else
-  // Read all surface channels ... for now
-  for (int i = 0; i < configuration.NSurfaces(); i++) {
-    RGBDSurface *surface = configuration.Surface(i);
-    surface->ReadChannels();
+#if 1
+  else {
+    // Read all surface channels ... for now
+    for (int i = 0; i < configuration.NSurfaces(); i++) {
+      RGBDSurface *surface = configuration.Surface(i);
+      surface->ReadChannels();
+    }
   }
 #endif
   
@@ -1158,7 +1162,7 @@ void GLUTMouse(int button, int state, int x, int y)
             selected_position.X(), selected_position.Y(), selected_position.Z());
         }
         if (selected_image) {
-          printf("Selected image %d and %g %g %g\n", selected_image->ConfigurationIndex(),
+          printf("Selected image %d %s and %g %g %g\n", selected_image->ConfigurationIndex(), selected_image->Name(),
             selected_position.X(), selected_position.Y(), selected_position.Z());
         }
         
@@ -1350,9 +1354,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case ' ': {
     RGBDImage *selected_image = NULL;
     if (Pick(x, y, NULL, &selected_image)) {
+      printf("Picked %s\n", selected_image->Name());
       if (!selected_image->DepthChannel()) selected_image->ReadChannels();
       else selected_image->ReleaseChannels();
       selected_image_index = selected_image->ConfigurationIndex();
+      snap_image_index = selected_image_index;
     }
     break; }
 
@@ -1445,6 +1451,7 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
+      else if (!strcmp(*argv, "-read_all_channels")) read_all_channels = TRUE; 
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_file")) { argc--; argv++; input_overlap_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_matrix")) { argc--; argv++; input_overlap_matrix = *argv; }
