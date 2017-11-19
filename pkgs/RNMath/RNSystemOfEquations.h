@@ -337,7 +337,7 @@ MinimizeCERES(const RNSystemOfEquations *system, RNScalar *io, RNScalar toleranc
   Solve(*options, problem, summary);
 
   // Print report
-  // std::cout << summary->BriefReport() << "\n";
+  std::cout << summary->FullReport() << "\n";
 
   // Copy solved solution into result 
   for (int i = 0; i < n; i++) io[i] = x[i]; 
