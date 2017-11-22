@@ -176,13 +176,13 @@ RNAlgebraic(const RNAlgebraic& algebraic)
   // Copy operands
   switch(algebraic.operation) {
   case RN_ZERO_OPERATION:
-    return;
+    break;
 
   case RN_POLYNOMIAL_OPERATION:
     assert(algebraic.polynomial);
     operation = algebraic.operation;
     polynomial = new RNPolynomial(*(algebraic.polynomial));
-    return;
+    break;
 
   default:
     assert(algebraic.operands[0]);
@@ -190,7 +190,7 @@ RNAlgebraic(const RNAlgebraic& algebraic)
     operation = algebraic.operation;
     operands[0] = new RNAlgebraic(*(algebraic.operands[0]));
     operands[1] = new RNAlgebraic(*(algebraic.operands[1]));
-    return;
+    break;
   }
 
   // Just checking
