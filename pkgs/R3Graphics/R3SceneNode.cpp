@@ -316,7 +316,7 @@ LocalBBox(void) const
     bbox.Union(reference->BBox());
   }
 
-  // Include elements
+  // Include children
   for (int i = 0; i < NChildren(); i++) {
     R3SceneNode *child = Child(i);
     bbox.Union(child->BBox());
