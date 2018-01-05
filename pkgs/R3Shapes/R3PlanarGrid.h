@@ -110,21 +110,23 @@ public:
     int xres, int yres, const R2Box& xybox);
   
   // Rasterization functions
-  void RasterizeGridPoint(RNCoord x, RNCoord y, RNScalar value);
-  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value);
-  void RasterizeGridPoint(const R2Point& point, RNScalar value);
-  void RasterizeWorldPoint(const R3Point& point, RNScalar value);
-  void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value);
-  void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2);
-  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value);
-  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value1, RNScalar value2);
-  void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value);
-  void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3);
-  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value);
-  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value1, RNScalar value2, RNScalar value3);
-  void RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value);
-  void RasterizeWorldCircle(const R3Point& center, RNLength radius, RNScalar value);
-  void RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value);
+  void RasterizeGridPoint(RNCoord x, RNCoord y, RNScalar value, int operation = 0);
+  void RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, int operation = 0);
+  void RasterizeGridPoint(const R2Point& point, RNScalar value, int operation = 0);
+  void RasterizeWorldPoint(const R3Point& point, RNScalar value, int operation = 0);
+  void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
+  void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation = 0);
+  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value, int operation = 0);
+  void RasterizeWorldSpan(const R3Point& p1, const R3Point& p2, RNScalar value1, RNScalar value2, int operation = 0);
+  void RasterizeGridBox(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
+  void RasterizeWorldBox(const R3Point& p1, const R3Point& p2, RNScalar value, int operation = 0);
+  void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value, int operation = 0);
+  void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
+  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value, int operation = 0);
+  void RasterizeWorldTriangle(const R3Point& p1, const R3Point& p2, const R3Point& p3, RNScalar value1, RNScalar value2, RNScalar value3, int operation = 0);
+  void RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value, int operation = 0);
+  void RasterizeWorldCircle(const R3Point& center, RNLength radius, RNScalar value, int operation = 0);
+  void RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value, int operation = 0);
 
   // Transformation utility functions
   R3Point WorldPosition(const R2Point& grid_point) const;
@@ -158,6 +160,18 @@ public:
   R3Box bbox;
   int texture_id;
 };
+
+
+
+// Constants taken directly from R2Grid
+
+#define R3_PLANAR_GRID_KEEP_VALUE            R2_GRID_KEEP_VALUE
+#define R3_PLANAR_GRID_INPUT_VALUE           R2_GRID_INPUT_VALUE       
+#define R3_PLANAR_GRID_UNKNOWN_VALUE         R2_GRID_UNKNOWN_VALUE     
+                                                                
+#define R3_PLANAR_GRID_ADD_OPERATION         R2_GRID_ADD_OPERATION     
+#define R3_PLANAR_GRID_SUBTRACT_OPERATION    R2_GRID_SUBTRACT_OPERATION
+#define R3_PLANAR_GRID_REPLACE_OPERATION     R2_GRID_REPLACE_OPERATION 
 
 
 
@@ -305,22 +319,24 @@ inline void R3PlanarGrid::SetGridValue(int i, int j, RNScalar value)
   { grid.SetGridValue(i, j, value); }
 inline void R3PlanarGrid::AddGridValue(int i, int j, RNScalar value)  
   { grid.AddGridValue(i, j, value); }
-inline void R3PlanarGrid::RasterizeGridPoint(RNCoord x, RNCoord y, RNScalar value)  
-  { grid.RasterizeGridPoint(x, y, value); }
-inline void R3PlanarGrid::RasterizeGridPoint(const R2Point& point, RNScalar value)  
-  { grid.RasterizeGridPoint(point, value); }
-inline void R3PlanarGrid::RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value)  
-  { grid.RasterizeGridSpan(p1, p2, value); }
-inline void R3PlanarGrid::RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2)  
-  { grid.RasterizeGridSpan(p1, p2, value1, value2); }
-inline void R3PlanarGrid::RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value)  
-  { grid.RasterizeGridTriangle(p1, p2, p3, value); }
-inline void R3PlanarGrid::RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3)  
-  { grid.RasterizeGridTriangle(p1, p2, p3, value1, value2, value3); }
-inline void R3PlanarGrid::RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value)  
-  { grid.RasterizeGridCircle(center, radius, value); }
-inline void R3PlanarGrid::RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value)  
-  { grid.RasterizeGridPolygon(polygon, value); }
+inline void R3PlanarGrid::RasterizeGridPoint(RNCoord x, RNCoord y, RNScalar value, int operation)  
+{ grid.RasterizeGridPoint(x, y, value, operation); }
+inline void R3PlanarGrid::RasterizeGridPoint(const R2Point& point, RNScalar value, int operation)  
+  { grid.RasterizeGridPoint(point, value, operation); }
+inline void R3PlanarGrid::RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value, int operation)  
+  { grid.RasterizeGridSpan(p1, p2, value, operation); }
+inline void R3PlanarGrid::RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation)  
+  { grid.RasterizeGridSpan(p1, p2, value1, value2, operation); }
+inline void R3PlanarGrid::RasterizeGridBox(const R2Point& p1, const R2Point& p2, RNScalar value, int operation)  
+{ grid.RasterizeGridBox(p1, p2, value, operation); }
+inline void R3PlanarGrid::RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value, int operation)  
+  { grid.RasterizeGridTriangle(p1, p2, p3, value, operation); }
+inline void R3PlanarGrid::RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value1, RNScalar value2, RNScalar value3, int operation)  
+  { grid.RasterizeGridTriangle(p1, p2, p3, value1, value2, value3, operation); }
+inline void R3PlanarGrid::RasterizeGridCircle(const R2Point& center, RNLength radius, RNScalar value, int operation)  
+  { grid.RasterizeGridCircle(center, radius, value, operation); }
+inline void R3PlanarGrid::RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value, int operation)  
+  { grid.RasterizeGridPolygon(polygon, value, operation); }
 inline void R3PlanarGrid::ConnectedComponentLabelFilter(RNScalar isolevel)
   { grid.ConnectedComponentLabelFilter(isolevel); }
 inline void R3PlanarGrid::ConnectedComponentSizeFilter(RNScalar isolevel)
@@ -429,51 +445,64 @@ GridToWorldScaleFactor(void) const
 
 
 inline void R3PlanarGrid::
-RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value) 
+RasterizeWorldPoint(RNCoord x, RNCoord y, RNCoord z, RNScalar value, int operation) 
 { 
   // Rasterize point at position on the plane closest to (x, y, z) given in 3D world coordinates
   R3Point p(x, y, z);
   p.Transform(transformation);
-  return grid.RasterizeWorldPoint(p.X(), p.Y(), value); 
+  return grid.RasterizeWorldPoint(p.X(), p.Y(), value, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldPoint(const R3Point& point, RNScalar value) 
+RasterizeWorldPoint(const R3Point& point, RNScalar value, int operation) 
 { 
   // Rasterize point at position on the plane closest to point given in 3D world coordinates
   R3Point p(point);
   p.Transform(transformation);
-  return grid.RasterizeWorldPoint(p.X(), p.Y(), value); 
+  return grid.RasterizeWorldPoint(p.X(), p.Y(), value, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldSpan(const R3Point& point1, const R3Point& point2, RNScalar value1, RNScalar value2)
+RasterizeWorldSpan(const R3Point& point1, const R3Point& point2, RNScalar value1, RNScalar value2, int operation)
 { 
   // Rasterize point at position on the plane closest to point given in 3D world coordinates
   R3Point p1(point1);
   R3Point p2(point2);
   p1.Transform(transformation);
   p2.Transform(transformation);
-  return grid.RasterizeWorldSpan(R2Point(p1.X(), p1.Y()), R2Point(p2.X(), p2.Y()), value1, value2); 
+  return grid.RasterizeWorldSpan(R2Point(p1.X(), p1.Y()), R2Point(p2.X(), p2.Y()), value1, value2, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldSpan(const R3Point& point1, const R3Point& point2, RNScalar value)
+RasterizeWorldSpan(const R3Point& point1, const R3Point& point2, RNScalar value, int operation)
 { 
   // Rasterize span at position on the plane closest to span given in 3D world coordinates
-  return RasterizeWorldSpan(point1, point2, value, value); 
+  return RasterizeWorldSpan(point1, point2, value, value, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldTriangle(const R3Point& point1, const R3Point& point2, const R3Point& point3, RNScalar value1, RNScalar value2, RNScalar value3)
+RasterizeWorldBox(const R3Point& p1, const R3Point& p2, RNScalar value, int operation)
+{ 
+  // Rasterize box
+  R3Point pA(p1);
+  R3Point pB(p2);
+  pA.Transform(transformation);
+  pB.Transform(transformation);
+  return grid.RasterizeWorldBox(R2Point(pA.X(), pA.Y()), R2Point(pB.X(), pB.Y()), value, operation); 
+}
+
+
+
+inline void R3PlanarGrid::
+RasterizeWorldTriangle(const R3Point& point1, const R3Point& point2, const R3Point& point3, RNScalar value1, RNScalar value2, RNScalar value3, int operation)
 { 
   // Rasterize triangle at position on the plane closest to triangle given in 3D world coordinates
   R3Point p1(point1);
@@ -482,28 +511,28 @@ RasterizeWorldTriangle(const R3Point& point1, const R3Point& point2, const R3Poi
   p1.Transform(transformation);
   p2.Transform(transformation);
   p3.Transform(transformation);
-  return grid.RasterizeWorldTriangle(R2Point(p1.X(), p1.Y()), R2Point(p2.X(), p2.Y()), R2Point(p3.X(), p3.Y()), value1, value2, value3); 
+  return grid.RasterizeWorldTriangle(R2Point(p1.X(), p1.Y()), R2Point(p2.X(), p2.Y()), R2Point(p3.X(), p3.Y()), value1, value2, value3, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldTriangle(const R3Point& point1, const R3Point& point2, const R3Point& point3, RNScalar value)
+RasterizeWorldTriangle(const R3Point& point1, const R3Point& point2, const R3Point& point3, RNScalar value, int operation)
 { 
   // Rasterize triangle at position on the plane closest to triangle given in 3D world coordinates
-  return RasterizeWorldTriangle(point1, point2, point3, value, value, value); 
+  return RasterizeWorldTriangle(point1, point2, point3, value, value, value, operation); 
 }
 
 
 
 inline void R3PlanarGrid::
-RasterizeWorldCircle(const R3Point& center, RNLength radius, RNScalar value)
+RasterizeWorldCircle(const R3Point& center, RNLength radius, RNScalar value, int operation)
 { 
   // Rasterize circle at position on the plane closest to circle given in 3D world coordinates
   R3Point p(center);
   p.Transform(transformation);
   RNLength r = radius * transformation.ScaleFactor();
-  return grid.RasterizeWorldCircle(R2Point(p.X(), p.Y()), r, value); 
+  return grid.RasterizeWorldCircle(R2Point(p.X(), p.Y()), r, value, operation); 
 }
 
 

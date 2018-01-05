@@ -3142,7 +3142,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
   int line_number = 0;
   int assignment_index = 0;
   RNArray<R3Shape *> shapes;
-  char mesh_directory[4096] = { '.', '\0' };
+  char mesh_directory[4096] = { '\0' };
   while (fgets(buffer, 4096, fp)) {
     // Check line
     line_number++;
@@ -3207,7 +3207,8 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
         char mesh_filename[4096];
         R3Shape *shape = NULL;
         if (strcmp(mesh_name, "None")) {
-          sprintf(mesh_filename, "%s/%s", mesh_directory, mesh_name);
+          if (mesh_directory[0]) sprintf(mesh_filename, "%s/%s", mesh_directory, mesh_name);
+          else sprintf(mesh_filename, "%s", mesh_name);
           shape = ReadMesh(mesh_filename);
           if (!shape) return 0;
         }
