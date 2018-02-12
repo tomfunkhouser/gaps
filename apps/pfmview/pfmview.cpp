@@ -11,7 +11,8 @@
 
 // Program variables
 
-static RNArray<char *> grid_names;
+static RNArray<const char *> grid_names;
+static const char *image_name = NULL;
 static int print_verbose = 0;
 
 
@@ -207,6 +208,14 @@ void GLUTRedraw(void)
   // Reset model view matrix
   glMatrixMode(GL_MODELVIEW);
   glPopMatrix();
+
+  // Capture image and exit
+  if (image_name) {
+    R2Image image(GLUTwindow_width, GLUTwindow_height, 3);
+    image.Capture();
+    image.Write(image_name);
+    GLUTStop();
+  }
 
   // Swap buffers 
   glutSwapBuffers();
@@ -486,11 +495,11 @@ void GLUTMainLoop(void)
 
  
 int
-ReadGrids(const RNArray<char *>& grid_names)
+ReadGrids(const RNArray<const char *>& grid_names)
 {
   // Read each grid
   for (int i = 0; i < grid_names.NEntries(); i++) {
-    char *grid_name = grid_names[i];
+    const char *grid_name = grid_names[i];
 
     // Allocate grid
     R2Grid *grid = new R2Grid();
@@ -536,6 +545,7 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) { print_verbose = 1; }
+      else if (!strcmp(*argv, "-image")) { argc--; argv++; image_name = *argv; }
       else if (!strcmp(*argv, "-gray_colors")) color_type = 0;
       else if (!strcmp(*argv, "-heatmap_colors")) color_type = 1;
       else if (!strcmp(*argv, "-label_colors")) color_type = 2;

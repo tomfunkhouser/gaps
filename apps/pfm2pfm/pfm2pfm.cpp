@@ -75,6 +75,7 @@ typedef enum {
   THRESHOLD_GRID_OPERATION,
   SUN3D_BITSHIFT_OPERATION,
   POISSON_OPERATION,
+  HASH_OPERATION,
   DU_OPERATION,
   DV_OPERATION,
   TMP_OPERATION,
@@ -401,6 +402,27 @@ void SUN3DBitshift(R2Grid *grid)
 
 
 
+void Hash(R2Grid *grid, int nvalues)
+{
+  // Get some stats
+  RNInterval range = grid->Range();
+  if (range.Diameter() == 0) return;
+  RNScalar scale = 1.0 / range.Diameter();
+  
+  // Replace values with hash to value in [0:nvalues-1]
+  for (int iy = 0; iy < grid->YResolution(); iy++) {
+    for (int ix = 0; ix < grid->XResolution(); ix++) {
+      RNScalar value = grid->GridValue(ix, iy);
+      if (value == R2_GRID_UNKNOWN_VALUE) continue;
+      int hash = (int) (nvalues * scale * (value - range.Min()));
+      if (hash > nvalues-1) hash = nvalues-1;
+      grid->SetGridValue(ix, iy, hash);
+    }
+  }
+}
+
+
+
 void DU(R2Grid *grid)
 {
   R2Grid f(*grid);
@@ -454,6 +476,7 @@ void Tmp(R2Grid *grid)
   *grid = f;
 #endif
 }
+
 
 
 static int
@@ -559,6 +582,7 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
     case OVERLAY_GRID_OPERATION: grid->Overlay(*grid1); break;
     case SUN3D_BITSHIFT_OPERATION: SUN3DBitshift(grid); break;
     case POISSON_OPERATION: Poisson(grid, grid1, grid2); break;
+    case HASH_OPERATION: Hash(grid, atoi(operation->operand1)); break;
     case DU_OPERATION: DU(grid); break;
     case DV_OPERATION: DV(grid); break;
     case TMP_OPERATION: Tmp(grid); break;
@@ -1040,6 +1064,12 @@ ParseArgs(int argc, char **argv)
         operation->type = POISSON_OPERATION;
         argc--; argv++; operation->operand1 = *argv; 
         argc--; argv++; operation->operand2 = *argv; 
+      }
+      else if (!strcmp(*argv, "-hash")) {
+        assert(noperations < max_operations);
+        Operation *operation = &operations[noperations++];
+        operation->type = HASH_OPERATION;
+        argc--; argv++; operation->operand1 = *argv; 
       }
       else if (!strcmp(*argv, "-du")) {
         assert(noperations < max_operations);

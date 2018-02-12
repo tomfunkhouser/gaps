@@ -1123,6 +1123,12 @@ ReadColorChannels(void)
 
     // Read color image
     if (!color_image.Read(full_filename)) return 0;
+
+    // Resize color image if necessary
+    if ((width > 0) && (height > 0) &&
+        ((width != color_image.Width()) || (height != color_image.Height()))) {
+      color_image.Resize(width, height, 3);
+    }
   }
 
   // Create color channels
@@ -1153,7 +1159,6 @@ ReadDepthChannel(void)
 
     // Read depth image
     if (!depth_image.ReadFile(full_filename)) return 0;
-
 
     // Shift 3 bits (to compensate for shift done by SUNRGBD capture)
     if (configuration && configuration->DatasetFormat()) {
@@ -1191,6 +1196,12 @@ ReadDepthChannel(void)
       RNScalar d_sigma_fraction = 0.015;
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
       depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);
+    }
+
+    // Resize depth image if necessary
+    if ((width > 0) && (height > 0) && ((width != depth_image.XResolution()) || (height != depth_image.YResolution()))) {
+      R3Matrix tmp(R3identity_matrix);
+      RGBDResampleDepthImage(depth_image, tmp, width, height);
     }
   }
   

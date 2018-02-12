@@ -119,7 +119,7 @@ public:
   virtual void SetName(const char *name);
   virtual void SetColorFilename(const char *filename);
   virtual void SetDepthFilename(const char *filename);
-  
+
   // Update functions
   virtual void InvalidateWorldBBox(void);
   virtual void InvalidateOpenGL(void);

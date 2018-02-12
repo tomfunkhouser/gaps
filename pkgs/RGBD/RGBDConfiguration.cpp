@@ -234,6 +234,8 @@ ReadFile(const char *filename, int read_every_kth_image)
   // Initialize stuff
   int image_count = 0;
   R3Matrix intrinsics_matrix = R3identity_matrix;
+  int image_width = 0;
+  int image_height = 0;
   
   // Open configuration file
   FILE *fp = fopen(filename, "r");
@@ -263,6 +265,22 @@ ReadFile(const char *filename, int read_every_kth_image)
       // Set dataset format
       SetDatasetFormat(name);
     }
+    else if (!strcmp(cmd, "depth_resolution")) {
+      // Parse dimensions
+      if (sscanf(buffer, "%s%d%d", cmd, &image_width, &image_height) != (unsigned int) 3) {
+        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        return 0;
+      }
+    }
+    else if (!strcmp(cmd, "color_resolution")) {
+      // Parse dimensions
+      if ((image_width == 0) || (image_height == 0)) {
+        if (sscanf(buffer, "%s%d%d", cmd, &image_width, &image_height) != (unsigned int) 3) {
+          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          return 0;
+        }
+      }
+    }
     else if (!strcmp(cmd, "depth_directory") || !strcmp(cmd, "color_directory") || !strcmp(cmd, "texture_directory") || !strcmp(cmd, "image_directory")) {
       // Parse directory name
       char dirname[4096];
@@ -277,7 +295,7 @@ ReadFile(const char *filename, int read_every_kth_image)
       else if (!strcmp(cmd, "image_directory")) SetColorDirectory(dirname);
       else if (!strcmp(cmd, "texture_directory")) SetTextureDirectory(dirname);
     }
-    else if (!strcmp(cmd, "intrinsics") || !strcmp(cmd, "depth_intrinsics") || !strcmp(cmd, "color_intrinsics")) {
+    else if (!strcmp(cmd, "intrinsics") || !strcmp(cmd, "depth_intrinsics")) { // || !strcmp(cmd, "color_intrinsics")) {
       // Parse intrinsics filename
       char intrinsics_filename[4096];
       if (sscanf(buffer, "%s%s", cmd, intrinsics_filename) != (unsigned int) 2) {
@@ -320,7 +338,7 @@ ReadFile(const char *filename, int read_every_kth_image)
       // Close intrinsics file
       fclose(intrinsics_fp);
     }
-    else if (!strcmp(cmd, "intrinsics_matrix") || !strcmp(cmd, "depth_intrinsics_matrix") || !strcmp(cmd, "color_intrinsics_matrix")) {
+    else if (!strcmp(cmd, "intrinsics_matrix") || !strcmp(cmd, "depth_intrinsics_matrix")) { // || !strcmp(cmd, "color_intrinsics_matrix")) {
       // Parse matrix
       double m[9];
       if (sscanf(buffer, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != (unsigned int) 10) {
@@ -353,7 +371,7 @@ ReadFile(const char *filename, int read_every_kth_image)
       }
 
       // Create RGBD image
-      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m));
+      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
       InsertImage(image);
     }
     else if (!strcmp(cmd, "frame")) {
@@ -379,7 +397,7 @@ ReadFile(const char *filename, int read_every_kth_image)
       }
 
       // Create RGBD image
-      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m));
+      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
       InsertImage(image);
     }
     else if (!strcmp(cmd, "rectangle")) {

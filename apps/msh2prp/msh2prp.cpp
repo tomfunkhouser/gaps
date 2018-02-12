@@ -476,8 +476,12 @@ static void rot_coord_sys(const R3Vector &old_u, const R3Vector &old_v,
 {
   new_u = old_u;
   new_v = old_v;
+  if (new_u.IsZero()) return;
+  if (new_v.IsZero()) return;
   R3Vector old_norm = old_u % old_v;
+  if (old_norm.IsZero()) return;
   RNScalar ndot = old_norm.Dot(new_norm);
+  if (ndot >= 1.0) return;
   if (ndot <= -1.0) {
     new_u = -new_u;
     new_v = -new_v;
@@ -598,35 +602,29 @@ ComputeCurvatureProperties(R3Mesh *mesh)
     RNScalar ew[3] = { l2[0] * (l2[1] + l2[2] - l2[0]),
                        l2[1] * (l2[2] + l2[0] - l2[1]),
                        l2[2] * (l2[0] + l2[1] - l2[2]) };
+    RNScalar dot01 = e[0].Dot(e[1]);
+    RNScalar dot02 = e[0].Dot(e[2]);
+    RNScalar dot12 = e[1].Dot(e[2]);
     if (ew[0] <= 0.0) {
-      cornerareas[i][1] = -0.25 * l2[2] * area /
-        (e[0].Dot(e[2]));
-      cornerareas[i][2] = -0.25 * l2[1] * area /
-        (e[0].Dot(e[1]));
-      cornerareas[i][0] = area - cornerareas[i][1] -
-        cornerareas[i][2];
+      cornerareas[i][1] = (RNIsNotZero(dot02)) ? -0.25 * l2[2] * area / dot02 : 0;
+      cornerareas[i][2] = (RNIsNotZero(dot01)) ? -0.25 * l2[1] * area / dot02 : 0;
+      cornerareas[i][0] = area - cornerareas[i][1] - cornerareas[i][2];
     } 
     else if (ew[1] <= 0.0) {
-      cornerareas[i][2] = -0.25 * l2[0] * area /
-        (e[1].Dot(e[0]));
-      cornerareas[i][0] = -0.25 * l2[2] * area /
-        (e[1].Dot(e[2]));
-      cornerareas[i][1] = area - cornerareas[i][2] -
-        cornerareas[i][0];
+      cornerareas[i][2] = (RNIsNotZero(dot01)) ? -0.25 * l2[0] * area / dot01 : 0;
+      cornerareas[i][0] = (RNIsNotZero(dot12)) ? -0.25 * l2[2] * area / dot12 : 0;
+      cornerareas[i][1] = area - cornerareas[i][2] - cornerareas[i][0];
     } 
     else if (ew[2] <= 0.0) {
-      cornerareas[i][0] = -0.25 * l2[1] * area /
-        (e[2].Dot(e[1]));
-      cornerareas[i][1] = -0.25 * l2[0] * area /
-        (e[2].Dot(e[0]));
-      cornerareas[i][2] = area - cornerareas[i][0] -
-        cornerareas[i][1];
+      cornerareas[i][0] = (RNIsNotZero(dot12)) ? -0.25 * l2[1] * area / dot12 : 0;
+      cornerareas[i][1] = (RNIsNotZero(dot02)) ? -0.25 * l2[0] * area / dot02 : 0;
+      cornerareas[i][2] = area - cornerareas[i][0] - cornerareas[i][1];
     } 
     else {
-      double ewscale = 0.5 * area / (ew[0] + ew[1] + ew[2]);
+      double ewsum = ew[0] + ew[1] + ew[2];
+      double ewscale = (RNIsNotZero(ewsum)) ? 0.5 * area / ewsum : 0;
       for (int j = 0; j < 3; j++)
-        cornerareas[i][j] = ewscale * (ew[(j+1)%3] +
-                                       ew[(j+2)%3]);
+        cornerareas[i][j] = ewscale * (ew[(j+1)%3] + ew[(j+2)%3]);
     }
     pointareas[mesh->VertexID(vertex[0])] += cornerareas[i][0];
     pointareas[mesh->VertexID(vertex[1])] += cornerareas[i][1];
@@ -715,7 +713,7 @@ ComputeCurvatureProperties(R3Mesh *mesh)
       int vj = mesh->VertexID(vertex[j]);
       RNScalar c1, c12, c2;
       proj_curv(t, b, m[0], m[1], m[2], pdir1[vj], pdir2[vj], c1, c12, c2);
-      RNScalar wt = cornerareas[i][j] / pointareas[vj];
+      RNScalar wt = (pointareas[vj] > 0) ? cornerareas[i][j] / pointareas[vj] : 1;
       curv1[vj]  += wt * c1;
       curv12[vj] += wt * c12;
       curv2[vj]  += wt * c2;

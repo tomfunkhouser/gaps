@@ -1217,7 +1217,7 @@ JumpToNextScanViewpoint(int delta)
   R3Camera camera(scan->Viewpoint(), scan->Towards(), scan->Up(),
     scan->XFOV(), scan->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
   viewer.SetCamera(camera);
-  
+
   // Update working set
   R3SurfelNode *node = scan->Node();
   if (!node) {
@@ -1232,12 +1232,18 @@ JumpToNextScanViewpoint(int delta)
   // Update scan texture
   if (scan_image_visibility) {
     if ((current_scan_index >= 0) && (current_scan_index < scene->NScans())) {
+      RNBoolean found = FALSE;      
       char image_filename[4096];
-      const char *image_directory = "undistorted_color_images";
-      sprintf(image_filename, "%s/%s.jpg", image_directory, scan->Name());
-      char *s = strstr(image_filename, "_d");
-      if (s) *(s+1) = 'i';
-      if (RNFileExists(image_filename)) {
+      sprintf(image_filename, "%s.jpg", scan->Name());
+      if (RNFileExists(image_filename)) found = TRUE;
+      if (!found) {
+        const char *image_directory = "undistorted_color_images";
+        sprintf(image_filename, "%s/%s.jpg", image_directory, scan->Name());
+        char *s = strstr(image_filename, "_d");
+        if (s) *(s+1) = 'i';
+        if (RNFileExists(image_filename)) found = TRUE;
+      }
+      if (found) {
         static R2Image image;
         if (image.Read(image_filename)) { 
           current_scan_texture.SetImage(&image);

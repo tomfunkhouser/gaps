@@ -32,6 +32,7 @@ class R2Image {
   void Clear(const RNRgb& rgb = RNblack_rgb);
   void Add(const R2Image& image);
   void Subtract(const R2Image& image);
+  void Resize(int width, int height, int ncomponents);
   void SetPixel(int row, int column, const unsigned char *pixel);
   void SetPixelRGB(int row, int column, const RNRgb& rgb);
 

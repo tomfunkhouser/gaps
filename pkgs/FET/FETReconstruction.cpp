@@ -3536,7 +3536,7 @@ OptimizeTransformationsWithLinearSystemOfEquations(void)
   // Check the shapes
   if (NShapes() < 2) return;
 
-// #define PRINT_TIMING
+#define PRINT_TIMING
 #ifdef PRINT_TIMING
   RNTime step_time;
   step_time.Read();
@@ -3556,7 +3556,7 @@ OptimizeTransformationsWithLinearSystemOfEquations(void)
   AddTrajectoryEquations(&equations, total_trajectory_weight);
   AddCorrespondenceEquations(&equations, total_correspondence_weights);
   
-// #define PRINT_EQUATIONS
+#define PRINT_EQUATIONS
 #ifdef PRINT_EQUATIONS
   equations.Print();
   fflush(stdout);
