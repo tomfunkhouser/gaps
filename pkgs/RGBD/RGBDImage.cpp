@@ -1127,7 +1127,8 @@ ReadColorChannels(void)
     // Resize color image if necessary
     if ((width > 0) && (height > 0) &&
         ((width != color_image.Width()) || (height != color_image.Height()))) {
-      color_image.Resize(width, height, 3);
+      R3Matrix tmp(R3identity_matrix);
+      RGBDResampleColorImage(color_image, tmp, width, height);
     }
   }
 
