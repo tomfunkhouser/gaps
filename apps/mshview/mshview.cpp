@@ -194,12 +194,13 @@ void GLUTRedraw(void)
 
     // Draw vertices
     if (show_vertices) {
-      glDisable(GL_LIGHTING);
-      glColor3d(0.0, 0.0, 1.0);
+      if (show_vertex_colors) glDisable(GL_LIGHTING);
+      else { glEnable(GL_LIGHTING); glColor3d(0.0, 0.5, 1.0); }
       glBegin(GL_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
+        else R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
       glEnd();

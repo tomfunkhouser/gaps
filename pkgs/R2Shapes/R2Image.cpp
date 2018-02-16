@@ -257,47 +257,50 @@ Resize(int w, int h, int c)
     rowsize = 0;
   }
   else {
-    // Compute scale factors
-    RNScalar xfactor = (RNScalar) width / (RNScalar) w;
-    RNScalar yfactor = (RNScalar) height / (RNScalar) h;
-
     // Create output image
     R2Image output(w, h, c);
-    for (int ix = 0; ix < w; ix++) {
-      for (int iy = 0; iy < h; iy++) {
-        double x = (ix+0.5) * xfactor;
-        double y = (iy+0.5) * yfactor;
-        if ((x < 0) || (x >= width)) continue;
-        if ((y < 0) || (y >= height)) continue;
+    if ((width > 0) && (height > 0)) {
+      // Compute scale factors
+      RNScalar xfactor = (RNScalar) width / (RNScalar) w;
+      RNScalar yfactor = (RNScalar) height / (RNScalar) h;
 
-        // Bilinear interpolation
-        int ix1 = (int) x;
-        int iy1 = (int) y;
-        int ix2 = ix1 + 1;
-        int iy2 = iy1 + 1;
-        if (ix2 >= width) ix2 = ix1;
-        if (iy2 >= height) iy2 = iy1;
-        RNScalar dx = x - ix1;
-        RNScalar dy = y - iy1;
-        RNRgb color11 = PixelRGB(ix1, iy1);
-        RNRgb color12 = PixelRGB(ix1, iy2);
-        RNRgb color21 = PixelRGB(ix2, iy1);
-        RNRgb color22 = PixelRGB(ix2, iy2);
-        RNScalar weight11 = (1.0-dx) * (1.0-dy);
-        RNScalar weight12 = (1.0-dx) * dy;
-        RNScalar weight21 = dx * (1.0-dy);
-        RNScalar weight22 = dx * dy;
-        RNRgb color(0,0,0);
-        RNScalar weight = 0;
-        color += weight11 * color11; weight += weight11; 
-        color += weight12 * color12; weight += weight12;
-        color += weight21 * color21; weight += weight21;
-        color += weight22 * color22; weight += weight22;
-        if (weight == 0) output.SetPixelRGB(ix, iy, RNblack_rgb);
-        else output.SetPixelRGB(ix, iy, color / weight);
+      // Resample original image
+      for (int ix = 0; ix < w; ix++) {
+        for (int iy = 0; iy < h; iy++) {
+          double x = (ix+0.5) * xfactor;
+          double y = (iy+0.5) * yfactor;
+          if ((x < 0) || (x >= width)) continue;
+          if ((y < 0) || (y >= height)) continue;
+
+          // Bilinear interpolation
+          int ix1 = (int) x;
+          int iy1 = (int) y;
+          int ix2 = ix1 + 1;
+          int iy2 = iy1 + 1;
+          if (ix2 >= width) ix2 = ix1;
+          if (iy2 >= height) iy2 = iy1;
+          RNScalar dx = x - ix1;
+          RNScalar dy = y - iy1;
+          RNRgb color11 = PixelRGB(ix1, iy1);
+          RNRgb color12 = PixelRGB(ix1, iy2);
+          RNRgb color21 = PixelRGB(ix2, iy1);
+          RNRgb color22 = PixelRGB(ix2, iy2);
+          RNScalar weight11 = (1.0-dx) * (1.0-dy);
+          RNScalar weight12 = (1.0-dx) * dy;
+          RNScalar weight21 = dx * (1.0-dy);
+          RNScalar weight22 = dx * dy;
+          RNRgb color(0,0,0);
+          RNScalar weight = 0;
+          color += weight11 * color11; weight += weight11; 
+          color += weight12 * color12; weight += weight12;
+          color += weight21 * color21; weight += weight21;
+          color += weight22 * color22; weight += weight22;
+          if (weight == 0) output.SetPixelRGB(ix, iy, RNblack_rgb);
+          else output.SetPixelRGB(ix, iy, color / weight);
+        }
       }
     }
-
+    
     // Copy output to this image
     *this = output;
   }

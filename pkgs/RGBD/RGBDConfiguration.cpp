@@ -21,6 +21,7 @@ RGBDConfiguration::
 RGBDConfiguration(void)
   : images(),
     surfaces(),
+    name(NULL),
     color_directory(NULL),
     depth_directory(NULL),
     texture_directory(NULL),
@@ -37,6 +38,9 @@ RGBDConfiguration::
   // Delete everything
   while (NImages() > 0) delete Image(NImages()-1);
   while (NSurfaces() > 0) delete Surface(NSurfaces()-1);
+
+  // Delete name
+  if (name) free(name);
 
   // Delete directory names
   if (color_directory) free(color_directory);
@@ -181,6 +185,17 @@ Transform(const R3Transformation& transformation)
 ////////////////////////////////////////////////////////////////////////
 
 void RGBDConfiguration::
+SetName(const char *str)
+{
+  // Set directory name
+  if (name) free(name);
+  if (str && strcmp(str, "-")) name = strdup(str);
+  else name = NULL;
+}
+
+
+
+void RGBDConfiguration::
 SetColorDirectory(const char *directory)
 {
   // Set directory name
@@ -264,6 +279,17 @@ ReadFile(const char *filename, int read_every_kth_image)
 
       // Set dataset format
       SetDatasetFormat(name);
+    }
+    else if (!strcmp(cmd, "sequence") || !strcmp(cmd, "name")) {
+      // Parse name
+      char name[1024] = { '\0' };
+      if (sscanf(buffer, "%s%s", cmd, name) != (unsigned int) 2) {
+        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Set dataset format
+      SetName(name);
     }
     else if (!strcmp(cmd, "depth_resolution")) {
       // Parse dimensions
@@ -477,6 +503,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
 
   // Write header
   fprintf(fp, "n_images %d\n", NImages());
+  if (Name()) fprintf(fp, "sequence %s\n", Name());
   if (DatasetFormat()) fprintf(fp, "dataset %s\n", DatasetFormat());
   if (color_directory) fprintf(fp, "color_directory %s\n", color_directory);
   if (depth_directory) fprintf(fp, "depth_directory %s\n", depth_directory);

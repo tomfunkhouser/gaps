@@ -17,7 +17,7 @@ public:
   // Property functions
   R3Point WorldCentroid(void) const;
   R3Box WorldBBox(void) const;
-
+  
   // Image and surface access functions
   int NImages(void) const;
   RGBDImage *Image(int k) const;
@@ -25,6 +25,7 @@ public:
   RGBDSurface *Surface(int k) const;
 
   // Directory name access functions
+  const char *Name(void) const;
   const char *ColorDirectory(void) const;
   const char *DepthDirectory(void) const;
   const char *TextureDirectory(void) const;
@@ -38,6 +39,7 @@ public:
   virtual void Transform(const R3Transformation& transformation);
 
   // Direction name manipulation functions
+  void SetName(const char *name);
   void SetColorDirectory(const char *name);
   void SetDepthDirectory(const char *name);
   void SetTextureDirectory(const char *name);
@@ -64,6 +66,7 @@ private:
   // Internal variables
   RNArray<RGBDImage *> images;
   RNArray<RGBDSurface *> surfaces;
+  char *name;
   char *color_directory;
   char *depth_directory;
   char *texture_directory;
@@ -119,6 +122,15 @@ Surface(int k) const
 {
   // Return kth surface
   return surfaces.Kth(k);
+}
+
+
+
+inline const char *RGBDConfiguration::
+Name(void) const
+{
+  // Return name
+  return name;
 }
 
 
