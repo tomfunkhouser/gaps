@@ -125,6 +125,10 @@ public:
   virtual void InvalidateOpenGL(void);
   virtual void UpdateOpenGL(void);
 
+  // User data functions
+  void *UserData(void) const;
+  void SetUserData(void *data);
+
 private:
   // Internal variables
   friend class RGBDConfiguration;
@@ -141,6 +145,7 @@ private:
   char *depth_filename;
   int color_resident_count;
   int depth_resident_count;
+  void *data;
 };
 
 
@@ -410,5 +415,22 @@ DepthFilename(void) const
   return depth_filename;
 }
 
+
+
+inline void *RGBDImage::
+UserData(void) const
+{
+  // Return user data
+  return data;
+}
+
+
+
+inline void RGBDImage::
+SetUserData(void *data)
+{
+  // Set user data
+  this->data = data;
+}
 
 

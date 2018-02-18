@@ -28,6 +28,7 @@ RGBDSurface(void)
     mesh_filename(NULL),
     surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
+    data(NULL),
     rectangle(NULL),
     mesh(NULL),
     mesh_face_index(NULL)
@@ -47,6 +48,7 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel
     mesh_filename(NULL),
     surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
+    data(NULL),
     rectangle(rectangle),
     mesh(NULL),
     mesh_face_index(NULL)
@@ -83,6 +85,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
     mesh_filename(NULL),
     surface_bbox(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX),
     color_resident_count(0),
+    data(NULL),
     rectangle(NULL),
     mesh(mesh),
     mesh_face_index(NULL)

@@ -30,7 +30,8 @@ RGBDImage(void)
     color_filename(NULL),
     depth_filename(NULL),
     color_resident_count(0),
-    depth_resident_count(0)
+    depth_resident_count(0),
+    data(NULL)
 {
 }
 
@@ -52,7 +53,8 @@ RGBDImage(const char *color_filename, const char *depth_filename,
     color_filename(NULL),
     depth_filename(NULL),
     color_resident_count(0),
-    depth_resident_count(0)
+    depth_resident_count(0),
+    data(NULL)
 {
   // Set filenames
   if (depth_filename) SetDepthFilename(depth_filename);
@@ -1194,7 +1196,9 @@ ReadDepthChannel(void)
 
     // Smooth depth image
     if (!configuration || !configuration->DatasetFormat() ||
-        (strcmp(configuration->DatasetFormat(), "processed") && strcmp(configuration->DatasetFormat(), "scannet"))) {
+        (strcmp(configuration->DatasetFormat(), "processed") &&
+         strcmp(configuration->DatasetFormat(), "matterport") && // TEMPORARY FOR AGGR!!!
+         strcmp(configuration->DatasetFormat(), "scannet"))) {
       RNScalar d_sigma_fraction = 0.015;
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
       depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);

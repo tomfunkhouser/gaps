@@ -39,17 +39,20 @@ public:
   virtual void Transform(const R3Transformation& transformation);
 
   // Direction name manipulation functions
-  void SetName(const char *name);
-  void SetColorDirectory(const char *name);
-  void SetDepthDirectory(const char *name);
-  void SetTextureDirectory(const char *name);
-  void SetDatasetFormat(const char *name);
+  virtual void SetName(const char *name);
+  virtual void SetColorDirectory(const char *name);
+  virtual void SetDepthDirectory(const char *name);
+  virtual void SetTextureDirectory(const char *name);
+  virtual void SetDatasetFormat(const char *name);
 
   // Input/output
   virtual int ReadFile(const char *filename, int read_every_kth_image = 1);
   virtual int WriteFile(const char *filename, int write_every_kth_image = 1) const;
   
 public:
+  // Allocation functions
+  virtual RGBDImage *AllocateImage(void);
+  
   // Read/release functions
   virtual int ReadChannels(void);
   virtual int ReleaseChannels(void);

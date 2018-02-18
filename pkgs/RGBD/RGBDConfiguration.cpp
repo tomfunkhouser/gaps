@@ -94,9 +94,7 @@ InsertImage(RGBDImage *image)
   images.Insert(image);
 
   // Update bounding box
-  // This is a hack for images that are not in memory
-  if (!image->world_bbox.IsEmpty()) world_bbox.Union(image->world_bbox);
-  else world_bbox.Union(image->WorldViewpoint());
+  world_bbox.Union(image->WorldBBox());
 }
 
 
@@ -397,7 +395,13 @@ ReadFile(const char *filename, int read_every_kth_image)
       }
 
       // Create RGBD image
-      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
+      // RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
+      RGBDImage *image = AllocateImage();
+      image->SetNPixels(image_width, image_height);
+      image->SetColorFilename(color_filename);
+      image->SetDepthFilename(depth_filename);
+      image->SetIntrinsics(intrinsics_matrix);
+      image->SetCameraToWorld(R3Affine(R4Matrix(m), 0));
       InsertImage(image);
     }
     else if (!strcmp(cmd, "frame")) {
@@ -423,7 +427,13 @@ ReadFile(const char *filename, int read_every_kth_image)
       }
 
       // Create RGBD image
-      RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
+      // RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
+      RGBDImage *image = AllocateImage();
+      image->SetNPixels(image_width, image_height);
+      image->SetColorFilename(color_filename);
+      image->SetDepthFilename(depth_filename);
+      image->SetIntrinsics(intrinsics_matrix);
+      image->SetCameraToWorld(R3Affine(R4Matrix(m), 0));
       InsertImage(image);
     }
     else if (!strcmp(cmd, "rectangle")) {
@@ -728,3 +738,9 @@ UpdateWorldBBox(void)
 
 
 
+RGBDImage *RGBDConfiguration::
+AllocateImage(void)
+{
+  // Allocate image (can be over-ridden by derived class)
+  return new RGBDImage();
+}

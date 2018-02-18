@@ -104,6 +104,10 @@ public:
   virtual void InvalidateMeshFaceIndex(void);
   virtual void UpdateMeshFaceIndex(void);
   
+  // User data functions
+  void *UserData(void) const;
+  void SetUserData(void *data);
+
 private:
   // Internal variables
   friend class RGBDConfiguration;
@@ -116,7 +120,8 @@ private:
   char *mesh_filename;
   R2Box surface_bbox;
   int color_resident_count;
-
+  void *data;
+  
 public: // temporary
   // Rectangular surface variables
   R3Rectangle *rectangle;
@@ -298,6 +303,24 @@ WorldTexelSpacing(void) const
   // Return world texel spacing
   if (width == 0) return 0;
   return surface_bbox.XLength() / width;
+}
+
+
+
+inline void *RGBDSurface::
+UserData(void) const
+{
+  // Return user data
+  return data;
+}
+
+
+
+inline void RGBDSurface::
+SetUserData(void *data)
+{
+  // Set user data
+  this->data = data;
 }
 
 
