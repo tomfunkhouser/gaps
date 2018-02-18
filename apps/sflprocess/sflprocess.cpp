@@ -1386,16 +1386,27 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename)
     if (cmd[0] == '#') continue;
 
     // Check cmd
-    if (!strcmp(cmd, "scan")) {
+    if (!strcmp(cmd, "scan") || !strcmp(cmd, "image") || !strcmp(cmd, "frame")) {
       // Parse image name and alignment transformation
-      RNScalar m[16];
+      RNScalar m[16], depth_timestamp, color_timestamp;
       char depth_name[4096], color_name[4096];
-      if (sscanf(buffer, "%s%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
-         depth_name, color_name,
-         &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
-         &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 19) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
-        return 0;
+      if (!strcmp(cmd, "frame")) {
+        if (sscanf(buffer, "%s%s%lf%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
+           depth_name, &depth_timestamp, color_name, &color_timestamp,
+           &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
+           &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 21) {
+          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          return 0;
+        }
+      }
+      else {
+        if (sscanf(buffer, "%s%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
+           depth_name, color_name,
+           &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
+           &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 19) {
+          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          return 0;
+        }
       }
 
       // Get transformation
