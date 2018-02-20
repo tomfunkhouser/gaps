@@ -1330,6 +1330,14 @@ Transform(R3SurfelScene *scene, const R3Affine& transformation)
     node->Transform(transformation);
   }
 
+  // Transform all scan poses
+  for (int i = 0; i < scene->NScans(); i++) {
+    R3SurfelScan *scan = scene->Scan(i);
+    R3CoordSystem pose = scan->Pose();
+    pose.Transform(transformation);
+    scan->SetPose(pose);
+  }
+      
   // Return success
   return 1;
 }
@@ -1355,7 +1363,7 @@ AlignPrinciplePlanarAxes(R3SurfelScene *scene)
 
 
 static int
-TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename)
+TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoolean invert = FALSE)
 {
   // Start statistics
   RNTime start_time;
@@ -1411,6 +1419,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename)
 
       // Get transformation
       R3Affine transformation(R4Matrix(m), 0);
+      if (invert) transformation.Invert();
 
       // Get node name
       char tmp[4096];
@@ -2625,6 +2634,10 @@ int main(int argc, char **argv)
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
       argc--; argv++; char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename)) exit(-1);
+    }
+    else if (!strcmp(*argv, "-inverse_transform_with_configuration_file")) { 
+      argc--; argv++; char *configuration_filename = *argv; 
+      if (!TransformWithConfigurationFile(scene, configuration_filename, TRUE)) exit(-1);
     }
     else if (!strcmp(*argv, "-create_object_relationships")) { 
       argc--; argv++; double max_gap_distance = atof(*argv);
