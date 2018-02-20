@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // Include file for RGBDConfiguration class
 ////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +51,10 @@ public:
   
 public:
   // Allocation functions
-  virtual RGBDImage *AllocateImage(void);
+  virtual RGBDImage *AllocateImage(void) const;
+
+  // Access functions
+  RGBDImage *FindImage(const char *name) const;
   
   // Read/release functions
   virtual int ReadChannels(void);

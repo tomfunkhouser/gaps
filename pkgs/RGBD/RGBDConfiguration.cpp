@@ -739,8 +739,24 @@ UpdateWorldBBox(void)
 
 
 RGBDImage *RGBDConfiguration::
-AllocateImage(void)
+AllocateImage(void) const
 {
   // Allocate image (can be over-ridden by derived class)
   return new RGBDImage();
 }
+
+
+
+RGBDImage *RGBDConfiguration::
+FindImage(const char *name) const
+{
+  // Find image with matching name
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    if (image->Name() && !strcmp(image->Name(), name)) return image;
+  }
+
+  // Image not found
+  return NULL;
+}
+
