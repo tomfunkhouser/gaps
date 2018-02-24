@@ -16,6 +16,7 @@ static char *output1_name = NULL;
 static char *weights1_name = NULL;
 static char *weights2_name = NULL;
 static RNScalar min_weight = 0;
+static int egi_rotation = 0;
 static int pca_translation = 0;
 static int pca_scale = 0;
 static int pca_rotation = 0; // 2 = only 180s
@@ -639,6 +640,7 @@ RansacAlignmentTransformation(
 static int
 Align(R3Mesh *mesh1, R3Mesh *mesh2, 
   RNScalar *weights1, int nweights1, RNScalar *weights2, int nweights2,
+  int egi_rotation,
   int pca_translation, int pca_rotation, int pca_scale, 
   int ransac_translation, int ransac_rotation, int ransac_scale, 
   int icp_translation, int icp_rotation, int icp_scale,
@@ -837,22 +839,39 @@ Align(R3Mesh *mesh1, R3Mesh *mesh2,
 
 
 static int
-Align(R3Mesh *mesh1, int translation, int rotation, int scale)
+Align(R3Mesh *mesh1, int egi_rotation, int pca_translation, int pca_rotation, int pca_scale)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
-  // Compute transform to align mesh1 to canonical coordinate system
-  R3Affine affine = mesh1->PCANormalizationTransformation(translation, (rotation==1), scale);
+  // Initialize transformation
+  R3Affine affine = R3identity_affine;
 
-  // Apply transformation
-  mesh1->Transform(affine);
+  // Transform to align mesh1 principal axes to canonical coordinate system
+  if (pca_translation || pca_rotation || pca_scale) {
+    R3Affine pca = mesh1->PCANormalizationTransformation(pca_translation, (pca_rotation==1), pca_scale);
+    mesh1->Transform(pca);
+    affine.Transform(pca);
+  }
+
+  // Transform to align mesh1 orientation with extended gaussian image
+  if (egi_rotation) {
+    R3Point centroid1 = mesh1->Centroid();
+    R3Affine egi = mesh1->EGINormalizationTransformation(pca_translation, egi_rotation, pca_scale);
+    mesh1->Transform(egi);
+    R3Affine prev = affine;
+    affine = R3identity_affine;
+    if (!pca_translation) affine.Translate(centroid1.Vector());
+    affine.Transform(egi);
+    if (!pca_translation) affine.Translate(-(centroid1.Vector()));
+    affine.Transform(prev);
+  }
 
   // Print statistics
   if (print_verbose) {
     const R4Matrix& m = affine.Matrix();
-    printf("Computed alignment transformation with PCA ...\n");
+    printf("Computed alignment transformation ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Matrix[0][0-3] = %g %g %g %g\n", m[0][0], m[0][1], m[0][2], m[0][3]);
     printf("  Matrix[1][0-3] = %g %g %g %g\n", m[1][0], m[1][1], m[1][2], m[1][3]);
@@ -1043,6 +1062,7 @@ int main(int argc, char **argv)
     // Align mesh1 to mesh2
     if (!Align(mesh1, mesh2, 
       weights1, nweights1, weights2, nweights2,
+      egi_rotation,
       pca_translation, pca_rotation, pca_scale, 
       ransac_translation, ransac_rotation, ransac_scale, 
       icp_translation, icp_rotation, icp_scale,
@@ -1051,7 +1071,7 @@ int main(int argc, char **argv)
   }
   else {
     // Align mesh1 to canonical coordinate system
-    if (!Align(mesh1, pca_translation, pca_rotation, pca_scale)) exit(-1);
+    if (!Align(mesh1, egi_rotation, pca_translation, pca_rotation, pca_scale)) exit(-1);
   }
 
   // Output mesh1

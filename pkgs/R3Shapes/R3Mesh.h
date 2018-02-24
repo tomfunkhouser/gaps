@@ -151,8 +151,12 @@ class R3Mesh {
       // Return average distance from point on surface to centroid
     R3Triad PrincipleAxes(const R3Point *centroid = NULL, RNScalar *variances = NULL) const;
       // Return principle axes of mesh
+    R3Triad EGIAxes(void) const;
+      // Return egi axes of mesh (orthogonal directions with most support from normals)
     R3Affine PCANormalizationTransformation(RNBoolean translate = TRUE, RNBoolean rotate = TRUE, RNBoolean scale = TRUE) const;
       // Return transformation that aligns centroid, principal axes, and scale with R3xyz_triad
+    R3Affine EGINormalizationTransformation(RNBoolean translate = TRUE, RNBoolean rotate = TRUE, RNBoolean scale = TRUE) const;
+      // Return transformation that aligns centroid, egi axes, and scale with R3xyz_triad
     void *Data(void) const;
      // Return user data associated with mesh
 

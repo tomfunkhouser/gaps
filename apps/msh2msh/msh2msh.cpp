@@ -240,6 +240,20 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
       else if (!strcmp(*argv, "-merge_list")) { argv++; argc--; merge_list_name = *argv; }
+      else if (!strcmp(*argv, "-transform")) {
+        R4Matrix m;
+        argv++; argc--; m[0][0] = atof(*argv); argv++; argc--; m[0][1] = atof(*argv);
+        argv++; argc--; m[0][2] = atof(*argv); argv++; argc--; m[0][3] = atof(*argv);
+        argv++; argc--; m[1][0] = atof(*argv); argv++; argc--; m[1][1] = atof(*argv);
+        argv++; argc--; m[1][2] = atof(*argv); argv++; argc--; m[1][3] = atof(*argv);
+        argv++; argc--; m[2][0] = atof(*argv); argv++; argc--; m[2][1] = atof(*argv);
+        argv++; argc--; m[2][2] = atof(*argv); argv++; argc--; m[2][3] = atof(*argv);
+        argv++; argc--; m[3][0] = atof(*argv); argv++; argc--; m[3][1] = atof(*argv);
+        argv++; argc--; m[3][2] = atof(*argv); argv++; argc--; m[3][3] = atof(*argv);
+        xform = R3identity_affine;
+        xform.Transform(R3Affine(m));
+        xform.Transform(prev_xform);
+      }  
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }

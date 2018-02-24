@@ -325,6 +325,15 @@ PrincipleAxes(const R3Point *center, RNScalar *variances) const
 
 
 
+R3Triad R3Mesh::
+EGIAxes(void) const
+{
+  // Return triad
+  return R3xyz_triad;
+}
+
+
+
 R3Affine R3Mesh::
 PCANormalizationTransformation(RNBoolean translate, RNBoolean rotate, int scale) const
 {
@@ -362,6 +371,41 @@ PCANormalizationTransformation(RNBoolean translate, RNBoolean rotate, int scale)
   affine.Translate(-(centroid.Vector()));
   
   // Return PCA normalization transformation
+  return affine;
+}
+
+
+
+R3Affine R3Mesh::
+EGINormalizationTransformation(RNBoolean translate, RNBoolean rotate, int scale) const
+{
+  // Initialize transformation
+  R3Affine affine(R3identity_affine);
+
+  // Compute center of mass
+  R3Point centroid = Centroid();
+
+  // Translate center of mass back to original (if not translating)
+  if (!translate) {
+    affine.Translate(centroid.Vector());
+  }
+
+  // Scale by inverse of radius
+  if ((scale != 0) && (scale != 2)) {
+    RNScalar radius = AverageRadius(&centroid);
+    if (RNIsPositive(radius)) affine.Scale(1.0 / radius);
+  }
+
+  // Rotate to align EGI axes with XYZ
+  if (rotate) {
+    R3Triad triad = EGIAxes();
+    affine.Transform(R3Affine(triad.InverseMatrix()));
+  }
+
+  // Translate center of mass to origin
+  affine.Translate(-(centroid.Vector()));
+  
+  // Return transformation
   return affine;
 }
 
