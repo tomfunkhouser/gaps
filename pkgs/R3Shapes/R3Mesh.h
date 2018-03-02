@@ -145,10 +145,14 @@ class R3Mesh {
       // Return centroid of mesh
     RNArea Area(void) const;
       // Return surface area of mesh
-    RNLength AverageEdgeLength(void) const;
-      // Return average edge length
     RNLength AverageRadius(const R3Point *centroid = NULL) const;
       // Return average distance from point on surface to centroid
+    RNLength AverageVertexValence(void) const;
+      // Return average vertex valence
+    RNLength AverageEdgeLength(void) const;
+      // Return average edge length
+    RNLength AverageEdgeInteriorAngle(void) const;
+      // Return average edge interior angle
     R3Triad PrincipleAxes(const R3Point *centroid = NULL, RNScalar *variances = NULL) const;
       // Return principle axes of mesh
     R3Triad EGIAxes(void) const;
@@ -157,6 +161,8 @@ class R3Mesh {
       // Return transformation that aligns centroid, principal axes, and scale with R3xyz_triad
     R3Affine EGINormalizationTransformation(RNBoolean translate = TRUE, RNBoolean rotate = TRUE, RNBoolean scale = TRUE) const;
       // Return transformation that aligns centroid, egi axes, and scale with R3xyz_triad
+    int ConnectedComponents(void) const;
+      // Return number of connected components
     void *Data(void) const;
      // Return user data associated with mesh
 

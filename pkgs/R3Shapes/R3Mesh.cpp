@@ -155,25 +155,6 @@ Area(void) const
 
 
 RNLength R3Mesh::
-AverageEdgeLength(void) const
-{
-  // Check number of edges
-  if (NEdges() == 0) return 0;
-
-  // Sum edge lengths
-  RNLength sum = 0;
-  for (int i = 0; i < NEdges(); i++) {
-    R3MeshEdge *edge = Edge(i);
-    sum += EdgeLength(edge);
-  }
-
-  // Return average
-  return sum / NEdges();
-}
-
-
-
-RNLength R3Mesh::
 AverageRadius(const R3Point *center) const
 {
   // Get centroid
@@ -211,6 +192,62 @@ AverageRadius(const R3Point *center) const
 
   // Should not get here unless mesh is empty
   return 0.0;
+}
+
+
+
+RNScalar R3Mesh::
+AverageVertexValence(void) const
+{
+  // Check number of vertices
+  if (NVertices() == 0) return 0;
+
+  // Sum vertex valences
+  RNScalar sum = 0.0;
+  for (int i = 0; i < NVertices(); i++) {
+    R3MeshVertex *vertex = Vertex(i);
+    sum += VertexValence(vertex);
+  }
+  return sum / NVertices();
+}
+
+
+
+RNLength R3Mesh::
+AverageEdgeLength(void) const
+{
+  // Check number of edges
+  if (NEdges() == 0) return 0;
+
+  // Sum edge lengths
+  RNLength sum = 0;
+  for (int i = 0; i < NEdges(); i++) {
+    R3MeshEdge *edge = Edge(i);
+    sum += EdgeLength(edge);
+  }
+
+  // Return average
+  return sum / NEdges();
+}
+
+
+
+RNAngle R3Mesh::
+AverageEdgeInteriorAngle(void) const
+{
+  // Sum dihedral angles
+  int count = 0;
+  RNAngle sum = 0.0;
+  for (int i = 0; i < NEdges(); i++) {
+    R3MeshEdge *edge = Edge(i);
+    RNAngle angle = EdgeInteriorAngle(edge);
+    if (RNIsZero(angle)) continue;
+    sum += angle;
+    count++;
+  }
+
+  // Return average
+  return (count > 0) ? sum / count : 0;
 }
 
 
@@ -328,6 +365,9 @@ PrincipleAxes(const R3Point *center, RNScalar *variances) const
 R3Triad R3Mesh::
 EGIAxes(void) const
 {
+  // Not implemented
+  RNAbort("Not implemented");
+  
   // Return triad
   return R3xyz_triad;
 }
@@ -410,6 +450,59 @@ EGINormalizationTransformation(RNBoolean translate, RNBoolean rotate, int scale)
 }
 
 
+
+int R3Mesh::
+ConnectedComponents(void) const
+{
+  // Check number of faces
+  if (NFaces() == 0) return 0;
+
+  // Allocate temporary memory
+  char *marks = new char [ NFaces() ];
+  for (int i = 0; i < NFaces(); i++) marks[i] = 0;
+
+  // Iterate finding connected components
+  int count = 0;
+  int start = 0;
+  for (;;) {
+    // Find an unmarked face
+    R3MeshFace *seed = NULL;
+    for (; start < NFaces(); start++) {
+      R3MeshFace *face = Face(start);
+      if (marks[FaceID(face)] == 0) {
+        seed = face;
+        break;
+      }
+    }
+
+    // Check if found a new component
+    if (!seed) break;
+    else count++;
+
+    // Mark connected component 
+    RNArray<R3MeshFace *> stack;
+    stack.InsertTail(seed);
+    while (!stack.IsEmpty()) {
+      R3MeshFace *face = stack.Tail();
+      stack.RemoveTail();
+      marks[FaceID(face)] = 1;
+      for (int i = 0; i < 3; i++) {
+        R3MeshFace *neighbor = FaceOnFace(face, i);
+        if ((neighbor) && (marks[FaceID(neighbor)] == 0)) {
+          stack.InsertTail(neighbor);
+        }
+      }
+    }
+  }
+
+  // Delete temporary memory
+  delete [] marks;
+
+  // Return number of connected components
+  return count;
+}
+
+ 
 
 ////////////////////////////////////////////////////////////////////////
 // VERTEX, EDGE, FACE PROPERTY FUNCTIONS

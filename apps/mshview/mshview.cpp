@@ -227,12 +227,13 @@ void GLUTRedraw(void)
       glDisable(GL_LIGHTING);
       glColor3d(0.5, 0.5, 0.5);
       glBegin(GL_LINES);
-      RNScalar radius = 0.02 * mesh->BBox().DiagonalLength();
+      RNScalar radius = 0.005 * mesh->BBox().DiagonalLength();
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3Point position = mesh->VertexPosition(vertex);
         R3Vector normal = mesh->VertexNormal(vertex);
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
+        R3LoadRgb(sqrt(normal.Length()), 0, 1);
         R3LoadPoint(position);
         R3LoadPoint(position + radius * normal);
       }

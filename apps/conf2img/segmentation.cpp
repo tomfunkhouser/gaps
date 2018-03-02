@@ -5,6 +5,7 @@
 static int min_clusters = 0;
 static int max_clusters = 0;
 static int min_cluster_points = 0;
+static double min_cluster_area = 0;
 static double min_cluster_coverage = 0;
 static double max_cluster_diameter = 16;
 static double max_cluster_primitive_distance = 0.01;
@@ -54,7 +55,8 @@ public:
   RNScalar depth;
   R3Point position;
   R3Vector normal;
-  RNScalar radius;
+  RNLength radius;
+  RNArea area;
   RNRgb color;
   unsigned int boundary;
   RNArray<Point *> neighbors;
@@ -89,7 +91,7 @@ public:
   Cluster(Point *seed_point, const Primitive& primitive);
   Cluster(Cluster *child1, Cluster *child2);
   ~Cluster(void);
-  RNScalar Coverage(void) const;
+  RNScalar Coverage(void);
   R3Triad PrincipleAxes(R3Point *returned_centroid = NULL, RNScalar *returned_variances = NULL) const;
   void EmptyPoints(void);
   void InsertPoint(Point *point, RNScalar affinity = 1.0);
@@ -99,6 +101,7 @@ public:
   int UpdatePoints(const R3Kdtree<Point *> *kdtree);
   int UpdatePrimitive(void);
   int UpdateColor(void);
+  int UpdateArea(void);
   RNScalar Affinity(Point *point) const;
   RNScalar Affinity(Cluster *cluster) const;
 public:
@@ -108,6 +111,7 @@ public:
   RNArray<Cluster *> children;
   RNArray<struct Pair *> pairs;
   Primitive primitive;
+  RNArea area;
   RNRgb color;
   RNScalar possible_affinity; 
   RNScalar total_affinity;
@@ -164,6 +168,7 @@ Point(void)
     position(0,0,0),
     normal(0,0,0),
     radius(0),
+    area(0),
     boundary(0),
     neighbors(),
     cluster(NULL),
@@ -513,15 +518,17 @@ Cluster(Point *seed_point, int primitive_type)
     children(),
     pairs(),
     primitive(primitive_type),
+    area(0),
     color(0,0,0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
     segmentation_index(-1)
 {
-  // Update primitive and color
+  // Update primitive and color and area
   if (seed_point) primitive.Update(seed_point);
   if (seed_point) color = seed_point->color;
+  if (seed_point) area = seed_point->area;
 }
 
 
@@ -534,14 +541,16 @@ Cluster(Point *seed_point, const Primitive& primitive)
     children(),
     pairs(),
     primitive(primitive),
+    area(0),
     color(0,0,0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
     segmentation_index(-1)
 {
-  // Update color
+  // Update color and area
   if (seed_point) color = seed_point->color;
+  if (seed_point) area = seed_point->area;
 }
 
 
@@ -554,6 +563,7 @@ Cluster(Cluster *child1, Cluster *child2)
     children(),
     pairs(),
     primitive(),
+    area(0),
     color(0,0,0),
     possible_affinity(0),
     total_affinity(0),
@@ -572,6 +582,9 @@ Cluster(Cluster *child1, Cluster *child2)
     color += child2->points.NEntries() * child2->color;
     color /= child1->points.NEntries() + child2->points.NEntries();
   }
+
+  // Update area
+  area = child1->area + child2->area;
 
   // Insert points from child1
   while (!child1->points.IsEmpty()) {
@@ -620,7 +633,7 @@ Cluster::
 
 
 RNScalar Cluster::
-Coverage(void) const
+Coverage(void)
 {
   // Return metric of how well cluster covers points
   if (possible_affinity == 0) return 0;
@@ -680,6 +693,10 @@ EmptyPoints(void)
   // Empty points
   points.Empty();
 
+  // Update color and area
+  color = RNblack_rgb;
+  area = 0;
+
   // Update affinity
   total_affinity = 0;
 }
@@ -695,6 +712,11 @@ InsertPoint(Point *point, RNScalar affinity)
     else point->cluster->RemovePoint(point);
   }
 
+  // Update cluster
+  total_affinity += point->cluster_affinity;
+  color = (point->color * points.NEntries()*color) / (points.NEntries()+1);
+  area += point->area;
+
   // Update point
   point->cluster = this;
   point->cluster_index = points.NEntries();
@@ -702,9 +724,6 @@ InsertPoint(Point *point, RNScalar affinity)
 
   // Insert point
   points.Insert(point);
-
-  // Update cluster
-  total_affinity += point->cluster_affinity;
 }
 
 
@@ -718,6 +737,8 @@ RemovePoint(Point *point)
 
   // Update cluster
   total_affinity -= point->cluster_affinity;
+  color = (points.NEntries() > 1) ? (points.NEntries()*color - point->color) / (points.NEntries()-1) : RNblack_rgb;
+  area -= point->area;
 
   // Remove point
   RNArrayEntry *entry = points.KthEntry(point->cluster_index);
@@ -737,6 +758,15 @@ RemovePoint(Point *point)
 void Cluster::
 InsertChild(Cluster *child)
 {
+  // Update area
+  area += child->area;
+
+  // Update color
+  int n = points.NEntries() + child->points.NEntries();
+  color *= points.NEntries();
+  color += child->points.NEntries() * child->color;
+  color = (n > 0) ? color / n : RNblack_rgb;
+
   // Update primitive
   primitive.Update(this->primitive, child->primitive, this->points.NEntries(), child->points.NEntries());
 
@@ -772,6 +802,15 @@ InsertChild(Cluster *child)
 void Cluster::
 RemoveChild(Cluster *child)
 {
+  // Update area
+  area -= child->area;
+
+  // Update color
+  int n = points.NEntries() - child->points.NEntries();
+  color *= points.NEntries();
+  color -= child->points.NEntries() * child->color;
+  color = (n > 0) ? color / n : RNblack_rgb;
+
   // Remove child
   this->children.Remove(child);
   child->parent = NULL;
@@ -866,6 +905,18 @@ UpdateColor(void)
   for (int i = 0; i < points.NEntries(); i++)
     color += points[i]->color;
   color /= points.NEntries();
+  return 1;
+}
+
+
+
+int Cluster::
+UpdateArea(void)
+{
+  // Update area
+  area = 0;
+  for (int i = 0; i < points.NEntries(); i++)
+    area += points[i]->area;
   return 1;
 }
 
@@ -1410,6 +1461,14 @@ DeleteClusters(void)
         }
       }
 
+      // Check cluster area
+      if (min_cluster_area > 0) {
+        if (cluster->area < min_cluster_area) {
+          nonviable_clusters.Insert(cluster);
+          continue;
+        }
+      }
+
       // Check cluster coverage
       if (min_cluster_coverage > 0) {
         if (cluster->Coverage() < min_cluster_coverage) {
@@ -1470,7 +1529,7 @@ MergeClusters(void)
     for (int j = 0; j < cluster0->points.NEntries(); j += jstep) {
       Point *point0 = cluster0->points.Kth(j);
 
-      // Chec neighbors
+      // Check neighbors
       for (int k = 0; k < point0->neighbors.NEntries(); k++) {
         Point *point1 = point0->neighbors.Kth(k);
         if (point0 == point1) continue;
@@ -1483,7 +1542,7 @@ MergeClusters(void)
 
         // Compute affinity
         RNScalar affinity = cluster0->Affinity(cluster1);
-        if ((affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0)) continue;
+        if ((affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0) && (min_cluster_area == 0)) continue;
 
         // Create pair
         Pair *pair = new Pair(cluster0, cluster1, affinity);
@@ -1514,7 +1573,7 @@ MergeClusters(void)
     Pair *pair = heap.Pop();
 
     // Check if we are done
-    if ((pair->affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0)) {
+    if ((pair->affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0) && (min_cluster_area == 0)) {
       break;
     }
 
@@ -1532,7 +1591,7 @@ MergeClusters(void)
       if (ancestor0 != ancestor1) {
         if (!FindPair(ancestor0, ancestor1)) {
           RNScalar affinity = ancestor0->Affinity(ancestor1);
-          if ((cluster_count > max_clusters) || (min_cluster_points > 0) || (affinity >= min_pair_affinity)) {
+          if ((cluster_count > max_clusters) || (min_cluster_points > 0) || (min_cluster_area > 0) || (affinity >= min_pair_affinity)) {
             // Create a pair between the ancestors
             Pair *pair = new Pair(ancestor0, ancestor1, affinity);
             heap.Push(pair);
@@ -1545,6 +1604,8 @@ MergeClusters(void)
       // Check if should merge
       RNBoolean merge = TRUE;
       if ((min_pair_affinity > 0) && (pair->affinity < min_pair_affinity)) merge = FALSE;
+      if ((min_cluster_area > 0) && (cluster0->area < min_cluster_area)) merge = TRUE;
+      if ((min_cluster_area > 0) && (cluster1->area < min_cluster_area)) merge = TRUE;
       if ((min_cluster_points > 0) && (cluster0->points.NEntries() < min_cluster_points)) merge = TRUE;
       if ((min_cluster_points > 0) && (cluster1->points.NEntries() < min_cluster_points)) merge = TRUE;
       if ((max_clusters > 0) && (cluster_count > max_clusters)) merge = TRUE;
@@ -1618,7 +1679,10 @@ SplitClusters(void)
   for (int i = 0; i < tmp.NEntries(); i++) {
     Cluster *cluster = tmp.Kth(i);
 
-    // Check cluster
+    // Check cluster area
+    if (cluster->area < min_cluster_area) continue;
+
+    // Check cluster points
     if (cluster->points.NEntries() < min_cluster_points) continue;
 
     // Rasterize points into planar grid
@@ -1900,8 +1964,9 @@ WriteFile(const char *filename) const
     R3Point center;
     RNScalar variances[3];
     R3Triad axes = cluster->PrincipleAxes(&center, variances);
-    fprintf(fp, "%d %d %g %g %d  %g %g %g   %g %g %g %g   %g %g %g   %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
-            i+1, cluster->points.NEntries(), cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
+    fprintf(fp, "%d %d %g %g %g %d  %g %g %g   %g %g %g %g   %g %g %g   %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
+            i+1, cluster->points.NEntries(), cluster->area,
+            cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
             cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
             cluster->primitive.plane.A(), cluster->primitive.plane.B(), cluster->primitive.plane.C(), cluster->primitive.plane.D(),
             cluster->color.R(), cluster->color.G(), cluster->color.B(),

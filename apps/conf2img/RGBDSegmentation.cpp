@@ -69,6 +69,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
       // Get radius
       RNScalar radius = radius_image.GridValue(i);
       point->radius = radius;
+      point->area = RN_PI * radius * radius;
 
       // Get color
       point->color = color_image.PixelRGB(ix, iy);
