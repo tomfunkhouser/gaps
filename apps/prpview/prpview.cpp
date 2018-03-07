@@ -19,6 +19,7 @@ static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
 static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
+static RNInterval input_value_range(0,0);
 static int color_with_redness = 0;
 static int color_with_labels = 0;
 static int print_verbose = 0;
@@ -489,10 +490,15 @@ void GLUTSpecial(int key, int x, int y)
     if (current_property_index < 0) current_property_index = 0;
     if (current_property_index >= properties->NProperties()) current_property_index = properties->NProperties() - 1;
     current_property = properties->Property(current_property_index);
-    percentile_range.Reset(10, 90);
-    RNScalar min_value = current_property->Percentile(percentile_range.Min());
-    RNScalar max_value = current_property->Percentile(percentile_range.Max());
-    value_range.Reset(min_value, max_value);
+    if (input_value_range.Diameter() > 0) {
+      value_range = input_value_range;
+    }
+    else {
+      percentile_range.Reset(10, 90);
+      RNScalar min_value = current_property->Percentile(percentile_range.Min());
+      RNScalar max_value = current_property->Percentile(percentile_range.Max());
+      value_range.Reset(min_value, max_value);
+    }
     break; }
 
   case GLUT_KEY_RIGHT:
@@ -671,7 +677,10 @@ void GLUTMainLoop(void)
   current_property_index = 0;
   current_property = properties->Property(current_property_index);
   percentile_range.Reset(10, 90);
-  if (value_range.Diameter() <= 0) {
+  if (input_value_range.Diameter() > 0) {
+    value_range = input_value_range;
+  }
+  else {
     RNScalar min_value = current_property->Percentile(percentile_range.Min());
     RNScalar max_value = current_property->Percentile(percentile_range.Max());
     value_range.Reset(min_value, max_value);
@@ -913,7 +922,7 @@ int ParseArgs(int argc, char **argv)
         RNScalar min_value, max_value;
         argv++; argc--; min_value = atof(*argv);
         argv++; argc--; max_value = atof(*argv);
-        value_range.Reset(min_value, max_value);
+        input_value_range.Reset(min_value, max_value);
       }
       else if (!strcmp(*argv, "-camera")) {
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;
@@ -986,20 +995,6 @@ int main(int argc, char **argv)
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
