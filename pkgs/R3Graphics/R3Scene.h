@@ -213,7 +213,7 @@ inline const char *R3Scene::
 Info(const char *key) const
 {
   // Return info associated with key
-  const char *value;
+  const char *value = NULL;
   if (!info.Find(key, &value)) return NULL;
   return value;
 }

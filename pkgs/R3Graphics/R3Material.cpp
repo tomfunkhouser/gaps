@@ -112,7 +112,7 @@ R3Material(const R3Brdf *brdf, const char *name)
       scene_index(-1),
       name(NULL),
       brdf(brdf),
-      texture(&R2null_texture),
+      texture(NULL), // changed 3/4/18: was &R2null_texture),
       flags(0)
 {
     // Set name

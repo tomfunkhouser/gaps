@@ -519,9 +519,10 @@ WriteFile(const char *filename, int write_every_kth_image) const
   if (depth_directory) fprintf(fp, "depth_directory %s\n", depth_directory);
   if (texture_directory) fprintf(fp, "texture_directory %s\n", texture_directory);
   
-  // Write intrinsics
+  // Write image info
   if (NImages() > 0) {
     R3Matrix m = Image(0)->Intrinsics();
+    fprintf(fp, "depth_resolution %d %d\n", Image(0)->NPixels(RN_X), Image(0)->NPixels(RN_Y));
     fprintf(fp, "intrinsics_matrix  %g %g %g  %g %g %g  %g %g %g\n",
       m[0][0], m[0][1], m[0][2],
       m[1][0], m[1][1], m[1][2],

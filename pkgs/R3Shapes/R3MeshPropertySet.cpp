@@ -156,6 +156,7 @@ Read(const char *filename)
 
   // Read file of appropriate type
   if (!strcmp(extension, ".arff")) return ReadARFF(filename);
+  else if (!strcmp(extension, ".prp")) return ReadBinary(filename);
   else if (!strcmp(extension, ".trt")) return ReadToronto(filename);
   else return ReadProperty(filename);
 }
@@ -227,6 +228,66 @@ ReadARFF(const char *filename)
   //   fprintf(stderr, "Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
   //   return 0;
   // }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3MeshPropertySet::
+ReadBinary(const char *filename)
+{
+  // Just checking
+  if (!mesh) return 0;
+  
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open binary file: %s\n", filename);
+    return 0;
+  }
+
+  // Read number of vertices
+  int vertex_count = 0;
+  if (fread(&vertex_count, sizeof(int), 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to read binary file: %s\n", filename);
+    return 0;
+  }
+
+  // Read number of properties
+  int property_count = 0;
+  if (fread(&property_count, sizeof(int), 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to read binary file: %s\n", filename);
+    return 0;
+  }
+  
+  // Check number of vertices
+  if (vertex_count != mesh->NVertices()) {
+    fprintf(stderr, "Mismatching number of vertices in %s\n", filename);
+    return 0;
+  }
+  
+  // Check number of properties
+  if (property_count == 0) return 1;
+
+  // Create properties
+  for (int j = 0; j < property_count; j++) {
+    R3MeshProperty *property = new R3MeshProperty(mesh);
+    Insert(property);
+  }
+
+  // Read data and assign property values
+  RNScalar32 value;
+  for (int i = 0; i < vertex_count; i++) {
+    for (int j = 0; j < property_count; j++) {
+      fread(&value, sizeof(RNScalar32), 1, fp);
+      Property(j)->SetVertexValue(i, value);
+    }
+  }
 
   // Close file
   fclose(fp);
@@ -383,6 +444,7 @@ Write(const char *filename) const
   // Write file of appropriate type
   if (!strcmp(extension, ".arff")) return WriteARFF(filename);
   else if (!strcmp(extension, ".txt")) return WriteValues(filename);
+  else if (!strcmp(extension, ".prp")) return WriteBinary(filename);
   else if (!strcmp(extension, ".val")) return WriteValues(filename);
   else if (!strcmp(extension, ".dat")) return WriteValues(filename);
 
@@ -419,6 +481,56 @@ WriteARFF(const char *filename) const
       fprintf(fp, "%g ", properties[j]->VertexValue(i));
     }
     fprintf(fp, "\n");
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3MeshPropertySet::
+WriteBinary(const char *filename) const
+{
+  // Just checking
+  if (!mesh) return 0;
+  
+  // Open file
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open binary file: %s\n", filename);
+    return 0;
+  }
+
+  // Write number of vertices
+  int vertex_count = mesh->NVertices();
+  if (fwrite(&vertex_count, sizeof(int), 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to write binary file: %s\n", filename);
+    return 0;
+  }
+  
+  // Write number of properties
+  int property_count = NProperties();
+  if (fwrite(&property_count, sizeof(int), 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to write binary file: %s\n", filename);
+    return 0;
+  }
+  
+  // Check number of properties
+  if (property_count == 0) return 1;
+
+  // Write data and assign property values
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    for (int j = 0; j < NProperties(); j++) {
+      RNScalar32 value = Property(j)->VertexValue(i);
+      if (fwrite(&value, sizeof(RNScalar32), 1, fp) != (unsigned int) 1) {
+        fprintf(stderr, "Unable to write value to binary file: %s\n", filename);
+        return 0;
+      }
+    }
   }
 
   // Close file
