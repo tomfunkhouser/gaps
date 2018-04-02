@@ -537,12 +537,12 @@ Multiscale(R3MeshPropertySet *properties, const char *property_name, int& argc, 
   if (subset.NEntries() == 0) return;;
 
   // Allocate multiscale properties
+  char name[4096];
   R3MeshProperty ***blurs = new R3MeshProperty **[ subset.NEntries() ];
   for (int i = 0; i < subset.NEntries(); i++) {
     R3MeshProperty *property = subset.Kth(i);
     blurs[i] = new R3MeshProperty *[nscales];
     for (int j = 0; j < nscales; j++) {
-      char name[256];
       sprintf(name, "%s_Multiscale_%d", property->Name(), j+1);
       blurs[i][j] = new R3MeshProperty(mesh, name);
     }

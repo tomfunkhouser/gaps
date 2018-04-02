@@ -326,11 +326,11 @@ InsertProperty(R3MeshPropertySet *properties, R3MeshProperty *property, int num_
 
   // Insert coies of property with increasing blur
   if (num_blurs > 0) {
+    char buffer[4096];
     RNScalar sigma = Sigma(properties->Mesh());
     R3MeshProperty *p = property;
     for (int i = 1; i < num_blurs; i++) {
       p = new R3MeshProperty(*p);
-      char buffer[1024];
       sprintf(buffer, "%s%d", property->Name(), i);
       p->SetName(buffer);
       p->Blur(sigma);
