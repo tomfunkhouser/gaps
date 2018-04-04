@@ -56,7 +56,6 @@ target:
 	cd R3Graphics; $(MAKE) $(TARGET)
 	cd R3Surfels; $(MAKE) $(TARGET)
 	cd RGBD; $(MAKE) $(TARGET)
-	cd FET; $(MAKE) $(TARGET)
 	cd fglut; $(MAKE) $(TARGET)
 	cd jpeg; $(MAKE) $(TARGET)
 	cd png; $(MAKE) $(TARGET)
