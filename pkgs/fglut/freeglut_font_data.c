@@ -72,10 +72,6 @@
  *       -adobe-times-medium-r-normal--24-240-75-75-p-124-iso8859-1
  */
 
-#if (RN_CC == RN_GCC)
-#   pragma GCC diagnostic ignored "-Wunused-const-variable"
-#endif
-
 static const GLubyte Fixed8x13_Character_000[] = {  8,  0,  0,  0,170,  0,130,  0,130,  0,130,  0,170,  0,  0};
 static const GLubyte Fixed8x13_Character_001[] = {  8,  0,  0,  0,  0, 16, 56,124,254,124, 56, 16,  0,  0,  0};
 static const GLubyte Fixed8x13_Character_002[] = {  8,  0,170, 85,170, 85,170, 85,170, 85,170, 85,170, 85,170};
