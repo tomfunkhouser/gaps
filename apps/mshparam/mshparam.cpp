@@ -465,7 +465,7 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
   RNRgb color(0,0,0);
   R2Image color_image(width, height, 3);
   for (int i = 0; i < width; i++) {
-    for (int j = 0; j < width; j++) {
+    for (int j = 0; j < height; j++) {
       color[0] = red_channel.GridValue(i, j);
       color[1] = green_channel.GridValue(i, j);
       color[2] = blue_channel.GridValue(i, j);
