@@ -693,7 +693,10 @@ WriteObjFile(const char *filename) const
   }
 
   // Write material library
-  fprintf(fp, "mtllib %s\n", mtl_filename);
+  char *startp = strrchr(mtl_filename, '/');
+  if (startp) startp++;
+  else startp = mtl_filename;
+  fprintf(fp, "mtllib %s\n", startp);
 
   // Write surfaces
   for (int s = 0; s < NSurfaces(); s++) {
