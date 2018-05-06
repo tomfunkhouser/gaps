@@ -50,7 +50,7 @@ Score(RGBDImage *image, RGBDSurface *surface,
 ////////////////////////////////////////////////////////////////////////
 
 static int
-RGBDComputeColorTexture(RGBDSurface *surface)
+RGBDComputeSurfaceTexture(RGBDSurface *surface)
 {
   // Get/check variables
   RGBDConfiguration *configuration = surface->Configuration();
@@ -182,88 +182,22 @@ RGBDComputeColorTexture(RGBDSurface *surface)
 
 
 static int
-RGBDComputeSemanticTexture(RGBDSurface *surface)
-{
-  // Get/check variables
-  RGBDConfiguration *configuration = surface->Configuration();
-  if (!configuration) return 0;
-  int width = surface->NTexels(RN_X);
-  if (width == 0) return 0;
-  int height = surface->NTexels(RN_Y);
-  if (height == 0) return 0;
-  R3Mesh *mesh = surface->mesh;
-  if (!mesh) return 1;
-  
-  // Allocate images for texture RGB channels (initialized with zeroes)
-  RNLength world_texel_spacing = surface->WorldTexelSpacing();
-  R2Box surface_bbox(0.0, 0.0, world_texel_spacing*width, world_texel_spacing*height);
-  R2Grid red_channel(width, height, surface_bbox);
-  R2Grid green_channel(width, height, surface_bbox);
-  R2Grid blue_channel(width, height, surface_bbox);
-
-  // Rasterize mesh face categories into texture
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    // int category = mesh->FaceCategory(face);
-    // int r = (category >> 0) && 0xFF;
-    // int g = (category >> 8) && 0xFF;
-    // int b = (category >> 16) && 0xFF;
-    R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
-    R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
-    R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
-    R2Point s0 = mesh->VertexTextureCoords(v0);
-    R2Point s1 = mesh->VertexTextureCoords(v1);
-    R2Point s2 = mesh->VertexTextureCoords(v2);
-    R2Point t0, t1, t2;
-    surface->TransformSurfaceToTexture(s0, t0);
-    surface->TransformSurfaceToTexture(s1, t1);
-    surface->TransformSurfaceToTexture(s2, t2);
-    const RNRgb& color = mesh->VertexColor(v0);
-    red_channel.RasterizeGridTriangle(t0, t1, t2, 255*color.R(), R2_GRID_REPLACE_OPERATION);
-    green_channel.RasterizeGridTriangle(t0, t1, t2, 255*color.G(), R2_GRID_REPLACE_OPERATION);
-    blue_channel.RasterizeGridTriangle(t0, t1, t2, 255*color.B(), R2_GRID_REPLACE_OPERATION);
-  }
-
-  // Create color channels
-  R2Image tmp(width, height);
-  surface->CreateColorChannels(tmp);
-
-  // Update the texture RGB channels
-  surface->SetChannel(RGBD_RED_CHANNEL, red_channel);
-  surface->SetChannel(RGBD_GREEN_CHANNEL, green_channel);
-  surface->SetChannel(RGBD_BLUE_CHANNEL, blue_channel);
-
-  // Write color channels
-  surface->WriteColorChannels();
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-RGBDComputeSurfaceTextures(RGBDConfiguration *configuration, int texture_type)
+RGBDComputeSurfaceTextures(RGBDConfiguration *configuration)
 {
   // Check if should bother
   if (configuration->NSurfaces() == 0) return 1;
 
-  if (texture_type == 0) {
-    // Compute color textures for all surfaces
-    configuration->ReadChannels();
-    for (int i = 0; i < configuration->NSurfaces(); i++) {
-      RGBDSurface *surface = configuration->Surface(i);
-      if (!RGBDComputeColorTexture(surface)) return 0;
-    }
-    configuration->ReleaseChannels();
+  // Read all channels
+  configuration->ReadChannels();
+
+  // Compute color textures for all surfaces
+  for (int i = 0; i < configuration->NSurfaces(); i++) {
+    RGBDSurface *surface = configuration->Surface(i);
+    if (!RGBDComputeSurfaceTexture(surface)) return 0;
   }
-  else if (texture_type == 1) {
-    // Compute semantic textures for all surfaces
-    for (int i = 0; i < configuration->NSurfaces(); i++) {
-      RGBDSurface *surface = configuration->Surface(i);
-      if (!RGBDComputeSemanticTexture(surface)) return 0;
-    }
-  }
+
+  // Release all channels
+  configuration->ReleaseChannels();
 
   // Return success
   return 1;

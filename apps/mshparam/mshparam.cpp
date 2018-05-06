@@ -12,10 +12,12 @@
 // Program arguments
 ////////////////////////////////////////////////////////////////////////
 
-static char *input_mesh_name = NULL;
-static char *output_mesh_name = NULL;
+static char *input_mesh_filename = NULL;
+static char *output_mesh_filename = NULL;
+static char *output_texture_directory = NULL;
 static int separate_face_segments = 0;
 static int separate_face_materials = 0;
+static double texel_spacing = 0.01;
 static int flatten = 0;
 static int print_verbose = 0;
 
@@ -346,6 +348,7 @@ FlattenMesh(R3Mesh *mesh)
   // This is useful for debugging
   if (!flatten) return 1;
 
+  // Replace all vertex positions with texture coordinates
   for (int i = 0; i < mesh->NVertices(); i++) {
     R3MeshVertex *vertex = mesh->Vertex(i);
     R2Point texcoords = mesh->VertexTextureCoords(vertex);
@@ -357,6 +360,154 @@ FlattenMesh(R3Mesh *mesh)
   return 1;
 }
 
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Texture Creation Stuff
+////////////////////////////////////////////////////////////////////////
+
+static int
+WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
+{
+  // Check directory name
+  if (!directory_name) return 1;
+  if (texel_spacing == 0) texel_spacing = 0.01;
+  
+  // Compute bounding box of texture coordinates
+  R2Box texcoords_bbox = R2null_box;
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    R3MeshVertex *vertex = mesh->Vertex(i);
+    const R2Point& texcoords = mesh->VertexTextureCoords(vertex);
+    texcoords_bbox.Union(texcoords);
+  }
+
+  // Get useful variables for texcoords scaling
+  R2Point t0, t1, t2;
+  RNLength texcoords_xmin = texcoords_bbox.XMin();
+  RNLength texcoords_ymin = texcoords_bbox.YMin();
+  RNLength texcoords_xlength = texcoords_bbox.XLength();
+  if (RNIsZero(texcoords_xlength)) return 0;
+  RNLength texcoords_ylength = texcoords_bbox.YLength();
+  if (RNIsZero(texcoords_ylength)) return 0;
+
+  // Compute width and height from texel_spacing
+  if (texel_spacing <= 0) texel_spacing = 0.01;
+  int width = (int) (texcoords_bbox.XLength() / texel_spacing + 0.5);
+  int height = (int) (texcoords_bbox.YLength() / texel_spacing + 0.5);
+  if ((width <= 0) || (height == 0)) return 0;
+
+  // Update bounding box from width and height 
+  texcoords_bbox[1][0] = texcoords_xmin + texel_spacing*width;
+  texcoords_bbox[1][1] = texcoords_ymin + texel_spacing*height;
+
+  // Allocate images for texture channels (initialized with zeroes)
+  R2Grid mask_channel(width, height, texcoords_bbox);
+  R2Grid px_channel(mask_channel);
+  R2Grid py_channel(mask_channel);
+  R2Grid pz_channel(mask_channel);
+  R2Grid nx_channel(mask_channel);
+  R2Grid ny_channel(mask_channel);
+  R2Grid nz_channel(mask_channel);
+  R2Grid red_channel(mask_channel);
+  R2Grid green_channel(mask_channel);
+  R2Grid blue_channel(mask_channel);
+  R2Grid curvature_channel(mask_channel);
+  R2Grid category_channel(mask_channel);
+  R2Grid segment_channel(mask_channel);
+  R2Grid material_channel(mask_channel);
+
+  // Rasterize mesh face properties into texture channels
+  for (int i = 0; i < mesh->NFaces(); i++) {
+    R3MeshFace *face = mesh->Face(i);
+    int category = mesh->FaceCategory(face) + 1;
+    int segment = mesh->FaceSegment(face) + 1;
+    int material = mesh->FaceMaterial(face) + 1;
+    R3Vector normal = mesh->FaceNormal(face);
+    R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+    R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+    R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+    RNRgb rgb0 = mesh->VertexColor(v0);
+    RNRgb rgb1 = mesh->VertexColor(v1);
+    RNRgb rgb2 = mesh->VertexColor(v2);
+    RNScalar curvature0 = mesh->VertexMeanCurvature(v0);
+    RNScalar curvature1 = mesh->VertexMeanCurvature(v1);
+    RNScalar curvature2 = mesh->VertexMeanCurvature(v2);
+    R3Point p0 = mesh->VertexPosition(v0);
+    R3Point p1 = mesh->VertexPosition(v1);
+    R3Point p2 = mesh->VertexPosition(v2);
+    R2Point uv0 = mesh->VertexTextureCoords(v0);
+    R2Point uv1 = mesh->VertexTextureCoords(v1);
+    R2Point uv2 = mesh->VertexTextureCoords(v2);
+    t0[0] = width * (uv0[0] - texcoords_xmin) / texcoords_xlength;
+    t0[1] = height * (uv0[1] - texcoords_ymin) / texcoords_ylength;
+    t1[0] = width * (uv1[0] - texcoords_xmin) / texcoords_xlength;
+    t1[1] = height * (uv1[1] - texcoords_ymin) / texcoords_ylength;
+    t2[0] = width * (uv2[0] - texcoords_xmin) / texcoords_xlength;
+    t2[1] = height * (uv2[1] - texcoords_ymin) / texcoords_ylength;
+    mask_channel.RasterizeGridTriangle(t0, t1, t2, 1.0, R2_GRID_REPLACE_OPERATION);
+    category_channel.RasterizeGridTriangle(t0, t1, t2, category, category, category, R2_GRID_REPLACE_OPERATION);
+    segment_channel.RasterizeGridTriangle(t0, t1, t2, segment, segment, segment, R2_GRID_REPLACE_OPERATION);
+    material_channel.RasterizeGridTriangle(t0, t1, t2, material, material, material, R2_GRID_REPLACE_OPERATION);
+    nx_channel.RasterizeGridTriangle(t0, t1, t2, normal.X(), R2_GRID_REPLACE_OPERATION);
+    ny_channel.RasterizeGridTriangle(t0, t1, t2, normal.Y(), R2_GRID_REPLACE_OPERATION);
+    nz_channel.RasterizeGridTriangle(t0, t1, t2, normal.Z(), R2_GRID_REPLACE_OPERATION);
+    px_channel.RasterizeGridTriangle(t0, t1, t2, p0.X(), p1.X(), p2.X(), R2_GRID_REPLACE_OPERATION);
+    py_channel.RasterizeGridTriangle(t0, t1, t2, p0.Y(), p1.Y(), p2.Y(), R2_GRID_REPLACE_OPERATION);
+    pz_channel.RasterizeGridTriangle(t0, t1, t2, p0.Z(), p1.Z(), p2.Z(), R2_GRID_REPLACE_OPERATION);
+    red_channel.RasterizeGridTriangle(t0, t1, t2, rgb0.R(), rgb1.R(), rgb2.R(), R2_GRID_REPLACE_OPERATION);
+    green_channel.RasterizeGridTriangle(t0, t1, t2, rgb0.G(), rgb1.G(), rgb2.G(), R2_GRID_REPLACE_OPERATION);
+    blue_channel.RasterizeGridTriangle(t0, t1, t2, rgb0.B(), rgb1.B(), rgb2.B(), R2_GRID_REPLACE_OPERATION);
+    curvature_channel.RasterizeGridTriangle(t0, t1, t2, curvature0, curvature1, curvature2, R2_GRID_REPLACE_OPERATION);
+  }
+
+  // Create color image (combined 3 channels)
+  RNRgb color(0,0,0);
+  R2Image color_image(width, height, 3);
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < width; j++) {
+      color[0] = red_channel.GridValue(i, j);
+      color[1] = green_channel.GridValue(i, j);
+      color[2] = blue_channel.GridValue(i, j);
+      color_image.SetPixelRGB(i, j, color);
+    }
+  }
+  
+  // Create texture directory
+  char cmd[1024];
+  sprintf(cmd, "mkdir -p %s", directory_name);
+  system(cmd);
+
+  // Write channels
+  char filename[1024];
+  sprintf(filename, "%s/mask.png", directory_name);
+  if (!mask_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/px.pfm", directory_name);
+  if (!px_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/py.pfm", directory_name);
+  if (!py_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/pz.pfm", directory_name);
+  if (!pz_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/nx.pfm", directory_name);
+  if (!nx_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/ny.pfm", directory_name);
+  if (!ny_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/nz.pfm", directory_name);
+  if (!nz_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/curvature.pfm", directory_name);
+  if (!curvature_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/category.pfm", directory_name);
+  if (!category_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/segment.pfm", directory_name);
+  if (!segment_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/material.pfm", directory_name);
+  if (!material_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/color.png", directory_name);
+  if (!color_image.Write(filename)) return 0;
+
+  // Return success
+  return 1;
+}
 
 
 
@@ -375,20 +526,21 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-flatten")) flatten = 1;
       else if (!strcmp(*argv, "-separate_face_segments")) separate_face_segments = 1;
       else if (!strcmp(*argv, "-separate_face_materials")) separate_face_materials = 1;
-      else if (!strcmp(*argv, "-flatten")) flatten = 1;
+      else if (!strcmp(*argv, "-output_textures")) { argc--; argv++; output_texture_directory = *argv; }
+      else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
-      if (!input_mesh_name) input_mesh_name = *argv;
-      else if (!output_mesh_name) output_mesh_name = *argv;
+      if (!input_mesh_filename) input_mesh_filename = *argv;
+      else if (!output_mesh_filename) output_mesh_filename = *argv;
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check filenames
-  if (!input_mesh_name || !output_mesh_name) {
+  if (!input_mesh_filename || !output_mesh_filename) {
     fprintf(stderr, "Usage: mshparam inputmesh outputmesh\n");
     return 0;
   }
@@ -410,7 +562,7 @@ main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read input mesh
-  R3Mesh *mesh = ReadMesh(input_mesh_name);
+  R3Mesh *mesh = ReadMesh(input_mesh_filename);
   if (!mesh) exit(-1);
 
   // Segment mesh
@@ -420,7 +572,10 @@ main(int argc, char **argv)
   if (!FlattenMesh(mesh)) exit(-1);
 
   // Write mesh
-  if (!WriteMesh(mesh, output_mesh_name)) exit(-1);
+  if (!WriteMesh(mesh, output_mesh_filename)) exit(-1);
+
+  // Write textures
+  if (!WriteTextures(mesh, output_texture_directory, texel_spacing)) exit(-1);
 
   // Return success 
   return 0;

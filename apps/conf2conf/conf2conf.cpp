@@ -30,7 +30,6 @@ static int load_images_ending_at_index = INT_MAX;
 static int load_every_kth_image = 1;
 static int write_every_kth_image = 1;
 static double texel_spacing = 0;
-static int texture_type = 0;
 static int print_verbose = 0;
 
 
@@ -304,7 +303,7 @@ ComputeSurfaceTextures(RGBDConfiguration *configuration)
   }
 
   // Compute surface textures
-  if (!RGBDComputeSurfaceTextures(configuration, texture_type)) return 0;
+  if (!RGBDComputeSurfaceTextures(configuration)) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -432,8 +431,6 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-color_textures")) texture_type = 0;
-      else if (!strcmp(*argv, "-semantic_textures")) texture_type = 1;
       else if (!strcmp(*argv, "-input_mesh")) { argc--; argv++; input_mesh_filename = *argv; }
       else if (!strcmp(*argv, "-input_depth_directory")) { argc--; argv++; input_depth_directory = *argv; }
       else if (!strcmp(*argv, "-input_color_directory")) { argc--; argv++; input_color_directory = *argv; }
