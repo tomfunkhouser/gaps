@@ -461,7 +461,7 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
     curvature_channel.RasterizeGridTriangle(t0, t1, t2, curvature0, curvature1, curvature2, R2_GRID_REPLACE_OPERATION);
   }
 
-  // Create color image (combined 3 channels)
+  // Create color image (combined 3 channels into a single png)
   RNRgb color(0,0,0);
   R2Image color_image(width, height, 3);
   for (int i = 0; i < width; i++) {
@@ -472,7 +472,37 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
       color_image.SetPixelRGB(i, j, color);
     }
   }
-  
+
+  // Scale normal channels = 65535 * (value+1.0)/2.0 (for png output)
+  nx_channel.Add(1.0); nx_channel.Multiply(65535/2.0);
+  ny_channel.Add(1.0); ny_channel.Multiply(65535/2.0);
+  nz_channel.Add(1.0); nz_channel.Multiply(65535/2.0);
+  nx_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  ny_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  nz_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  nx_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+  ny_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+  nz_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+
+  // Scale position channel (for png output)
+  px_channel.Multiply(1000);
+  py_channel.Multiply(1000);
+  pz_channel.Multiply(1000);
+  px_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  py_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  pz_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  px_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+  py_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+  pz_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+
+  // Scale curvature channel = 65535 * (value+100)/2.0 (for png output)
+  curvature_channel.Threshold(-100, -100, R2_GRID_KEEP_VALUE);
+  curvature_channel.Threshold(100, R2_GRID_KEEP_VALUE, 100);
+  curvature_channel.Add(100);
+  curvature_channel.Multiply(65535/200.0);
+  curvature_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  curvature_channel.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
+
   // Create texture directory
   char cmd[1024];
   sprintf(cmd, "mkdir -p %s", directory_name);
@@ -482,25 +512,25 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
   char filename[1024];
   sprintf(filename, "%s/mask.png", directory_name);
   if (!mask_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/px.pfm", directory_name);
+  sprintf(filename, "%s/px.png", directory_name);
   if (!px_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/py.pfm", directory_name);
+  sprintf(filename, "%s/py.png", directory_name);
   if (!py_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/pz.pfm", directory_name);
+  sprintf(filename, "%s/pz.png", directory_name);
   if (!pz_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/nx.pfm", directory_name);
+  sprintf(filename, "%s/nx.png", directory_name);
   if (!nx_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/ny.pfm", directory_name);
+  sprintf(filename, "%s/ny.png", directory_name);
   if (!ny_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/nz.pfm", directory_name);
+  sprintf(filename, "%s/nz.png", directory_name);
   if (!nz_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/curvature.pfm", directory_name);
+  sprintf(filename, "%s/curvature.png", directory_name);
   if (!curvature_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/category.pfm", directory_name);
+  sprintf(filename, "%s/category.png", directory_name);
   if (!category_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/segment.pfm", directory_name);
+  sprintf(filename, "%s/segment.png", directory_name);
   if (!segment_channel.WriteFile(filename)) return 0;
-  sprintf(filename, "%s/material.pfm", directory_name);
+  sprintf(filename, "%s/material.png", directory_name);
   if (!material_channel.WriteFile(filename)) return 0;
   sprintf(filename, "%s/color.png", directory_name);
   if (!color_image.Write(filename)) return 0;
