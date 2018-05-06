@@ -26,6 +26,8 @@ target:
 	cd msh2pts; $(MAKE) $(TARGET)
 	cd msh2prp; $(MAKE) $(TARGET)
 	cd mshalign; $(MAKE) $(TARGET)
+	cd mshsegment; $(MAKE) $(TARGET)
+	cd mshparam; $(MAKE) $(TARGET)
 	cd mshinfo; $(MAKE) $(TARGET)
 	cd mshview; $(MAKE) $(TARGET)
 	cd grdview; $(MAKE) $(TARGET)
@@ -43,6 +45,8 @@ target:
 	cd pfm2pfm; $(MAKE) $(TARGET)
 	cd confview; $(MAKE) $(TARGET)
 	cd conf2img; $(MAKE) $(TARGET)
+	cd conf2conf; $(MAKE) $(TARGET)
+
 
 
 
