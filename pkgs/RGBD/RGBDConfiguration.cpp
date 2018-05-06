@@ -696,8 +696,8 @@ WriteObjFile(const char *filename) const
   fprintf(fp, "mtllib %s\n", mtl_filename);
 
   // Write surfaces
-  for (int i = 0; i < NSurfaces(); i++) {
-    RGBDSurface *surface = Surface(i);
+  for (int s = 0; s < NSurfaces(); s++) {
+    RGBDSurface *surface = Surface(s);
     int width = surface->NTexels(RN_X);
     int height = surface->NTexels(RN_Y);
     if ((width == 0) || (height == 0)) continue;
@@ -706,8 +706,8 @@ WriteObjFile(const char *filename) const
     R3Mesh *mesh = surface->mesh;
     if (mesh) {
       // Write material reference
-      fprintf(fp, "g surface%d\n", i);
-      fprintf(fp, "usemtl surface%d\n", i);
+      fprintf(fp, "g surface%d\n", s);
+      fprintf(fp, "usemtl surface%d\n", s);
 
       // Write vertices
       for (int i = 0; i < mesh->NVertices(); i++) {
