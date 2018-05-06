@@ -4,7 +4,7 @@
 
 /* Include files */
 
-#include "R3Surfels/R3Surfels.h"
+#include "R3Surfels.h"
 
 
 

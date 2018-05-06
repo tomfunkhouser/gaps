@@ -60,37 +60,37 @@ class R3SurfelScene;
 
 /* Surfel pkg include files */
 
-#include "R3Surfels/R3Surfel.h"
-#include "R3Surfels/R3SurfelBlock.h"
-#include "R3Surfels/R3SurfelDatabase.h"
-#include "R3Surfels/R3SurfelConstraint.h"
-#include "R3Surfels/R3SurfelPoint.h"
-#include "R3Surfels/R3SurfelPointSet.h"
-#include "R3Surfels/R3SurfelPointGraph.h"
-#include "R3Surfels/R3SurfelNode.h"
-#include "R3Surfels/R3SurfelNodeSet.h"
-#include "R3Surfels/R3SurfelTree.h"
-#include "R3Surfels/R3SurfelScan.h"
-#include "R3Surfels/R3SurfelFeature.h"
-#include "R3Surfels/R3SurfelFeatureSet.h"
-#include "R3Surfels/R3SurfelFeatureVector.h"
-#include "R3Surfels/R3SurfelFeatureEvaluation.h"
-#include "R3Surfels/R3SurfelObject.h"
-#include "R3Surfels/R3SurfelObjectSet.h"
-#include "R3Surfels/R3SurfelObjectProperty.h"
-#include "R3Surfels/R3SurfelObjectRelationship.h"
-#include "R3Surfels/R3SurfelLabel.h"
-#include "R3Surfels/R3SurfelLabelSet.h"
-#include "R3Surfels/R3SurfelLabelProperty.h"
-#include "R3Surfels/R3SurfelLabelRelationship.h"
-#include "R3Surfels/R3SurfelLabelAssignment.h"
-#include "R3Surfels/R3SurfelScene.h"
+#include "R3Surfel.h"
+#include "R3SurfelBlock.h"
+#include "R3SurfelDatabase.h"
+#include "R3SurfelConstraint.h"
+#include "R3SurfelPoint.h"
+#include "R3SurfelPointSet.h"
+#include "R3SurfelPointGraph.h"
+#include "R3SurfelNode.h"
+#include "R3SurfelNodeSet.h"
+#include "R3SurfelTree.h"
+#include "R3SurfelScan.h"
+#include "R3SurfelFeature.h"
+#include "R3SurfelFeatureSet.h"
+#include "R3SurfelFeatureVector.h"
+#include "R3SurfelFeatureEvaluation.h"
+#include "R3SurfelObject.h"
+#include "R3SurfelObjectSet.h"
+#include "R3SurfelObjectProperty.h"
+#include "R3SurfelObjectRelationship.h"
+#include "R3SurfelLabel.h"
+#include "R3SurfelLabelSet.h"
+#include "R3SurfelLabelProperty.h"
+#include "R3SurfelLabelRelationship.h"
+#include "R3SurfelLabelAssignment.h"
+#include "R3SurfelScene.h"
 
 
 
 /* Utility include files */
 
-#include "R3Surfels/R3SurfelUtils.h"
+#include "R3SurfelUtils.h"
 
 
 

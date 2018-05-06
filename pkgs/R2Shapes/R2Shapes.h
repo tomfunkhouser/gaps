@@ -35,82 +35,82 @@ class R2Grid;
 
 /* Image include files */
 
-#include "R2Shapes/R2Image.h"
+#include "R2Image.h"
 
 
 
 /* Primitive shape include files */
 
-#include "R2Shapes/R2Vector.h"
-#include "R2Shapes/R2Point.h"
-#include "R2Shapes/R2Line.h"
-#include "R2Shapes/R2Ray.h"
-#include "R2Shapes/R2Span.h"
-#include "R2Shapes/R2Halfspace.h"
+#include "R2Vector.h"
+#include "R2Point.h"
+#include "R2Line.h"
+#include "R2Ray.h"
+#include "R2Span.h"
+#include "R2Halfspace.h"
 
 
 
 /* Transformation include files */
 
-#include "R2Shapes/R3Matrix.h"
-#include "R2Shapes/R2Diad.h"
-#include "R2Shapes/R2Crdsys.h"
-#include "R2Shapes/R2Xform.h"
-#include "R2Shapes/R2Affine.h"
+#include "R3Matrix.h"
+#include "R2Diad.h"
+#include "R2Crdsys.h"
+#include "R2Xform.h"
+#include "R2Affine.h"
 
 
 
 /* Abstract shape include file */
 
-#include "R2Shapes/R2Shape.h"
+#include "R2Shape.h"
 
 
 
 /* Solid shapes include files */
 
-#include "R2Shapes/R2Solid.h"
-#include "R2Shapes/R2Box.h"
-#include "R2Shapes/R2Circle.h"
-#include "R2Shapes/R2Polygon.h"
+#include "R2Solid.h"
+#include "R2Box.h"
+#include "R2Circle.h"
+#include "R2Polygon.h"
 
 
 
 /* Curve shapes include files */
 
-#include "R2Shapes/R2Curve.h"
-#include "R2Shapes/R2Arc.h"
-#include "R2Shapes/R2Polyline.h"
+#include "R2Curve.h"
+#include "R2Arc.h"
+#include "R2Polyline.h"
 
 
 
 /* Solid shapes include files */
 
-#include "R2Shapes/R2Grid.h"
+#include "R2Grid.h"
 
 
 
 /* Shape relationship include files */
 
-#include "R2Shapes/R2Perp.h"
-#include "R2Shapes/R2Parall.h"
-#include "R2Shapes/R2Dist.h"
-#include "R2Shapes/R2Cont.h"
-#include "R2Shapes/R2Isect.h"
-#include "R2Shapes/R2Relate.h"
-#include "R2Shapes/R2Align.h"
+#include "R2Perp.h"
+#include "R2Parall.h"
+#include "R2Dist.h"
+#include "R2Cont.h"
+#include "R2Isect.h"
+#include "R2Relate.h"
+#include "R2Align.h"
 
 
 
 /* Closest point search include files */
 
-#include "R2Shapes/R2Kdtree.h"
+#include "R2Kdtree.h"
 
 
 
 /* Shape utility include files */
 
-#include "R2Shapes/R2Draw.h"
-#include "R2Shapes/R2Io.h"
+#include "R2Draw.h"
+#include "R2Io.h"
 
 
 

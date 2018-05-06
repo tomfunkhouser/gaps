@@ -636,17 +636,8 @@ DrawBBox(int color_scheme) const
 void RGBDImage::
 DrawImage(int color_scheme, RNLength depth) const
 {
-  // Get useful variables
+  // Check image
   if ((width == 0) || (height == 0)) return;
-  R3Point viewpoint = WorldViewpoint();
-  R3Vector towards = WorldTowards();
-  R3Vector right = WorldRight();
-  R3Vector up = WorldUp();
-  R3Point c = viewpoint + depth * towards;
-  R3Vector dx = (depth * 0.5*width / intrinsics[0][0]) * right;
-  R3Vector dy = (depth * 0.5*height / intrinsics[1][1]) * up;
-  c -= dx*(intrinsics[0][2] - 0.5*width)/width;
-  c -= dy*(intrinsics[1][2] - 0.5*height)/height;
 
   // Update/select opengl texture
   if (opengl_texture_id <= 0) ((RGBDImage *) this)->UpdateOpenGL();
@@ -654,20 +645,47 @@ DrawImage(int color_scheme, RNLength depth) const
   glBindTexture(GL_TEXTURE_2D, opengl_texture_id);
   glEnable(GL_TEXTURE_2D);
 
-  // Draw quad with texture coordinates
-  // LoadColor(color_scheme);
+  // Set color
+  glDisable(GL_LIGHTING);
   glColor3d(1.0, 1.0, 1.0);
-  glBegin(GL_QUADS);
-  R3LoadTextureCoords(0.0, 0.0);
-  R3LoadPoint(c - dx - dy);
-  R3LoadTextureCoords(1.0, 0.0);
-  R3LoadPoint(c + dx - dy);
-  R3LoadTextureCoords(1.0, 1.0);
-  R3LoadPoint(c + dx + dy);
-  R3LoadTextureCoords(0.0, 1.0);
-  R3LoadPoint(c - dx + dy);
-  glEnd();
 
+  // Check depth
+  if (depth > 0) {
+    // Draw textured polygon on view plane
+    R3Point viewpoint = WorldViewpoint();
+    R3Vector towards = WorldTowards();
+    R3Vector right = WorldRight();
+    R3Vector up = WorldUp();
+    R3Point c = viewpoint + depth * towards;
+    R3Vector dx = (depth * 0.5*width / intrinsics[0][0]) * right;
+    R3Vector dy = (depth * 0.5*height / intrinsics[1][1]) * up;
+    c -= dx*(intrinsics[0][2] - 0.5*width)/width;
+    c -= dy*(intrinsics[1][2] - 0.5*height)/height;
+    glBegin(GL_QUADS);
+    R3LoadTextureCoords(0.0, 0.0);
+    R3LoadPoint(c - dx - dy);
+    R3LoadTextureCoords(1.0, 0.0);
+    R3LoadPoint(c + dx - dy);
+    R3LoadTextureCoords(1.0, 1.0);
+    R3LoadPoint(c + dx + dy);
+    R3LoadTextureCoords(0.0, 1.0);
+    R3LoadPoint(c - dx + dy);
+    glEnd();
+  }
+  else {
+    // Draw textured polygon on screen plane (in pixels)
+    glBegin(GL_QUADS);
+    R3LoadTextureCoords(0.0, 0.0);
+    R3LoadPoint(0.0, 0.0, 0.0);
+    R3LoadTextureCoords(1.0, 0.0);
+    R3LoadPoint(width-1, 0.0, 0.0);
+    R3LoadTextureCoords(1.0, 1.0);
+    R3LoadPoint(width-1, height-1, 0.0);
+    R3LoadTextureCoords(0.0, 1.0);
+    R3LoadPoint(0.0, height-1, 0.0);
+    glEnd();
+  }
+  
   // Unselect opengl texture
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);

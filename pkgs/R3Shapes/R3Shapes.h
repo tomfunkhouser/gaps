@@ -51,102 +51,102 @@ class R3Grid;
 
 /* Geometry basics include files */
 
-#include "R3Shapes/R3Base.h"
+#include "R3Base.h"
 
 
 
 /* Primitive include files */
 
-#include "R3Shapes/R3Vector.h"
-#include "R3Shapes/R3Point.h"
-#include "R3Shapes/R3Line.h"
-#include "R3Shapes/R3Ray.h"
-#include "R3Shapes/R3Span.h"
-#include "R3Shapes/R3Plane.h"
-#include "R3Shapes/R3Halfspace.h"
+#include "R3Vector.h"
+#include "R3Point.h"
+#include "R3Line.h"
+#include "R3Ray.h"
+#include "R3Span.h"
+#include "R3Plane.h"
+#include "R3Halfspace.h"
 
 
 
 /* Transformation include files */
 
-#include "R3Shapes/R4Matrix.h"
-#include "R3Shapes/R3Quaternion.h"
-#include "R3Shapes/R3Triad.h"
-#include "R3Shapes/R3Crdsys.h"
-#include "R3Shapes/R3Xform.h"
-#include "R3Shapes/R3Affine.h"
+#include "R4Matrix.h"
+#include "R3Quaternion.h"
+#include "R3Triad.h"
+#include "R3Crdsys.h"
+#include "R3Xform.h"
+#include "R3Affine.h"
 
 
 
 /* Abstract shape include files */
 
-#include "R3Shapes/R3Shape.h"
+#include "R3Shape.h"
 
 
 
 /* Some solid shapes include files */
 
-#include "R3Shapes/R3Solid.h"
-#include "R3Shapes/R3Box.h"        
+#include "R3Solid.h"
+#include "R3Box.h"        
 
 
 
 /* Surface shapes include files */
 
-#include "R3Shapes/R3Surface.h"
-#include "R3Shapes/R3Triangle.h"
-#include "R3Shapes/R3TriangleArray.h"
-#include "R3Shapes/R3Circle.h"
-#include "R3Shapes/R3Ellipse.h"
-#include "R3Shapes/R3Rectangle.h"
-#include "R3Shapes/R3Mesh.h"
-#include "R3Shapes/R3PlanarGrid.h"        
+#include "R3Surface.h"
+#include "R3Triangle.h"
+#include "R3TriangleArray.h"
+#include "R3Circle.h"
+#include "R3Ellipse.h"
+#include "R3Rectangle.h"
+#include "R3Mesh.h"
+#include "R3PlanarGrid.h"        
 
 
 
 /* Surface shapes include files */
 
-#include "R3Shapes/R3Curve.h"
-#include "R3Shapes/R3Polyline.h"
-#include "R3Shapes/R3CatmullRomSpline.h"
+#include "R3Curve.h"
+#include "R3Polyline.h"
+#include "R3CatmullRomSpline.h"
 
 
 
 /* More solid shapes include files */
 
-#include "R3Shapes/R3OrientedBox.h"        
-#include "R3Shapes/R3Cylinder.h"
-#include "R3Shapes/R3Cone.h"
-#include "R3Shapes/R3Sphere.h"
-#include "R3Shapes/R3Ellipsoid.h"
-#include "R3Shapes/R3Grid.h"        
+#include "R3OrientedBox.h"        
+#include "R3Cylinder.h"
+#include "R3Cone.h"
+#include "R3Sphere.h"
+#include "R3Ellipsoid.h"
+#include "R3Grid.h"        
 
 
 
 /* Shape relationship include files */
 
-#include "R3Shapes/R3Perp.h"
-#include "R3Shapes/R3Parall.h"
-#include "R3Shapes/R3Dist.h"
-#include "R3Shapes/R3Cont.h"
-#include "R3Shapes/R3Isect.h"
-#include "R3Shapes/R3Relate.h"
-#include "R3Shapes/R3Align.h"
-#include "R3Shapes/R3Kdtree.h"
+#include "R3Perp.h"
+#include "R3Parall.h"
+#include "R3Dist.h"
+#include "R3Cont.h"
+#include "R3Isect.h"
+#include "R3Relate.h"
+#include "R3Align.h"
+#include "R3Kdtree.h"
 
 
 
 /* Mesh utility include files */
 
-#include "R3Shapes/R3MeshSearchTree.h"
-#include "R3Shapes/R3MeshProperty.h"
-#include "R3Shapes/R3MeshPropertySet.h"
+#include "R3MeshSearchTree.h"
+#include "R3MeshProperty.h"
+#include "R3MeshPropertySet.h"
 
 
 
 /* Shape utility include files */
 
-#include "R3Shapes/R3Draw.h"
+#include "R3Draw.h"
 
 
 

@@ -28,19 +28,19 @@ class RNSystemOfEquations;
 
 // Matrix classes
 
-#include "RNMath/RNLapack.h"
-#include "RNMath/RNVector.h"
-#include "RNMath/RNMatrix.h"
-#include "RNMath/RNDenseMatrix.h"
-#include "RNMath/RNDenseLUMatrix.h"
+#include "RNLapack.h"
+#include "RNVector.h"
+#include "RNMatrix.h"
+#include "RNDenseMatrix.h"
+#include "RNDenseLUMatrix.h"
 
 
 // Expression and equation classes
 
-#include "RNMath/RNPolynomial.h"
-#include "RNMath/RNAlgebraic.h"
-#include "RNMath/RNEquation.h"
-#include "RNMath/RNSystemOfEquations.h"
+#include "RNPolynomial.h"
+#include "RNAlgebraic.h"
+#include "RNEquation.h"
+#include "RNSystemOfEquations.h"
 
 
 

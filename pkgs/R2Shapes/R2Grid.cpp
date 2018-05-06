@@ -12,7 +12,7 @@
 
 // Include files
 
-#include "R2Shapes/R2Shapes.h"
+#include "R2Shapes.h"
 
 
 
@@ -3946,7 +3946,7 @@ ReadPNGFile(const char *filename)
 
   // Allocate the pixels and row pointers 
   unsigned char *pixels = new unsigned char [ height * rowsize ]; 
-  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * png_sizeof(png_bytep));
+  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * sizeof(png_bytep));
   for (int i = 0; i < height; i++) row_pointers[i] = &pixels[ (height - i - 1) * rowsize ];
 
   // Read the pixels 
@@ -4059,7 +4059,7 @@ WritePNGFile(const char *filename) const
   }
 
   // Allocate the row pointers
-  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * png_sizeof(png_bytep));
+  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * sizeof(png_bytep));
   for (int i = 0; i < height; i++) row_pointers[i] = (png_bytep) &data[(height - i - 1) * 2*width];
   
   // Set up the output control 

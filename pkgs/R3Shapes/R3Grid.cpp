@@ -13,7 +13,7 @@
 
 // Include files
 
-#include "R3Shapes/R3Shapes.h"
+#include "R3Shapes.h"
 
 
 
@@ -594,7 +594,7 @@ Invert(void)
   // Invert every grid value
   RNScalar *grid_valuep = grid_values;
   for (int i = 0; i < grid_size; i++) {
-    if (RNIsNotZero(*grid_valuep), 1.0E-20) *grid_valuep = 1.0/(*grid_valuep);
+    if (RNIsNotZero(*grid_valuep, 1.0E-20)) *grid_valuep = 1.0/(*grid_valuep);
     grid_valuep++;
   }
 }

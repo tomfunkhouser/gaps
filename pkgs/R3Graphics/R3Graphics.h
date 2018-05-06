@@ -21,37 +21,37 @@ class R3SceneElement;
 
 /* Material include files */
 
-#include "R3Graphics/R3Brdf.h"
-#include "R3Graphics/R2Texture.h"
-#include "R3Graphics/R3Material.h"
+#include "R3Brdf.h"
+#include "R2Texture.h"
+#include "R3Material.h"
 
 
 
 /* Light include files */
 
-#include "R3Graphics/R3Light.h"
-#include "R3Graphics/R3DirectionalLight.h"
-#include "R3Graphics/R3PointLight.h"
-#include "R3Graphics/R3SpotLight.h"
-#include "R3Graphics/R3AreaLight.h"
+#include "R3Light.h"
+#include "R3DirectionalLight.h"
+#include "R3PointLight.h"
+#include "R3SpotLight.h"
+#include "R3AreaLight.h"
 
 
 
 /* Viewing include files */
 
-#include "R3Graphics/R2Viewport.h"
-#include "R3Graphics/R3Camera.h"
-#include "R3Graphics/R3Frustum.h"
-#include "R3Graphics/R3Viewer.h"
+#include "R2Viewport.h"
+#include "R3Camera.h"
+#include "R3Frustum.h"
+#include "R3Viewer.h"
 
 
 
 /* Scene include files */
 
-#include "R3Graphics/R3SceneReference.h"
-#include "R3Graphics/R3SceneElement.h"
-#include "R3Graphics/R3SceneNode.h"
-#include "R3Graphics/R3Scene.h"
+#include "R3SceneReference.h"
+#include "R3SceneElement.h"
+#include "R3SceneNode.h"
+#include "R3Scene.h"
 
 
 

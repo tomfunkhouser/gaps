@@ -1485,7 +1485,7 @@ ReadPNG(const char *filename)
 
   // Allocate the pixels and row pointers 
   pixels = new unsigned char [ height * rowsize ]; 
-  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * png_sizeof(png_bytep));
+  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * sizeof(png_bytep));
   for (int i = 0; i < height; i++) row_pointers[i] = &pixels[ (height - i - 1) * rowsize ];
 
   // Read the pixels 
@@ -1553,7 +1553,7 @@ WritePNG(const char *filename) const
     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
   // Allocate the row pointers 
-  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * png_sizeof(png_bytep));
+  png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * sizeof(png_bytep));
   for (int i = 0; i < height; i++) row_pointers[i] = &pixels[(height - i - 1) * rowsize];
   
   // Set up the output control 

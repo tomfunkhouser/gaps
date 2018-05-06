@@ -238,11 +238,66 @@ SetDatasetFormat(const char *format)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Input/output functions
+// File input/output functions
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDConfiguration::
 ReadFile(const char *filename, int read_every_kth_image)
+{
+  // Parse input filename extension
+  const char *extension;
+  if (!(extension = strrchr(filename, '.'))) {
+    printf("Filename %s has no extension (e.g., .conf)\n", filename);
+    return 0;
+  }
+
+  // Read file of appropriate type
+  if (!strncmp(extension, ".conf", 5)) {
+    if (!ReadConfigurationFile(filename, read_every_kth_image)) return 0;
+  }
+  else {
+    fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
+    return 0;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+int RGBDConfiguration::
+WriteFile(const char *filename, int write_every_kth_image) const
+{
+  // Parse input filename extension
+  const char *extension;
+  if (!(extension = strrchr(filename, '.'))) {
+    printf("Filename %s has no extension (e.g., .conf)\n", filename);
+    return 0;
+  }
+
+  // Write file of appropriate type
+  if (!strncmp(extension, ".conf", 5)) {
+    if (!WriteConfigurationFile(filename, write_every_kth_image)) return 0;
+  }
+  else if (!strncmp(extension, ".obj", 4)) {
+    if (!WriteObjFile(filename)) return 0;
+  }
+  else {
+    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
+    return 0;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Configuration file input/output functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDConfiguration::
+ReadConfigurationFile(const char *filename, int read_every_kth_image)
 {
   // Initialize stuff
   int image_count = 0;
@@ -496,7 +551,7 @@ ReadFile(const char *filename, int read_every_kth_image)
 
 
 int RGBDConfiguration::
-WriteFile(const char *filename, int write_every_kth_image) const
+WriteConfigurationFile(const char *filename, int write_every_kth_image) const
 {
   // Create directories
   char cmd[4096];
@@ -535,7 +590,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
   // Write surfaces
   for (int i = 0; i < NSurfaces(); i++) {
     RGBDSurface *surface = Surface(i);
-    surface->WriteChannels();
+    // surface->WriteChannels();
     if (surface->rectangle) {
       R3Point centroid = surface->rectangle->Centroid();
       R3Vector normal = surface->rectangle->Normal();
@@ -578,6 +633,110 @@ WriteFile(const char *filename, int write_every_kth_image) const
   // Close file
   fclose(fp);
   
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// OBJ output functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+WriteMtlFile(const RGBDConfiguration *configuration, const char *filename)
+{
+  // Check texture directory name
+  if (!configuration->TextureDirectory()) return 1;
+
+  // Open mtl file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open file %s", filename);
+    return 0;
+  }
+
+  // Write materials
+  for (int i = 0; i < configuration->NSurfaces(); i++) {
+    RGBDSurface *surface = configuration->Surface(i);
+    if (!surface->TextureFilename()) continue;
+    fprintf(fp, "newmtl surface%d\n", i);
+    fprintf(fp, "Kd 1 1 1\n");
+    fprintf(fp, "map_Kd %s/%s\n", configuration->TextureDirectory(), surface->TextureFilename());
+    fprintf(fp, "\n");
+  }
+  
+  // Close mtl file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+WriteObjFile(const char *filename) const
+{
+  // Write mtl file
+  char mtl_filename[1024];
+  strncpy(mtl_filename, filename, 1020);
+  char *endp = strrchr(mtl_filename, '.');
+  if (endp) { *endp = '\0'; strcat(mtl_filename, ".mtl"); }
+  if (!WriteMtlFile(this, mtl_filename)) return 0;
+
+  // Open obj file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open file %s", filename);
+    return 0;
+  }
+
+  // Write material library
+  fprintf(fp, "mtllib %s\n", mtl_filename);
+
+  // Write surfaces
+  for (int i = 0; i < NSurfaces(); i++) {
+    RGBDSurface *surface = Surface(i);
+    int width = surface->NTexels(RN_X);
+    int height = surface->NTexels(RN_Y);
+    if ((width == 0) || (height == 0)) continue;
+    
+    // Write mesh
+    R3Mesh *mesh = surface->mesh;
+    if (mesh) {
+      // Write material reference
+      fprintf(fp, "g surface%d\n", i);
+      fprintf(fp, "usemtl surface%d\n", i);
+
+      // Write vertices
+      for (int i = 0; i < mesh->NVertices(); i++) {
+        R3MeshVertex *vertex = mesh->Vertex(i);
+        const R3Point& p = mesh->VertexPosition(vertex);
+        R2Point t, s = mesh->VertexTextureCoords(vertex);
+        surface->TransformSurfaceToTexture(s, t);
+        fprintf(fp, "vt %g %g\n", t.X() / width, t.Y() / height);
+        fprintf(fp, "v %g %g %g\n", p.X(), p.Y(), p.Z());
+      }
+
+      // Write faces
+      for (int i = 0; i < mesh->NFaces(); i++) {
+        R3MeshFace *face = mesh->Face(i);
+        R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+        R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+        R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+        int i0 = mesh->VertexID(v0) + 1;
+        int i1 = mesh->VertexID(v1) + 1;
+        int i2 = mesh->VertexID(v2) + 1;
+        // fprintf(fp, "f %d/%d %d/%d %d/%d\n", i0, i1, i2, i0, i1, i2);
+        fprintf(fp, "f %d/%d %d/%d %d/%d\n", i2, i1, i0, i2, i1, i0);
+      }
+    }
+  }
+  
+  // Close obj file
+  fclose(fp);
+
   // Return success
   return 1;
 }

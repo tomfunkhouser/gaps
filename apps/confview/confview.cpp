@@ -481,8 +481,8 @@ DrawImages(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     if (!image->RedChannel()) continue;
-    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) image->DrawImage(RGBD_HIGHLIGHT_COLOR_SCHEME);
-    else image->DrawImage(color_scheme);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) image->DrawImage(RGBD_HIGHLIGHT_COLOR_SCHEME, 1.0);
+    else image->DrawImage(color_scheme, 1.0);
   }
 }
 
