@@ -182,6 +182,7 @@ CreateSegments(R3Mesh *mesh, RNArray<Segment *>& segments)
     // Insert copy of face into segment
     R3MeshFace *segment_face = mesh->CreateFace(segment_face_vertices[0], segment_face_vertices[1], segment_face_vertices[2]);
     assert(segment_face);
+    mesh->SetFaceCategory(segment_face, mesh->FaceCategory(original_face));
     mesh->SetFaceSegment(segment_face, mesh->FaceSegment(original_face));
     mesh->SetFaceMaterial(segment_face, mesh->FaceMaterial(original_face));
     segment->faces.Insert(segment_face);
