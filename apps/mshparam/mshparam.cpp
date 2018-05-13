@@ -421,9 +421,9 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
   // Rasterize mesh face properties into texture channels
   for (int i = 0; i < mesh->NFaces(); i++) {
     R3MeshFace *face = mesh->Face(i);
-    int category = mesh->FaceCategory(face) + 1;
-    int segment = mesh->FaceSegment(face) + 1;
-    int material = mesh->FaceMaterial(face) + 1;
+    int category = mesh->FaceCategory(face);
+    int segment = mesh->FaceSegment(face);
+    int material = mesh->FaceMaterial(face);
     R3Vector normal = mesh->FaceNormal(face);
     R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
     R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
@@ -473,6 +473,14 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
       color_image.SetPixelRGB(i, j, color);
     }
   }
+
+  // Clamp category, segment, and material channels (for png output)
+  category_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  segment_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  material_channel.Threshold(0, 0, R2_GRID_KEEP_VALUE);
+  category_channel.Threshold(65536, R2_GRID_KEEP_VALUE, 65536);
+  segment_channel.Threshold(65536, R2_GRID_KEEP_VALUE, 65536);
+  material_channel.Threshold(65536, R2_GRID_KEEP_VALUE, 65536);
 
   // Scale normal channels = 65535 * (value+1.0)/2.0 (for png output)
   nx_channel.Add(1.0); nx_channel.Multiply(65535/2.0);
