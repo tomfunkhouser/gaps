@@ -16,6 +16,7 @@
 
 static char *input_mesh_name = NULL;
 static char *output_properties_name = NULL;
+static char *output_mesh_name = NULL;
 static int compute_basic_properties = 0;
 static int compute_coordinate_properties = 0;
 static int compute_curvature_properties = 0;
@@ -91,6 +92,32 @@ WriteProperties(R3MeshPropertySet *properties, char *filename)
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Properties = %d\n", properties->NProperties());
     printf("  # Vertices = %d\n", properties->Mesh()->NVertices());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+WriteMesh(R3Mesh *mesh, const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Write mesh to file
+  if (!mesh->WriteFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Wrote mesh to %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Faces = %d\n", mesh->NFaces());
+    printf("  # Edges = %d\n", mesh->NEdges());
+    printf("  # Vertices = %d\n", mesh->NVertices());
     fflush(stdout);
   }
 
@@ -1296,7 +1323,7 @@ ComputeRayTracingProperties(R3Mesh *mesh)
 
 
 ////////////////////////////////////////////////////////////////////////
-// MTurk Segmentation properties
+// MTurk segmentation and labeling properties
 ////////////////////////////////////////////////////////////////////////
 
 struct MTurkLabel {
@@ -1349,7 +1376,7 @@ ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    fprintf(stderr, "Unable to allocate Aproperty set.\n");
     return NULL;
   }
 
@@ -1417,6 +1444,7 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
   int nyu40id_index = -1;
   for (int i = 0; i < keys.NEntries(); i++) {
     if (!strcmp(keys[i], "index")) id_index = i;
+    else if (!strcmp(keys[i], "id")) id_index = i;
     else if (!strcmp(keys[i], "category")) name_index = i; 
     else if (!strcmp(keys[i], "nyuId")) nyuId_index = i; 
     else if (!strcmp(keys[i], "nyu40id")) nyu40id_index = i; 
@@ -1558,6 +1586,102 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
   }
 
   // Return property set
+  return properties;
+}
+
+
+
+static int
+TransferMTurkPropertiesToFaces(R3Mesh *mesh, R3MeshPropertySet *properties)
+{
+  // Get relevant mturk properties
+  R3MeshProperty *material_property = properties->Property("MTurkSegment");
+  R3MeshProperty *segment_property = properties->Property("MTurkInstance");
+  R3MeshProperty *category_property = properties->Property("MTurkNYU40Id");
+  if (!material_property || !segment_property || !category_property) return 1;
+
+  // Allocate segment info
+  if (mesh->NVertices() == 0) return 1;
+  RNArea *areas = new RNArea [ mesh->NVertices() ];
+  for (int i = 0; i < mesh->NVertices(); i++) areas[i] = 0;
+  RNMap<int, int> segment_to_index;
+
+  // Compute areas
+  int index = -1;
+  int nsegments = 0;
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    R3MeshVertex *vertex = mesh->Vertex(i);
+    int segment = (int) (segment_property->VertexValue(vertex) + 0.5);
+    if (!segment_to_index.Find(segment, &index)) {
+      segment_to_index.Insert(segment, nsegments);
+      index = nsegments++;
+    }
+    areas[index] += mesh->VertexArea(vertex);
+  }
+
+  // Compute face properties
+  for (int i = 0; i < mesh->NFaces(); i++) {
+    R3MeshFace *face = mesh->Face(i);
+    RNArea best_area = FLT_MAX;
+    for (int j = 0; j < 3; j++) {
+      R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
+      int segment = (int) (segment_property->VertexValue(vertex) + 0.5);
+      if (segment_to_index.Find(segment, &index)) {
+        if (areas[index] < best_area) {
+          int material = (int) (material_property->VertexValue(vertex) + 0.5);
+          int category = (int) (category_property->VertexValue(vertex) + 0.5);
+          mesh->SetFaceMaterial(face, material);
+          mesh->SetFaceSegment(face, segment);
+          mesh->SetFaceCategory(face, category);
+          best_area = areas[index];
+        }
+      }
+    }
+  }
+
+  // Delete temporary memory
+  delete [] areas;
+  
+  // Return success
+  return 1;
+}
+
+
+static R3MeshPropertySet *
+ReadMTurkProperties(R3Mesh *mesh, const char *segmentation_filename,
+  const char *annotation_filename, const char *label_mapping_filename)
+{                   
+  // Allocate property set
+  R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
+  if (!properties) {
+    fprintf(stderr, "Unable to allocate property set.\n");
+    return NULL;
+  }
+
+  // Read segmentation and annotation properties
+  if (segmentation_filename) {
+    R3MeshPropertySet *segmentation_properties = ReadMTurkSegmentationProperties(mesh, segmentation_filename);
+    if (!segmentation_properties) return NULL;
+    properties->Insert(segmentation_properties);
+    delete segmentation_properties;
+    if (input_mturk_annotation_name && input_mturk_label_mapping_name) {
+      R3MeshProperty *segmentation_property = properties->Property("MTurkSegment");
+      if (segmentation_property) {
+        RNSymbolTable<MTurkLabel *> label_mapping;
+        if (ReadMTurkLabelMapping(label_mapping, label_mapping_filename)) {
+          R3MeshPropertySet *annotation_properties = ReadMTurkAnnotationProperties(mesh, segmentation_property, &label_mapping, annotation_filename);
+          if (!annotation_properties) return NULL;
+          properties->Insert(annotation_properties);
+          delete annotation_properties;
+        }
+      }
+    }
+  }
+
+  // Transfer properties to faces
+  if (!TransferMTurkPropertiesToFaces(mesh, properties)) return NULL;
+
+  // Return properties
   return properties;
 }
 
@@ -1799,22 +1923,11 @@ ComputeProperties(R3Mesh *mesh)
 
   // Read mturk segmentation properties
   if (input_mturk_segmentation_name) {
-    R3MeshPropertySet *segmentation_properties = ReadMTurkSegmentationProperties(mesh, input_mturk_segmentation_name);
+    R3MeshPropertySet *segmentation_properties = ReadMTurkProperties(mesh,
+      input_mturk_segmentation_name, input_mturk_annotation_name, input_mturk_label_mapping_name);
     if (!segmentation_properties) return NULL;
     properties->Insert(segmentation_properties);
     delete segmentation_properties;
-    if (input_mturk_annotation_name && input_mturk_label_mapping_name) {
-      R3MeshProperty *segmentation_property = properties->Property("MTurkSegment");
-      if (segmentation_property) {
-        RNSymbolTable<MTurkLabel *> label_mapping;
-        if (ReadMTurkLabelMapping(label_mapping, input_mturk_label_mapping_name)) {
-          R3MeshPropertySet *annotation_properties = ReadMTurkAnnotationProperties(mesh, segmentation_property, &label_mapping, input_mturk_annotation_name);
-          if (!annotation_properties) return NULL;
-          properties->Insert(annotation_properties);
-          delete annotation_properties;
-        }
-      }
-    }
   }
 
   // Compute map properties
@@ -1863,6 +1976,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-dijkstra_histogram")) { compute_dijkstra_histogram_properties = 1; }
       else if (!strcmp(*argv, "-raytrace")) { compute_raytrace_properties = 1; }
       else if (!strcmp(*argv, "-solidtexture")) { compute_solidtexture_properties = 1; }
+      else if (!strcmp(*argv, "-output_mesh")) { argv++; argc--; output_mesh_name = *argv; }
       else if (!strcmp(*argv, "-map")) { argv++; argc--; input_map_name = *argv; }
       else if (!strcmp(*argv, "-mturk_semantic_segmentation")) {
         argv++; argc--; input_mturk_segmentation_name = *argv; 
@@ -1925,6 +2039,11 @@ int main(int argc, char **argv)
 
   // Write properties file
   if (!WriteProperties(properties, output_properties_name)) exit(-1);
+
+  // Write mesh
+  if (output_mesh_name) {
+    if (!WriteMesh(mesh, output_mesh_name)) exit(-1);
+  }
 
   // Return success 
   return 0;
