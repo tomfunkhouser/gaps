@@ -4249,10 +4249,79 @@ CreateOrientedBox(const R3OrientedBox& box)
 
 
 void R3Mesh::
+CreateIcosahedron(const R3Sphere& sphere)
+{
+  // Create mesh elements for a icosahedron and add to mesh
+  R3MeshVertex *v0 = CreateVertex(R3Point(0, -0.5257311, 0.8506508));
+  R3MeshVertex *v1 = CreateVertex(R3Point(0, 0.5257311, 0.8506508));
+  R3MeshVertex *v2 = CreateVertex(R3Point(0, -0.5257311, -0.8506508));
+  R3MeshVertex *v3 = CreateVertex(R3Point(0, 0.5257311, -0.8506508));
+  R3MeshVertex *v4 = CreateVertex(R3Point(0.8506508, 0, 0.5257311));
+  R3MeshVertex *v5 = CreateVertex(R3Point(0.8506508, 0, -0.5257311));
+  R3MeshVertex *v6 = CreateVertex(R3Point(-0.8506508, 0, 0.5257311));
+  R3MeshVertex *v7 = CreateVertex(R3Point(-0.8506508, 0, -0.5257311));
+  R3MeshVertex *v8 = CreateVertex(R3Point(0.5257311, 0.8506508, 0));
+  R3MeshVertex *v9 = CreateVertex(R3Point(0.5257311, -0.8506508, 0));
+  R3MeshVertex *v10 = CreateVertex(R3Point(-0.5257311, 0.8506508, 0));
+  R3MeshVertex *v11 = CreateVertex(R3Point(-0.5257311, -0.8506508, 0));
+  CreateFace(v0, v4, v1);
+  CreateFace(v0, v9, v4);
+  CreateFace(v9, v5, v4);
+  CreateFace(v4, v5, v8);
+  CreateFace(v4, v8, v1);
+  CreateFace(v8, v10, v1);
+  CreateFace(v8, v3, v10);
+  CreateFace(v5, v3, v8);
+  CreateFace(v5, v2, v3);
+  CreateFace(v2, v7, v3);
+  CreateFace(v7, v10, v3);
+  CreateFace(v7, v6, v10);
+  CreateFace(v7, v11, v6);
+  CreateFace(v11, v0, v6);
+  CreateFace(v0, v1, v6);
+  CreateFace(v6, v1, v10);
+  CreateFace(v9, v0, v11);
+  CreateFace(v9, v11, v2);
+  CreateFace(v9, v2, v5);
+  CreateFace(v7, v2, v11);
+
+  // Transform mesh
+  R3Affine xform = R3identity_affine;
+  if (sphere.Center() != R3zero_point) xform.Translate(sphere.Center().Vector());
+  if (sphere.Radius() != 1) xform.Scale(sphere.Radius());
+  Transform(xform);
+}
+    
+
+
+void R3Mesh::
 CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing)
 {
   // Create mesh elements for a sphere and add to mesh
-  RNAbort("Not implemented");
+
+  // Start with an icosahedron
+  CreateIcosahedron(R3unit_sphere);
+
+  // Iteratively refine until reach vertex spacing
+  while (AverageEdgeLength() > vertex_spacing) {
+    // Subdivide
+    SubdivideFaces();
+
+    // Push vertices to sphere
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *v = Vertex(i);
+      R3Point p = VertexPosition(v);
+      RNLength d = p.Vector().Length();
+      if (RNIsPositive(d)) p /= d;
+      SetVertexPosition(v, p);
+    }
+  }
+
+  // Transform mesh
+  R3Affine xform = R3identity_affine;
+  if (sphere.Center() != R3zero_point) xform.Translate(sphere.Center().Vector());
+  if (sphere.Radius() != 1) xform.Scale(sphere.Radius());
+  Transform(xform);
 }
 
 

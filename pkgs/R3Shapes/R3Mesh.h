@@ -518,6 +518,8 @@ class R3Mesh {
       // Create mesh elements for a box and add to mesh
     void CreateOrientedBox(const R3OrientedBox& box);
       // Create mesh elements for an oriented box and add to mesh
+    void CreateIcosahedron(const R3Sphere& sphere);
+      // Create mesh elements for an icosahedron bound by sphere and add to mesh
     void CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing = 0);
       // Create mesh elements for a sphere and add to mesh
     void CreateEllipsoid(const R3Ellipsoid& ellipsoid, RNLength vertex_spacing = 0);

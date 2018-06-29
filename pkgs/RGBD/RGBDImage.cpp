@@ -1501,7 +1501,7 @@ ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor
 
   // Compute boundary image ???
   R2Grid boundary_image(NPixels(RN_X), NPixels(RN_Y));
-  static const unsigned int bad_combination = 345; // temporary
+  if (!RGBDCreateBoundaryChannel(*this, boundary_image, max_silhouette_factor)) return 0;
          
   // Create vertices
   for (int j = 0; j < NPixels(RN_Y); j++) {

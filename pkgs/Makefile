@@ -11,7 +11,6 @@ ARCH=$(shell uname -m)
 LIB_DIR=../lib/$(ARCH)
 LIB=$(LIB_DIR)/libgaps.a
 PKG_LIBS= \
-  $(LIB_DIR)/libFET.a \
   $(LIB_DIR)/libRGBD.a \
   $(LIB_DIR)/libR3Surfels.a \
   $(LIB_DIR)/libR3Graphics.a \
@@ -19,6 +18,7 @@ PKG_LIBS= \
   $(LIB_DIR)/libR2Shapes.a \
   $(LIB_DIR)/libRNMath.a \
   $(LIB_DIR)/libRNBasics.a \
+  $(LIB_DIR)/libfglut.a \
   $(LIB_DIR)/libjpeg.a \
   $(LIB_DIR)/libpng.a
 
