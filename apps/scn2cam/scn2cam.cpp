@@ -90,7 +90,7 @@ static int print_debug = 0;
 struct Camera : public R3Camera {
 public:
   Camera(void) : R3Camera(), name(NULL) {};
-  Camera(const Camera& camera) : R3Camera(camera), name((name) ? strdup(name) : NULL) {};
+  Camera(const Camera& camera) : R3Camera(camera), name(NULL) {};
   Camera(const R3Camera& camera, const char *name) : R3Camera(camera), name((name) ? strdup(name) : NULL) {};
   Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist)
     : R3Camera(origin, towards, up, xfov, yfov, neardist, fardist), name(NULL) {};
