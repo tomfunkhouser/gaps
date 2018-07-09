@@ -1,4 +1,11 @@
 /* Include file for the R3 sphere class */
+#ifndef __R3__SPHERE__H__
+#define __R3__SPHERE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -108,6 +115,9 @@ IsFinite(void) const
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

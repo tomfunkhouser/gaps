@@ -8,6 +8,14 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
+// Functions
+
 RNDenseLUMatrix::
 RNDenseLUMatrix(void)
   : RNDenseMatrix(),
@@ -231,4 +239,4 @@ BackSubstitute(RNDenseMatrix &b, RNDenseMatrix &x) const
 
 
 
-
+} // namespace gaps

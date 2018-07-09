@@ -1,4 +1,11 @@
 /* Include file for the GAPS ray class */
+#ifndef __R3__RAY__H__
+#define __R3__RAY__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -186,3 +193,9 @@ Reset(const R3Point& point, const R3Vector& vector, RNBoolean normalized)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

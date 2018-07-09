@@ -1,4 +1,12 @@
 /* Include file for the R3 surfel point class */
+#ifndef __R3__SURFEL__POINT__H__
+#define __R3__SURFEL__POINT__H__
+
+
+
+// Namespace 
+
+namespace gaps {
 
 
 
@@ -352,3 +360,9 @@ Surfel(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

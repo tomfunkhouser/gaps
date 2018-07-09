@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 #ifdef R3_USER_DEFINED_SHAPE_TYPES
@@ -954,4 +960,4 @@ void R3RegisterDistanceFunction(RNClassID id1, RNClassID id2, R3DistanceFunction
 
 
 
-
+} // namespace gaps

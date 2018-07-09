@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Arc R2null_arc(R2Point(0.0, 0.0), -1.0, 0.0, 0.0);
@@ -233,13 +239,4 @@ Transform (const R2Transformation& transformation)
 
 
 
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

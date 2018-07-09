@@ -1,4 +1,11 @@
 /* Include file for the GAPS halfspace class */
+#ifndef __R3__HALFSPACE__H__
+#define __R3__HALFSPACE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -159,3 +166,9 @@ Reset(const R3Plane& plane)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

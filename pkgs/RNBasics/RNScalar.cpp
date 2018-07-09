@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public scalar variables */
 
 #if (RN_MATH_PRECISION == RN_FLOAT_PRECISION)
@@ -180,3 +186,4 @@ RNCompareInts(const void *value1, const void *value2)
 
 
 
+} // namespace gaps

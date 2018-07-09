@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Member functions */
 
 R3SceneElement::
@@ -325,3 +331,6 @@ InvalidateBBox(void)
   if (node) node->InvalidateBBox();
 }
 
+
+
+} // namespace gaps

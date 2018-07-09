@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R3Span R3null_span(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
@@ -285,3 +291,4 @@ operator==(const R3Span& span) const
 
 
 
+} // namespace gaps

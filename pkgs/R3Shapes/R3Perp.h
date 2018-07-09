@@ -1,4 +1,11 @@
 /* Include file for GAPS perpendicular utility */
+#ifndef __R3__PERPENDICULAR__H__
+#define __R3__PERPENDICULAR__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -118,8 +125,9 @@ inline RNBoolean R3Perpendicular(const R3Plane& plane, const R3Span& span)
 
 
 
+// End namespace
+}
 
 
-
-
-
+// End include guard
+#endif

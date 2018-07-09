@@ -1,4 +1,11 @@
 /* Include file for the R2 shape class */
+#ifndef __R2__SHAPE__H__
+#define __R2__SHAPE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -46,6 +53,12 @@ enum {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif
 
 
 

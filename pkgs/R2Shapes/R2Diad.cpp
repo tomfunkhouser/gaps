@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Diad R2xy_diad(R2Vector(1.0, 0.0), R2Vector(0.0, 1.0));
@@ -133,9 +139,4 @@ InverseTransform(const R2Transformation& transformation)
 
 
 
-
-
-
-
-
-
+} // namespace gaps

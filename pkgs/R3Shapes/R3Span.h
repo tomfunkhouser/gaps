@@ -1,4 +1,11 @@
 /* Include file for the GAPS span class */
+#ifndef __R3__SPAN__H__
+#define __R3__SPAN__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -180,6 +187,15 @@ Mirror(const R3Plane& plane)
     ray.Mirror(plane);
     end.Mirror(plane);
 }
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif
 
 
 

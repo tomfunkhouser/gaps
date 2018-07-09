@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Box R3zero_box(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
@@ -549,5 +555,4 @@ Reset(const R3Point& min, const R3Point& max)
 
 
 
-
-
+} // namespace gaps

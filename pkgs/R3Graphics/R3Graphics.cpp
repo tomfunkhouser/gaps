@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 static int R3graphics_active_count = 0;
@@ -45,6 +51,4 @@ void R3StopGraphics(void)
 
 
 
-
-
-
+} // namespace gaps

@@ -1,4 +1,11 @@
 // Include file for R3 view frustum class
+#ifndef __R3__FRUSTUM__H__
+#define __R3__FRUSTUM__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -58,3 +65,11 @@ Halfspace(int dir, int dim) const
   return halfspaces[dir][dim];
 }
 
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

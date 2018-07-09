@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -429,3 +435,4 @@ Print(FILE *fp) const
 
 
 
+} // namespace gaps

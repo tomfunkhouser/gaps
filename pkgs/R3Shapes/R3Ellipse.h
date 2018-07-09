@@ -1,4 +1,11 @@
 /* Include file for the R3 ellipse class */
+#ifndef __R3__ELLIPSE__H__
+#define __R3__ELLIPSE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -183,3 +190,9 @@ operator!=(const R3Ellipse& ellipse) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for the R3 scene node class */
+#ifndef __R3__SCENE__NODE__H__
+#define __R3__SCENE__NODE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -246,4 +253,9 @@ IsAncestor(const R3SceneNode *node) const
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

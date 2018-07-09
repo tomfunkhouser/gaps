@@ -1,6 +1,13 @@
 /* Include file for GAPS wallclock time class */
+#ifndef __RN__TIME__H__
+#define __RN__TIME__H__
 
 
+
+/* Begin namespace */
+namespace gaps {
+
+  
 
 /* Initialization functions */
 
@@ -64,3 +71,9 @@ Read (void)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

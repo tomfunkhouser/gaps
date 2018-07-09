@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Circle R3null_circle(R3Point(0.0, 0.0, 0.0), -1.0, R3Vector(0.0, 0.0, 0.0));
@@ -264,5 +270,4 @@ Reset (const R3Point& center, RNScalar radius, const R3Vector& normal)
 
 
 
-
-
+} // namespace gaps

@@ -1,4 +1,11 @@
 /* Include file for GAPS mem utility */
+#ifndef __RN__MEMORY__H__
+#define __RN__MEMORY__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -34,3 +41,12 @@ int RNCompare(const void *src1, const void *src2, int size);
 /* Memory usage statistics */
 
 long RNMaxMemoryUsage(void);
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

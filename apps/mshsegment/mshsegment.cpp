@@ -6,10 +6,10 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Shapes/R3Shapes.h"
 #include "segmentation.cpp"
-//#include "gco/gco.h"
-
 
 
 

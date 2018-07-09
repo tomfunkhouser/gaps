@@ -1,4 +1,11 @@
 /* Include file for the R3 scene element class */
+#ifndef __R3__SCENE__ELEMENT__H__
+#define __R3__SCENE__ELEMENT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -109,3 +116,9 @@ Node(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

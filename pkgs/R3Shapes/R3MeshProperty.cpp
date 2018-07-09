@@ -10,6 +10,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 // Private variables
 
 static int next_property_name = 1;
@@ -1745,3 +1751,7 @@ ResetStatistics(void)
   median = RN_UNKNOWN;
   l2norm = RN_UNKNOWN;
 }
+
+
+
+} // namespace gaps

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public draw flags */
 
 const R2DrawFlags R2_EDGES_DRAW_FLAG                    (0x001);
@@ -36,4 +42,4 @@ R2StopShape()
 
 
 
-
+} // namespace gaps

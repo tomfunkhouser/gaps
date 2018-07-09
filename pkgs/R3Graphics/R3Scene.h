@@ -1,4 +1,11 @@
 /* Include file for the R3 scene class */
+#ifndef __R3__SCENE__H__
+#define __R3__SCENE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -434,4 +441,10 @@ SetFilename(const char *filename)
 }
 
 
-  
+
+// End namespace
+}
+
+
+// End include guard
+#endif

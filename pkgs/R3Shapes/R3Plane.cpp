@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Plane R3null_plane(0.0, 0.0, 0.0, 0.0);
@@ -293,5 +299,4 @@ Reset(const R3Point& point, const R3Vector& normal)
 
 
 
-
-
+} // namespace gaps

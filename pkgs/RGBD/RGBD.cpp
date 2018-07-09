@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 static int RGBD_active_count = 0;
@@ -39,6 +45,4 @@ void RGBDStop(void)
 
 
 
-
-
-
+} // namespace gaps

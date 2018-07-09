@@ -1,4 +1,14 @@
 // Include file for polynomial class
+#ifndef __RN__POLYNOMIAL__H__
+#define __RN__POLYNOMIAL__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Begin namespace 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -623,6 +633,9 @@ operator/(const RNPolynomial& polynomial, RNScalar a)
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

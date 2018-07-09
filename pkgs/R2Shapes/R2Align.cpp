@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 R2Point 
 R2Centroid(const RNArray<R2Point *>& points, const RNScalar *weights)
 {
@@ -343,3 +349,4 @@ R2AlignPoints(int npoints, R2Point *points1, R2Point *points2, const RNScalar *w
 
 
 
+} // namespace gaps

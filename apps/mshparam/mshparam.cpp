@@ -4,6 +4,8 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Shapes/R3Shapes.h"
 
 
@@ -404,6 +406,7 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
 
   // Allocate images for texture channels (initialized with zeroes)
   R2Grid mask_channel(width, height, texcoords_bbox);
+  R2Grid face_channel(mask_channel);
   R2Grid px_channel(mask_channel);
   R2Grid py_channel(mask_channel);
   R2Grid pz_channel(mask_channel);
@@ -447,6 +450,7 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
     t2[0] = width * (uv2[0] - texcoords_xmin) / texcoords_xlength;
     t2[1] = height * (uv2[1] - texcoords_ymin) / texcoords_ylength;
     mask_channel.RasterizeGridTriangle(t0, t1, t2, 1.0, R2_GRID_REPLACE_OPERATION);
+    face_channel.RasterizeGridTriangle(t0, t1, t2, i+1, R2_GRID_REPLACE_OPERATION);
     category_channel.RasterizeGridTriangle(t0, t1, t2, category, category, category, R2_GRID_REPLACE_OPERATION);
     segment_channel.RasterizeGridTriangle(t0, t1, t2, segment, segment, segment, R2_GRID_REPLACE_OPERATION);
     material_channel.RasterizeGridTriangle(t0, t1, t2, material, material, material, R2_GRID_REPLACE_OPERATION);
@@ -521,6 +525,8 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
   char filename[1024];
   sprintf(filename, "%s/mask.png", directory_name);
   if (!mask_channel.WriteFile(filename)) return 0;
+  sprintf(filename, "%s/face.pfm", directory_name);
+  if (!face_channel.WriteFile(filename)) return 0;
   sprintf(filename, "%s/px.png", directory_name);
   if (!px_channel.WriteFile(filename)) return 0;
   sprintf(filename, "%s/py.png", directory_name);

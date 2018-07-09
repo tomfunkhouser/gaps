@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variable */
 
 static FILE *RNerror_file = stderr;
@@ -150,8 +156,7 @@ void RNWarning(const char *fmt, ...)
 	}
     }
 }
-    
 
 
 
-
+} // namespace gaps

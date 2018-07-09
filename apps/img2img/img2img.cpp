@@ -1,8 +1,10 @@
-// Source file for the GLUT programs
+// Source file for the image conversion program
 
 
-// RING include files
+// Include files
 
+namespace gaps {}
+using namespace gaps;
 #include "R2Shapes/R2Shapes.h"
 
 

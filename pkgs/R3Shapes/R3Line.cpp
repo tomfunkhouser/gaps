@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Line R3null_line(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
@@ -161,4 +167,4 @@ operator==(const R3Line& line) const
 
 
 
-
+} // namespace gaps

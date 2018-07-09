@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R3DirectionalLight R3null_directional_light;
@@ -246,3 +252,4 @@ Draw(int i) const
 
 
 
+} // namespace gaps

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 R3Polyline::
 R3Polyline(void)
   : vertex_positions(NULL),
@@ -508,3 +514,7 @@ Outline(const R3DrawFlags flags) const
     R3LoadPoint(VertexPosition(i));
   glEnd();
 }
+
+
+
+} // namespace gaps

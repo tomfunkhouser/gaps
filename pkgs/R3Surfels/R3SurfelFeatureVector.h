@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel vector vector class */
+#ifndef __R3__SURFEL__FEATURE__VECTOR__H__
+#define __R3__SURFEL__FEATURE__VECTOR__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -135,6 +145,9 @@ EuclideanDistance(const R3SurfelFeatureVector& vector) const
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

@@ -8,6 +8,14 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
+// Functions
+
 RNDenseMatrix::
 RNDenseMatrix(void)
   : values(NULL), nrows(0), ncols(0)
@@ -729,3 +737,4 @@ WriteSquareBinaryFile(const char *filename) const
 
 
 
+} // namespace gaps

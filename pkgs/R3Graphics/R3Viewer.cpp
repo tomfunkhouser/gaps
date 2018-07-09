@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -478,15 +484,4 @@ ViewportArea(const R3Shape& shape) const
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

@@ -1,4 +1,11 @@
 /* Include file for the R3 scene reference class */
+#ifndef __R3__SCENE__REFERENCE__H__
+#define __R3__SCENE__REFERENCE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -168,3 +175,9 @@ SetData(void *data)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

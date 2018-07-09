@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int R2InitDistance()
@@ -495,8 +501,4 @@ RNLength R2Distance(const R2Circle& circle1, const R2Circle& circle2)
 
 
 
-
-
-
-
-
+} // namespace gaps

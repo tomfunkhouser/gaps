@@ -1,4 +1,11 @@
 /* Include file for the RN rgb class */
+#ifndef __RN__RGB__H__
+#define __RN__RGB__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -271,4 +278,9 @@ RNLoadRgb(const RNRgb& rgb)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Ray R2null_ray(0.0, 0.0, 0.0, 0.0);
@@ -138,14 +144,4 @@ InverseTransform (const R2Transformation& transformation)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

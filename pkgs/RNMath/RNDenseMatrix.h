@@ -1,4 +1,11 @@
 // Include file for dense matrix class
+#ifndef __RN__DENSE__MATRIX__H__
+#define __RN__DENSE__MATRIX__H__
+
+
+
+// Begin namespace 
+namespace gaps {
 
 
 
@@ -105,3 +112,9 @@ operator[](int i)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

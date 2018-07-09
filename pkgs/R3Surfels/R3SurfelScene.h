@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel scene class */
+#ifndef __R3__SURFEL__SCENE__H__
+#define __R3__SURFEL__SCENE__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -433,3 +443,9 @@ SetDirty(void)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

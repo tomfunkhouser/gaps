@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel feature evaluation functions */
+#ifndef __R3__SURFEL__FEATURE_EVALUATION__H__
+#define __R3__SURFEL__FEATURE_EVALUATION__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -39,4 +49,9 @@ int EvaluateFeatures(R3SurfelScene *scene);
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for the R3 triangle class */
+#ifndef __R3__TRIANGLE__H__
+#define __R3__TRIANGLE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -374,3 +381,9 @@ IsDegenerate(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

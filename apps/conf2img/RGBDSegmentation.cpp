@@ -8,6 +8,8 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "segmentation.cpp"
 
 

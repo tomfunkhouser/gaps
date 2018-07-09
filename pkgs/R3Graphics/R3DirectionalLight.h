@@ -1,4 +1,11 @@
 /* Include file for the R3 light class */
+#ifndef __R3__DIRECTIONAL__LIGHT__H__
+#define __R3__DIRECTIONAL__LIGHT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -70,4 +77,9 @@ Direction(void) const
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

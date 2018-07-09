@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNBoolean R2Parallel(const R2Vector& vector1, const R2Vector& vector2)
 {
     // Return whether two vectors are coincident (or anti-coincident)
@@ -92,4 +98,4 @@ RNBoolean R2Parallel(const R2Span& span1, const R2Span& span2)
 
 
 
-
+} // namespace gaps

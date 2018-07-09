@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel object property class */
+#ifndef __R3__SURFEL__OBJECT__PROPERTY__H__
+#define __R3__SURFEL__OBJECT__PROPERTY__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -163,3 +173,9 @@ UpdateBeforeRemove(R3SurfelScene *scene)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

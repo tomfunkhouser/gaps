@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int R2InitSpan()
@@ -286,4 +292,4 @@ operator==(const R2Span& span) const
 
 
 
-
+} // namespace gaps

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Sphere R3null_sphere(R3Point(0.0, 0.0, 0.0), -1.0);
@@ -242,4 +248,4 @@ Transform (const R3Transformation& transformation)
 
 
 
-
+} // namespace gaps

@@ -14,6 +14,12 @@ static int RNmath_active_count = 0;
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 int RNInitMath(void)
 {
     // Check whether are already initialized 
@@ -39,4 +45,4 @@ void RNStopMath(void)
 
 
 
-
+} // namespace gaps

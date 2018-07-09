@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Member functions */
 
 R3SceneReference::
@@ -154,3 +160,4 @@ Draw(const R3DrawFlags draw_flags, const RNArray<R3Material *> *mats) const
 
 
 
+} // namespace gaps

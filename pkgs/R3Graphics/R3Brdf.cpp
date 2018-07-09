@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R3Brdf R3null_brdf;
@@ -396,15 +402,4 @@ Draw(RNBoolean force) const
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

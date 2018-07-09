@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel object set class */
+#ifndef __R3__SURFEL__OBJECT__SET__H__
+#define __R3__SURFEL__OBJECT__SET__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -122,3 +132,9 @@ ObjectIndex(R3SurfelObject *object) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

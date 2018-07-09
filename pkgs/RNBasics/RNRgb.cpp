@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 RNRgb RNnull_rgb(0.0, 0.0, 0.0);
@@ -163,5 +169,4 @@ operator/=(RNScalar a)
 
 
 
-
-
+} // namespace gaps

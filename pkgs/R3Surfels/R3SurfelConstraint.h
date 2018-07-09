@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel constraint class */
+#ifndef __R3__SURFEL__CONSTRAINT__H__
+#define __R3__SURFEL__CONSTRAINT__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -439,6 +449,9 @@ private:
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

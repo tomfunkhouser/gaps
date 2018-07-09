@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Class type definitions */
 
 RN_CLASS_TYPE_DEFINITIONS(R3Ellipsoid);
@@ -239,5 +245,4 @@ UpdateBBox(void)
 
 
 
-
-
+} // namespace gaps

@@ -1,5 +1,4 @@
 /* Include file for R3 shapes module */
-
 #ifndef __R3__SHAPES__H__
 #define __R3__SHAPES__H__
 
@@ -13,6 +12,7 @@
 
 /* Class declarations */
 
+namespace gaps {
 class R3Vector;
 class R3Point;
 class R3Line;
@@ -46,6 +46,7 @@ class R3Polyline;
 class R3CatmullRomSpline;
 class R3PlanarGrid;
 class R3Grid;
+}
 
 
 
@@ -152,8 +153,10 @@ class R3Grid;
 
 /* Initialization functions */
 
+namespace gaps {
 int R3InitShapes(void);
 void R3StopShapes(void);
+}
 
 
 

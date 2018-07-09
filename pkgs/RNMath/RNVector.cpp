@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNVector::
 RNVector(void)
   : values(NULL), nvalues(0)
@@ -300,5 +306,4 @@ RNVector operator/(const RNVector& vector, RNScalar a)
 
 
 
-
-
+} // namespace gaps

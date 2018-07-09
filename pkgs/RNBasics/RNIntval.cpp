@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const RNInterval RNnull_interval(FLT_MAX, -FLT_MAX);
@@ -345,3 +351,7 @@ RNInterval floor(RNInterval x)
 
 #endif
 
+
+
+
+} // namespace gaps

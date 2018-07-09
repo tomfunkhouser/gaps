@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 R3Surfel::
@@ -73,3 +79,4 @@ R3Surfel(float x, float y, float z, float nx, float ny, float nz,
 
 
 
+} // namespace gaps

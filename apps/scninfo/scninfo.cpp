@@ -6,6 +6,8 @@
 // Include files 
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 
 

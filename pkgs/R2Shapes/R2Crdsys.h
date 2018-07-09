@@ -1,7 +1,14 @@
 /* Include file for the GAPS coordinate system class */
+#ifndef __R2__CRDSYS__H__
+#define __R2__CRDSYS__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitCoordinateSystem();
@@ -99,3 +106,9 @@ Outline(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

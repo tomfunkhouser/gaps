@@ -1,7 +1,14 @@
 /* Include file for the R2 curve class */
+#ifndef __R2__CURVE__H__
+#define __R2__CURVE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitCurve();
@@ -27,3 +34,9 @@ class R2Curve : public R2Shape {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

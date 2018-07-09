@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -34,4 +40,4 @@ RNFlags(void)
 
 
 
-
+} // namespace gaps

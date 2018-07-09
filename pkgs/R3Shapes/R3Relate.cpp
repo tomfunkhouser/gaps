@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 R3Point 
 R3Interpolate(const R3Point& point1, const R3Point& point2, RNScalar t1, RNScalar t2, RNScalar t)
 {
@@ -190,3 +196,4 @@ R3Splits(const R3Plane& plane, const R3Triangle& triangle)
 
     
 
+} // namespace gaps

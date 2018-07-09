@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Xlib variables */
 
 #if (RN_2D_GRFX == RN_XLIB)
@@ -177,3 +183,5 @@ RNGrfxError(const char *message)
 }
 
 
+
+} // namespace gaps

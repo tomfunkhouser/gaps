@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Class type definitions */
 
 RN_CLASS_TYPE_DEFINITIONS(R3Shape);
@@ -378,5 +384,4 @@ R3_SHAPE_RELATIONSHIP_DEFINITIONS(R3Cone);
 
 
 
-
-
+} // namespace gaps

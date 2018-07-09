@@ -1,4 +1,11 @@
 /* Include file for GAPS perpendicular utility */
+#ifndef __R2__PERPENDICULAR__H__
+#define __R2__PERPENDICULAR__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -76,3 +83,9 @@ inline RNBoolean R2Perpendicular(const R2Span& span, const R2Ray& ray)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

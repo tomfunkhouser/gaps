@@ -1,4 +1,6 @@
 /* Include file for machine dependent switches */
+#ifndef __RN__COMPAT__H__
+#define __RN__COMPAT__H__
 
 
 
@@ -117,6 +119,24 @@ Compatability definitions
 #  include <stdint.h>
 #endif
 
+/* This is needed to avoid error in compiling glu.h in some installations of cygwin */
+#ifdef __CYGWIN__
+# ifndef CALLBACK
+#   if defined(_ARM_)
+#     define CALLBACK
+#   else
+#     define CALLBACK __stdcall
+#   endif
+# endif
+#endif
+
+
+
+/************************************************************************* 
+Basic type definitions
+*************************************************************************/
+
+namespace gaps {
 #if (RN_CC == RN_MSVC)
   typedef char                RNChar8; 
   typedef unsigned char       RNUChar8; 
@@ -140,16 +160,10 @@ Compatability definitions
   typedef float               RNScalar32;
   typedef double              RNScalar64;
 #endif
+}
 
 
-/* This is needed to avoid error in compiling glu.h in some installations of cygwin */
-#ifdef __CYGWIN__
-# ifndef CALLBACK
-#   if defined(_ARM_)
-#     define CALLBACK
-#   else
-#     define CALLBACK __stdcall
-#   endif
-# endif
+
+// End include guard
 #endif
 

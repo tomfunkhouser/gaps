@@ -1,4 +1,11 @@
 // Include file for abstract matrix class
+#ifndef __RN__DENSE__LU__MATRIX__H__
+#define __RN__DENSE__LU__MATRIX__H__
+
+
+
+// Begin namespace 
+namespace gaps {
 
 
 
@@ -32,4 +39,9 @@ private:
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for GAPS scalar class */
+#ifndef __RN__SCALAR__H__
+#define __RN__SCALAR__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -316,3 +323,9 @@ RNIsLessOrEqual(RNScalar scalar1, RNScalar scalar2, RNMagnitude epsilon = RN_EPS
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

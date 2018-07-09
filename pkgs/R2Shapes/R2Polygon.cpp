@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -748,11 +754,4 @@ ReadTheraFile(const char *filename)
 
 
 
-
-
-
-
-
-
-
-
+} // namespace gaps

@@ -1,4 +1,11 @@
 /* Include file for GAPS basics */
+#ifndef __RN__BASE__H__
+#define __RN__BASE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -48,3 +55,12 @@ extern RNMark RNmark;
 /* Useful functions */
 
 extern void RNBreakDebug(void);
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

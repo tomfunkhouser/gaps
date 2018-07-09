@@ -1,4 +1,11 @@
 // Include file for abstract matrix class
+#ifndef __RN__MATRIX__H__
+#define __RN__MATRIX__H__
+
+
+
+// Begin namespace 
+namespace gaps {
 
 
 
@@ -24,4 +31,9 @@ public:
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

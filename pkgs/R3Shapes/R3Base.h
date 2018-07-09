@@ -1,4 +1,11 @@
 /* Include file for GAPS basic stuff */
+#ifndef __R3__BASE__H__
+#define __R3__BASE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -31,3 +38,12 @@ typedef RNFlags R3DrawFlags;
 #define R3_DEFAULT_DRAW_FLAGS                 (R3_EVERYTHING_DRAW_FLAGS & ~R3_EDGES_DRAW_FLAG)
 
 #define R3_VERTEX_SHARED_FLAG                (0x1000)
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,7 +1,11 @@
 // Include file for KDTree class
+#ifndef __R3__KDTREE__H__
+#define __R3__KDTREE__H__
 
-#ifndef __R3KDTREE__H__
-#define __R3KDTREE__H__
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -200,9 +204,16 @@ public:
 
 
 
+// End namespace
+}
+
+
+
 // Include templated definitions
 
 #include "R3Kdtree.cpp"
 
 
+
+// End include guard
 #endif

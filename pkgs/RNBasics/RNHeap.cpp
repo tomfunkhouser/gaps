@@ -1,5 +1,4 @@
 // Source file for the heap class 
-
 #ifndef __RN__HEAP__C__
 #define __RN__HEAP__C__
 
@@ -8,6 +7,12 @@
 // Include files
 
 #include "RNBasics.h"
+
+
+
+// Namespace
+
+namespace gaps {
 
 
 
@@ -563,13 +568,7 @@ IsValid(void)
 
 
 
+} // namespace gaps
+
+
 #endif
-
-
-
-
-
-
-
-
-

@@ -6,6 +6,8 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "R3SurfelViewer.h"
@@ -65,8 +67,8 @@ CreateObject(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    if (pointset) delete pointset; pointset = NULL;
-    if (grid) delete grid; grid = NULL;
+    if (pointset) { delete pointset; pointset = NULL; }
+    if (grid) { delete grid; grid = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
     R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
@@ -93,7 +95,7 @@ CreateObject(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    if (pointset) delete pointset; pointset = NULL;
+    if (pointset) { delete pointset; pointset = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
     R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
@@ -118,7 +120,7 @@ CreateObject(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    if (pointset) delete pointset; pointset = NULL;
+    if (pointset) { delete pointset; pointset = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
     R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);

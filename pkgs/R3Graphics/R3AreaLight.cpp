@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R3AreaLight R3null_area_light;
@@ -406,3 +412,4 @@ Draw(int i) const
 
 
 
+} // namespace gaps

@@ -1,4 +1,11 @@
 /* Include file for the GAPS point class */
+#ifndef __R3__POINT__H__
+#define __R3__POINT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -258,4 +265,9 @@ operator[] (RNDimension dim)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

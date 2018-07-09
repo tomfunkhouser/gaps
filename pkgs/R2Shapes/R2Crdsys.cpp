@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2CoordSystem R2xy_coordinate_system(R2Point(0.0, 0.0), R2Diad(R2Vector(1.0, 0.0), R2Vector(0.0, 1.0)));
@@ -150,4 +156,4 @@ InverseTransform (const R2Transformation& transformation)
 
 
 
-
+} // namespace gaps

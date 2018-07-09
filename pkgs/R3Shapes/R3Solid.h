@@ -1,4 +1,11 @@
 /* Include file for the R3 solid class */
+#ifndef __R3__SOLID__H__
+#define __R3__SOLID__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -23,3 +30,9 @@ class R3Solid : public R3Shape {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

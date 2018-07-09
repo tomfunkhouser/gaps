@@ -1,4 +1,11 @@
 /* Include file for the R3 shape class */
+#ifndef __R3__SHAPE__H__
+#define __R3__SHAPE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -116,4 +123,9 @@ const R3Box R3ShapeBBox(const void *data, void *appl);
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

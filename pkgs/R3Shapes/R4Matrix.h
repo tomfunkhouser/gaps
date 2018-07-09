@@ -1,4 +1,11 @@
 /* Include file for the GAPS matrix class */
+#ifndef __R4__MATRIX__H__
+#define __R4__MATRIX__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -220,3 +227,9 @@ operator[] (int i)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

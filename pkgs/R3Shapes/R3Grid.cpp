@@ -17,6 +17,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 // Useful constants
 
 const float R3_GRID_KEEP_VALUE = R2_GRID_KEEP_VALUE;
@@ -5247,5 +5253,4 @@ DrawSlice(RNDimension dim, int coord) const
 
 
 
-
-
+} // namespace gaps

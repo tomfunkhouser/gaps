@@ -10,9 +10,29 @@
 
 
 
+// Usage directives
+
+#define RN_USE_PNG
+
+#ifdef RN_NO_PNG
+#undef RN_USE_PNG
+#endif
+
+
+
 // Include files
 
 #include "R2Shapes.h"
+
+#ifdef RN_USE_PNG
+# include "png/png.h"
+#endif
+
+
+
+// Namespace
+
+namespace gaps {
 
 
 
@@ -3877,19 +3897,6 @@ WriteGrid(FILE *fp) const
 // PNG READ/WRITE
 ////////////////////////////////////////////////////////////////////////
 
-#define RN_USE_PNG
-#ifdef RN_NO_PNG
-#undef RN_USE_PNG
-#endif
-
-
-
-#ifdef RN_USE_PNG
-# include "png/png.h"
-#endif
-
-
-
 int R2Grid::
 ReadPNGFile(const char *filename)
 {
@@ -4212,4 +4219,4 @@ Print(FILE *fp) const
 
 
 
-
+} // namespace gaps

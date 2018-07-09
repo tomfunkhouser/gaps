@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel feature set class */
+#ifndef __R3__SURFEL__FEATURE__SET__H__
+#define __R3__SURFEL__FEATURE__SET__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -90,5 +100,9 @@ operator[](int k) const
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

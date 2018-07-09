@@ -1,4 +1,11 @@
 /* Include file for the R3 brdf class */
+#ifndef __R3__BRDF__H__
+#define __R3__BRDF__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -330,3 +337,9 @@ Unload(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

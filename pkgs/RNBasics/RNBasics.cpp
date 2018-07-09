@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 static int RNbasics_active_count = 0;
@@ -39,4 +45,4 @@ void RNStopBasics(void)
 
 
 
-
+} // namespace gaps

@@ -1,5 +1,4 @@
 /* Include file for GAPS basics module */
-
 #ifndef __RN__BASICS__H__
 #define __RN__BASICS__H__
 
@@ -96,8 +95,10 @@
 
 /* Initialization functions */
 
+namespace gaps {
 int RNInitBasics(void);
 void RNStopBasics(void);
+}
 
 
 

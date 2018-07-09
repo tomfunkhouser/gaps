@@ -1,5 +1,4 @@
 /* Include file for RN graphics module */
-
 #ifndef __RN__GRFX__H__
 #define __RN__GRFX__H__
 
@@ -62,7 +61,11 @@
 #endif
 
 
+/* Begin namespace */
+namespace gaps {
 
+
+  
 /* Initialization functions */
 
 int RNInitGrfx(void);
@@ -178,11 +181,9 @@ void RNGrfxError(const char *message);
 
 
 
+// End namespace
+}
+
+
+// End include guard
 #endif
-
-
-
-
-
-
-

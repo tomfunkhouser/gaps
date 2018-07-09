@@ -8,6 +8,11 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
 
 /* Public draw flags */
 
@@ -43,4 +48,4 @@ void R3StopBase()
 
 
 
-
+} // namespace gaps

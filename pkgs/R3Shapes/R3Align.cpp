@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 R3Box
 R3BoundingBox(const RNArray<R3Point *>& points)
 {
@@ -590,3 +596,6 @@ R3EstimatePlaneWithRansac(int npoints, R3Point *points, const RNScalar *weights,
 
 }
 
+
+
+} // namespace gaps

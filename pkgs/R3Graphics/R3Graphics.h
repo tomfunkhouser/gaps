@@ -1,5 +1,4 @@
 /* Include file for R3 graphics module */
-
 #ifndef __R3__GRAPHICS__H__
 #define __R3__GRAPHICS__H__
 
@@ -7,9 +6,11 @@
 
 /* Class declarations */
 
+namespace gaps {
 class R3Scene;
 class R3SceneNode;
 class R3SceneElement;
+}
 
 
 
@@ -57,20 +58,13 @@ class R3SceneElement;
 
 /* Initialization functions */
 
+namespace gaps{
 int R3InitGraphics(void);
 void R3StopGraphics(void);
+}
 
 
 
 #endif
-
-
-
-
-
-
-
-
-
 
 

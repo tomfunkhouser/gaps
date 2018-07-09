@@ -2,7 +2,18 @@
 // Include file for RGBD utility functions
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef __RGBD__UTIL__H__
+#define __RGBD__UTIL__H__
 
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+
+  
 
 ////////////////////////////////////////////////////////////////////////
 // High-level Image Channel Creation Functions
@@ -78,3 +89,13 @@ int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres
 R3Affine RGBDAlignmentTransformation(RGBDImage *image0, RGBDImage *image1, 
   RNLength start_max_distance = 0.25, RNLength end_max_distance = 0.05, int max_iterations = 16);
 #endif
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif
+  

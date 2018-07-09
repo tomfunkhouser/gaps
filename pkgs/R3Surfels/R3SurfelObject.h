@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel object class */
+#ifndef __R3__SURFEL__OBJECT__H__
+#define __R3__SURFEL__OBJECT__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -359,3 +369,9 @@ LabelAssignment(int k) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

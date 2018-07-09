@@ -1,7 +1,14 @@
 /* Include file for GAPS parallel utility */
+#ifndef __R2__PARALLEL__H__
+#define __R2__PARALLEL__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Function declarations */
 
 RNBoolean R2Parallel(const R2Vector& vector1, const R2Vector& vector2);
@@ -76,3 +83,9 @@ inline RNBoolean R2Parallel(const R2Span& span, const R2Ray& ray)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

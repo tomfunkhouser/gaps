@@ -2,10 +2,54 @@
 
 
 
+// Usage directives
+
+#define RN_USE_JPEG
+#define RN_USE_PNG
+
+#ifdef RN_NO_JPEG
+#undef RN_USE_JPEG
+#endif
+
+#ifdef RN_NO_PNG
+#undef RN_USE_PNG
+#endif
+
+#ifdef RN_NO_TIFF
+#undef RN_USE_TIFF
+#endif
+
+
+
 // Include files
 
 #include "R2Shapes.h"
 #include "ctype.h"
+
+#ifdef RN_USE_JPEG
+  extern "C" { 
+#   define XMD_H // Otherwise, a conflict with INT32
+#   if RN_OS == RN_WINDOWS
+#     define HAVE_BOOLEAN
+#     undef FAR // Otherwise, a conflict with windows.h
+#   endif
+#   include "jpeg/jpeglib.h"
+  };
+#endif
+
+#ifdef RN_USE_PNG
+# include "png/png.h"
+#endif
+
+#ifdef RN_USE_TIFF
+# include "tiff/tiffio.h"
+#endif
+
+
+
+// Namespace
+
+namespace gaps {
 
 
 
@@ -1135,27 +1179,6 @@ ReadPFM(const char *filename)
 // jpeg I/O
 ////////////////////////////////////////////////////////////////////////
 
-#define RN_USE_JPEG
-
-#ifdef RN_NO_JPEG
-#undef RN_USE_JPEG
-#endif
-
-
-
-#ifdef RN_USE_JPEG
-  extern "C" { 
-#   define XMD_H // Otherwise, a conflict with INT32
-#   if RN_OS == RN_WINDOWS
-#     define HAVE_BOOLEAN
-#     undef FAR // Otherwise, a conflict with windows.h
-#   endif
-#   include "jpeg/jpeglib.h"
-  };
-#endif
-
-
-
 int R2Image::
 ReadJPEG(const char *filename)
 {
@@ -1276,18 +1299,6 @@ WriteJPEG(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 // TIFF I/O
 ////////////////////////////////////////////////////////////////////////
-
-#ifdef RN_NO_TIFF
-#undef RN_USE_TIFF
-#endif
-
-
-
-#ifdef RN_USE_TIFF
-# include "tiff/tiffio.h"
-#endif
-
-
 
 int R2Image::
 ReadTIFF(const char *filename)
@@ -1418,19 +1429,6 @@ WriteTIFF(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 // PNG I/O
 ////////////////////////////////////////////////////////////////////////
-
-#define RN_USE_PNG
-#ifdef RN_NO_PNG
-#undef RN_USE_PNG
-#endif
-
-
-
-#ifdef RN_USE_PNG
-# include "png/png.h"
-#endif
-
-
 
 int R2Image::
 ReadPNG(const char *filename)
@@ -1834,14 +1832,4 @@ ReadGRD(const char *filename)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

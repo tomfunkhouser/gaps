@@ -7,6 +7,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNMatrix::
 RNMatrix(void)
 {
@@ -28,7 +34,4 @@ RNMatrix::
 
 
 
-
-
-
-
+} // namespace gaps

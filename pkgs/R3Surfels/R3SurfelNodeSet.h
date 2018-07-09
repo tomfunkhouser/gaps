@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel node set class */
+#ifndef __R3__SURFEL__NODE__SET__H__
+#define __R3__SURFEL__NODE__SET__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -172,3 +182,9 @@ NodeIndex(R3SurfelNode *node) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

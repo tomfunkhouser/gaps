@@ -1,4 +1,11 @@
 /* Include file for the R3 surfel class */
+#ifndef __R3__SURFEL__H__
+#define __R3__SURFEL__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -543,3 +550,9 @@ RadiusPtr(void)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

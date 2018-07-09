@@ -1,4 +1,11 @@
 /* Include file for R3 miscelleaneous relationship utility */
+#ifndef __R3__RELATE__H__
+#define __R3__RELATE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -17,3 +24,12 @@ RNBoolean R3Abuts(const R3Box& box1, const R3Box& box2);
 int R3Splits(const R3Plane& plane, const R3Span& span);
 int R3Splits(const R3Plane& plane, const R3Span& span, R3Span *below_result, R3Span *above_result = NULL);
 int R3Splits(const R3Plane& plane, const R3Triangle& triangle);
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

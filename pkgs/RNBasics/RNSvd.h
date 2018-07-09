@@ -1,4 +1,11 @@
 // Include file for SVD functions
+#ifndef __RN__SVD__H__
+#define __RN__SVD__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -24,3 +31,11 @@ extern void RNSvdSolve(int m, int n,
   const RNScalar *a, const RNScalar *b,
   RNScalar *x, RNScalar eps = RN_EPSILON);
 
+
+  
+// End namespace
+}
+
+
+// End include guard
+#endif

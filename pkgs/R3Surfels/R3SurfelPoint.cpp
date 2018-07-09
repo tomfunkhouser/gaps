@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 R3SurfelPoint::
@@ -173,3 +179,4 @@ SurfelPointPosition(R3SurfelPoint *point, void *)
 
 
 
+} // namespace gaps

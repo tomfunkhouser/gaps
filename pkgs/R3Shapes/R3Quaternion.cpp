@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Quaternion R3null_quaternion(0.0, 0.0, 0.0, 0.0);
@@ -503,4 +509,4 @@ Conjugate(void)
 
 
 
-
+} // namespace gaps

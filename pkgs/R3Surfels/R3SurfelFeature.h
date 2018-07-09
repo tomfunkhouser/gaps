@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel feature class */
+#ifndef __R3__SURFEL__FEATURE__H__
+#define __R3__SURFEL__FEATURE__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -193,3 +203,9 @@ Data(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

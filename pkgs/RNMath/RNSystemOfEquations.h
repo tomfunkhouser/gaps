@@ -1,13 +1,58 @@
 // Include file for system of equation class
+#ifndef __RN__SYSTEM__OF__EQUATIONS__H__
+#define __RN__SYSTEM__OF__EQUATIONS__H__
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Just making sure
+// Library flags
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __RN_SYSTEM_OF_EQUATIONS__
-#define __RN_SYSTEM_OF_EQUATIONS__
+#ifdef RN_NO_CERES
+#undef RN_USE_CERES
+#endif
+
+#ifdef RN_NO_SPLM
+#undef RN_USE_SPLM
+#endif
+
+#ifdef RN_NO_MINPACK
+#undef RN_USE_MINPACK
+#endif
+
+#ifdef RN_NO_CSPARSE
+#undef RN_USE_CSPARSE
+#endif
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Library includes
+////////////////////////////////////////////////////////////////////////
+
+#ifdef RN_USE_CERES
+#include "ceres/ceres.h"
+#endif
+
+#ifdef RN_USE_SPLM
+#include "splm/splm.h"
+#endif
+
+#ifdef RN_USE_MINPACK
+#include "minpack/minpack.h"
+#endif
+
+#ifdef RN_USE_CSPARSE
+#include "CSparse/CSparse.h"
+#endif
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Begin namespace 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -189,12 +234,7 @@ enum {
 // CERES Stuff
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef RN_NO_CERES
-#undef RN_USE_CERES
-#endif
 #ifdef RN_USE_CERES
-
-#include "ceres/ceres.h"
 
 class CeresCostFunction : public ceres::CostFunction {
 private:
@@ -373,12 +413,7 @@ MinimizeCERES(const RNSystemOfEquations *system, RNScalar *io, RNScalar toleranc
 // SPLM Stuff
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef RN_NO_SPLM
-#undef RN_USE_SPLM
-#endif
 #ifdef RN_USE_SPLM
-
-#include "splm/splm.h"
 
 static void
 SPLMFunction(double *x, double *y, int n, int m, void *data)
@@ -525,13 +560,7 @@ MinimizeSPLM(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance
 // MINPACK STUFF
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef RN_NO_MINPACK
-#undef RN_USE_MINPACK
-#endif
 #ifdef RN_USE_MINPACK
-
-#include "minpack/minpack.h"
-
 
 static int 
 MinpackFunction(void *data, int m, int n, const double *x, double *y, int iflag)
@@ -713,12 +742,7 @@ MinimizeMINPACK(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolera
 // CSPARSE Stuff
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef RN_NO_CSPARSE
-#undef RN_USE_CSPARSE
-#endif
 #ifdef RN_USE_CSPARSE
-
-#include "CSparse/CSparse.h"
 
 static int 
 MinimizeCSPARSE(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance)
@@ -844,4 +868,9 @@ Minimize(RNScalar *x, int solver, RNScalar tolerance) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
 #endif

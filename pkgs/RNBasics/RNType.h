@@ -1,4 +1,11 @@
 /* Include file GAPS class type identifier */
+#ifndef __RN__TYPE__H__
+#define __RN__TYPE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -90,3 +97,9 @@ Name(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

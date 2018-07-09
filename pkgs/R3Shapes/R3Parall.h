@@ -1,4 +1,11 @@
 /* Include file for GAPS parallel utility */
+#ifndef __R3__PARALLEL__H__
+#define __R3__PARALLEL__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -118,5 +125,9 @@ inline RNBoolean R3Parallel(const R3Plane& plane, const R3Span& span)
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

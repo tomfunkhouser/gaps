@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Box R2zero_box(0.0, 0.0, 0.0, 0.0);
@@ -390,12 +396,4 @@ Reset(const R2Point& min, const R2Point& max)
 
 
 
-
-
-
-
-
-
-
-
-
+} // namespace gaps

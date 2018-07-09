@@ -1,7 +1,14 @@
 // Include file for image class
+#ifndef __R2__IMAGE__H__
+#define __R2__IMAGE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 // Class definition
 
 class R2Image {
@@ -151,12 +158,9 @@ Pixel(int x, int y) const
 
 
 
+// End namespace
+}
 
 
-
-
-
-
-
-
-
+// End include guard
+#endif

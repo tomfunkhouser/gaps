@@ -9,6 +9,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNArray<R2Span *> *
 R2ReadSpans(RNArray<R2Span *>& spans, const char *filename)
 {
@@ -229,3 +235,4 @@ R2ReadXFigFile(RNArray<R2Span *>& spans, const char *filename)
     
 
 
+} // namespace gaps

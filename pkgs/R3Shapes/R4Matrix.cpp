@@ -28,6 +28,12 @@ efficiency ???
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R4Matrix R4null_matrix (
@@ -832,4 +838,4 @@ RNScalar R4MatrixDet4 (
 
 
 
-
+} // namespace gaps

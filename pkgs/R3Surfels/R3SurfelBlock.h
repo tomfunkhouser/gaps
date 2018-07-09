@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel block class */
+#ifndef __R3__SURFEL__BLOCK__H__
+#define __R3__SURFEL__BLOCK__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -467,3 +477,9 @@ UpdateBeforeRemove(R3SurfelDatabase *database)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

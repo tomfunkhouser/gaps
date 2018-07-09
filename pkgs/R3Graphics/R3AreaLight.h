@@ -1,4 +1,11 @@
 /* Include file for the R3 point light class */
+#ifndef __R3__AREA__LIGHT__H__
+#define __R3__AREA__LIGHT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -127,4 +134,9 @@ QuadraticAttenuation(void) const
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel node class */
+#ifndef __R3__SURFEL__NODE__H__
+#define __R3__SURFEL__NODE__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -304,7 +314,9 @@ UpdateBeforeRemove(R3SurfelScan *scan)
 
 
 
+// End namespace
+}
 
 
-
-
+// End include guard
+#endif

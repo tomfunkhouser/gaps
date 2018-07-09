@@ -1,4 +1,11 @@
 // Include file for mesh search tree class
+#ifndef __R3__MESH__SEARCH__TREE__H__
+#define __R3__MESH__SEARCH__TREE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -149,3 +156,9 @@ BBox(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

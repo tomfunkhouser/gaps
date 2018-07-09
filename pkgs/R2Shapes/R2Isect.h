@@ -1,7 +1,14 @@
 /* Include file for GAPS intersection utility */
+#ifndef __R2__INTERSECTS__H__
+#define __R2__INTERSECTS__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Function declarations */
 
 RNClassID R2Intersects(const R2Point& point1, const R2Point& point2);
@@ -267,4 +274,9 @@ inline RNClassID R2Intersects(const R2Circle& circle, const R2Box& box)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

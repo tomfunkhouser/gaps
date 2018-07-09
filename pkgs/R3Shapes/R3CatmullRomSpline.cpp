@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 R3CatmullRomSpline::
 R3CatmullRomSpline(void)
   : R3Polyline(),
@@ -249,3 +255,7 @@ Outline(RNScalar sample_spacing) const
     R3LoadPoint(PointPosition(u));
   glEnd();
 }
+
+
+
+} // namespace gaps

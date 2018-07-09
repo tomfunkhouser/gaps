@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 RNLength R3default_camera_xfov(RN_PI / 6.0);
@@ -552,3 +558,7 @@ int R3CompareCameras(const void *data1, const void *data2)
   else if (camera1->Value() < camera2->Value()) return 1;
   return 0;
 }
+
+
+
+} // namespace gaps

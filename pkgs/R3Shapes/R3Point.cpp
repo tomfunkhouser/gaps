@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Point R3null_point(0.0, 0.0, 0.0);
@@ -440,6 +446,4 @@ operator/(const R3Point& point, const RNScalar a)
 
 
 
-
-
-
+} // namespace gaps

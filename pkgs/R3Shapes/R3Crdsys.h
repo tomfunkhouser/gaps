@@ -1,4 +1,11 @@
 /* Include file for the GAPS coordinate system class */
+#ifndef __R3__CRDSYS__H__
+#define __R3__CRDSYS__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -102,3 +109,9 @@ Outline(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

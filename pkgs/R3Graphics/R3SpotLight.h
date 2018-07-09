@@ -1,4 +1,11 @@
 /* Include file for the R3 light class */
+#ifndef __R3__SPOT__LIGHT__H__
+#define __R3__SPOT__LIGHT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -84,5 +91,9 @@ CutOffAngle(void) const
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

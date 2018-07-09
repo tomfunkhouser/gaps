@@ -1,4 +1,11 @@
 /* Include file for the R3 oriented box class */
+#ifndef __R3__ORIENTED__BOX__H__
+#define __R3__ORIENTED__BOX__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -233,3 +240,9 @@ operator!=(const R3OrientedBox& box) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

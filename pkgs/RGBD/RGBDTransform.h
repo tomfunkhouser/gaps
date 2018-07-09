@@ -2,6 +2,23 @@
 // Include file for RGBD coordinate transformation functions
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef __RGBD__TRANSFORM__H__
+#define __RGBD__TRANSFORM__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+
+  
+
+////////////////////////////////////////////////////////////////////////
+// Function declarations
+////////////////////////////////////////////////////////////////////////
+
 extern int RGBDTransformTextureToSurface(const R2Point& texture_position, R2Point& surface_position, const RGBDSurface *surface);
 extern int RGBDTransformTextureToWorld(const R2Point& texture_position, R3Point& world_position, const RGBDSurface *surface);
 extern int RGBDTransformTextureToCamera(const R2Point& texture_position, R3Point& camera_position, const RGBDSurface *surface, const RGBDImage *image);
@@ -26,4 +43,12 @@ extern int RGBDTransformImageToTexture(const R2Point& image_position, R2Point& t
 extern int RGBDTransformImageToSurface(const R2Point& image_position, R2Point& surface_position, const RGBDImage *image, const RGBDSurface *surface);
 extern int RGBDTransformImageToWorld(const R2Point& image_position, R3Point& world_position, const RGBDImage *image);
 extern int RGBDTransformImageToCamera(const R2Point& image_position, R3Point& camera_position, const RGBDImage *image);
+  
 
+
+// End namespace
+}
+
+
+// End include guard
+#endif

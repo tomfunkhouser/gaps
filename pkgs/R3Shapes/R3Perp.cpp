@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNBoolean R3Perpendicular(const R3Vector& vector1, const R3Vector& vector2)
 {
     // Normalized vectors ???
@@ -129,7 +135,4 @@ RNBoolean R3Perpendicular(const R3Plane& plane1, const R3Plane& plane2)
 
 
 
-
-
-
-
+} // namespace gaps

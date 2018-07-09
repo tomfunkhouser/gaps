@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public 3DR variables -- must be set by the application ??? */
 
 #if (RN_3D_GRFX == RN_3DR)
@@ -54,4 +60,4 @@ void R3StopShapes(void)
 
 
 
-
+} // namespace gaps

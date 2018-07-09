@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Matrix R3null_matrix (
@@ -566,5 +572,4 @@ RNScalar R3MatrixDet3 (
 
 
 
-
-
+} // namespace gaps

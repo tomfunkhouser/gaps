@@ -1,4 +1,11 @@
 /* Include file for the R3 rectangle class */
+#ifndef __R3__RECTANGLE__H__
+#define __R3__RECTANGLE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -243,3 +250,9 @@ operator!=(const R3Rectangle& rectangle) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for the R3 circle class */
+#ifndef __R3__CIRCLE__H__
+#define __R3__CIRCLE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -158,3 +165,9 @@ operator!=(const R3Circle& circle) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

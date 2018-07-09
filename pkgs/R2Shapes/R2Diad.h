@@ -1,7 +1,14 @@
 /* Include file for the GAPS diad class */
+#ifndef __R2__DIAD__H__
+#define __R2__DIAD__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitDiad();
@@ -109,3 +116,9 @@ operator=(const R2Diad& diad)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

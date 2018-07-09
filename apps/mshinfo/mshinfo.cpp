@@ -4,6 +4,8 @@
 
 // Include files 
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Shapes/R3Shapes.h"
 
 

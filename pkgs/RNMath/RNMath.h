@@ -1,8 +1,6 @@
 // Include file for RNMath package
-
 #ifndef __RN__MATH__H__
 #define __RN__MATH__H__
-
 
 
 
@@ -14,6 +12,7 @@
 
 // Declarations
 
+namespace gaps {
 class RNVector;
 class RNMatrix;
 class RNDenseMatrix;
@@ -23,6 +22,7 @@ class RNAlgebraic;
 typedef RNAlgebraic RNExpression;
 class RNEquation;
 class RNSystemOfEquations;
+}
 
 
 

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -50,3 +56,4 @@ IsSurface(void) const
 
 
 
+} // namespace gaps

@@ -1,4 +1,11 @@
 /* Include file for the Catmull Rom spline class */
+#ifndef __R3__CATMULL_ROM_SPLINE__H__
+#define __R3__CATMULL_ROM_SPLINE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -55,3 +62,9 @@ Order(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

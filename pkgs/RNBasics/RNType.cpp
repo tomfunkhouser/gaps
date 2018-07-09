@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const RNClassType RNnull_class_type(RN_NULL_CLASS_ID, "");
@@ -71,3 +77,7 @@ RNClassType::
     if (name) delete [] name;
 }
 
+
+
+} // namespace gaps
+  

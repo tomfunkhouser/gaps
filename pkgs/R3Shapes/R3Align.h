@@ -1,4 +1,11 @@
 // Include file for alignment utility functions
+#ifndef __R3__ALIGN__H__
+#define __R3__ALIGN__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -34,3 +41,12 @@ R4Matrix R3AlignPoints(int npoints, R3Point *points1, R3Point *points2, const RN
   RNBoolean align_center = TRUE, RNBoolean align_rotation = TRUE, int align_scale = 1);
 R3Plane R3EstimatePlaneWithRansac(int npoints, R3Point *points, const RNScalar *weights = NULL,
   RNScalar tolerance = 0, int niterations = 16, RNScalar *max_inlier_fraction = NULL, RNScalar *avg_inlier_fraction = NULL);
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

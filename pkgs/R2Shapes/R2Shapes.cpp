@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 static int R2shapes_active_count = 0;
@@ -45,6 +51,4 @@ void R2StopShapes(void)
 
 
 
-
-
-
+} // namespace gaps

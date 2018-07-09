@@ -1,4 +1,11 @@
 /* Include file for R3 viewer class */
+#ifndef __R3__VIEWER__H__
+#define __R3__VIEWER__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -257,3 +264,9 @@ Load(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

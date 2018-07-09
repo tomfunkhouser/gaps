@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Triad R3null_triad(
@@ -235,3 +241,4 @@ Reset(const R3Vector& xaxis, const R3Vector& yaxis, const R3Vector& zaxis)
 
 
 
+} // namespace gaps

@@ -1,10 +1,14 @@
 // Include file for KDTree class
-
-#ifndef __R2KDTREE__H__
-#define __R2KDTREE__H__
-
+#ifndef __R2__KDTREE__H__
+#define __R2__KDTREE__H__
 
 
+
+/* Begin namespace */
+namespace gaps {
+
+
+  
 // Node declaration
 
 template <class PtrType>
@@ -74,9 +78,15 @@ public:
 
 
 
+// End namespace
+}
+
+
 // Include templated definitions
 
 #include "R2Kdtree.cpp"
 
 
+
+// End include guard
 #endif

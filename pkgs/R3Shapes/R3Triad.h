@@ -1,4 +1,11 @@
 /* Include file for the GAPS triad class */
+#ifndef __R3__TRIAD__H__
+#define __R3__TRIAD__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -115,3 +122,9 @@ operator=(const R3Triad& triad)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

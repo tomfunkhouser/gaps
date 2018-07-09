@@ -1,4 +1,11 @@
 /* Include file for the GAPS line class */
+#ifndef __R3__LINE__H__
+#define __R3__LINE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -169,6 +176,15 @@ Reset(const R3Point& point, const R3Vector& vector, RNBoolean normalized)
     this->vector = vector;
     if (!normalized) this->vector.Normalize();
 }
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif
 
 
 

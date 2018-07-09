@@ -9,6 +9,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 // Member functions 
 
 template <class KeyType, class ValueType>
@@ -128,6 +134,10 @@ operator=(const RNMap<KeyType,ValueType>& src)
     m = new std::map<KeyType, ValueType, RNMapComparator<KeyType> >( *(src.m) );
     return *this;
 }
+
+
+
+} // namespace gaps
 
 
 

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 void R3Matrix::
 Load(void) const
 {
@@ -306,4 +312,4 @@ Draw(const R2DrawFlags draw_flags) const
 
 
 
-
+} // namespace gaps

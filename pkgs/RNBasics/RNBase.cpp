@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Global variables */
 
 RNMark RNmark = 1;
@@ -31,3 +37,7 @@ void RNStopBase()
 void RNBreakDebug(void)
 {
 }
+
+
+
+} // namespace gaps

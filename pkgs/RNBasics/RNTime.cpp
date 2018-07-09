@@ -6,6 +6,16 @@
 
 #include "RNBasics.h"
 
+#if (RN_OS != RN_WINDOWS)
+#   include <unistd.h>
+#endif
+
+
+
+// Namespace
+
+namespace gaps {
+
 
 
 int RNInitTime() 
@@ -90,11 +100,6 @@ RNCurrentTime(void)
 
 
 
-
-#if (RN_OS != RN_WINDOWS)
-#   include <unistd.h>
-#endif
-
 void 
 RNSleep(RNScalar seconds)
 {
@@ -111,3 +116,4 @@ RNSleep(RNScalar seconds)
 
 
 
+} // namespace gaps

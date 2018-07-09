@@ -1,4 +1,11 @@
 // Include file for file management utilities
+#ifndef __RN__FILE__H__
+#define __RN__FILE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -26,3 +33,12 @@ unsigned long long RNFileTell(FILE *fp);
 #define RN_FILE_SEEK_SET SEEK_SET
 #define RN_FILE_SEEK_CUR SEEK_CUR
 #define RN_FILE_SEEK_END SEEK_END
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

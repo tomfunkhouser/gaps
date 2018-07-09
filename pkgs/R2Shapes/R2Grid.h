@@ -1,7 +1,14 @@
 // Header file for GAPS scalar grid class
+#ifndef __R2__GRID__H__
+#define __R2__GRID__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 // Class definition
 
 class R2Grid {
@@ -837,9 +844,9 @@ Draw(void) const
 
 
 
+// End namespace
+}
 
 
-
-
-
-
+// End include guard
+#endif

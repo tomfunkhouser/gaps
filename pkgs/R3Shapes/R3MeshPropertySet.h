@@ -1,4 +1,11 @@
 // Include file for mesh property set
+#ifndef __R3__MESH__PROPERTY__SET__H__
+#define __R3__MESH__PROPERTY__SET__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -120,4 +127,9 @@ Remove(R3MeshPropertySet *set)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

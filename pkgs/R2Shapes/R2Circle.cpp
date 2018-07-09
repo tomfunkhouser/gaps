@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Circle R2null_circle(R2Point(0.0, 0.0), -1.0);
@@ -197,6 +203,5 @@ Transform (const R2Transformation& transformation)
 }
 
 
-
-
-
+  
+} // namespace gaps

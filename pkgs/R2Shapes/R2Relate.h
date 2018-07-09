@@ -1,4 +1,11 @@
 /* Include file for R2 miscelleaneous relationship utility */
+#ifndef __R2__RELATE__H__
+#define __R2__RELATE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -16,3 +23,12 @@ RNBoolean R2Abuts(const R2Box& box1, const R2Box& box2);
 
 int R2Splits(const R2Line& line, const R2Span& span);
 int R2Splits(const R2Line& line, const R2Span& span, R2Span *below_result, R2Span *above_result = NULL);
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for GAPS intersection utility */
+#ifndef __R3__INTERSECTS__H__
+#define __R3__INTERSECTS__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -705,7 +712,9 @@ inline RNClassID R3Intersects(const R3Shape& shape, const R3Sphere& sphere)
 
 
 
+// End namespace
+}
 
 
-
-
+// End include guard
+#endif

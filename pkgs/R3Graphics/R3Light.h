@@ -1,4 +1,11 @@
 /* Include file for the R3 light class */
+#ifndef __R3__LIGHT__H__
+#define __R3__LIGHT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -131,3 +138,9 @@ Color(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

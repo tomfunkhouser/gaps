@@ -1,7 +1,14 @@
 /* Include file for GAPS distance utility */
+#ifndef __R2__DISTANCE__H__
+#define __R2__DISTANCE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Function declarations */
 
 RNLength R2Distance(const R2Point& point1, const R2Point& point2);
@@ -275,4 +282,9 @@ inline RNLength R2Distance(const R2Circle& circle, const R2Box& box)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

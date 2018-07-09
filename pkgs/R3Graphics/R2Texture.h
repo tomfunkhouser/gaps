@@ -1,4 +1,11 @@
 /* Include file for the R2 texture class */
+#ifndef __R2__TEXTURE__H__
+#define __R2__TEXTURE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -248,4 +255,9 @@ ID(void) const
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

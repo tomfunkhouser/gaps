@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private constants */
 
 static const int RN_ARRAY_MIN_ALLOCATED = 1;
@@ -350,6 +356,4 @@ IsValid(void) const
 
 
 
-
-
-
+} // namespace gaps

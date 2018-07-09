@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 static int R3surfels_active_count = 0;
@@ -39,4 +45,4 @@ void R3StopSurfels(void)
 
 
 
-
+} // namespace gaps

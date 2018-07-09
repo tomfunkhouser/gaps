@@ -10,6 +10,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 // Public variables
 
 RNMark R3mesh_mark = 1;
@@ -6858,4 +6864,4 @@ R3MeshFace::
 
 
 
-
+} // namespace gaps

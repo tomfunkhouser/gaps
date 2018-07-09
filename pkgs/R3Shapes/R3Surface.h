@@ -1,4 +1,11 @@
 /* Include file for the R3 surface class */
+#ifndef __R3__SURFACE__H__
+#define __R3__SURFACE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -23,3 +30,9 @@ class R3Surface : public R3Shape {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

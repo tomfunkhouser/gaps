@@ -1,7 +1,14 @@
 // Include file for alignment utility functions
+#ifndef __R2__ALIGN__H__
+#define __R2__ALIGN__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 // Functions to align RNArray of points
 
 R2Point R2Centroid(const RNArray<R2Point *>& points, const RNScalar *weights = NULL);
@@ -30,3 +37,9 @@ R3Matrix R2AlignPoints(int npoints, R2Point *points1, R2Point *points2, const RN
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

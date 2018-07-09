@@ -1,4 +1,11 @@
 /* Include file for the GAPS quaternion class */
+#ifndef __R3__QUATERNION__H__
+#define __R3__QUATERNION__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -178,3 +185,9 @@ operator[] (RNDimension k)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

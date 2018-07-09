@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNAngle 
 R2InteriorAngle(const R2Vector& vector1, const R2Vector& vector2)
 {
@@ -197,5 +203,4 @@ R2Splits(const R2Line& line, const R2Span& span, R2Span *below_result, R2Span *a
 
 
 
-
-
+} // namespace gaps

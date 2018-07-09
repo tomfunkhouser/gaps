@@ -1,4 +1,11 @@
 /* Include file for the R3 Box class */
+#ifndef __R3__BOX__H__
+#define __R3__BOX__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -421,6 +428,15 @@ operator[] (RNDirection dir)
     // Return min or max point 
     return (dir == RN_LO) ? minpt : maxpt;
 }
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif
 
 
 

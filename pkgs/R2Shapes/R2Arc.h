@@ -1,7 +1,14 @@
 /* Include file for the R2 arc class */
+#ifndef __R2__ARC__H__
+#define __R2__ARC__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitArc();
@@ -169,6 +176,9 @@ IsFinite(void) const
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

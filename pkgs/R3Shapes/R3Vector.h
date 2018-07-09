@@ -1,4 +1,11 @@
 /* Include file for the GAPS vector class */
+#ifndef __R3__VECTOR__H__
+#define __R3__VECTOR__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -266,3 +273,9 @@ operator[] (RNDimension dim)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

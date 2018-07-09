@@ -1,4 +1,11 @@
 // Header file for GAPS scalar grid class
+#ifndef __R3__GRID__H__
+#define __R3__GRID__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -781,6 +788,9 @@ IndexToIndices(int index, int& i, int& j, int& k) const
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

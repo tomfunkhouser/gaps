@@ -1,4 +1,11 @@
 /* Include file for the R3 material class */
+#ifndef __R3__MATERIAL__H__
+#define __R3__MATERIAL__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -225,12 +232,9 @@ IsTransparent(void) const
 
 
 
+// End namespace
+}
 
 
-
-
-
-
-
-
-
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for the GAPS flags class */
+#ifndef __RN__FLAGS__H__
+#define __RN__FLAGS__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -137,4 +144,9 @@ Reset(unsigned long flags)
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

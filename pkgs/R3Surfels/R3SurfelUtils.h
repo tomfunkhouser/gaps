@@ -1,4 +1,14 @@
 // Include file for the surfel scene processing utilities
+#ifndef __R3__SURFEL__UTILS__H__
+#define __R3__SURFEL__UTILS__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -246,3 +256,10 @@ RNLength XYDistance(const R3Point& point, const R3Box& box);
 RNLength XYDistanceSquared(const R3Point& point, const R3Box& box);
 
 
+
+// End namespace
+}
+
+
+// End include guard
+#endif

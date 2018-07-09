@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Vector R2null_vector(0.0, 0.0);
@@ -446,12 +452,4 @@ operator%(const R2Vector& vector1, const R2Vector& vector2)
 
 
 
-
-
-
-
-
-
-
-
-
+} // namespace gaps

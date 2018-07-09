@@ -1,4 +1,11 @@
 /* Include file for the GAPS interval class */
+#ifndef __RN__INTERVAL__H__
+#define __RN__INTERVAL__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -534,3 +541,9 @@ operator /=(RNScalar a)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,7 +1,11 @@
 /* Include file for the GAPS queue class */
-
 #ifndef __RN__QUEUE__H__
 #define __RN__QUEUE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -161,14 +165,10 @@ class RNQueue : public RNVQueue {
 
 
 
+// End namespace
+}
+
+
+// End include guard
 #endif
-
-
-
-
-
-
-
-
-
-
+  

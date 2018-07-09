@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Vector R3null_vector(0.0, 0.0, 0.0);
@@ -605,3 +611,7 @@ R3RandomDirection(void)
   if (RNRandomScalar() < 0.5) vector.Flip();
   return vector;
 }
+
+
+
+} // namespace gaps

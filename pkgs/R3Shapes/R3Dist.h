@@ -1,4 +1,11 @@
 /* Include file for GAPS distance utility */
+#ifndef __R3__DISTANCE__H__
+#define __R3__DISTANCE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -511,5 +518,9 @@ inline RNLength R3Distance(const R3Shape& shape, const R3Sphere& sphere)
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

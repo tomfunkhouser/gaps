@@ -1,4 +1,11 @@
 /* Include file for the R2 point class */
+#ifndef __R2__POINT__H__
+#define __R2__POINT__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -231,3 +238,9 @@ operator[] (RNDimension dim)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

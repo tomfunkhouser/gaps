@@ -1,7 +1,14 @@
 /* Include file for the R2 Box class */
+#ifndef __R2__BOX__H__
+#define __R2__BOX__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitBox();
@@ -321,3 +328,9 @@ operator[] (RNDirection dir)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

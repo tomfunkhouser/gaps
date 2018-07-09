@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNClassID R2Intersects(const R2Point& point1, const R2Point& point2)
 {
     // Check if two points are the same within tolerance
@@ -739,5 +745,4 @@ RNClassID R2Intersects(const R2Circle& circle1, const R2Circle& circle2)
 
 
 
-
-
+} // namespace gaps

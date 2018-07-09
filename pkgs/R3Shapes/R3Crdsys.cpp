@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3CoordSystem R3xyz_coordinate_system(R3Point(0.0, 0.0, 0.0), 
@@ -183,4 +189,4 @@ InverseTransform (const R3Transformation& transformation)
 
 
 
-
+} // namespace gaps

@@ -1,7 +1,14 @@
 /* Include file for the R2 affine transformation class */
+#ifndef __R2__AFFINE__H__
+#define __R2__AFFINE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitAffine();
@@ -309,3 +316,9 @@ operator!=(const R2Affine& affine) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

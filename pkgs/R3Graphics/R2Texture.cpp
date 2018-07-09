@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R2Texture R2null_texture;
@@ -313,15 +319,4 @@ Draw(RNBoolean force) const
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-  
+} // namespace gaps

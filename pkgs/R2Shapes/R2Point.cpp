@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Point R2null_point(0.0, 0.0);
@@ -309,4 +315,4 @@ operator!=(const R2Point& point) const
 
 
 
-
+} // namespace gaps

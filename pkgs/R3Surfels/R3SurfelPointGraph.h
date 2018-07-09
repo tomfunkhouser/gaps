@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel graph class */
+#ifndef __R3__SURFEL__POINT__GRAPH__H__
+#define __R3__SURFEL__POINT__GRAPH__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -208,3 +218,9 @@ SetMarks(RNBoolean mark)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

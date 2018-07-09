@@ -1,7 +1,14 @@
 /* Include file for the R3 affine transformation class */
+#ifndef __R3__AFFINE__H__
+#define __R3__AFFINE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R3InitAffine();
@@ -416,6 +423,15 @@ operator!=(const R3Affine& affine) const
     // Return whether affine is not equal
     return (!(*this == affine));
 }
+
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif
 
 
 

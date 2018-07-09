@@ -1,4 +1,11 @@
 // Include file for vector class
+#ifndef __RN__VECTOR__H__
+#define __RN__VECTOR__H__
+
+
+
+// Begin namespace 
+namespace gaps {
 
 
 
@@ -112,4 +119,9 @@ operator[](int i) const
 
 
 
+// End namespace
+}
 
+
+// End include guard
+#endif

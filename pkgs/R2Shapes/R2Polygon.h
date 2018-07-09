@@ -1,4 +1,11 @@
 /* Include file for the R2 polygon class */
+#ifndef __R2__POLYGON__H__
+#define __R2__POLYGON__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -128,5 +135,9 @@ operator[](int k) const
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

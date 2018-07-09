@@ -1,4 +1,11 @@
 /* Include file for the R3 transformation class */
+#ifndef __R3__TRANSFORMATION__H__
+#define __R3__TRANSFORMATION__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -52,3 +59,9 @@ class R3Transformation /* : public R3Base */ {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

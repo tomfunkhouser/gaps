@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Class type definitions */
 
 RN_CLASS_TYPE_DEFINITIONS(R3Light);
@@ -177,3 +183,4 @@ IrradianceAtPoint(const R3Point& point) const
 
 
 
+} // namespace gaps

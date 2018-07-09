@@ -1,7 +1,14 @@
 /* Include file for the R2 circle class */
+#ifndef __R2__CIRCLE__H__
+#define __R2__CIRCLE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitCircle();
@@ -102,6 +109,9 @@ IsFinite(void) const
 
 
 
+// End namespace
+}
 
 
-
+// End include guard
+#endif

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Halfspace R2null_halfspace(0.0, 0.0, 0.0);
@@ -118,4 +124,4 @@ InverseTransform (const R2Transformation& transformation)
 
 
 
-
+} // namespace gaps

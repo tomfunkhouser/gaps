@@ -1,7 +1,14 @@
 /* Include file for the GAPS line class */
+#ifndef __R2_LINE__H__
+#define __R2_LINE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitLine();
@@ -193,5 +200,9 @@ Reset(const R2Point& point, const R2Vector& vector, RNBoolean normalized)
 
 
 
+// End namespace
+}
 
 
+// End include guard
+#endif

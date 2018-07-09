@@ -1,4 +1,11 @@
 /* Include file for R3 draw utility */
+#ifndef __R3__DRAW__H__
+#define __R3__DRAW__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -46,3 +53,9 @@ R3DrawText(const R3Point& p, const char *str)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

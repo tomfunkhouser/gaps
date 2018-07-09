@@ -1,7 +1,11 @@
 /* Include file for the GAPS map class */
-
 #ifndef __RN__MAP__H__
 #define __RN__MAP__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -60,13 +64,6 @@ class RNMap {
 
 
 
-
-/* Templated member functions */
-
-#include "RNMap.cpp"
-
-
-
 /* A useful derived class definition */
 
 template <class ValueType>
@@ -78,10 +75,15 @@ class RNSymbolTable : public RNMap<std::string, ValueType> {
 
 
 
+// End namespace
+}
+
+
+/* Templated member functions */
+
+#include "RNMap.cpp"
+
+
+
+// End include guard
 #endif
-
-
-
-
-
-

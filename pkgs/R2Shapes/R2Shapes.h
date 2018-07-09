@@ -1,5 +1,4 @@
 /* Include file for R2 shapes module */
-
 #ifndef __R2__SHAPES__H__
 #define __R2__SHAPES__H__
 
@@ -13,6 +12,7 @@
 
 /* Class declarations */
 
+namespace gaps {
 class R2Vector;
 class R2Point;
 class R2Line;
@@ -30,7 +30,7 @@ class R2Box;
 class R2Circle;
 class R2Polygon;
 class R2Grid;
-
+}
 
 
 /* Image include files */
@@ -116,8 +116,10 @@ class R2Grid;
 
 /* Initialization functions */
 
+namespace gaps {
 int R2InitShapes(void);
 void R2StopShapes(void);
+}
 
 
 

@@ -1,4 +1,11 @@
 /* Include file for GAPS error utility */
+#ifndef __RN__ERROR__H__
+#define __RN__ERROR__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -24,6 +31,10 @@ void RNWarning(const char *fmt, ...);
 
 
 
+// End namespace
+}
+
+
 /* Define my own assert function */
 
 #ifdef assert
@@ -39,3 +50,5 @@ void RNWarning(const char *fmt, ...);
 
 
 
+// End include guard
+#endif

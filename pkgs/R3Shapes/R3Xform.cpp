@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -87,5 +93,4 @@ ScaleFactor(void) const
 
 
 
-
-
+} // namespace gaps

@@ -10,6 +10,10 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1566,3 +1570,4 @@ FindClosest(const R3MeshSearchTree& tree1, const R3MeshSearchTree& tree2,
 
 
 
+} // namespace gaps

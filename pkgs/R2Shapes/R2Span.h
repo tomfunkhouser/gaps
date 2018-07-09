@@ -1,4 +1,11 @@
 /* Include file for the GAPS span class */
+#ifndef __R2__SPAN__H__
+#define __R2__SPAN__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -186,3 +193,9 @@ operator-(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

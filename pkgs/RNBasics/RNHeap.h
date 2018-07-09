@@ -1,7 +1,11 @@
 // Include file for a heap
-
 #ifndef __RN__HEAP__H__
 #define __RN__HEAP__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -60,10 +64,16 @@ class RNHeap {
 
 
 
+// End namespace
+}
+
+
 // Include files
 
 #include "RNHeap.cpp"
 
 
-
+// End include guard
 #endif
+
+

@@ -14,6 +14,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1883,6 +1889,8 @@ FindFurthest(const R3Point& query_position,
 
 
 
+} // namespace gaps
+
+
+
 #endif
-
-

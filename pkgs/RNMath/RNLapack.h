@@ -1,11 +1,16 @@
 // Include file for Lapack wrapper functions
+#ifndef __RN__LAPACK__H__
+#define __RN__LAPACK__H__
 
+
+
+////////////////////////////////////////////////////////////////////////
+// Usage flags
+////////////////////////////////////////////////////////////////////////
 
 #ifdef RN_NO_LAPACK
 #undef RN_USE_LAPACK
 #endif
-#ifdef RN_USE_LAPACK
-
 
 
 
@@ -20,13 +25,12 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-// System of equations
+// External function definitions
 ////////////////////////////////////////////////////////////////////////
 
 extern "C" void dgesv_(int *n, int *nrhs, 
   double *a, int *lda, int *ipiv, double *b, 
   int *ldb, int *info );
-
 //  N       (input) INTEGER
 //          The number of linear equations, i.e., the order of the
 //          matrix A.  N >= 0.
@@ -61,64 +65,10 @@ extern "C" void dgesv_(int *n, int *nrhs,
 //                has been completed, but the factor U is exactly
 //                singular, so the solution could not be computed.
 
-// Solve a system of equations Ax=b with n variables and n equations
-// A is a n by n matrix 
-// b has n right hand sides
-// x has n variables -- this vector will be filled in with the answer
-// nrhs has the number of right hand sides -- i.e., the nuumber of columns in b and x
-inline int RNSolveLinearSystem(double *A, double *x, double *b, int n, int nrhs)
-{
-  // Allocate temporary memory
-  int info; 
-  int *ipiv = new int [ n ];
-  double *a = new double [ n * n ];
-  double *X = new double [ n * nrhs ];
-    
-  // Copy x/b into working buffer
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < nrhs; j++) {
-      X[j*n+i] = b[i*nrhs+j];
-    }
-  }
-
-  // Copy A into working buffer
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      a[j*n+i] = A[i*n+j];
-    }
-  }
-
-  // Call LAPACK function
-  dgesv_(&n, &nrhs, a, &n, ipiv, X, &n, &info);
-  if (info != 0) {
-    fprintf(stderr, "Error solving system of equations: %d\n", info);
-  }
-
-  // Copy answer into result
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < nrhs; j++) {
-      x[i*nrhs+j] = X[j*n+i];
-    }
-  }
-
-  // Delete temporary memory
-  delete [] ipiv;
-  delete [] a;
-  delete [] X;
-
-  // Return status
-  return (info == 0) ? 1 : 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Least squares
-////////////////////////////////////////////////////////////////////////
 
 extern "C" void dgels_(char *trans, int *M, 
   int *N, int *nrhs, double *A, int *lda, double *b, 
   int *ldb, double *work, int *lwork, int *info);
-
 //  TRANS   (input) CHARACTER*1
 //          = 'N': the linear system involves A;
 //          = 'T': the linear system involves A**T.
@@ -189,6 +139,92 @@ extern "C" void dgels_(char *trans, int *M,
 //                full rank; the least squares solution could not be
 //                computed.
 
+extern "C" void dgeev_(const char* jobvl, const char* jobvr, int* N,
+        double* A, int* lda, double* wr, double* wi, 
+        double *vl, int *ldvl, double *vr, int *ldvr,
+        double* work, int* lwork, const int* info);
+
+extern "C" void dgesvd_(const char* jobu, const char* jobvt, int* M, int* N,
+  double* A, int* lda, double* S, double* U, int* ldu,
+  double* VT, int* ldvt, double* work, int* lwork, const int* info);
+
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+
+  
+
+////////////////////////////////////////////////////////////////////////
+// Functions
+////////////////////////////////////////////////////////////////////////
+
+#ifdef RN_USE_LAPACK
+
+
+////////////////////////////////////////////////////////////////////////
+// System of equations
+////////////////////////////////////////////////////////////////////////
+
+// Solve a system of equations Ax=b with n variables and n equations
+// A is a n by n matrix 
+// b has n right hand sides
+// x has n variables -- this vector will be filled in with the answer
+// nrhs has the number of right hand sides -- i.e., the nuumber of columns in b and x
+inline int RNSolveLinearSystem(double *A, double *x, double *b, int n, int nrhs)
+{
+  // Allocate temporary memory
+  int info; 
+  int *ipiv = new int [ n ];
+  double *a = new double [ n * n ];
+  double *X = new double [ n * nrhs ];
+    
+  // Copy x/b into working buffer
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < nrhs; j++) {
+      X[j*n+i] = b[i*nrhs+j];
+    }
+  }
+
+  // Copy A into working buffer
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      a[j*n+i] = A[i*n+j];
+    }
+  }
+
+  // Call LAPACK function
+  dgesv_(&n, &nrhs, a, &n, ipiv, X, &n, &info);
+  if (info != 0) {
+    fprintf(stderr, "Error solving system of equations: %d\n", info);
+  }
+
+  // Copy answer into result
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < nrhs; j++) {
+      x[i*nrhs+j] = X[j*n+i];
+    }
+  }
+
+  // Delete temporary memory
+  delete [] ipiv;
+  delete [] a;
+  delete [] X;
+
+  // Return status
+  return (info == 0) ? 1 : 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Least squares
+////////////////////////////////////////////////////////////////////////
+
 // Solve an over-constrained system of equations Ax=b with m variables and n equations
 // A is a m by n matrix 
 // b has m right hand sides
@@ -244,10 +280,6 @@ inline int RNSolveLeastSquares(double *A, double *x, double *b, int m, int n, in
 
 ////////////////////////////////////////////////////////////////////////
 
-extern "C" void dgesvd_(const char* jobu, const char* jobvt, int* M, int* N,
-        double* A, int* lda, double* S, double* U, int* ldu,
-        double* VT, int* ldvt, double* work, int* lwork, const int* info);
-
 // Perform SVD on matrix a
 inline int RNDecomposeSVD(const double *A, double *u, double *w, double *vt, int m, int n)
 {
@@ -294,11 +326,6 @@ inline int RNDecomposeSVD(const double *A, double *u, double *w, double *vt, int
 
 
 ////////////////////////////////////////////////////////////////////////
-
-extern "C" void dgeev_(const char* jobvl, const char* jobvr, int* N,
-        double* A, int* lda, double* wr, double* wi, 
-        double *vl, int *ldvl, double *vr, int *ldvr,
-        double* work, int* lwork, const int* info);
 
 // Compute eigenvalues and eigenvectors of a symmetric matrix a
 inline int RNDecomposeEigen(const double *A, double *eigenvalues, double *eigenvectors, int n)
@@ -388,5 +415,14 @@ inline int RNDecomposeEigen(const double *a, double *eigenvalues, double *eigenv
 }
 
 
+// End USE_LAPACK
 #endif
 
+
+
+// End namespace
+}
+
+
+// End include guard
+#endif

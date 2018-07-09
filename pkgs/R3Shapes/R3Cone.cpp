@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Cone R3null_cone(R3Point(0.0, 0.0, 0.0), R3Point(0.0, 0.0, 0.0), -1.0);
@@ -235,4 +241,4 @@ Empty(void)
 
 
 
-
+} // namespace gaps

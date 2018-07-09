@@ -1,4 +1,14 @@
 // Include file for algebraic expression class
+#ifndef __RN__ALGEBRAIC__H__
+#define __RN__ALGEBRAIC__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Begin namespace 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -572,3 +582,10 @@ operator/(RNScalar a, const RNAlgebraic& algebraic)
 }
 
 
+
+// End namespace
+}
+
+
+// End include guard
+#endif

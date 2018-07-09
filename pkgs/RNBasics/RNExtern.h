@@ -1,4 +1,6 @@
 /* Include file for external stuff */
+#ifndef __RN__EXTERN__H__
+#define __RN__EXTERN__H__
 
 
 
@@ -34,3 +36,6 @@
 #endif
 
 
+
+// End include guard
+#endif

@@ -1,7 +1,14 @@
 /* Include file for GAPS inside/containment utility */
+#ifndef __R2__CONTAINS__H__
+#define __R2__CONTAINS__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Useful macros */
 
 #define R2Inside(__primitive1, __primitive2) \
@@ -97,11 +104,9 @@ RNBoolean R2Contains(const R2Shape& shape1, const R2Shape& shape2);
 
 
 
+// End namespace
+}
 
 
-
-
-
-
-
-
+// End include guard
+#endif

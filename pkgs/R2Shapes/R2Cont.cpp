@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNBoolean R2Contains(const R2Vector& vector1, const R2Vector& vector2)
 {
     // Return whether vector1 and vector2 are equal within tolerance
@@ -718,5 +724,4 @@ RNBoolean R2Contains(const R2Shape& shape1, const R2Shape& shape2)
 
 
 
-
-
+} // namespace gaps

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R3Rectangle R3null_rectangle(R3Point(0.0, 0.0, 0.0), R3Vector(1.0, 0.0, 0.0), R3Vector(0.0, 1.0, 0.0), -1.0, -1.0);
@@ -377,14 +383,4 @@ Reset(const R3Point& center,
 
 
     
-    
-
-
-
-
-
-
-
-
-
-
+} // namespace gaps

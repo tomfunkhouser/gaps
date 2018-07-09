@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -69,4 +75,4 @@ IsIsotropic(void) const
 
 
 
-
+} // namespace gaps

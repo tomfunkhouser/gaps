@@ -1,7 +1,14 @@
 /* Include file for the GAPS halfspace class */
+#ifndef __R2__HALFSPACE__H__
+#define __R2__HALFSPACE__H__
 
 
 
+/* Begin namespace */
+namespace gaps {
+
+
+  
 /* Initialization functions */
 
 int R2InitHalfspace();
@@ -157,15 +164,9 @@ Reset(const R2Line& line)
 
 
 
+// End namespace
+}
 
 
-
-
-
-
-
-
-
-
-
-
+// End include guard
+#endif

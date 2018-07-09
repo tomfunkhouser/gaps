@@ -4,6 +4,8 @@
 
 // Include files 
 
+namespace gaps {}
+using namespace gaps;
 #include "R2Shapes/R2Shapes.h"
 
 

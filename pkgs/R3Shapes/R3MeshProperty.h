@@ -1,4 +1,11 @@
 // Include file for mesh property class
+#ifndef __R3__MESH__PROPERTY__H__
+#define __R3__MESH__PROPERTY__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -310,3 +317,9 @@ operator/=(const R3MeshProperty& property)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

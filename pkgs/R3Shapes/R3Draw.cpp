@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Private variables */
 
 int R3draw_mirrored = FALSE;
@@ -907,4 +913,4 @@ Draw(const R3DrawFlags draw_flags) const
 
 
 
-
+} // namespace gaps

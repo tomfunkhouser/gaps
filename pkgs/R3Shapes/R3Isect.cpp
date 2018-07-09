@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 RNClassID R3Intersects(const R3Point& point1, const R3Point& point2)
 {
     // Check if two points are the same within tolerance
@@ -2232,5 +2238,4 @@ RNClassID R3Intersects(const R3Shape& shape1, const R3Shape& shape2)
 
 
 
-
-
+} // namespace gaps

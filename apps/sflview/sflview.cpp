@@ -6,10 +6,12 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+namespace gaps {}
+using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
-#include "R3SurfelViewer.h"
 #include "fglut/fglut.h" 
+#include "R3SurfelViewer.h"
 #include "align.h"
 #include "debug.h"
 

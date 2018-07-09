@@ -1,4 +1,11 @@
 /* Include file for the R3 ellipsoid class */
+#ifndef __R3__ELLIPSOID__H__
+#define __R3__ELLIPSOID__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -132,3 +139,9 @@ operator!=(const R3Ellipsoid& ellipsoid) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

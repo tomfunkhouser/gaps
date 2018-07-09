@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -49,4 +55,4 @@ IsCurve(void) const
 
 
 
-
+} // namespace gaps

@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 R2Viewport R2default_viewport(0, 0, 128, 128);
@@ -78,5 +84,4 @@ Resize(int xmin, int ymin, int width, int height)
 
 
 
-
-
+} // namespace gaps

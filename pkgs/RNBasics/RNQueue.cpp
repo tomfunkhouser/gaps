@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public functions */
 
 int 
@@ -258,3 +264,4 @@ IsValid(void) const
 
 
 
+} // namespace gaps

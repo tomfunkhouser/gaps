@@ -1,4 +1,11 @@
 // Include file for planar grid class (a 2D grid on a 3D plane)
+#ifndef __R3__PLANAR_GRID__H__
+#define __R3__PLANAR_GRID__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -578,3 +585,9 @@ GridPosition(RNCoord x, RNCoord y, RNCoord z) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

@@ -1,4 +1,11 @@
 /* Include file for the Catmull Rom spline class */
+#ifndef __R3__POLYLINE__H__
+#define __R3__POLYLINE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -97,3 +104,9 @@ VertexParameter(int i) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

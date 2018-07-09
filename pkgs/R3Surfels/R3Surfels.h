@@ -30,6 +30,7 @@
 
 /* Class declarations */
 
+namespace gaps {
 class R3Surfel;
 class R3SurfelBlock;
 class R3SurfelDatabase;
@@ -55,6 +56,7 @@ class R3SurfelLabelRelationship;
 class R3SurfelLabelAssignment;
 typedef R3SurfelLabelAssignment R3SurfelObjectAssignment;
 class R3SurfelScene;
+}
 
 
 
@@ -96,8 +98,10 @@ class R3SurfelScene;
 
 /* Initialization functions */
 
+namespace gaps {
 int R3InitSurfels(void);
 void R3StopSurfels(void);
+}
 
 
 

@@ -1,7 +1,11 @@
 /* Include file for the GAPS array class */
-
 #ifndef __RN__ARRAY__H__
 #define __RN__ARRAY__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -153,10 +157,9 @@ class RNArray : public RNVArray {
 
 
 
+// End namespace
+}
+
+
+// End include guard
 #endif
-
-
-
-
-
-

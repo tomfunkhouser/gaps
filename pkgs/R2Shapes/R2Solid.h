@@ -1,4 +1,11 @@
 /* Include file for the R2 solid class */
+#ifndef __R2__SOLID__H__
+#define __R2__SOLID__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -23,3 +30,9 @@ class R2Solid : public R2Shape {
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

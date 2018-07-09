@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Public variables */
 
 const R2Affine R2null_affine(
@@ -224,6 +230,4 @@ Reset (const R3Matrix& matrix, RNBoolean mirror)
 
 
 
-
-
-
+} // namespace gaps

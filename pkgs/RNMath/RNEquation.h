@@ -1,4 +1,14 @@
 // Include file for equation class
+#ifndef __RN__EQUATION__H__
+#define __RN__EQUATION__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Begin namespace 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -71,3 +81,9 @@ EvaluateResidual(const RNScalar *x) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

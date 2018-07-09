@@ -1,4 +1,11 @@
 /* Include file for GAPS inside/containment utility */
+#ifndef __R3__CONTAINS__H__
+#define __R3__CONTAINS__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -155,3 +162,10 @@ RNBoolean R3Contains(const R3Shape& shape, const R3Sphere& sphere);
 RNBoolean R3Contains(const R3Shape& shape1, const R3Shape& shape2);
 
 
+
+// End namespace
+}
+
+
+// End include guard
+#endif

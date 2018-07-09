@@ -1,4 +1,11 @@
 // Include file for the R3 mesh class 
+#ifndef __R3__MESH__H__
+#define __R3__MESH__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -1809,3 +1816,9 @@ SetData(void *data)
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

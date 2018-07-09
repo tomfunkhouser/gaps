@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 int RNInitMem() 
 {
     /* Return OK status */
@@ -146,3 +152,7 @@ long RNMaxMemoryUsage(void)
     return usage.ru_maxrss;
 #   endif
 }
+
+
+
+} // namespace gaps

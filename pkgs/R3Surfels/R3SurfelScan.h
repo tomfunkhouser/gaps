@@ -1,4 +1,14 @@
 /* Include file for the R3 surfel scan class */
+#ifndef __R3__SURFEL__SCAN__H__
+#define __R3__SURFEL__SCAN__H__
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NAMESPACE 
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
 
 
 
@@ -380,3 +390,9 @@ AreBlocksResident(void) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

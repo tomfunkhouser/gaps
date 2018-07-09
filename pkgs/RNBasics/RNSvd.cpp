@@ -77,7 +77,17 @@ diagonal element, zero the superdiagonal element above it.
 **
 ****************************************************************/
 
+// Include files
+
 #include "RNBasics.h"
+
+
+
+// Namespace
+
+namespace gaps {
+
+
 
 #define MIN(A,B)	(((A)<(B)) ? (A):(B))
 #define MAX(A,B)	(((A)>(B)) ? (A):(B))
@@ -840,3 +850,7 @@ void RNSvdSolve(int m, int n,
 #undef CLEAR2D
 #undef COPY2D
 #undef REF2D
+
+
+
+} // namespace gaps

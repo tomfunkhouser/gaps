@@ -1,4 +1,11 @@
 /* Include file for the R3 cone class */
+#ifndef __R3__CONE__H__
+#define __R3__CONE__H__
+
+
+
+/* Begin namespace */
+namespace gaps {
 
 
 
@@ -158,3 +165,9 @@ operator!=(const R3Cone& cone) const
 
 
 
+// End namespace
+}
+
+
+// End include guard
+#endif

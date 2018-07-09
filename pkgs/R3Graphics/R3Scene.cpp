@@ -8,6 +8,12 @@
 
 
 
+// Namespace
+
+namespace gaps {
+
+
+
 /* Member functions */
 
 int 
@@ -4420,3 +4426,6 @@ ReadSUNCGModelFile(const char *filename)
   return 1;
 }
 
+
+
+} // namespace gaps
