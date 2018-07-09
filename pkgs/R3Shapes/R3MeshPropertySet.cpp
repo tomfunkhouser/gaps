@@ -179,10 +179,17 @@ ReadARFF(const char *filename)
     return 0;
   }
 
+  // Allocate large buffer for reading ARFF lines
+  const int max_line_size = 64 * 1024;
+  char *buffer = new char [ max_line_size ];
+  if (!buffer) {
+    fprintf(stderr, "Unable to allocate buffer for reading ARFF file\n");
+    return 0;
+  }
+  
   // Read attribute names and allocate property for each one
   int property_count = 0;
-  const int max_line_size = 32 * 1024;
-  char buffer[max_line_size], token[1024], name[1024];
+  char token[1024], name[1024];
   while (fgets(buffer, max_line_size, fp)) {
     if (strstr(buffer, "@data")) break;
     else if (strstr(buffer, "@attribute")) {
@@ -197,7 +204,7 @@ ReadARFF(const char *filename)
   }
 
   // Check number of properties
-  if (property_count == 0) return 1;
+  if (property_count == 0) { delete [] buffer; return 1; }
 
   // Read data and assign property values
   int vertex_index = 0;
@@ -213,14 +220,17 @@ ReadARFF(const char *filename)
       R3MeshProperty *property = Property(NProperties()-property_count+i);
       if (!bufferp) { 
         fprintf(stderr, "Unable to read property value %d for vertex %d\n", i, vertex_index);
+        delete [] buffer;
         return 0;
       }
       if (sscanf(bufferp, "%lf", &property_value) != (unsigned int) 1) {
         fprintf(stderr, "Unable to read property value %d for vertex %d\n", i, vertex_index);
+        delete [] buffer;
         return 0;
       }
       if (vertex_index >= mesh->NVertices()) {
         fprintf(stderr, "Too many data lines in %s\n", filename);
+        delete [] buffer;
         return 0;
       }
       property->SetVertexValue(vertex_index, property_value);
@@ -232,12 +242,16 @@ ReadARFF(const char *filename)
   // Check if read value for every vertex
   // if (vertex_index != mesh->NVertices()) {
   //   fprintf(stderr, "Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
+  //   delete [] buffer;
   //   return 0;
   // }
 
   // Close file
   fclose(fp);
 
+  // Delete buffer
+  delete [] buffer;
+  
   // Return success
   return 1;
 }
