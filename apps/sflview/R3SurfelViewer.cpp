@@ -405,69 +405,69 @@ Redraw(void)
       // Draw with colors based on heights
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        glBegin(GL_POINTS);
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->Origin();
+          glPushMatrix();
+          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+          glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
-            double x = surfel->X() + block_origin.X();
-            double y = surfel->Y() + block_origin.Y();
-            double z = surfel->Z() + block_origin.Z();
+            double y = block_origin.Y() + surfel->Y();
             double value = 0.1 * (y - center_point.Y());
             LoadColor(value);
-            glVertex3d(x, y, z);
+            glVertex3fv(surfel->Coords());
           }
+          glEnd();
+          glPopMatrix();
         }
-        glEnd();
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_NORMAL) {
       // Draw with colors based on normals
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        glBegin(GL_POINTS);
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->Origin();
+          glPushMatrix();
+          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+          glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
-            double x = surfel->X() + block_origin.X();
-            double y = surfel->Y() + block_origin.Y();
-            double z = surfel->Z() + block_origin.Z();
             if (!surfel->HasNormal()) glColor3d(0.5, 0.5, 0.5);
             else glColor3f(surfel->NX(), surfel->NY(), surfel->NZ());
-            glVertex3d(x, y, z);
+            glVertex3fv(surfel->Coords());
           }
+          glEnd();
+          glPopMatrix();
         }
-        glEnd();
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
       // Draw with colors based on shading
       glEnable(GL_LIGHTING);
-      glBegin(GL_POINTS);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->Origin();
+          glPushMatrix();
+          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+          glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
-            double x = surfel->X() + block_origin.X();
-            double y = surfel->Y() + block_origin.Y();
-            double z = surfel->Z() + block_origin.Z();
             glNormal3f(surfel->NX(), surfel->NY(), surfel->NZ());
-            glVertex3d(x, y, z);
+            glVertex3fv(surfel->Coords());
           }
+          glEnd();
+          glPopMatrix();
         }
       }
-      glEnd();
       glDisable(GL_LIGHTING);
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT) {
       // Draw with RGB surfel colors, with alpha based on distance to viewpoint
-      glBegin(GL_POINTS);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         R3SurfelScan *scan = node->Scan();
@@ -486,6 +486,9 @@ Redraw(void)
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->Origin();
+          glPushMatrix();
+          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+          glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
 
@@ -503,23 +506,23 @@ Redraw(void)
             glColor4ub(surfel->R(), surfel->G(), surfel->B(), alpha);
 
             // Draw surfel
-            double x = surfel->X() + block_origin.X();
-            double y = surfel->Y() + block_origin.Y();
-            double z = surfel->Z() + block_origin.Z();
-            glVertex3d(x, y, z);
+            glVertex3fv(surfel->Coords());
           }
+          glEnd();
+          glPopMatrix();
         }
       }
-      glEnd();
     }
     else {
       // Draw with RGB surfel colors
-      glBegin(GL_POINTS);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->Origin();
+          glPushMatrix();
+          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+          glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
 
@@ -537,14 +540,12 @@ Redraw(void)
             glColor3ubv(surfel->Color());
 
             // Draw surfel
-            double x = surfel->X() + block_origin.X();
-            double y = surfel->Y() + block_origin.Y();
-            double z = surfel->Z() + block_origin.Z();
-            glVertex3d(x, y, z);
+            glVertex3fv(surfel->Coords());
           }
+          glEnd();
+          glPopMatrix();
         }
       }
-      glEnd();
     }
   }
 
@@ -555,27 +556,29 @@ Redraw(void)
   // Draw normals
   if (normal_visibility) {
     RNLoadRgb(normal_color);
-    glBegin(GL_LINES);
     RNLength r = 0.025;
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
       for (int j = 0; j < node->NBlocks(); j++) {
         R3SurfelBlock *block = node->Block(j);
         const R3Point& block_origin = block->Origin();
+        glPushMatrix();
+        glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+        glBegin(GL_LINES);
         for (int k = 0; k < block->NSurfels(); k++) {
           const R3Surfel *surfel = block->Surfel(k);
-          double px = surfel->X() + block_origin.X();
-          double py = surfel->Y() + block_origin.Y();
-          double pz = surfel->Z() + block_origin.Z();
+          double px = surfel->X();
+          double py = surfel->Y();
+          double pz = surfel->Z();
           double nx = surfel->NX();
           double ny = surfel->NY();
           double nz = surfel->NZ();
           R3LoadPoint(px, py, pz);
           R3LoadPoint(px + r * nx, py + r * ny, pz + r * nz);
         }
+        glEnd();
       }
     }
-    glEnd();
   }
 
   // Draw object properties
