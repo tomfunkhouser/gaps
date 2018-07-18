@@ -413,8 +413,8 @@ Redraw(void)
           glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
-            double y = block_origin.Y() + surfel->Y();
-            double value = 0.1 * (y - center_point.Y());
+            double z = block_origin.Z() + surfel->Z();
+            double value = 0.1 * (z - center_point.Z());
             LoadColor(value);
             glVertex3fv(surfel->Coords());
           }
