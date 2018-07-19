@@ -83,29 +83,36 @@ R3Grid(int xresolution, int yresolution, int zresolution, const R3Box& bbox)
 
 
 R3Grid::
-R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution)
+R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution, int min_border)
 {
   // Check for empty bounding box
   if (bbox.IsEmpty() || (RNIsZero(spacing))) { *this = R3Grid(); return; }
+
+  // Compute inflated bbox (with room for border)
+  R3Box inflated_bbox = bbox;
+  if (min_border > 0) {
+    inflated_bbox[0] -= spacing * min_border * R3ones_vector;
+    inflated_bbox[1] += spacing * min_border * R3ones_vector;
+  }
   
   // Enforce max resolution
   if (max_resolution > 0) {
-    if (bbox.XLength() / spacing > max_resolution) spacing = bbox.XLength() / max_resolution;
-    if (bbox.YLength() / spacing > max_resolution) spacing = bbox.YLength() / max_resolution;
-    if (bbox.ZLength() / spacing > max_resolution) spacing = bbox.ZLength() / max_resolution;
+    if (inflated_bbox.XLength() / spacing > max_resolution) spacing = inflated_bbox.XLength() / max_resolution;
+    if (inflated_bbox.YLength() / spacing > max_resolution) spacing = inflated_bbox.YLength() / max_resolution;
+    if (inflated_bbox.ZLength() / spacing > max_resolution) spacing = inflated_bbox.ZLength() / max_resolution;
   }
-
-  // Compute resolution
-  grid_resolution[0] = (int) (bbox.XLength() / spacing + 0.5);
-  grid_resolution[1] = (int) (bbox.YLength() / spacing + 0.5);
-  grid_resolution[2] = (int) (bbox.ZLength() / spacing + 0.5);
 
   // Enforce min resolution
   if (min_resolution > 0) {
-    if (grid_resolution[0] < min_resolution) grid_resolution[0] = min_resolution;
-    if (grid_resolution[1] < min_resolution) grid_resolution[1] = min_resolution;
-    if (grid_resolution[2] < min_resolution) grid_resolution[2] = min_resolution;
+    if (inflated_bbox.XLength() / spacing < min_resolution) spacing = inflated_bbox.XLength() / min_resolution;
+    if (inflated_bbox.YLength() / spacing < min_resolution) spacing = inflated_bbox.YLength() / min_resolution;
+    if (inflated_bbox.ZLength() / spacing < min_resolution) spacing = inflated_bbox.ZLength() / min_resolution;
   }
+
+  // Compute resolution
+  grid_resolution[0] = (int) (inflated_bbox.XLength() / spacing + 0.5);
+  grid_resolution[1] = (int) (inflated_bbox.YLength() / spacing + 0.5);
+  grid_resolution[2] = (int) (inflated_bbox.ZLength() / spacing + 0.5);
 
   // Set grid resolution
   grid_row_size = grid_resolution[0];
@@ -121,7 +128,7 @@ R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resoluti
   for (int i = 0; i < grid_size; i++) grid_values[i] = 0;
 
   // Set transformations
-  SetWorldToGridTransformation(bbox);
+  SetWorldToGridTransformation(inflated_bbox);
 }
 
 
@@ -2595,7 +2602,7 @@ RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScala
   }
   else{
     for(i=0;i<dx;i++){
-      RasterizeGridSpan(last1,last2,value);
+      RasterizeGridSpan(last1,last2,value, operation);
       for(j=0;j<3;j++){
         off1[j]+=r1[j];
         off2[j]+=r2[j];
@@ -2617,7 +2624,7 @@ RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScala
   dx2=last2[d]-q3[d];
   ddx=dx1*dx2;
   if(dx==0){
-    RasterizeGridSpan(q2,q3,value);
+    RasterizeGridSpan(q2,q3,value,operation);
     return;
   }
 
@@ -2630,7 +2637,7 @@ RasterizeGridTriangle(const int p1[3], const int p2[3], const int p3[3], RNScala
 
   // Draw Bottom parrallelogram
   for(i=0;i<=dx;i++){
-    RasterizeGridSpan(last1,last2,value);
+    RasterizeGridSpan(last1,last2,value,operation);
     for(j=0;j<3;j++){
       off1[j]+=r1[j];
       off2[j]+=r2[j];
@@ -3129,7 +3136,7 @@ WriteGrid(FILE *fp) const
   // Check file
   if (!fp) fp = stdout;
 
-  // Write grid resolution from file
+  // Write grid resolution to file
   if (fwrite(&grid_resolution, sizeof(int), 3, fp) != 3) {
     RNFail("Unable to write resolution to file");
     return 0;
@@ -3145,7 +3152,7 @@ WriteGrid(FILE *fp) const
     }
   }
 
-  // Write grid values
+  // Write grid values to file
   const RNScalar *grid_valuesp = grid_values;
   for (int i = 0; i < grid_size; i++) {
     float value = (float) *(grid_valuesp++);

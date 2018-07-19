@@ -10,7 +10,7 @@ CCSRCS=$(NAME).cpp
 # Dependency libraries
 #
 
-PKG_LIBS=-lR2Shapes -lRNBasics -ljpeg -lpng 
+PKG_LIBS=-lR2Shapes -lRNBasics -ljpeg -lpng
 
 
 #

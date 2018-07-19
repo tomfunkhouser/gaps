@@ -16,7 +16,7 @@ public:
   // Constructors
   R3Grid(int xresolution = 0, int yresolution = 0, int zresolution = 0);
   R3Grid(int xresolution, int yresolution, int zresolution, const R3Box& bbox);
-  R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution = 0, int max_resolution = 0);
+  R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution = 0, int max_resolution = 0, int min_border = 0);
   R3Grid(const R3Grid& grid);
   ~R3Grid(void);
 
