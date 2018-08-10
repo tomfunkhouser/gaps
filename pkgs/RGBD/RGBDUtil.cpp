@@ -162,7 +162,7 @@ int RGBDCreateBoundaryChannel(
       depth = filled_input_depth_image.GridValue(i, j);
       if (RNIsNegativeOrZero(depth)) continue;
 
-      // Check depth relative to horizontal neighbors
+      // Check depth relative to neighbors
       for (int k = 0; k < 4; k++) {
         int s = (k < 3) ? -1 : 0;
         int t = (k < 3) ? k-1 : -1;

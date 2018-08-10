@@ -113,10 +113,6 @@ public:
   virtual int ReleaseDepthChannel(void);
 
 public:
-  // Mesh/image construction (unlike channels, you should delete the returned result when you are done with it)
-  // R3Mesh *Mesh(void) const;
-  // R2Image *Image(void) const;
-
   // Channel creation
   virtual int CreateColorChannels(const R2Image& color_image);
   virtual int CreateDepthChannel(const R2Grid& image);
@@ -135,6 +131,9 @@ public:
   virtual void InvalidateWorldBBox(void);
   virtual void InvalidateOpenGL(void);
   virtual void UpdateOpenGL(void);
+
+  // Other functions
+  int ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor = 0.1);
 
   // User data functions
   void *UserData(void) const;

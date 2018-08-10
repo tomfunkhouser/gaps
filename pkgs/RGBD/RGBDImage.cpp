@@ -356,7 +356,7 @@ SetPixelChannelValue(int ix, int iy, int channel_index, RNScalar value)
   // Set channel value at pixel
   if ((channel_index < 0) || (channel_index >= channels.NEntries())) return;
   if ((ix < 0) || (ix >= channels[channel_index]->XResolution())) return;
-  if ((iy < 0) || (ix >= channels[channel_index]->YResolution())) return;
+  if ((iy < 0) || (iy >= channels[channel_index]->YResolution())) return;
   channels[channel_index]->SetGridValue(ix, iy, value);
 
   // Update bounding box
@@ -1495,21 +1495,21 @@ UpdateOpenGL(void)
 // Mesh creation function
 ////////////////////////////////////////////////////////////////////////
 
-#if 0
 int RGBDImage::
-ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor = 0.1) const
+ComputeMesh(R3Mesh& mesh, RNLength max_depth, RNLength max_silhouette_factor)
 {
   // Read the channels
   ReadChannels();
 
   // Allocate temporary array of vertex pointers
   int nvertices = NPixels(RN_X) * NPixels(RN_Y);
-  R3MeshVertex **vertices = new R3MeshVertex [ nvertices ];
+  R3MeshVertex **vertices = new R3MeshVertex * [ nvertices ];
   for (int i = 0; i < nvertices; i++) vertices[i] = NULL;
 
   // Compute boundary image ???
   R2Grid boundary_image(NPixels(RN_X), NPixels(RN_Y));
-  if (!RGBDCreateBoundaryChannel(*this, boundary_image, max_silhouette_factor)) return 0;
+  if (!RGBDCreateBoundaryChannel(this, boundary_image, max_silhouette_factor)) return 0;
+  boundary_image.Substitute(R2_GRID_UNKNOWN_VALUE, 0);
          
   // Create vertices
   for (int j = 0; j < NPixels(RN_Y); j++) {
@@ -1520,48 +1520,73 @@ ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor
       if (RNIsNegativeOrZero(depth)) continue;
       if ((max_depth > 0) && (depth > max_depth)) continue;
 
+      // Check if on border ???
+      unsigned int b = (unsigned int) (boundary_image.GridValue(i, j) + 0.5);
+      if (b & RGBD_BORDER_BOUNDARY) continue;
+      // if (b) continue; 
+      
       // Compute vertex info
       R3Point position = PixelWorldPosition(i, j);
       RNRgb color = PixelColor(i, j);
       R2Point texcoords(i, j);
 
       // Create vertex
-      int vertex_index = j*depth_channel->XResolution() + i;
+      int vertex_index = j*NPixels(RN_X) + i;
       vertices[vertex_index] = mesh.CreateVertex(position, R3zero_vector, color, texcoords);
     }
   }
 
   // Create faces
-  for (int i = 0; i < depth_channel->XResolution()-1; i++) {
-    for (int j = 0; j < depth_channel->YResolution()-1; j++) {
-      // Get depths
-      RNScalar d00 = PixelDepth(i, j);
-      RNScalar d10 = PixelDepth(i+1, j);
-      RNScalar d01 = PixelDepth(i, j+1);
-      RNScalar d11 = PixelDepth(i+1, j+1);
-
+  for (int i = 0; i < NPixels(RN_X)-1; i++) {
+    for (int j = 0; j < NPixels(RN_Y)-1; j++) {
       // Get vertices
-      R3MeshVertex *v00 = &vertices[(j+0)*NPixels(RN_X) + (i+0)];
-      R3MeshVertex *v01 = &vertices[(j+1)*NPixels(RN_X) + (i+0)];
-      R3MeshVertex *v10 = &vertices[(j+0)*NPixels(RN_X) + (i+1)];
-      R3MeshVertex *v11 = &vertices[(j+1)*NPixels(RN_X) + (i+1)];
+      R3MeshVertex *v00 = vertices[(j+0)*NPixels(RN_X) + (i+0)];
+      R3MeshVertex *v01 = vertices[(j+1)*NPixels(RN_X) + (i+0)];
+      R3MeshVertex *v10 = vertices[(j+0)*NPixels(RN_X) + (i+1)];
+      R3MeshVertex *v11 = vertices[(j+1)*NPixels(RN_X) + (i+1)];
 
       // Get boundary flags
       unsigned int b00 = (unsigned int) (boundary_image.GridValue(i, j) + 0.5);
       unsigned int b10 = (unsigned int) (boundary_image.GridValue(i+1, j) + 0.5);
       unsigned int b01 = (unsigned int) (boundary_image.GridValue(i, j+1) + 0.5);
       unsigned int b11 = (unsigned int) (boundary_image.GridValue(i+1, j+1) + 0.5);
+      unsigned int bad_combination = RGBD_SILHOUETTE_BOUNDARY | RGBD_SHADOW_BOUNDARY;
 
-      // Create face1
-      if (v00 && v10 && v11) {
-        if ((b00 | b10 | b11) != bad_combination) {
+      // Create faces
+      if (!v00) {
+        if (v10 && v11 && v01) {
+          if (((b10 | b11 | b01) & bad_combination) != bad_combination) {
+            mesh.CreateFace(v10, v11, v01);
+          }
+        }
+      }
+      else if (!v10) {
+        if (v00 && v11 && v01) {
+          if (((b00 | b11 | b01) & bad_combination) != bad_combination) {
+            mesh.CreateFace(v00, v11, v01);
+          }
+        }
+      }
+      else if (!v01) {
+        if (v00 && v10 && v11) {
+          if (((b00 | b10 | b11) & bad_combination) != bad_combination) {
+            mesh.CreateFace(v00, v10, v11);
+          }
+        }
+      }
+      else if (!v11) {
+        if (v00 && v10 && v01) {
+          if (((b00 | b10 | b01) & bad_combination) != bad_combination) {
+            mesh.CreateFace(v00, v10, v01);
+          }
+        }
+      }
+      else {
+        assert(v00 && v01 && v10 && v11);
+        if (((b00 | b10 | b11) & bad_combination) != bad_combination) {
           mesh.CreateFace(v00, v10, v11);
         }
-      } 
-
-      // Create face2
-      if (v00 && v11 && v01) {
-        if ((b00 | b11 | b01) != bad_combination) {
+        if (((b00 | b11 | b01) & bad_combination) != bad_combination) {
           mesh.CreateFace(v00, v11, v01);
         }
       } 
@@ -1577,7 +1602,6 @@ ComputeMesh(R3Mesh& mesh, RNLength max_depth = 0, RNLength max_silhouette_factor
   // Return success
   return 1;
 }
-#endif
 
 
 
