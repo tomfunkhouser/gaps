@@ -70,6 +70,7 @@ static int width = 0;
 static int height = 0;
 static RNAngle xfov = 0;
 static RNRgb background(0,0,0);
+static RNScalar png_distance_scale = 4000;
 static int glut = 1;
 static int mesa = 0;
 
@@ -170,7 +171,7 @@ ReadConfiguration(const char *filename)
 
   // Double-check to make sure width and height are not zero
   if (width == 0) width = 1280;
-  if (height == 0) height = 1024;;
+  if (height == 0) height = 1024;
   
   // Print statistics
   if (print_verbose) {
@@ -468,7 +469,7 @@ WriteImages(const char *output_directory)
     if (!image->ReleaseDepthChannel()) return 0;
     if (create_depth_images) {
       // Write depth image
-      R2Grid tmp = depth_image; tmp.Multiply(1000);
+      R2Grid tmp = depth_image; tmp.Multiply(png_distance_scale);
       char output_image_filename[4096];
       sprintf(output_image_filename, "%s/%s_depth.png", output_directory, image_name);
       tmp.WriteFile(output_image_filename);
@@ -546,7 +547,7 @@ WriteImages(const char *output_directory)
         tmp = nz_image;  tmp.Add(1); tmp.Multiply(32768);  tmp.Threshold(0, 0, R2_GRID_KEEP_VALUE); tmp.Threshold(65535, R2_GRID_KEEP_VALUE, 65535);
         tmp.WriteFile(output_image_filename);
         sprintf(output_image_filename, "%s/%s_radius.png", output_directory, image_name);
-        tmp = radius_image;  tmp.Multiply(4000); 
+        tmp = radius_image;  tmp.Multiply(png_distance_scale); 
         tmp.WriteFile(output_image_filename);
       }
     }
@@ -917,7 +918,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         else if (rendering_scheme == WORLD_PX_RENDERING) position_coordinate = world_position.X() - viewpoint.X();
         else if (rendering_scheme == WORLD_PY_RENDERING) position_coordinate = world_position.Y() - viewpoint.Y();
         else if (rendering_scheme == WORLD_PZ_RENDERING) position_coordinate = world_position.Z() - viewpoint.Z();
-        int position_value = 4000 * position_coordinate + 32768;
+        int position_value = png_distance_scale * position_coordinate + 32768;
         if (position_value < 0) position_value = 0;
         else if (position_value > 65535) position_value = 65535;
         LoadInteger(position_value);
@@ -958,7 +959,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
       else if (rendering_scheme == WORLD_ND_RENDERING) {
         offset_coordinate = -world_position.X()*world_normal.X() - world_position.Y()*world_normal.Y() - world_position.Z()*world_normal.Z();
       }
-      int offset_value = 4000 * offset_coordinate + 32768;
+      int offset_value = png_distance_scale * offset_coordinate + 32768;
       if (offset_value < 0) offset_value = 0;
       else if (offset_value > 65535) offset_value = 65535;
       LoadInteger(offset_value);
@@ -1136,7 +1137,7 @@ Redraw(void)
     R2Grid depth_image(width, height);
     RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
     if (CaptureDepth(depth_image)) {
-      depth_image.Multiply(4000);
+      depth_image.Multiply(png_distance_scale);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
       if (mask_image) depth_image.Mask(*mask_image);
       depth_image.WriteFile(output_image_filename);
@@ -1160,7 +1161,7 @@ Redraw(void)
     R2Grid depth_image(width, height);
     RenderMesh(mesh, BLACK_RENDERING, target_viewpoint, target_towards, target_up);
     if (CaptureDepth(depth_image)) {
-      depth_image.Multiply(4000);
+      depth_image.Multiply(png_distance_scale);
       depth_image.Threshold(65535, R2_GRID_KEEP_VALUE, 0);
       if (mask_image) depth_image.Mask(*mask_image);
       sprintf(output_image_filename, "%s/%s_mesh_depth.png", output_image_directory, name);
@@ -1506,6 +1507,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-width")) { argc--; argv++; width = atoi(*argv); }
       else if (!strcmp(*argv, "-height")) { argc--; argv++; height = atoi(*argv); }
       else if (!strcmp(*argv, "-xfov")) { argc--; argv++; xfov = atof(*argv); }
+      else if (!strcmp(*argv, "-png_distance_scale")) { argc--; argv++; png_distance_scale = atof(*argv); }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-create_depth_images")) { output = create_depth_images = 1; }
       else if (!strcmp(*argv, "-create_position_images")) { output = create_position_images = 1; }
