@@ -23,6 +23,7 @@ int swap_edges = 0;
 R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1));
 RNLength min_edge_length = 0;
 RNLength max_edge_length = 0;
+RNLength min_component_area = 0;
 char *xform_name = NULL;
 int scale_by_area = 0;
 int align_by_pca = 0;
@@ -201,6 +202,102 @@ CopyColors(R3Mesh *mesh, const char *source_mesh_name)
 
 
 
+static int
+DeleteSmallConnectedComponents(R3Mesh *mesh, RNArea min_area)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int total_ncomponents = 0;
+  int small_ncomponents = 0;
+
+  // Allocate seed marks
+  if (mesh->NFaces() == 0) return 0;
+  int *components = new int [ mesh->NFaces() ];
+  for (int i = 0; i < mesh->NFaces(); i++) components[i]  = -1;
+
+  // Iterate finding connected components
+  int seed_index = 0;
+  RNArray<R3MeshFace *> small_component_faces;
+  for (;;) {
+    // Find an unmarked face
+    R3MeshFace *seed = NULL;
+    for (; seed_index < mesh->NFaces(); seed_index++) {
+      R3MeshFace *face = mesh->Face(seed_index);
+      if (components[seed_index] < 0) {
+        seed = face;
+        break;
+      }
+    }
+
+    // Check if found a new component
+    if (!seed) break;
+
+    // Mark connected component
+    R3mesh_mark++;
+    RNArea area = 0;
+    RNArray<R3MeshFace *> stack;
+    RNArray<R3MeshFace *> component;
+    stack.InsertTail(seed);
+    mesh->SetFaceMark(seed, R3mesh_mark);
+    while (!stack.IsEmpty()) {
+      R3MeshFace *face = stack.Tail();
+      stack.RemoveTail();
+
+      // Add face to component
+      component.Insert(face);
+      area += mesh->FaceArea(face);
+      components[mesh->FaceID(face)] = total_ncomponents;
+
+      // Check neighbors
+      for (int i = 0; i < 3; i++) {
+        R3MeshFace *neighbor = mesh->FaceOnFace(face, i);
+        if (!neighbor) continue;
+        if (mesh->FaceMark(neighbor) == R3mesh_mark) continue;
+        mesh->SetFaceMark(neighbor, R3mesh_mark);
+        stack.InsertTail(neighbor);
+      }
+    }
+
+    // Check component
+    if (component.NEntries() == 0) continue;
+
+    // Mark component for deletion if too small
+    if (area < min_area) {
+      small_component_faces.Append(component);
+      small_ncomponents++;
+    }
+
+    // Increment number of components
+    total_ncomponents++;
+  }
+
+  // Delete deletable faces
+  for (int i = 0; i < small_component_faces.NEntries(); i++) {
+    R3MeshFace *face = small_component_faces.Kth(i);
+    mesh->DeleteFace(face);
+  }
+
+  // Delete components
+  delete [] components;
+
+  // Print debug statistics
+  if (print_verbose) {
+    printf("  Deleted small connected components ...\n");
+    printf("    Time = %.2f seconds\n", start_time.Elapsed());
+    printf("    # Deleted Components = %d\n", small_ncomponents);
+    printf("    # Deleted Faces = %d\n", small_component_faces.NEntries());
+    printf("    # Remaining Components = %d\n", total_ncomponents - small_ncomponents);
+    printf("    # Remaining Faces = %d\n", mesh->NFaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // PROGRAM ARGUMENT PARSING
 ////////////////////////////////////////////////////////////////////////
@@ -240,6 +337,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-xform")) { argv++; argc--; R4Matrix m;  if (ReadMatrix(m, *argv)) { xform = R3identity_affine; xform.Transform(R3Affine(m)); xform.Transform(prev_xform);} } 
       else if (!strcmp(*argv, "-min_edge_length")) { argv++; argc--; min_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
+      else if (!strcmp(*argv, "-remove_small_components")) { argv++; argc--; min_component_area = atof(*argv); }
       else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
       else if (!strcmp(*argv, "-merge_list")) { argv++; argc--; merge_list_name = *argv; }
       else if (!strcmp(*argv, "-transform")) {
@@ -329,6 +427,11 @@ int main(int argc, char **argv)
   // Transform 
   if (!xform.IsIdentity()) {
     mesh->Transform(xform);
+  }
+
+  // Remove small components
+  if (min_component_area > 0) {
+    DeleteSmallConnectedComponents(mesh, min_component_area);
   }
 
   // Clean 
