@@ -77,6 +77,7 @@ static int show_matches = 0;
 static int show_backfacing = 0;
 static int show_point_order = 0;
 static int show_point_names = 0;
+static int show_point_spheres = 0;
 
 
 
@@ -204,25 +205,24 @@ void GLUTRedraw(void)
       }
     }
 
-#if 1
     // Draw points
     if (points && show_points) {
-      glEnable(GL_LIGHTING);
+      glDisable(GL_LIGHTING);
       glPointSize(3);
       glBegin(GL_POINTS);
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
-        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, point_colors[point_color_index]);
+        glColor4fv(point_colors[point_color_index]);
         R3LoadNormal(point->normal);
         R3LoadPoint(point->position);
       }
       glEnd();
       glPointSize(1);
     }
-#else
+
     // Draw points
-    if (points && show_points) {
+    if (points && show_point_spheres) {
       // Draw points
       glEnable(GL_LIGHTING);
       RNLength radius = 0.008 * model->bbox.LongestAxisLength();
@@ -244,7 +244,6 @@ void GLUTRedraw(void)
         }
       }
     }
-#endif
 
     // Draw point normals
     if (points && show_normals) {
@@ -481,9 +480,14 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_point_order = !show_point_order;
     break;
 
- case 'P':
+  case 'P':
   case 'p':
     show_points = !show_points;
+    break;
+
+  case 'S':
+  case 's':
+    show_point_spheres = !show_point_spheres;
     break;
 
   case 'V':
