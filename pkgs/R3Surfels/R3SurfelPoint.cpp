@@ -119,6 +119,16 @@ SetNormal(const R3Vector& normal)
 
 
 void R3SurfelPoint::
+SetRadius(float radius)
+{
+  // Set position
+  assert(block && surfel);
+  block->SetSurfelRadius(block->SurfelIndex(surfel), radius);
+}
+
+
+
+void R3SurfelPoint::
 SetColor(const RNRgb& color)
 {
   // Set position

@@ -69,6 +69,7 @@ public:
   // Manipulation functions
   void SetPosition(const R3Point& position);
   void SetNormal(const R3Vector& normal);
+  void SetRadius(float radius);
   void SetColor(const RNRgb& color);
   void SetActive(RNBoolean active = TRUE);
   void SetAerial(RNBoolean aerial = TRUE);

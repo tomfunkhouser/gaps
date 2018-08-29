@@ -846,6 +846,7 @@ UpdateFlags(void)
 void R3SurfelNode::
 UpdateSurfelNormals(void) 
 {
+#if 0
   // Create pointset
   R3SurfelPointSet pointset;
   for (int i = 0; i < NBlocks(); i++) {
@@ -855,6 +856,13 @@ UpdateSurfelNormals(void)
 
   // Update normals
   pointset.UpdateNormals();
+#else
+  // Update normals block-by-block
+  for (int i = 0; i < NBlocks(); i++) {
+    R3SurfelBlock *block = Block(i);
+    block->UpdateSurfelNormals();
+  }
+#endif
 }
 
 

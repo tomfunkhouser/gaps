@@ -945,10 +945,10 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
   R3Point pointset_centroid = Centroid();
   R3Point *positions = NULL;
 
-  // Compute normals for all points that don't already have them
+  // Compute normals and radii for all points that don't already have them
   for (int i = 0; i < NPoints(); i++) {
     R3SurfelPoint *point = Point(i);
-    if (point->HasNormal()) continue;
+    if (point->HasNormal() && (point->Radius() > 0)) continue;
 
     // Allocate kdtree
     if (!kdtree) {
@@ -977,6 +977,10 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
       positions[npositions++] = neighbor->Position();
     }
 
+    // Compute radius of neighborhood
+    int neighbor_index = (npositions <= 6) ? npositions-1 : 6;
+    RNScalar radius = R3Distance(positions[neighbor_index], point->Position());
+    
     // Compute normal with PCA of neighborhood
     R3Point centroid = R3Centroid(npositions, positions);
     R3Triad triad = R3PrincipleAxes(centroid, npositions, positions);
@@ -999,7 +1003,10 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
     }
 
     // Assign normal
-    point->SetNormal(normal);
+    if (!point->HasNormal()) point->SetNormal(normal);
+
+    // Assign radius
+    if (point->Radius() == 0) point->SetRadius(radius);
   }
 
   // Delete data
