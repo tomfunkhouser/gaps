@@ -1762,7 +1762,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   strncpy(mtl_filename, startp, 1024);
   int slen = strlen(mtl_filename);
   if (slen > 4) mtl_filename[slen-4] = '\0';
-  strncat(mtl_filename, ".mtl", 1024);
+  strncat(mtl_filename, ".mtl", 1024-strlen(mtl_filename));
 
   // Create directory
   if (dirname) {
@@ -2209,7 +2209,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       }
 
       // Get mesh filename
-      char buffer[2048];
+      char buffer[1024];
       strcpy(buffer, filename);
       char *bufferp = strrchr(buffer, '/');
       if (bufferp) *(bufferp+1) = '\0';
@@ -2256,7 +2256,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Read data
       int m;
       double matrix[16];
-      char group_name[4096] = { '\0' };
+      char group_name[1024] = { '\0' };
       if (!strcmp(cmd, "group")) fscanf(fp, "%s", group_name);
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, 
         &matrix[0], &matrix[1], &matrix[2], &matrix[3], 
@@ -2314,12 +2314,12 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R2Texture *texture = NULL;
       if (strcmp(texture_name, "0")) {
         // Get texture filename
-        char buffer[2048];
+        char buffer[1024];
         strcpy(buffer, filename);
         char *bufferp = strrchr(buffer, '/');
         if (bufferp) *(bufferp+1) = '\0';
         else buffer[0] = '\0';
-        strcat(buffer, texture_name);
+        strncat(buffer, texture_name, 1024-strlen(buffer));
 
         // Read texture file
         R2Image *image = new R2Image();
@@ -2430,12 +2430,12 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       }
 
       // Get scene filename
-      char buffer[2048];
+      char buffer[1024];
       strcpy(buffer, filename);
       char *bufferp = strrchr(buffer, '/');
       if (bufferp) *(bufferp+1) = '\0';
       else buffer[0] = '\0';
-      strcat(buffer, scenename);
+      strncat(buffer, scenename, 1024-strlen(buffer));
 
       // Read scene from included file
       if (!ReadFile(buffer, group_nodes[depth])) {
@@ -3148,7 +3148,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
   int line_number = 0;
   int assignment_index = 0;
   RNArray<R3Shape *> shapes;
-  char mesh_directory[4096] = { '\0' };
+  char mesh_directory[2048] = { '\0' };
   while (fgets(buffer, 4096, fp)) {
     // Check line
     line_number++;
@@ -3158,7 +3158,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
     if (*bufferp == '#') continue;
 
     // Parse line
-    char keyword[4096];
+    char keyword[1024];
     if (sscanf(bufferp, "%s", keyword) == (unsigned int) 1) {
       if (!strcmp(keyword, "A")) {
         // Parse assignment
@@ -3202,7 +3202,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
         // Parse model
         int dummy;
         double cx, cy, cz, r, h;
-        char model_name[4096], mesh_name[4096];
+        char model_name[1024], mesh_name[1024];
         if (sscanf(bufferp, "%s%d%lf%lf%lf%lf%lf%s%s%d%d%d%d%d", keyword, 
           &dummy, &cx, &cy, &cz, &r, &h, model_name, mesh_name, &dummy, &dummy, &dummy, &dummy, &dummy) != (unsigned int) 14) {
           fprintf(stderr, "Error parsing model at line %d of %s\n", line_number, filename);
@@ -3210,7 +3210,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
         }
 
         // Read mesh
-        char mesh_filename[4096];
+        char mesh_filename[2048];
         R3Shape *shape = NULL;
         if (strcmp(mesh_name, "None")) {
           if (mesh_directory[0]) sprintf(mesh_filename, "%s/%s", mesh_directory, mesh_name);
