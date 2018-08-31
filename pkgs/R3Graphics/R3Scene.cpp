@@ -2064,20 +2064,15 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
   R3SceneElement *element = NULL;
 
   // Create stack of group information
-  const int max_depth = 1024;
+  const int max_depth = 128;
   R3SceneNode *group_nodes[max_depth] = { NULL };
   R3Material *group_materials[max_depth] = { NULL };
   group_nodes[0] = parent_node;
   int depth = 0;
 
   // Read body
-  int m;
-  RNRgb c;
-  R3Vector d;
-  R3Point p, p1, p2, p3;
-  double r, h, ca, la, qa;
+  char cmd[128];
   int command_number = 1;
-  char cmd[128], name[256], pathname[1024];
   while (fscanf(fp, "%s", cmd) == 1) {
     if (cmd[0] == '#') {
       // Comment -- read everything until end of line
@@ -2085,6 +2080,8 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "tri")) {
       // Read data
+      int m;
+      R3Point p1, p2, p3;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, 
         &p1[0], &p1[1], &p1[2], &p2[0], &p2[1], &p2[2], &p3[0], &p3[1], &p3[2]) != 10) {
         fprintf(stderr, "Unable to read triangle at command %d in file %s\n", command_number, filename);
@@ -2108,6 +2105,8 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "box")) {
       // Read data
+      int m;
+      R3Point p1, p2;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf", &m, &p1[0], &p1[1], &p1[2], &p2[0], &p2[1], &p2[2]) != 7) {
         fprintf(stderr, "Unable to read box at command %d in file %s\n", command_number, filename);
         return 0;
@@ -2132,13 +2131,16 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "sphere")) {
       // Read data
-      if (fscanf(fp, "%d%lf%lf%lf%lf", &m, &p[0], &p[1], &p[2], &r) != 5) {
+      int m;
+      R3Point c;
+      double r;
+      if (fscanf(fp, "%d%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r) != 5) {
         fprintf(stderr, "Unable to read sphere at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Create sphere
-      R3Sphere *sphere = new R3Sphere(p, r);
+      R3Sphere *sphere = new R3Sphere(c, r);
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
@@ -2151,14 +2153,17 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "cylinder")) {
       // Read data
-      if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &p[0], &p[1], &p[2], &r, &h) != 6) {
+      int m;
+      R3Point c;
+      double r, h;
+      if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r, &h) != 6) {
         fprintf(stderr, "Unable to read cylinder at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Create cylinder
-      R3Point p1 = p - 0.5 * h * R3posy_vector;
-      R3Point p2 = p + 0.5 * h * R3posy_vector;
+      R3Point p1 = c - 0.5 * h * R3posy_vector;
+      R3Point p2 = c + 0.5 * h * R3posy_vector;
       R3Cylinder *cylinder = new R3Cylinder(p1, p2, r);
 
       // Get material and element from m
@@ -2172,14 +2177,17 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "cone")) {
       // Read data
-      if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &p[0], &p[1], &p[2], &r, &h) != 6) {
+      int m;
+      R3Point c;
+      double r, h;
+      if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r, &h) != 6) {
         fprintf(stderr, "Unable to read cone at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Create cone
-      R3Point p1 = p - 0.5 * h * R3posy_vector;
-      R3Point p2 = p + 0.5 * h * R3posy_vector;
+      R3Point p1 = c - 0.5 * h * R3posy_vector;
+      R3Point p2 = c + 0.5 * h * R3posy_vector;
       R3Cone *cone = new R3Cone(p1, p2, r);
 
       // Get material and element from m
@@ -2193,20 +2201,23 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "mesh")) {
       // Read data
-      if (fscanf(fp, "%d%s", &m, name) != 2) {
+      int m;
+      char meshname[256];
+      if (fscanf(fp, "%d%s", &m, meshname) != 2) {
         fprintf(stderr, "Unable to parse mesh command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Get mesh filename
-      strcpy(pathname, filename);
-      char *pathnamep = strrchr(pathname, '/');
-      if (pathnamep) *(pathnamep+1) = '\0';
-      else pathname[0] = '\0';
-      strncat(pathname, name, 1024-strlen(pathname));
+      char buffer[2048];
+      strcpy(buffer, filename);
+      char *bufferp = strrchr(buffer, '/');
+      if (bufferp) *(bufferp+1) = '\0';
+      else buffer[0] = '\0';
+      strcat(buffer, meshname);
 
       // Read mesh
-      R3TriangleArray *mesh = ReadMesh(pathname);
+      R3TriangleArray *mesh = ReadMesh(buffer);
       if (!mesh) return 0;
 
       // Get material and element from m
@@ -2220,12 +2231,16 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "line")) {
       // Read data
-      if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf", &m, &p1[0], &p1[1], &p1[2], &p2[0], &p2[1], &p2[2]) != 7) {
+      int m;
+      double x1, y1, z1, x2, y2, z2;
+      if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf", &m, &x1, &y1, &z1, &x2, &y2, &z2) != 7) {
         fprintf(stderr, "Unable to read line at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Create cylinder representing line
+      R3Point p1(x1, y1, z1);
+      R3Point p2(x2, y2, z2);
       R3Cylinder *cylinder = new R3Cylinder(p1, p2, RN_BIG_EPSILON);
 
       // Get material and element from m
@@ -2239,9 +2254,10 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "begin") || !strcmp(cmd, "group")) {
       // Read data
+      int m;
       double matrix[16];
-      name[0] = '\0';
-      if (!strcmp(cmd, "group")) fscanf(fp, "%s", name);
+      char group_name[4096] = { '\0' };
+      if (!strcmp(cmd, "group")) fscanf(fp, "%s", group_name);
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, 
         &matrix[0], &matrix[1], &matrix[2], &matrix[3], 
         &matrix[4], &matrix[5], &matrix[6], &matrix[7], 
@@ -2259,10 +2275,16 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Create new node
       R3SceneNode *node = new R3SceneNode(this);
-      if (name[0]) node->SetName(name);
+      if (group_name[0]) node->SetName(group_name);
       node->SetTransformation(R3Affine(R4Matrix(matrix)));
       group_nodes[depth]->InsertChild(node);
 
+      // Check depth
+      if (depth >= max_depth-1) {
+        fprintf(stderr, "Maximum node depth exceeded\n");
+        return 0;
+      }
+      
       // Push node onto stack
       depth++;
       group_nodes[depth] = node;
@@ -2282,9 +2304,10 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Read data
       RNRgb ka, kd, ks, kt, e;
       double n, ir;
+      char texture_name[256];
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%s", 
           &ka[0], &ka[1], &ka[2], &kd[0], &kd[1], &kd[2], &ks[0], &ks[1], &ks[2], &kt[0], &kt[1], &kt[2], 
-          &e[0], &e[1], &e[2], &n, &ir, name) != 18) {
+          &e[0], &e[1], &e[2], &n, &ir, texture_name) != 18) {
         fprintf(stderr, "Unable to read material at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2295,18 +2318,19 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Create texture
       R2Texture *texture = NULL;
-      if (strcmp(name, "0")) {
+      if (strcmp(texture_name, "0")) {
         // Get texture filename
-        strcpy(pathname, filename);
-        char *pathnamep = strrchr(pathname, '/');
-        if (pathnamep) *(pathnamep+1) = '\0';
-        else pathname[0] = '\0';
-        strncat(pathname, name, 1024-strlen(pathname));
+        char buffer[2048];
+        strcpy(buffer, filename);
+        char *bufferp = strrchr(buffer, '/');
+        if (bufferp) *(bufferp+1) = '\0';
+        else buffer[0] = '\0';
+        strcat(buffer, texture_name);
 
         // Read texture file
         R2Image *image = new R2Image();
-        if (!image->Read(pathname)) {
-          fprintf(stderr, "Unable to read texture from %s at command %d in file %s\n", pathname, command_number, filename);
+        if (!image->Read(buffer)) {
+          fprintf(stderr, "Unable to read texture from %s at command %d in file %s\n", buffer, command_number, filename);
           return 0;
         }
         
@@ -2322,6 +2346,8 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "dir_light")) {
       // Read data
+      RNRgb c;
+      R3Vector d;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf", 
         &c[0], &c[1], &c[2], &d[0], &d[1], &d[2]) != 6) {
         fprintf(stderr, "Unable to read directional light at command %d in file %s\n", command_number, filename);
@@ -2337,6 +2363,9 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "point_light")) {
       // Read data
+      RNRgb c;
+      R3Point p;
+      double ca, la, qa;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &ca, &la, &qa) != 9) {
         fprintf(stderr, "Unable to read point light at command %d in file %s\n", command_number, filename);
         return 0;
@@ -2348,7 +2377,10 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "spot_light")) {
       // Read data
-      double sc, sd;
+      RNRgb c;
+      R3Point p;
+      R3Vector d;
+      double ca, la, qa, sc, sd;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", 
         &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &d[0], &d[1], &d[2], &ca, &la, &qa, &sc, &sd) != 14) {
         fprintf(stderr, "Unable to read point light at command %d in file %s\n", command_number, filename);
@@ -2364,8 +2396,12 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "area_light")) {
       // Read data
+      RNRgb c;
+      R3Point p;
+      R3Vector d;
+      double radius, ca, la, qa;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", 
-        &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &d[0], &d[1], &d[2], &r, &ca, &la, &qa) != 13) {
+        &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &d[0], &d[1], &d[2], &radius, &ca, &la, &qa) != 13) {
         fprintf(stderr, "Unable to read area light at command %d in file %s\n", command_number, filename);
         return 0;
       }
@@ -2374,7 +2410,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       d.Normalize();
 
       // Create spot light
-      R3AreaLight *light = new R3AreaLight(p, r, d, c, 1, TRUE, ca, la, qa);
+      R3AreaLight *light = new R3AreaLight(p, radius, d, c, 1, TRUE, ca, la, qa);
       InsertLight(light);
     }
     else if (!strcmp(cmd, "camera")) {
@@ -2393,43 +2429,47 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     }
     else if (!strcmp(cmd, "include")) {
       // Read data
-      if (fscanf(fp, "%s", name) != 1) {
+      char scenename[256];
+      if (fscanf(fp, "%s", scenename) != 1) {
         fprintf(stderr, "Unable to read include command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Get scene filename
-      strcpy(pathname, filename);
-      char *pathnamep = strrchr(pathname, '/');
-      if (pathnamep) *(pathnamep+1) = '\0';
-      else pathname[0] = '\0';
-      strncat(pathname, name, 1024-strlen(pathname));
+      char buffer[2048];
+      strcpy(buffer, filename);
+      char *bufferp = strrchr(buffer, '/');
+      if (bufferp) *(bufferp+1) = '\0';
+      else buffer[0] = '\0';
+      strcat(buffer, scenename);
 
       // Read scene from included file
-      if (!ReadFile(pathname, group_nodes[depth])) {
-        fprintf(stderr, "Unable to read included scene: %s\n", pathname);
+      if (!ReadFile(buffer, group_nodes[depth])) {
+        fprintf(stderr, "Unable to read included scene: %s\n", buffer);
         return 0;
       }
     }
     else if (!strcmp(cmd, "background")) {
       // Read data
-      if (fscanf(fp, "%lf%lf%lf", &c[0], &c[1], &c[2]) != 3) {
+      double r, g, b;
+      if (fscanf(fp, "%lf%lf%lf", &r, &g, &b) != 3) {
         fprintf(stderr, "Unable to read background at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Assign background color
-      SetBackground(c);
+      SetBackground(RNRgb(r, g, b));
     }
     else if (!strcmp(cmd, "ambient")) {
       // Read data
-      if (fscanf(fp, "%lf%lf%lf", &c[0], &c[1], &c[2]) != 3) {
+      double r, g, b;
+      if (fscanf(fp, "%lf%lf%lf", &r, &g, &b) != 3) {
         fprintf(stderr, "Unable to read ambient at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
       // Assign ambient color
-      SetAmbient(c);
+      SetAmbient(RNRgb(r, g, b));
     }
     else {
       fprintf(stderr, "Unrecognized command %d in file %s: %s\n", command_number, filename, cmd);
