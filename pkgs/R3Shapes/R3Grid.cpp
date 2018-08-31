@@ -3194,7 +3194,7 @@ ReadBinaryRawSizeFile(const char *filename, int& xres, int& yres, int& zres, cha
   xres = values[0];
   yres = values[1];
   zres = values[2];
-  strncpy(format, "Double64", 4096);
+  strncpy(format, "Double64", 2048);
 
   // Return success
   return 1;
@@ -3213,8 +3213,8 @@ ReadAsciiRawSizeFile(const char *filename, int& xres, int& yres, int& zres, char
   }
 
   // Read line from file
-  char buffer[4096];
-  if (!fgets(buffer, 4096, fp)) {
+  char buffer[2048];
+  if (!fgets(buffer, 2048, fp)) {
     RNFail("Unable to read size file %s", filename);
     return 0;
   }
@@ -3229,7 +3229,7 @@ ReadAsciiRawSizeFile(const char *filename, int& xres, int& yres, int& zres, char
   // Parse format
   char *token = strtok(buffer, "(");
   if (!token) { RNFail("Error parsing type name in size file %s", filename); return 0; }
-  strncpy(format, token, 4096);
+  strncpy(format, token, 2048);
 
   // Parse xres
   token = strtok(NULL, ",)");
@@ -3310,21 +3310,21 @@ int R3Grid::
 ReadRawFile(const char *filename)
 {
   // Get size file name
-  char size_name[4096];
-  strncpy(size_name, filename, 4096);
+  char size_name[2048];
+  strncpy(size_name, filename, 2048);
   char *ext = strrchr(size_name, '.');
   if (ext) *ext = '\0';
-  strncat(size_name, ".size", 4096);
+  strncat(size_name, ".size", 2048);
 
   // Get transformation file name
-  char transformation_name[4096];
-  strncpy(transformation_name, filename, 4096);
+  char transformation_name[2048];
+  strncpy(transformation_name, filename, 2048);
   ext = strrchr(transformation_name, '.');
   if (ext) *ext = '\0';
-  strncat(transformation_name, ".xf", 4096);
+  strncat(transformation_name, ".xf", 2048);
 
   // Read size file
-  char format[4096];
+  char format[2048];
   int xres, yres, zres;
   if (!ReadRawSizeFile(size_name, xres, yres, zres, format)) return 0;
   int new_size = xres * yres * zres;
@@ -3509,18 +3509,18 @@ int R3Grid::
 WriteRawFile(const char *filename, const char *format) const
 {
   // Get size file name
-  char size_name[4096];
-  strncpy(size_name, filename, 4096);
+  char size_name[2048];
+  strncpy(size_name, filename, 2048);
   char *ext = strrchr(size_name, '.');
   if (ext) *ext = '\0';
-  strncat(size_name, ".size", 4096);
+  strncat(size_name, ".size", 2048);
 
   // Get transformation file name
-  char transformation_name[4096];
-  strncpy(transformation_name, filename, 4096);
+  char transformation_name[2048];
+  strncpy(transformation_name, filename, 2048);
   ext = strrchr(transformation_name, '.');
   if (ext) *ext = '\0';
-  strncat(transformation_name, ".xf", 4096);
+  strncat(transformation_name, ".xf", 2048);
 
   // Write size file
   if (!WriteRawSizeFile(size_name, grid_resolution[0], grid_resolution[1], grid_resolution[2], format)) return 0;
