@@ -157,6 +157,16 @@ public:
   void RasterizeGridPolygon(const R2Polygon& polygon, RNScalar value, int operation = 0);
   void RasterizeWorldPolygon(const R2Polygon& polygon, RNScalar value, int operation = 0);
 
+  // Rendering functions
+  void RenderGridTriangle(const R2Point& pointA, const R2Point& pointB, const R2Point& pointC,
+    RNScalar valueA, RNScalar valueB, RNScalar valueC, RNScalar depthA, RNScalar depthB, RNScalar depthC,
+    R2Grid& depth_grid);
+  void RenderWorldTriangle(const R2Point& pointA, const R2Point& pointB, const R2Point& pointC,
+    RNScalar valueA, RNScalar valueB, RNScalar valueC,
+    RNScalar depthA, RNScalar depthB, RNScalar depthC,
+    R2Grid& depth_grid);
+  
+
   // Relationship functions
   RNScalar Dot(const R2Grid& grid) const;
   RNScalar L1Distance(const R2Grid& grid) const;
@@ -786,6 +796,18 @@ RasterizeWorldCircle(const R2Point& center, RNLength radius, RNScalar value, int
 {
   // Splat value everywhere inside world circle
   RasterizeGridCircle(GridPosition(center), radius * WorldToGridScaleFactor(), value, operation);
+}
+
+
+
+inline void R2Grid::
+RenderWorldTriangle(const R2Point& pointA, const R2Point& pointB, const R2Point& pointC,
+  RNScalar valueA, RNScalar valueB, RNScalar valueC,
+  RNScalar depthA, RNScalar depthB, RNScalar depthC,
+  R2Grid& depth_grid)
+{
+  // Render triangle into grid while checking for closest depth values
+  RenderGridTriangle(GridPosition(pointA), GridPosition(pointB), GridPosition(pointC), valueA, valueB, valueC, depthA, depthB, depthC, depth_grid);
 }
 
 

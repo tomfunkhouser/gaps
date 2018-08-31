@@ -2560,6 +2560,167 @@ Dot(const R2Grid& grid) const
 
 
 
+void R2Grid::
+RenderGridTriangle(
+   const R2Point& pointA, const R2Point& pointB, const R2Point& pointC,
+   RNScalar valueA, RNScalar valueB, RNScalar valueC,
+   RNScalar depthA, RNScalar depthB, RNScalar depthC,
+   R2Grid& depth_grid)
+{
+  // Check values
+  if (valueA == R2_GRID_UNKNOWN_VALUE) return;
+  if (valueB == R2_GRID_UNKNOWN_VALUE) return;
+  if (valueC == R2_GRID_UNKNOWN_VALUE) return;
+
+  // Check depths
+  if (depthA == R2_GRID_UNKNOWN_VALUE) return;
+  if (depthB == R2_GRID_UNKNOWN_VALUE) return;
+  if (depthC == R2_GRID_UNKNOWN_VALUE) return;
+
+  // Get convenient point variables
+  R2Point points[3];
+  points[0] = pointA;
+  points[1] = pointB;
+  points[2] = pointC;
+
+  // Get convenient value variables
+  RNScalar values[3];
+  values[0] = valueA;
+  values[1] = valueB;
+  values[2] = valueC;
+
+  // Get convenient depth variables
+  RNScalar depths[3];
+  depths[0] = depthA;
+  depths[1] = depthB;
+  depths[2] = depthC;
+
+  // Sort vertex indices by Y coordinate
+  int iv0, iv1, iv2;
+  if (points[0].Y() < points[1].Y()) {
+    if (points[0].Y() < points[2].Y()) { 
+      if (points[1].Y() < points[2].Y()) { iv0 = 0; iv1 = 1; iv2 = 2; }
+      else { iv0 = 0; iv1 = 2; iv2 = 1; }
+    }
+    else { iv0 = 2; iv1 = 0; iv2 = 1; }
+  }
+  else {
+    if (points[1].Y() < points[2].Y()) { 
+      if (points[0].Y() < points[2].Y()) { iv0 = 1; iv1 = 0; iv2 = 2; }
+      else { iv0 = 1; iv1 = 2; iv2 = 0; }
+    }
+    else { iv0 = 2; iv1 = 1; iv2 = 0; }
+  }
+  
+  // Sort vertex coordinates
+  double dy = points[iv2].Y() - points[iv0].Y();
+  double t1 = (dy > 0) ? (points[iv1].Y() - points[iv0].Y()) / dy : 0;
+  double y0 = points[iv0].Y();
+  double y1 = points[iv1].Y();
+  double y2 = points[iv2].Y();
+  double x0 = points[iv0].X();
+  double x2 = points[iv2].X();
+  double x1a = points[iv1].X();
+  double x1b = (1-t1)*x0 + t1*x2;
+  double value0 = values[iv0];
+  double value2 = values[iv2];
+  double value1a = values[iv1];
+  double value1b = (1-t1)*value0 + t1*value2;
+  double depth0 = depths[iv0];
+  double depth2 = depths[iv2];
+  double depth1a = depths[iv1];
+  double depth1b = (1-t1)*depth0 + t1*depth2;
+  if (x1a > x1b) { 
+    double swap;
+    swap = x1a; x1a = x1b; x1b = swap; 
+    swap = value1a; value1a = value1b; value1b = swap; 
+    swap = depth1a; depth1a = depth1b; depth1b = swap; 
+  }
+
+  // Rasterize lower half of triangle
+  int iy0 = (int) (y0 + 0.5);
+  int iy1 = (int) (y1 + 0.5);
+  int nysteps = (iy1 - iy0) + 1;
+  double xa_step = (x1a - x0) / nysteps;
+  double xb_step = (x1b - x0) / nysteps;
+  double valuea_step = (value1a  - value0) / nysteps;
+  double valueb_step = (value1b  - value0) / nysteps;
+  double deptha_step = (depth1a  - depth0) / nysteps;
+  double depthb_step = (depth1b  - depth0) / nysteps;
+  double xa = x0;
+  double xb = x0;
+  double valuea = value0;
+  double valueb = value0;
+  double deptha = depth0;
+  double depthb = depth0;
+  for (int iy = iy0; iy <= iy1; iy++) {
+    int ixa = (int) (xa + 0.5);
+    int ixb = (int) (xb + 0.5);
+    int nxsteps = (ixb - ixa) + 1;
+    double value_step = (valueb - valuea) / nxsteps;
+    double depth_step = (depthb - deptha) / nxsteps;
+    double value = valuea;
+    double depth = deptha;
+    for (int ix = ixa; ix <= ixb; ix++) {
+      RNScalar old_depth = depth_grid.GridValue(ix, iy);
+      if ((old_depth == R2_GRID_UNKNOWN_VALUE) || (depth < old_depth)) {
+        SetGridValue(ix, iy, value);
+        depth_grid.SetGridValue(ix, iy, depth);
+      }
+      value += value_step;
+      depth += depth_step;
+    }
+    valuea += valuea_step;
+    valueb += valueb_step;
+    deptha += deptha_step;
+    depthb += depthb_step;
+    xa += xa_step;
+    xb += xb_step;
+  }
+  
+  // Rasterize upper half of triangle
+  int iy2 = (int) (y2 + 0.5);
+  nysteps = (iy2 - iy1) + 1;
+  xa_step = (x2 - x1a) / nysteps;
+  xb_step = (x2 - x1b) / nysteps;
+  valuea_step = (value2  - value1a) / nysteps;
+  valueb_step = (value2  - value1b) / nysteps;
+  deptha_step = (depth2  - depth1a) / nysteps;
+  depthb_step = (depth2  - depth1b) / nysteps;
+  xa = x1a;
+  xb = x1b;
+  valuea = value1a;
+  valueb = value1b;
+  deptha = depth1a;
+  depthb = depth1b;
+  for (int iy = iy1; iy <= iy2; iy++) {
+    int ixa = (int) (xa + 0.5);
+    int ixb = (int) (xb + 0.5);
+    int nxsteps = (ixb - ixa) + 1;
+    double value_step = (valueb - valuea) / nxsteps;
+    double depth_step = (depthb - deptha) / nxsteps;
+    double value = valuea;
+    double depth = deptha;
+    for (int ix = ixa; ix <= ixb; ix++) {
+      RNScalar old_depth = depth_grid.GridValue(ix, iy);
+      if ((old_depth == R2_GRID_UNKNOWN_VALUE) || (depth < old_depth)) {
+        SetGridValue(ix, iy, value);
+        depth_grid.SetGridValue(ix, iy, depth);
+      }
+      value += value_step;
+      depth += depth_step;
+    }
+    valuea += valuea_step;
+    valueb += valueb_step;
+    deptha += deptha_step;
+    depthb += depthb_step;
+    xa += xa_step;
+    xb += xb_step;
+  }
+}
+
+
+
 RNScalar R2Grid::
 L1Distance(const R2Grid& grid) const
 {
