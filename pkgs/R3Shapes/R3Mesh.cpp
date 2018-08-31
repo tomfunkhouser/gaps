@@ -1754,9 +1754,17 @@ MergeCoincidentVertices(RNLength epsilon)
   // Compute epsilon
   if (epsilon < 0.0) epsilon = 0.0001 * bbox.DiagonalLength();
 
-  // Load all vertices into a regular grid
+  // Allocate grid 
   const int NUM_GRID_CELLS = 32;
-  RNArray<R3MeshVertex *> grid[NUM_GRID_CELLS][NUM_GRID_CELLS][NUM_GRID_CELLS];
+  RNArray<R3MeshVertex *> ***grid = new RNArray<R3MeshVertex *> **[NUM_GRID_CELLS];
+  for (int i = 0; i < NUM_GRID_CELLS; i++) {
+    grid[i] = new RNArray<R3MeshVertex *> *[NUM_GRID_CELLS];
+    for (int j = 0; j < NUM_GRID_CELLS; j++) {
+      grid[i][j] = new RNArray<R3MeshVertex *> [NUM_GRID_CELLS];
+    }
+  }
+  
+  // Load all vertices into a regular grid
   for (int i = 0; i < vertices.NEntries(); i++) {
     R3MeshVertex *v = vertices[i];
     const R3Point& p = v->position;
@@ -1788,6 +1796,15 @@ MergeCoincidentVertices(RNLength epsilon)
       }
     }
   }
+
+  // Delete grid
+  for (int i = 0; i < NUM_GRID_CELLS; i++) {
+    for (int j = 0; j < NUM_GRID_CELLS; j++) {
+      delete [] grid[i][j];
+    }
+    delete [] grid[i];
+  }
+  delete [] grid;
 }
 
 
