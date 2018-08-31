@@ -324,7 +324,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
   char buffer[4096];
   int line_number = 0;
   while (fgets(buffer, 4096, fp)) {
-    char cmd[4096];
+    char cmd[1024];
     line_number++;
     if (sscanf(buffer, "%s", cmd) != (unsigned int) 1) continue;
     if (cmd[0] == '#') continue;
@@ -370,7 +370,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
     }
     else if (!strcmp(cmd, "depth_directory") || !strcmp(cmd, "color_directory") || !strcmp(cmd, "texture_directory") || !strcmp(cmd, "image_directory")) {
       // Parse directory name
-      char dirname[4096];
+      char dirname[1024];
       if (sscanf(buffer, "%s%s", cmd, dirname) != (unsigned int) 2) {
         fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
         return 0;
@@ -384,7 +384,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
     }
     else if (!strcmp(cmd, "intrinsics") || !strcmp(cmd, "depth_intrinsics")) { // || !strcmp(cmd, "color_intrinsics")) {
       // Parse intrinsics filename
-      char intrinsics_filename[4096];
+      char intrinsics_filename[2048];
       if (sscanf(buffer, "%s%s", cmd, intrinsics_filename) != (unsigned int) 2) {
         fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
         return 0;
@@ -448,7 +448,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       
       // Parse image names and alignment transformation
       RNScalar m[16];
-      char depth_filename[4096], color_filename[4096];
+      char depth_filename[2048], color_filename[2048];
       if (sscanf(buffer, "%s%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
          depth_filename, color_filename,
          &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
@@ -480,7 +480,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse image names and alignment transformation
       RNScalar m[16];
       double depth_timestamp, color_timestamp;
-      char depth_filename[4096], color_filename[4096];
+      char depth_filename[2048], color_filename[2048];
       if (sscanf(buffer, "%s%s%lf%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
          depth_filename, &depth_timestamp, color_filename, &color_timestamp,
          &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
@@ -501,7 +501,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
     }
     else if (!strcmp(cmd, "rectangle")) {
       // Parse surface
-      char texture_filename[4096];
+      char texture_filename[2048];
       RNScalar pixel_spacing, c[3], n[3], u[3], r[2];
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, texture_filename, &pixel_spacing, 
          &c[0], &c[1], &c[2], &n[0], &n[1], &n[2], &u[0], &u[1], &u[2], &r[0], &r[1]) != (unsigned int) 14) {
@@ -528,7 +528,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
     }
     else if (!strcmp(cmd, "mesh")) {
       // Parse surface
-      char texture_filename[4096], mesh_filename[4096];
+      char texture_filename[2048], mesh_filename[2048];
       RNScalar pixel_spacing;
       if (sscanf(buffer, "%s%s%s%lf", cmd, texture_filename, mesh_filename, &pixel_spacing) != (unsigned int) 4) {
         fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
