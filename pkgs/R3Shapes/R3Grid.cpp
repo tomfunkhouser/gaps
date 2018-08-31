@@ -374,10 +374,10 @@ GridCentroid(void) const
 
 
 R3Triad R3Grid::
-GridPrincipleAxes(const R3Point *grid_center, RNScalar *variances) const
+GridPrincipleAxes(const R3Point *grid_centroid, RNScalar *variances) const
 {
   // Get centroid
-  R3Point center = (grid_center) ? *grid_center : GridCentroid();
+  R3Point center = (grid_centroid) ? *grid_centroid : GridCentroid();
 
   // Compute covariance matrix
   RNScalar m[9] = { 0 };
@@ -1189,30 +1189,30 @@ Copy(const R3Grid& voxels)
 
 
 void R3Grid::
-Add(const R3Grid& voxels) 
+Add(const R3Grid& grid) 
 {
   // Resolutions must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Add passed grid values to corresponding entries of this grid
   for (int i = 0; i < grid_size; i++) 
-    grid_values[i] += voxels.grid_values[i];
+    grid_values[i] += grid.grid_values[i];
 }
 
 
 
 void R3Grid::
-Add(const R3Grid& filter, const R3Point& grid_position, const R3Point& filter_position, RNScalar amplitude)
+Add(const R3Grid& filter, const R3Point& grid_position, const R3Point& filter_origin, RNScalar amplitude)
 {
   // Determine extent of filter in grid coordinates
-  int x1 = (int) (grid_position.X() - filter_position.X() + 1);
-  int y1 = (int) (grid_position.Y() - filter_position.Y() + 1);
-  int z1 = (int) (grid_position.Z() - filter_position.Z() + 1);
-  int x2 = (int) (grid_position.X() + filter_position.X());
-  int y2 = (int) (grid_position.Y() + filter_position.Y());
-  int z2 = (int) (grid_position.Z() + filter_position.Z());
+  int x1 = (int) (grid_position.X() - filter_origin.X() + 1);
+  int y1 = (int) (grid_position.Y() - filter_origin.Y() + 1);
+  int z1 = (int) (grid_position.Z() - filter_origin.Z() + 1);
+  int x2 = (int) (grid_position.X() + filter_origin.X());
+  int y2 = (int) (grid_position.Y() + filter_origin.Y());
+  int z2 = (int) (grid_position.Z() + filter_origin.Z());
   if (x1 < 0) x1 = 0;
   if (y1 < 0) y1 = 0;
   if (z1 < 0) z1 = 0;
@@ -1226,14 +1226,14 @@ Add(const R3Grid& filter, const R3Point& grid_position, const R3Point& filter_po
   if (y2 >= YResolution()) y2 = YResolution()-1;
   if (z2 >= ZResolution()) z2 = ZResolution()-1;
 
-  // Add amplitude*filter to grid (aligning grid_position and filter_position)
-  RNScalar sz = z1 - grid_position.Z() + filter_position.Z();
+  // Add amplitude*filter to grid (aligning grid_position and filter_origin)
+  RNScalar sz = z1 - grid_position.Z() + filter_origin.Z();
   assert((sz >= 0) && (sz < filter.ZResolution()));
   for (int gz = z1; gz <= z2; gz++, sz += 1) {
-    RNScalar sy = y1 - grid_position.Y() + filter_position.Y();
+    RNScalar sy = y1 - grid_position.Y() + filter_origin.Y();
     assert((sy >= 0) && (sy < filter.YResolution()));
     for (int gy = y1; gy <= y2; gy++, sy += 1) {
-      RNScalar sx = x1 - grid_position.X() + filter_position.X();
+      RNScalar sx = x1 - grid_position.X() + filter_origin.X();
       assert((sx >= 0) && (sx < filter.XResolution()));
       RNScalar *grid_valuesp = &grid_values[gz * grid_sheet_size + gy * grid_row_size + x1];
       for (int gx = x1; gx <= x2; gx++, sx += 1) {
@@ -1255,16 +1255,16 @@ Subtract(RNScalar value)
 
 
 void R3Grid::
-Subtract(const R3Grid& voxels) 
+Subtract(const R3Grid& grid) 
 {
   // Resolutions must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Subtract passed grid values from corresponding entries of this grid
   for (int i = 0; i < grid_size; i++) 
-    grid_values[i] -= voxels.grid_values[i];
+    grid_values[i] -= grid.grid_values[i];
 }
 
 
@@ -1281,16 +1281,16 @@ Multiply(RNScalar value)
 
 
 void R3Grid::
-Multiply(const R3Grid& voxels) 
+Multiply(const R3Grid& grid) 
 {
   // Resolutions must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Multiply passed grid values by corresponding entries of this grid
   for (int i = 0; i < grid_size; i++) 
-    grid_values[i] *= voxels.grid_values[i];
+    grid_values[i] *= grid.grid_values[i];
 }
 
 
@@ -1308,16 +1308,16 @@ Divide(RNScalar value)
 
 
 void R3Grid::
-Divide(const R3Grid& voxels) 
+Divide(const R3Grid& grid) 
 {
   // Resolutions must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Divide passed grid values by corresponding entries of this grid
   for (int i = 0; i < grid_size; i++) {
-    RNScalar value = voxels.grid_values[i];
+    RNScalar value = grid.grid_values[i];
     if (RNIsNotZero(value, 1.0E-20)) grid_values[i] /= value;
   }
 }
@@ -2781,41 +2781,41 @@ RasterizeGridBox(const R3Box& box, RNScalar value, int operation)
 
 
 RNScalar R3Grid::
-Dot(const R3Grid& voxels) const
+Dot(const R3Grid& grid) const
 {
   // Resolutions and transforms must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Compute dot product between this and grid
   RNScalar dot = 0.0;
   for (int i = 0; i < grid_size; i++) 
-    dot += grid_values[i] * voxels.grid_values[i];
+    dot += grid_values[i] * grid.grid_values[i];
   return dot;
 }
 
 
 
 RNScalar R3Grid::
-L1Distance(const R3Grid& voxels) const
+L1Distance(const R3Grid& grid) const
 {
   // Compute distance between this and grid
   RNScalar distance = 0.0;
   for (int i = 0; i < grid_size; i++) 
-    distance += fabs(grid_values[i] - voxels.grid_values[i]);
+    distance += fabs(grid_values[i] - grid.grid_values[i]);
   return distance;
 }
 
 
 
 RNScalar R3Grid::
-L2DistanceSquared(const R3Grid& voxels) const
+L2DistanceSquared(const R3Grid& grid) const
 {
   // Compute distance between this and grid
   RNScalar distance_squared = 0.0;
   for (int i = 0; i < grid_size; i++) {
-    RNScalar delta = (grid_values[i] - voxels.grid_values[i]);
+    RNScalar delta = (grid_values[i] - grid.grid_values[i]);
     distance_squared += delta * delta;
   }
 

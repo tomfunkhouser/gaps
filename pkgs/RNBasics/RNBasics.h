@@ -4,7 +4,7 @@
 
 
 
-/* Compatability switch include files */
+/* Compatibility switch include files */
 
 #include "RNBasics/RNCompat.h"
 

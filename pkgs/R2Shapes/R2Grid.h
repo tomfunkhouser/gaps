@@ -124,13 +124,13 @@ public:
 
   // Arithmetic operators
   R2Grid& operator=(const R2Grid& grid);
-  R2Grid& operator+=(RNScalar scale);
+  R2Grid& operator+=(RNScalar value);
   R2Grid& operator+=(const R2Grid& grid);
-  R2Grid& operator-=(RNScalar scale);
+  R2Grid& operator-=(RNScalar value);
   R2Grid& operator-=(const R2Grid& grid);
-  R2Grid& operator*=(RNScalar scale);
+  R2Grid& operator*=(RNScalar value);
   R2Grid& operator*=(const R2Grid& grid);
-  R2Grid& operator/=(RNScalar scale);
+  R2Grid& operator/=(RNScalar value);
   R2Grid& operator/=(const R2Grid& grid);
 
   // Rasterization functions

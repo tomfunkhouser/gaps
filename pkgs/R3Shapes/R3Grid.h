@@ -101,7 +101,7 @@ public:
   void Divide(RNScalar value);
   void Divide(const R3Grid& grid);
   void Pow(RNScalar exponent);
-  void Mask(const R3Grid& grid);
+  void Mask(const R3Grid& mask);
   void Threshold(RNScalar threshold, RNScalar low, RNScalar high);
   void SignedDistanceTransform(void);
   void SquaredDistanceTransform(void);
@@ -116,13 +116,13 @@ public:
 
   // Arithmetic operators
   R3Grid& operator=(const R3Grid& grid);
-  R3Grid& operator+=(RNScalar scale);
+  R3Grid& operator+=(RNScalar value);
   R3Grid& operator+=(const R3Grid& grid);
-  R3Grid& operator-=(RNScalar scale);
+  R3Grid& operator-=(RNScalar value);
   R3Grid& operator-=(const R3Grid& grid);
-  R3Grid& operator*=(RNScalar scale);
+  R3Grid& operator*=(RNScalar value);
   R3Grid& operator*=(const R3Grid& grid);
-  R3Grid& operator/=(RNScalar scale);
+  R3Grid& operator/=(RNScalar value);
   R3Grid& operator/=(const R3Grid& grid);
 
   // Rasterization functions

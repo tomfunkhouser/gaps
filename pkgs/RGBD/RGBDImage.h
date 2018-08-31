@@ -24,7 +24,7 @@ public:
   // Constructors/destructors
   RGBDImage(void);
   RGBDImage(const char *color_filename, const char *depth_filename,
-    const R3Matrix& intrinisics, const R4Matrix& extrinsics,
+    const R3Matrix& intrinisics_matrix, const R4Matrix& camera_to_world_matrix,
     int width = 0, int height = 0);
   virtual ~RGBDImage(void);
 
@@ -34,7 +34,7 @@ public:
 
   // Channel access functions
   int NChannels(void) const;
-  R2Grid *Channel(int k) const;
+  R2Grid *Channel(int channel_index) const;
   R2Grid *RedChannel(void) const;
   R2Grid *GreenChannel(void) const;
   R2Grid *BlueChannel(void) const;
