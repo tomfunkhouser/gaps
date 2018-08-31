@@ -1524,10 +1524,17 @@ ReadARFF(const char *filename)
     return 0;
   }
 
+  // Allocate (large) buffer to read lines
+  const int max_line_size = 64 * 1024;
+  char *buffer = new char [max_line_size];
+  if (!buffer) {
+    fprintf(stderr, "Unable to allocate buffer to read %s\n", filename);
+    return 0;
+  }
+  
   // Read attribute names and set property name for first one
   int property_count = 0;
-  const int max_line_size = 32 * 1024;
-  char buffer[max_line_size], token[1024], name[1024];
+  char token[1024], name[1024];
   while (fgets(buffer, max_line_size, fp)) {
     if (strstr(buffer, "@data")) break;
     else if (strstr(buffer, "@attribute")) {
@@ -1543,6 +1550,7 @@ ReadARFF(const char *filename)
   // Check number of properties
   if (property_count == 0) {
     fprintf(stderr, "No properties in %s\n", filename);
+    delete [] buffer;
     return 0;
   }
 
@@ -1558,14 +1566,17 @@ ReadARFF(const char *filename)
     char *bufferp = strtok(buffer, "\n\t ");
     if (!bufferp) { 
       fprintf(stderr, "Unable to read property value for vertex %d\n", vertex_index);
+      delete [] buffer;
       return 0;
     }
     if (sscanf(bufferp, "%lf", &property_value) != (unsigned int) 1) {
       fprintf(stderr, "Unable to read property value for vertex %d\n", vertex_index);
+      delete [] buffer;
       return 0;
     }
     if (vertex_index >= mesh->NVertices()) {
       fprintf(stderr, "Too many data lines in %s\n", filename);
+      delete [] buffer;
       return 0;
     }
     SetVertexValue(vertex_index, property_value);
@@ -1575,9 +1586,13 @@ ReadARFF(const char *filename)
   // Check if read value for every vertex
   // if (vertex_index != mesh->NVertices()) {
   //   fprintf(stderr, "Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
+  //   delete [] buffer;
   //   return 0;
   // }
 
+  // Delete buffer
+  delete [] buffer;
+  
   // Close file
   fclose(fp);
 
