@@ -2577,23 +2577,10 @@ RenderGridTriangle(
   if (depthB == R2_GRID_UNKNOWN_VALUE) return;
   if (depthC == R2_GRID_UNKNOWN_VALUE) return;
 
-  // Get convenient point variables
-  R2Point points[3];
-  points[0] = pointA;
-  points[1] = pointB;
-  points[2] = pointC;
-
-  // Get convenient value variables
-  RNScalar values[3];
-  values[0] = valueA;
-  values[1] = valueB;
-  values[2] = valueC;
-
-  // Get convenient depth variables
-  RNScalar depths[3];
-  depths[0] = depthA;
-  depths[1] = depthB;
-  depths[2] = depthC;
+  // Get convenient variables
+  R2Point points[3] = { pointA, pointB, pointC };
+  RNScalar values[3] = { valueA, valueB, valueC };
+  RNScalar depths[3] = { depthA, depthB, depthC };
 
   // Sort vertex indices by Y coordinate
   int iv0, iv1, iv2;

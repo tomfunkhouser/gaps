@@ -3155,7 +3155,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
   int assignment_index = 0;
   RNArray<R3Shape *> shapes;
   char mesh_directory[2048] = { '\0' };
-  while (fgets(buffer, 4096, fp)) {
+  while (fgets(buffer, 2048, fp)) {
     // Check line
     line_number++;
     char *bufferp = buffer;
