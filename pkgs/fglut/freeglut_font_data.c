@@ -53,6 +53,10 @@
 #include "freeglut.h"
 #include "freeglut_internal.h"
 
+#if (RN_CC == RN_GCC)
+#   pragma GCC diagnostic ignored "-Wunused-const-variable"
+#endif
+
 /*
  * The following bitmapped fonts are defined in this file:
  * 

@@ -47,7 +47,7 @@ R3SurfelNode(const char *name)
     complexity(-1),
     resolution(-1),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
 {
@@ -67,7 +67,7 @@ R3SurfelNode(const R3SurfelNode& node)
     complexity(node.complexity),
     resolution(node.resolution),
     bbox(node.bbox),
-    name((node.name) ? strdup(node.name) : NULL),
+    name((node.name) ? RNStrdup(node.name) : NULL),
     flags(0),
     data(NULL)
 {
@@ -302,7 +302,7 @@ SetName(const char *name)
 {
   // Delete previous name
   if (this->name) free(this->name);
-  this->name = (name) ? strdup(name) : NULL;
+  this->name = (name) ? RNStrdup(name) : NULL;
 
   // Mark scene as dirty
   if (Tree() && Tree()->Scene()) Tree()->Scene()->SetDirty();

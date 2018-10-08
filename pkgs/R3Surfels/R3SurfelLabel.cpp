@@ -39,7 +39,7 @@ R3SurfelLabel(const char *name)
     properties(),
     relationships(),
     assignments(),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     identifier(-1),
     assignment_keystroke(-1),
     color(0.5,0.5,0.5),
@@ -58,7 +58,7 @@ R3SurfelLabel(const R3SurfelLabel& label)
     properties(),
     relationships(),
     assignments(),
-    name((label.name) ? strdup(label.name) : NULL),
+    name((label.name) ? RNStrdup(label.name) : NULL),
     identifier(-1),
     assignment_keystroke(label.assignment_keystroke),
     color(label.color),
@@ -179,7 +179,7 @@ SetName(const char *name)
   if (this->name) free(this->name);
 
   // Set new name
-  this->name = (name) ? strdup(name) : NULL;
+  this->name = (name) ? RNStrdup(name) : NULL;
 
   // Mark scene as dirty
   if (scene) scene->SetDirty();

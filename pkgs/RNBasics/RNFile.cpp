@@ -38,6 +38,10 @@ RNFileSeek(FILE *fp, unsigned long long offset, int whence)
 #if (RN_OS == RN_WINDOWS)
   if (_fseek64(fp, offset, whence) == 0) return 1;
   else return 0;
+#elif (RN_CC_VER == RN_C11)
+  // Linux/unix/cygwin etc.
+  if (fseek(fp, offset, whence) == 0) return 1;
+  else return 0;
 #else
   // Linux/unix/cygwin etc.
   if (fseeko(fp, offset, whence) == 0) return 1;
@@ -52,6 +56,8 @@ RNFileTell(FILE *fp)
 {
 #if (RN_OS == RN_WINDOWS)
   return _ftell64(fp);
+#elif (RN_CC_VER == RN_C11)
+  return ftell(fp);
 #else
   // Linux/unix/cygwin etc.
   return ftello(fp);

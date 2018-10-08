@@ -89,7 +89,7 @@ R3Material(const char *name)
       flags(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update flags
     Update();
@@ -107,7 +107,7 @@ R3Material(const R3Material& material)
       flags(material.flags)
 {
     // Set name
-    if (material.name) this->name = strdup(material.name);
+    if (material.name) this->name = RNStrdup(material.name);
 }
 
 
@@ -122,7 +122,7 @@ R3Material(const R3Brdf *brdf, const char *name)
       flags(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update flags
     Update();
@@ -140,7 +140,7 @@ R3Material(const R2Texture *texture, const char *name)
       flags(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update flags
     Update();
@@ -158,7 +158,7 @@ R3Material(const R3Brdf *brdf, const R2Texture *texture, const char *name)
       flags(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update flags
     Update();
@@ -196,7 +196,7 @@ SetName(const char *name)
 {
     // Set name
     if (this->name) free(this->name);
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
     else this->name = NULL;
 }
 

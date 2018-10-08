@@ -10,6 +10,11 @@
 #   include <unistd.h>
 #endif
 
+#if (RN_CC_VER == RN_C11)
+#   include <chrono>
+#   include <thread>
+#endif
+
 
 
 // Namespace
@@ -107,6 +112,8 @@ RNSleep(RNScalar seconds)
     sginap((long) (seconds * CLK_TCK));
 #elif (RN_OS == RN_WINDOWS)
     Sleep((unsigned long) (1000 * seconds));
+#elif (RN_CC_VER == RN_C11)
+    std::this_thread::sleep_for(std::chrono::microseconds((int) (1000000*seconds)));
 #elif (RN_OS == RN_LINUX)
     usleep((unsigned long) (1000000 * seconds));
 #else

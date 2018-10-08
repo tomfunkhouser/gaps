@@ -38,6 +38,12 @@ int RNCompare(const void *src1, const void *src2, int size);
 
 
 
+/* String copy function */
+
+char *RNStrdup(const char *str);
+
+
+  
 /* Memory usage statistics */
 
 long RNMaxMemoryUsage(void);

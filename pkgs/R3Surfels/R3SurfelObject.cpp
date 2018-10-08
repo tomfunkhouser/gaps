@@ -41,7 +41,7 @@ R3SurfelObject(const char *name)
     assignments(),
     nodes(),
     feature_vector(),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     identifier(-1),
     complexity(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
@@ -62,7 +62,7 @@ R3SurfelObject(const R3SurfelObject& object)
     assignments(),
     nodes(object.nodes),
     feature_vector(object.feature_vector),
-    name((object.name) ? strdup(object.name) : NULL),
+    name((object.name) ? RNStrdup(object.name) : NULL),
     identifier(-1),
     complexity(object.complexity),
     bbox(object.bbox),
@@ -434,7 +434,7 @@ SetName(const char *name)
 {
   // Delete previous name
   if (this->name) free(this->name);
-  this->name = (name) ? strdup(name) : NULL;
+  this->name = (name) ? RNStrdup(name) : NULL;
 
   // Mark scene as dirty
   if (scene) scene->SetDirty();

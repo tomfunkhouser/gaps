@@ -44,7 +44,7 @@ R3SurfelScene(const char *name)
     features(),
     filename(NULL),
     rwaccess(NULL),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     flags(R3_SURFEL_SCENE_DIRTY_FLAG)
 {
   // Create tree
@@ -249,7 +249,7 @@ SetName(const char *name)
   if (this->name) free(this->name);
 
   // Set new name
-  this->name = (name) ? strdup(name) : NULL;
+  this->name = (name) ? RNStrdup(name) : NULL;
 
   // Mark scene as dirty
   flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
@@ -1203,14 +1203,14 @@ OpenFile(const char *scene_filename,
 {
   // Remember scene file name
   if (this->filename) free(this->filename);
-  this->filename = strdup(scene_filename);
+  this->filename = RNStrdup(scene_filename);
 
   // Remember scene file access mode
   if (this->rwaccess) free(this->rwaccess);
-  if (!scene_rwaccess) this->rwaccess = strdup("r");
-  else if (!strcmp(scene_rwaccess, "w")) this->rwaccess = strdup("w");
-  else if (strstr(scene_rwaccess, "+")) this->rwaccess = strdup("r+");
-  else this->rwaccess = strdup("r"); 
+  if (!scene_rwaccess) this->rwaccess = RNStrdup("r");
+  else if (!strcmp(scene_rwaccess, "w")) this->rwaccess = RNStrdup("w");
+  else if (strstr(scene_rwaccess, "+")) this->rwaccess = RNStrdup("r+");
+  else this->rwaccess = RNStrdup("r"); 
 
   // Open database file
   if (database_filename) {

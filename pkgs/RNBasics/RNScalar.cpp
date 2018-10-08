@@ -6,6 +6,11 @@
 
 #include "RNBasics.h"
 
+#if (RN_CC_VER == RN_C11)
+#   include <random>
+#   include <ctime>
+#endif
+
 
 
 // Namespace
@@ -108,11 +113,12 @@ RNSeedRandomScalar(RNScalar seed)
 #if (RN_OS == RN_WINDOWS)
   if (seed == 0.0) srand(GetTickCount());
   else srand((int) (1.0E6 * seed));
+#elif (RN_CC_VER == RN_C11)
 #else
   if (seed == 0.0) { 
-      struct timeval timevalue;
-      gettimeofday(&timevalue, NULL);
-      srand48(timevalue.tv_usec);
+    struct timeval timevalue;
+    gettimeofday(&timevalue, NULL);
+    srand48(timevalue.tv_usec);
   }
   else {
     srand48((long) (1.0E6 * seed));
@@ -126,14 +132,19 @@ RNSeedRandomScalar(RNScalar seed)
 RNScalar
 RNRandomScalar(void)
 {
-    if (!random_seeded) RNSeedRandomScalar();
-#   if (RN_OS == RN_WINDOWS)
+if (!random_seeded) RNSeedRandomScalar();
+#if (RN_OS == RN_WINDOWS)
     int r1 = rand();
     RNScalar r2 = ((RNScalar) rand()) / ((RNScalar) (RAND_MAX + 1));
     return (r1 + r2) / ((RNScalar) (RAND_MAX + 1));
+#elif (RN_CC_VER == RN_C11)
+    const unsigned int seed = time(0);    
+    static std::mt19937_64 rng(seed);
+    std::uniform_real_distribution<double> unif;
+    return unif(rng);
 #else
     return drand48();
-#   endif
+#endif
 }
 
 

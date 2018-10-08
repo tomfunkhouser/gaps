@@ -1472,7 +1472,7 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
     // Create label
     MTurkLabel *label = new MTurkLabel();
     label->id = atoi(values[id_index]);
-    label->name = strdup(values[name_index]);
+    label->name = RNStrdup(values[name_index]);
     label->nyuId = atoi(values[nyuId_index]);
     label->nyu40id = atoi(values[nyu40id_index]);
     labels.Insert(label->name, label);

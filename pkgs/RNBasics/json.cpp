@@ -227,7 +227,7 @@ static inline void fixNumericLocale(char* begin, char* end) {
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 // VC++ 8.0
-// Disable warning about strdup being deprecated.
+// Disable warning about RNStrdup being deprecated.
 #pragma warning(disable : 4996)
 #endif
 
@@ -4047,7 +4047,7 @@ Value& Path::make(Value& root) const {
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 // VC++ 8.0
-// Disable warning about strdup being deprecated.
+// Disable warning about RNStrdup being deprecated.
 #pragma warning(disable : 4996)
 #endif
 

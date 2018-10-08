@@ -401,7 +401,7 @@ SetName(const char *name)
 {
   // Set name
   if (this->name) free(this->name);
-  if (name) this->name = strdup(name);
+  if (name) this->name = RNStrdup(name);
   else this->name = NULL;
 }
 
@@ -1897,7 +1897,7 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     if (!InsertSceneElement(this, node, NULL, vertices, *tris)) return 0;
     node->SetName(node_name.c_str());
     const char *category_separator = strchr(node_name.c_str(), '_');
-    if (category_separator) node->InsertInfo("index", strdup(category_separator+1));
+    if (category_separator) node->InsertInfo("index", RNStrdup(category_separator+1));
     parent_node->InsertChild(node);
     for (int i = 0; i < tris->NEntries(); i++) delete tris->Kth(i);
     delete tris;
@@ -4314,7 +4314,7 @@ ReadSUNCGModelFile(const char *filename)
   if (fgets(key_buffer, 4096, fp)) {
     char *token = strtok(key_buffer, ",\r\n");
     while (token) {
-      keys.Insert(strdup(token));
+      keys.Insert(RNStrdup(token));
       token = strtok(NULL, ",\r\n");
     }
   }
@@ -4343,7 +4343,7 @@ ReadSUNCGModelFile(const char *filename)
     RNArray<char *> values;
     char *token = strtok(value_buffer, ",\r\n");
     while (token) {
-      values.Insert(strdup(token));
+      values.Insert(RNStrdup(token));
       token = strtok(NULL, ",\r\n");
     }
 

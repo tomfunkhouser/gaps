@@ -91,7 +91,7 @@ struct Camera : public R3Camera {
 public:
   Camera(void) : R3Camera(), name(NULL) {};
   Camera(const Camera& camera) : R3Camera(camera), name(NULL) {};
-  Camera(const R3Camera& camera, const char *name) : R3Camera(camera), name((name) ? strdup(name) : NULL) {};
+  Camera(const R3Camera& camera, const char *name) : R3Camera(camera), name((name) ? RNStrdup(name) : NULL) {};
   Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist)
     : R3Camera(origin, towards, up, xfov, yfov, neardist, fardist), name(NULL) {};
   ~Camera(void) { if (name) free(name); }
@@ -1609,7 +1609,7 @@ InterpolateCameraTrajectory(RNLength trajectory_step = 0.1)
     Camera *camera = new Camera(viewpoint, towards.Vector(), up.Vector(), xf, yf, neardist, fardist);
     char name[1024];
     sprintf(name, "T%f", u);
-    camera->name = strdup(name);
+    camera->name = RNStrdup(name);
     cameras.Insert(camera);
   }
 
@@ -1701,7 +1701,7 @@ CreateAndWriteCamerasWithGlut(void)
   // Open window
   int argc = 1;
   char *argv[1];
-  argv[0] = strdup("scn2cam");
+  argv[0] = RNStrdup("scn2cam");
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(width, height);

@@ -77,7 +77,7 @@ R3SceneNode(const R3SceneNode& node)
     info(node.info),
     transformation(node.transformation),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
-    name((node.name) ? strdup(node.name) : NULL),
+    name((node.name) ? RNStrdup(node.name) : NULL),
     data(NULL)
 {
 }
@@ -555,7 +555,7 @@ SetName(const char *name)
 {
   // Set name
   if (this->name) free(this->name);
-  if (name) this->name = strdup(name);
+  if (name) this->name = RNStrdup(name);
   else this->name = NULL;
 }
 

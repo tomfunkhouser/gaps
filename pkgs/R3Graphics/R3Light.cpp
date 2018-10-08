@@ -56,7 +56,7 @@ R3Light(const char *name)
       id(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 }
 
 
@@ -72,7 +72,7 @@ R3Light(const R3Light& light, const char *name)
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 }
 
 
@@ -91,7 +91,7 @@ R3Light(const RNRgb& color,
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 }
 
 
@@ -132,7 +132,7 @@ SetName(const char *name)
 {
     // Set name
     if (this->name) free(this->name);
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
     else this->name = NULL;
 }
 

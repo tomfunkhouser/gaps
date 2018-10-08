@@ -26,7 +26,7 @@ R3SurfelFeature::
 R3SurfelFeature(const char *name, RNScalar minimum, RNScalar maximum, RNScalar weight)
   : scene(NULL),
     scene_index(-1),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     range(minimum, maximum),
     weight(weight),
     data(NULL)
@@ -39,7 +39,7 @@ R3SurfelFeature::
 R3SurfelFeature(const R3SurfelFeature& feature)
   : scene(NULL),
     scene_index(-1),
-    name((feature.name) ? strdup(feature.name) : NULL),
+    name((feature.name) ? RNStrdup(feature.name) : NULL),
     range(feature.range),
     weight(feature.weight),
     data(NULL)
@@ -82,7 +82,7 @@ SetName(const char *name)
 {
   // Copy name
   if (this->name) free(this->name);
-  if (name) this->name = strdup(name);
+  if (name) this->name = RNStrdup(name);
 }
 
 

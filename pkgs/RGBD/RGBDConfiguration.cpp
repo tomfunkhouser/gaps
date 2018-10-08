@@ -195,7 +195,7 @@ SetName(const char *str)
 {
   // Set directory name
   if (name) free(name);
-  if (str && strcmp(str, "-")) name = strdup(str);
+  if (str && strcmp(str, "-")) name = RNStrdup(str);
   else name = NULL;
 }
 
@@ -206,7 +206,7 @@ SetColorDirectory(const char *directory)
 {
   // Set directory name
   if (color_directory) free(color_directory);
-  if (directory && strcmp(directory, "-")) color_directory = strdup(directory);
+  if (directory && strcmp(directory, "-")) color_directory = RNStrdup(directory);
   else color_directory = NULL;
 }
 
@@ -217,7 +217,7 @@ SetDepthDirectory(const char *directory)
 {
   // Set directory name
   if (depth_directory) free(depth_directory);
-  if (directory && strcmp(directory, "-")) depth_directory = strdup(directory);
+  if (directory && strcmp(directory, "-")) depth_directory = RNStrdup(directory);
   else depth_directory = NULL;
 }
 
@@ -228,7 +228,7 @@ SetTextureDirectory(const char *directory)
 {
   // Set directory name
   if (texture_directory) free(texture_directory);
-  if (directory && strcmp(directory, "-")) texture_directory = strdup(directory);
+  if (directory && strcmp(directory, "-")) texture_directory = RNStrdup(directory);
   else texture_directory = NULL;
 }
 
@@ -239,7 +239,7 @@ SetDatasetFormat(const char *format)
 {
   // Set format name
   if (dataset_format) free(dataset_format);
-  if (format && strcmp(format, "-")) dataset_format = strdup(format);
+  if (format && strcmp(format, "-")) dataset_format = RNStrdup(format);
   else dataset_format = NULL;
 }
 

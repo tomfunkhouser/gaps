@@ -1271,7 +1271,7 @@ WriteImage(const char *filename)
   // Remember screenshot image name -- capture image next redraw
   if (screenshot_name) free(screenshot_name);
   if (!filename) screenshot_name = NULL;
-  else screenshot_name = strdup(filename);
+  else screenshot_name = RNStrdup(filename);
 
   // Return success
   return 1;

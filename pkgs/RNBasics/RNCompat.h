@@ -58,6 +58,19 @@ Compile Switches:
 
 
 
+/* Language standard */
+
+#define RN_ANSI 1
+#define RN_C11 2
+
+#if (__cplusplus == 201103L)
+#   define RN_CC_VER RN_C11
+#else
+#   define RN_CC_VER RN_ANSI
+#endif
+
+
+
 /* Graphics library selection */
 
 #define RN_IRISGL 1

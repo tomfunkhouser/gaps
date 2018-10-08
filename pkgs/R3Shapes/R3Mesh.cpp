@@ -5275,7 +5275,7 @@ ReadPlyFile(const char *filename)
       int ninfo = 0;
       char **info = ply_get_obj_info(ply, &ninfo);
       for (int i = 0; i < ninfo; i++) {
-        char *str = strdup(info[i]);
+        char *str = RNStrdup(info[i]);
         char *strp = strtok(str, " \n\t");
         if (strp) {
           if (!strcmp(strp, "num_rows")) {

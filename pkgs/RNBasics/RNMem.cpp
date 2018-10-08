@@ -141,6 +141,17 @@ int RNCompare(const void *src1, const void *src2, int size)
 
 
 
+char *RNStrdup(const char *str)
+{
+  // Copy a string (RNStrdup is not part of standard)
+  size_t len = strlen(str) + 1;
+  void *output = malloc(len);
+  if (output == NULL) return NULL;
+  return (char *) memcpy (output, str, len);
+}
+
+
+  
 long RNMaxMemoryUsage(void)
 {
 #   if (RN_OS == RN_WINDOWS)

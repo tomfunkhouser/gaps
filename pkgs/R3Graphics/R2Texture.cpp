@@ -62,7 +62,7 @@ R2Texture(const R2Texture& texture, const char *name)
   : scene(NULL),
     scene_index(-1),
     name(NULL),
-    filename((texture.filename) ? strdup(texture.filename) : NULL),
+    filename((texture.filename) ? RNStrdup(texture.filename) : NULL),
     image(texture.image),
     s_wrap(texture.s_wrap),
     t_wrap(texture.t_wrap),
@@ -73,7 +73,7 @@ R2Texture(const R2Texture& texture, const char *name)
     id((texture.image) ? -1 : 0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update texture                                                                                                   
     Update();
@@ -101,7 +101,7 @@ R2Texture(const R2Image *image,
     id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update texture
     Update();
@@ -119,7 +119,7 @@ R2Texture(const char *filename,
   : scene(NULL),
     scene_index(-1),
     name(NULL),
-    filename((filename) ? strdup(filename) : NULL),
+    filename((filename) ? RNStrdup(filename) : NULL),
     image(NULL),
     s_wrap(s_wrap),
     t_wrap(t_wrap),
@@ -130,7 +130,7 @@ R2Texture(const char *filename,
     id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Create image
     image = new R2Image(filename);
@@ -166,7 +166,7 @@ SetName(const char *name)
 {
   // Set name
   if (this->name) free(this->name);
-  if (name) this->name = strdup(name);
+  if (name) this->name = RNStrdup(name);
   else this->name = NULL;
 }
 
@@ -177,7 +177,7 @@ SetFilename(const char *filename)
 {
   // Set filename
   if (this->filename) free(this->filename);
-  if (filename) this->filename = strdup(filename);
+  if (filename) this->filename = RNStrdup(filename);
   else this->filename = NULL;
 }
 

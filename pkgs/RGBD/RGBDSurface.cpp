@@ -393,7 +393,7 @@ SetTextureFilename(const char *filename)
 {
   // Set filename
   if (texture_filename) free(texture_filename);
-  if (filename && strcmp(filename, "-")) texture_filename = strdup(filename);
+  if (filename && strcmp(filename, "-")) texture_filename = RNStrdup(filename);
   else texture_filename = NULL;
 }
 
@@ -404,7 +404,7 @@ SetMeshFilename(const char *filename)
 {
   // Set filename
   if (mesh_filename) free(mesh_filename);
-  if (filename && strcmp(filename, "-")) mesh_filename = strdup(filename);
+  if (filename && strcmp(filename, "-")) mesh_filename = RNStrdup(filename);
   else mesh_filename = NULL;
 }
 

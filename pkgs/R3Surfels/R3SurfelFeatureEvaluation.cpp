@@ -247,7 +247,7 @@ R3SurfelOverheadGridFeature(const char *filename, const char *featurename, RNSca
   world_to_grid_matrix = R3Matrix(m);
 
   // Copy filename
-  this->filename = strdup(filename);
+  this->filename = RNStrdup(filename);
 }
 
 

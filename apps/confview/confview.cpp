@@ -1398,7 +1398,7 @@ void GLUTInterface(void)
   // Open window
   int argc = 0;
   char *argv[1];
-  argv[argc++] = strdup("conf2texture");
+  argv[argc++] = RNStrdup("conf2texture");
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);

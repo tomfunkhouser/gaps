@@ -73,7 +73,7 @@ R3SurfelDatabase(const R3SurfelDatabase& database)
     blocks(),
     nsurfels(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
-    name(strdup(database.name)),
+    name(RNStrdup(database.name)),
     tree(NULL),
     resident_surfels(0)
 {
@@ -109,7 +109,7 @@ SetName(const char *name)
 {
   // Set node name
   if (this->name) delete this->name;
-  this->name = strdup(name);
+  this->name = RNStrdup(name);
 }
 
 
@@ -1089,14 +1089,14 @@ OpenFile(const char *filename, const char *rwaccess)
 {
   // Remember file name
   if (this->filename) free(this->filename);
-  this->filename = strdup(filename);
+  this->filename = RNStrdup(filename);
 
   // Parse rwaccess
   if (this->rwaccess) free(this->rwaccess);
-  if (!rwaccess) this->rwaccess = strdup("w+b");
-  else if (strstr(rwaccess, "w")) this->rwaccess = strdup("w+b");
-  else if (strstr(rwaccess, "+")) this->rwaccess = strdup("r+b");
-  else this->rwaccess = strdup("rb"); 
+  if (!rwaccess) this->rwaccess = RNStrdup("w+b");
+  else if (strstr(rwaccess, "w")) this->rwaccess = RNStrdup("w+b");
+  else if (strstr(rwaccess, "+")) this->rwaccess = RNStrdup("r+b");
+  else this->rwaccess = RNStrdup("rb"); 
 
   // Open file
   fp = fopen(filename, this->rwaccess);

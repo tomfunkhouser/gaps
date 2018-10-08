@@ -1381,7 +1381,7 @@ RenderImagesWithGlut(const char *output_image_directory)
   // Open window
   int argc = 1;
   char *argv[1];
-  argv[0] = strdup("scn2img");
+  argv[0] = RNStrdup("scn2img");
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(width, height);

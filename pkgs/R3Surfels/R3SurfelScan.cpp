@@ -33,7 +33,7 @@ R3SurfelScan(const char *name)
     image_width(0), 
     image_height(0),
     image_center(0,0),
-    name((name) ? strdup(name) : NULL),
+    name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
 {
@@ -52,7 +52,7 @@ R3SurfelScan(const R3SurfelScan& scan)
     image_width(scan.image_width), 
     image_height(scan.image_height),
     image_center(scan.image_center),
-    name((scan.name) ? strdup(scan.name) : NULL),
+    name((scan.name) ? RNStrdup(scan.name) : NULL),
     flags(0),
     data(NULL)
 {
@@ -245,7 +245,7 @@ SetName(const char *name)
 {
   // Delete previous name
   if (this->name) free(this->name);
-  this->name = (name) ? strdup(name) : NULL;
+  this->name = (name) ? RNStrdup(name) : NULL;
 
   // Mark scene as dirty
   if (Scene()) Scene()->SetDirty();

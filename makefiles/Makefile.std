@@ -31,7 +31,7 @@ ARCH=$(shell uname -m)
 #endif
 
 CC=g++
-BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I../../pkgs 
+BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I../../pkgs
 DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 OPT_CFLAGS=$(BASE_CFLAGS) -O3 -DNDEBUG
 CFLAGS=$(DEBUG_CFLAGS)

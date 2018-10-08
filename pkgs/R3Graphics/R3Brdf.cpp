@@ -75,7 +75,7 @@ R3Brdf(const char *name)
     id(0)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 }
 
 
@@ -96,7 +96,7 @@ R3Brdf(const R3Brdf& brdf, const char *name)
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 }
 
 
@@ -121,7 +121,7 @@ R3Brdf(const RNRgb& rgb,
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update brdf flags
     Update();
@@ -149,7 +149,7 @@ R3Brdf(RNScalar red, RNScalar green, RNScalar blue,
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update brdf
     Update();
@@ -180,7 +180,7 @@ R3Brdf(const RNRgb& ambient,
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update brdf
     Update();
@@ -211,7 +211,7 @@ R3Brdf(const RNRgb& ambient,
       id(-1)
 {
     // Set name
-    if (name) this->name = strdup(name);
+    if (name) this->name = RNStrdup(name);
 
     // Update brdf
     Update();
@@ -236,7 +236,7 @@ SetName(const char *name)
 {
   // Set name
   if (this->name) free(this->name);
-  if (name) this->name = strdup(name);
+  if (name) this->name = RNStrdup(name);
   else this->name = NULL;
 }
 
