@@ -1067,20 +1067,49 @@ FillMissingDepthValues(R2Grid& depth_image,
 
 
 ////////////////////////////////////////////////////////////////////////
+// Access convenience functions
+////////////////////////////////////////////////////////////////////////
+
+R2Image RGBDImage::
+ColorChannels(void) const
+{
+  // Initialize image
+  R2Image image(NPixels(RN_X), NPixels(RN_Y), 3);
+
+  // Fill image
+  R2Grid *red_channel = Channel(RGBD_RED_CHANNEL);
+  R2Grid *green_channel = Channel(RGBD_GREEN_CHANNEL);
+  R2Grid *blue_channel = Channel(RGBD_BLUE_CHANNEL);
+  for (int j = 0; j < image.Height(); j++) {
+    for (int i = 0; i < image.Width(); i++) {
+      RNScalar r = red_channel->GridValue(i, j);
+      RNScalar g = green_channel->GridValue(i, j);
+      RNScalar b = blue_channel->GridValue(i, j);
+      image.SetPixelRGB(i, j, RNRgb(r, g, b));
+    }
+  }
+
+  // Return image
+  return image;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Create/read/write/release functions
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDImage::
 CreateColorChannels(const R2Image& image)
 {
-  // Check/update read count
-  if (color_resident_count++ > 0) return 1;
-
   // Create color channels
   while (channels.NEntries() <= RGBD_BLUE_CHANNEL) channels.Insert(NULL);
   if (!channels[RGBD_RED_CHANNEL]) channels[RGBD_RED_CHANNEL] = new R2Grid(image.Width(), image.Height());
   if (!channels[RGBD_GREEN_CHANNEL]) channels[RGBD_GREEN_CHANNEL] = new R2Grid(image.Width(), image.Height());
   if (!channels[RGBD_BLUE_CHANNEL]) channels[RGBD_BLUE_CHANNEL] = new R2Grid(image.Width(), image.Height());
+
+  // Update resident count
+  color_resident_count++;
 
   // Initialize color channels
   SetColorChannels(image);
@@ -1098,15 +1127,25 @@ CreateColorChannels(const R2Image& image)
 int RGBDImage::
 CreateDepthChannel(const R2Grid& image)
 {
-  // Check/update read count
-  if (depth_resident_count++ > 0) return 1;
-
   // Create depth channel
-  while (channels.NEntries() <= RGBD_DEPTH_CHANNEL) channels.Insert(NULL);
-  if (!channels[RGBD_DEPTH_CHANNEL]) channels[RGBD_DEPTH_CHANNEL] = new R2Grid(image);
+  return CreateChannel(RGBD_DEPTH_CHANNEL, image);
+}
 
-  // Initialize depth channel
-  SetDepthChannel(image);
+
+
+int RGBDImage::
+CreateChannel(int channel_index, const R2Grid& image)
+{
+  // Create channel
+  while (channels.NEntries() <= channel_index) channels.Insert(NULL);
+  if (!channels[channel_index]) channels[channel_index] = new R2Grid(image);
+
+  // Update resident count
+  if (channel_index == RGBD_DEPTH_CHANNEL) depth_resident_count++;
+  else if (channel_index == RGBD_BLUE_CHANNEL) color_resident_count++;
+
+  // Initialize channel
+  SetChannel(channel_index, image);
 
   // Set width and height
   this->width = image.XResolution();

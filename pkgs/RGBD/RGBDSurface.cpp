@@ -115,7 +115,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
 
   // Check surface_bbox
   if (RNIsZero(surface_bbox.Area())) {
-    fprintf(stderr, "Warning: RGBDSurface mesh does not have valid texture coordinates\n");
+    // fprintf(stderr, "Warning: RGBDSurface mesh does not have valid texture coordinates\n");
     surface_bbox.Reset(R2zero_point, R2ones_point);
   }
 

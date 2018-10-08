@@ -39,7 +39,7 @@ public:
   R2Grid *GreenChannel(void) const;
   R2Grid *BlueChannel(void) const;
   R2Grid *DepthChannel(void) const;
-
+  
   // Pixel property access functions
   int NPixels(int dim) const;
   RNRgb PixelColor(int ix, int iy) const;
@@ -113,7 +113,11 @@ public:
   virtual int ReleaseDepthChannel(void);
 
 public:
+  // Channel access
+  R2Image ColorChannels(void) const;
+
   // Channel creation
+  virtual int CreateChannel(int channel, const R2Grid& image);
   virtual int CreateColorChannels(const R2Image& color_image);
   virtual int CreateDepthChannel(const R2Grid& image);
   
