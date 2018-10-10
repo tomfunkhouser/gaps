@@ -1024,9 +1024,12 @@ ReadFile(const char *filename)
     return ReadOBJFile(filename);
   }
   else if (!strncmp(extension, ".xyz", 4)) {
-    return ReadXYZFile(filename);
+    return ReadXYZAsciiFile(filename);
   }
   else if (!strncmp(extension, ".bin", 4)) {
+    return ReadXYZBinaryFile(filename);
+  }
+  else if (!strncmp(extension, ".blk", 4)) {
     return ReadBinaryFile(filename);
   }
   else if (!strncmp(extension, ".upc", 4)) {
@@ -1055,9 +1058,9 @@ WriteFile(const char *filename) const
 
   // Write file of appropriate type
   if (!strncmp(extension, ".xyz", 4)) {
-    return WriteXYZFile(filename);
+    return WriteXYZAsciiFile(filename);
   }
-  else if (!strncmp(extension, ".bin", 4)) {
+  else if (!strncmp(extension, ".blk", 4)) {
     return WriteBinaryFile(filename);
   }
   else { 
@@ -1088,6 +1091,7 @@ ReadOBJFile(const char *filename)
   // Read file
   if (!ReadOBJ(fp)) {
     fprintf(stderr, "Unable to read OBJ file %s\n", filename);
+    fclose(fp);
     return 0;
   }
 
@@ -1160,6 +1164,9 @@ ReadOBJ(FILE *fp)
       float x, y, z;
       if (sscanf(buffer, "%s%f%f%f", keyword, &x, &y, &z) != (unsigned int) 4) {
         fprintf(stderr, "Unable to read point %d out of %d into surfel block\n", nsurfels, count);
+        delete [] surfels;
+        surfels = NULL;
+        nsurfels = 0;
         return 0;
       }
 
@@ -1180,7 +1187,7 @@ ReadOBJ(FILE *fp)
 ////////////////////////////////////////////////////////////////////////
 
 int R3SurfelBlock::
-ReadXYZFile(const char *filename)
+ReadXYZAsciiFile(const char *filename)
 {
   // Open file
   FILE *fp;
@@ -1190,8 +1197,9 @@ ReadXYZFile(const char *filename)
   }
 
   // Read file
-  if (!ReadXYZ(fp)) {
+  if (!ReadXYZAscii(fp)) {
     fprintf(stderr, "Unable to read XYZ file %s\n", filename);
+    fclose(fp);
     return 0;
   }
 
@@ -1205,7 +1213,7 @@ ReadXYZFile(const char *filename)
 
 
 int R3SurfelBlock::
-WriteXYZFile(const char *filename) const
+WriteXYZAsciiFile(const char *filename) const
 {
   // Open file
   FILE *fp;
@@ -1215,8 +1223,9 @@ WriteXYZFile(const char *filename) const
   }
 
   // Write file
-  if (!WriteXYZ(fp)) {
+  if (!WriteXYZAscii(fp)) {
     fprintf(stderr, "Unable to write XYZ file %s\n", filename);
+    fclose(fp);
     return 0;
   }
 
@@ -1230,7 +1239,7 @@ WriteXYZFile(const char *filename) const
 
 
 int R3SurfelBlock::
-ReadXYZ(FILE *fp)
+ReadXYZAscii(FILE *fp)
 {
   // Get original file offset
   long int file_offset = RNFileTell(fp);
@@ -1274,6 +1283,9 @@ ReadXYZ(FILE *fp)
       r = 255; g = 0; b = 0;
       if (sscanf(buffer, "%f%f%f", &x, &y, &z) != (unsigned int) 3) {
         fprintf(stderr, "Unable to read point %d out of %d into surfel block\n", nsurfels, count);
+        delete [] surfels;
+        surfels = NULL;
+        nsurfels = 0;
         return 0;
       }
     }
@@ -1291,7 +1303,7 @@ ReadXYZ(FILE *fp)
 
 
 int R3SurfelBlock::
-WriteXYZ(FILE *fp) const
+WriteXYZAscii(FILE *fp) const
 {
   // Write surfels
   for (int i = 0; i < NSurfels(); i++) {
@@ -1303,6 +1315,96 @@ WriteXYZ(FILE *fp) const
     fprintf(fp, "0 0\n");
   }
 
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// FLOAT I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3SurfelBlock::
+ReadXYZBinaryFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "rb"))) {
+    fprintf(stderr, "Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  if (!ReadXYZBinary(fp)) {
+    fprintf(stderr, "Unable to read XYZ binary file %s\n", filename);
+    fclose(fp);
+    return 0;
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelBlock::
+ReadXYZBinary(FILE *fp)
+{
+  // Determine the number of surfels
+  long int start_file_offset = RNFileTell(fp);
+  RNFileSeek(fp, 0, SEEK_END);
+  long int end_file_offset = RNFileTell(fp);
+  RNFileSeek(fp, start_file_offset, SEEK_SET);
+  long int file_size = end_file_offset - start_file_offset;
+  nsurfels = file_size / (4*sizeof(RNScalar32));
+  if (nsurfels == 0) return 0;
+  
+  // Allocate surfels
+  surfels = new R3Surfel [ nsurfels ];
+  if (!surfels) {
+    fprintf(stderr, "Unable to allocate surfel block\n");
+    return 0;
+  }
+
+  // Read surfels
+  origin = R3zero_point;
+  for (int i = 0; i < nsurfels; i++) {
+    // Read data
+    float xyzr[4];
+    if (fread(xyzr, sizeof(RNScalar32), 4, fp) != (size_t) 4) {
+      fprintf(stderr, "Unable to read point %d\n", i);
+      delete [] surfels;
+      surfels = NULL;
+      nsurfels = 0;
+      return 0;
+    }
+
+    // Compute color
+    float c = 255 * xyzr[3];
+
+    // Assign surfel position
+    surfels[i].SetCoords(xyzr);
+    surfels[i].SetColor(c, c, c);
+
+    // Update origin
+    origin[0] += xyzr[0];
+    origin[1] += xyzr[1];
+    origin[2] += xyzr[2];
+  }
+
+  // Put origin at centroid
+  origin /= nsurfels;
+
+  // Update surfels to be relative to origin
+  for (int i = 0; i < nsurfels; i++) {
+    const float *xyz = surfels[i].Coords();
+    surfels[i].SetCoords(xyz[0] - origin[0], xyz[1] - origin[1], xyz[2] - origin[2]);
+  }  
+  
   // Return success
   return 1;
 }
@@ -1326,6 +1428,7 @@ ReadBinaryFile(const char *filename)
   // Read file
   if (!ReadBinary(fp)) {
     fprintf(stderr, "Unable to read surfel file %s\n", filename);
+    fclose(fp);
     return 0;
   }
 
@@ -1351,6 +1454,7 @@ WriteBinaryFile(const char *filename) const
   // Write file
   if (!WriteBinary(fp)) {
     fprintf(stderr, "Unable to write surfel file %s\n", filename);
+    fclose(fp);
     return 0;
   }
 
@@ -1403,6 +1507,9 @@ ReadBinary(FILE *fp)
     int status = fread(&surfels[count], sizeof(R3Surfel), nsurfels - count, fp);
     if (status <= 0) {
       fprintf(stderr, "Unable to read surfel block\n");
+      delete [] surfels;
+      surfels = NULL;
+      nsurfels = 0;
       return 0;
     }
     count += status;
@@ -1445,7 +1552,9 @@ WriteBinary(FILE *fp) const
 
   // Write surfels
   for (int i = 0; i < NSurfels(); i++) {
-    if (fwrite(&surfels[i], sizeof(R3Surfel), 1, fp) != (size_t) 1) return 0;
+    if (fwrite(&surfels[i], sizeof(R3Surfel), 1, fp) != (size_t) 1) {
+      return 0;
+    }
   }
 
   // Return success

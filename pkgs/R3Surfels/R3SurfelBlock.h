@@ -139,18 +139,20 @@ public:
 
   // File I/O
   int ReadFile(const char *filename);
-  int ReadXYZFile(const char *filename);
+  int ReadXYZAsciiFile(const char *filename);
+  int ReadXYZBinaryFile(const char *filename);
   int ReadBinaryFile(const char *filename);
   int ReadUPCFile(const char *filename);
   int ReadOBJFile(const char *filename);
-  int ReadXYZ(FILE *fp);
+  int ReadXYZAscii(FILE *fp);
+  int ReadXYZBinary(FILE *fp);
   int ReadBinary(FILE *fp);
   int ReadUPC(FILE *fp);
   int ReadOBJ(FILE *fp);
   int WriteFile(const char *filename) const;
-  int WriteXYZFile(const char *filename) const;
+  int WriteXYZAsciiFile(const char *filename) const;
   int WriteBinaryFile(const char *filename) const;
-  int WriteXYZ(FILE *fp) const;
+  int WriteXYZAscii(FILE *fp) const;
   int WriteBinary(FILE *fp) const;
 
   ////////////////////////////////////////////////////////////////////////
