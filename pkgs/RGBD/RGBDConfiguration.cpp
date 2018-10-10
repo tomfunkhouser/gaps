@@ -561,11 +561,13 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
 int RGBDConfiguration::
 WriteConfigurationFile(const char *filename, int write_every_kth_image) const
 {
+#if 0
   // Create directories
   char cmd[4096];
   if (color_directory) { sprintf(cmd, "mkdir -p %s", color_directory); system(cmd); }
   if (depth_directory) { sprintf(cmd, "mkdir -p %s", depth_directory); system(cmd); }
   if (texture_directory) { sprintf(cmd, "mkdir -p %s", texture_directory); system(cmd); }
+#endif
   
   // Open file
   FILE *fp = fopen(filename, "w");

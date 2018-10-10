@@ -103,7 +103,7 @@ class RNVArray {
 
 /* Inline functions */
 
-#include "RNArray.I"
+#include "RNArray.hh"
 
 
 

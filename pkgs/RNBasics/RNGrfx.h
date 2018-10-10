@@ -177,7 +177,7 @@ void RNGrfxError(const char *message);
 
 /* Inline functions */
 
-#include "RNGrfx.I"
+#include "RNGrfx.hh"
 
 
 

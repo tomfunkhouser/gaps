@@ -105,7 +105,7 @@ class RNVQueue {
 
 /* Inline functions */
 
-#include "RNQueue.I"
+#include "RNQueue.hh"
 
 
 
