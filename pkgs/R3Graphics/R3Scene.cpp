@@ -3813,7 +3813,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
             // if (!ReadObj(this, node, obj_name)) return 0;
             // room_node->InsertChild(node);
           }
-
+          
           // Create node for walls
           sprintf(obj_name, "%s/room/%s/%sw.obj", input_data_directory, scene_id, modelId); 
           if (!hideWalls && RNFileExists(obj_name)) {
