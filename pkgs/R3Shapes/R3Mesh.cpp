@@ -6224,8 +6224,9 @@ WriteObjFile(const char *filename) const
     R3MeshVertex *v2 = VertexOnFace(face, 2);
     if (has_texcoords) {
       fprintf(fp, "f %d/%d %d/%d %d/%d\n",
-        v0->id + 1, v1->id + 1, v2->id + 1,
-        v0->id + 1, v1->id + 1, v2->id + 1);
+        v0->id + 1, v0->id + 1,
+        v1->id + 1, v1->id + 1,
+        v2->id + 1, v2->id + 1);
     }
     else {
       fprintf(fp, "f %d %d %d\n",
