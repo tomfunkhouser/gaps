@@ -247,11 +247,11 @@ TextureScore(RGBDImage *image, RGBDSurface *surface,
   // Compute score
   RNScalar score = 1.0;
   score *= ndotv;
-  score *= tdotv;
+  // score *= tdotv;
   score *= invdd;
 
   // Return score
-  return score * score;
+  return score * score * score * score;
 }
 
 
@@ -320,8 +320,7 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
         // Compute weight
         RNRgb color(r, g, b);
         RNScalar weight = TextureScore(image, surface, image_position, texture_position, color);
-        if (RNIsNegativeOrZero(weight)) continue;
-        weight = 0.1;
+        if (weight <= 0) continue;
         
         // Update statistics
         weight_sum += weight;
