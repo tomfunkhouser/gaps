@@ -741,8 +741,7 @@ WriteObjFile(const char *filename) const
         int i0 = mesh->VertexID(v0) + 1;
         int i1 = mesh->VertexID(v1) + 1;
         int i2 = mesh->VertexID(v2) + 1;
-        // fprintf(fp, "f %d/%d %d/%d %d/%d\n", i0, i1, i2, i0, i1, i2);
-        fprintf(fp, "f %d/%d %d/%d %d/%d\n", i2, i1, i0, i2, i1, i0);
+        fprintf(fp, "f %d/%d %d/%d %d/%d\n", i0, i0, i1, i1, i2, i2);
       }
     }
   }
