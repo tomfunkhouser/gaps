@@ -271,8 +271,9 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
   RNLength world_texel_spacing = surface->WorldTexelSpacing();
   R2Box surface_bbox(0.0, 0.0, world_texel_spacing*width, world_texel_spacing*height);
   R2Grid red_channel(width, height, surface_bbox);
-  R2Grid green_channel(width, height, surface_bbox);
-  R2Grid blue_channel(width, height, surface_bbox);
+  red_channel.Clear(R2_GRID_UNKNOWN_VALUE);
+  R2Grid green_channel(red_channel);
+  R2Grid blue_channel(red_channel);
 
   // Allocate storage for accumulating statistics
   if (configuration->NImages() == 0) return 1;
@@ -368,6 +369,11 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
   // Delete temporary memory
   delete [] colors;
   delete [] weights;
+
+  // Fill holes
+  red_channel.FillHoles();
+  green_channel.FillHoles();
+  blue_channel.FillHoles();
 
   // Create color channels
   R2Image tmp(width, height);

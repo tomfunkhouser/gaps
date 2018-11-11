@@ -1256,13 +1256,29 @@ ReadDepthChannel(void)
         else if (!strcmp(configuration->DatasetFormat(), "icl")) {
           depth_image.Multiply(0.2);
         }
+        else if (!strcmp(configuration->DatasetFormat(), "sumo")) {
+          if (RNIsNotZero(intrinsics[0][0]) && RNIsNotZero(intrinsics[1][1])) {
+            for (int ix = 0; ix < depth_image.XResolution(); ix++) {
+              for (int iy = 0; iy < depth_image.YResolution(); iy++) {
+                RNScalar value = depth_image.GridValue(ix, iy);
+                if (value == 0) continue;
+                RNScalar distance = 65.535 * 0.3 / value;
+                RNScalar dx = (ix - intrinsics[0][2]) / intrinsics[0][0];
+                RNScalar dy = (iy - intrinsics[1][2]) / intrinsics[1][1];
+                RNScalar r = sqrt(dx*dx + dy*dy);
+                RNScalar depth =  distance / sqrt(1 + r*r);
+                depth_image.SetGridValue(ix, iy, depth);
+              }
+            }
+          }
+        }
       }
     }
 
     // Smooth depth image
     if (!configuration || !configuration->DatasetFormat() ||
         (strcmp(configuration->DatasetFormat(), "processed") &&
-         strcmp(configuration->DatasetFormat(), "matterport") && // TEMPORARY FOR AGGR!!!
+         strcmp(configuration->DatasetFormat(), "sumo") &&
          strcmp(configuration->DatasetFormat(), "scannet"))) {
       RNScalar d_sigma_fraction = 0.015;
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
