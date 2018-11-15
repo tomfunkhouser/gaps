@@ -3185,7 +3185,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
 
         // Create shape element
         R3Shape *shape = shapes.Kth(model_index);
-        R3Brdf *brdf = new R3Brdf(RNRgb(0, 0.25 + score, 0), 0.0, 0.25 + score);
+        R3Brdf *brdf = new R3Brdf(RNRgb(0.1 + score, 0.25 + score, 0.5 + score), 0.0, 0.5 + score);
         InsertBrdf(brdf);
         R3Material *material = new R3Material(brdf);
         InsertMaterial(material);

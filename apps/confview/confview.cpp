@@ -491,7 +491,7 @@ DrawImages(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
 
 
 static void
-DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
+DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 1)
 {
   // Draw pixels of all images as points in world space
   for (int i = 0; i < configuration.NImages(); i++) {
@@ -505,7 +505,7 @@ DrawPoints(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 
 
 static void
-DrawSurfels(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
+DrawSurfels(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 1)
 {
   // Draw pixels of all images as surfels in world space
   for (int i = 0; i < configuration.NImages(); i++) {
@@ -519,7 +519,7 @@ DrawSurfels(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
 
 
 static void
-DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 2)
+DrawQuads(int color_scheme = RGBD_PHOTO_COLOR_SCHEME, int skip = 1)
 {
   // Draw pixels of all images as quads in world space
   for (int i = 0; i < configuration.NImages(); i++) {

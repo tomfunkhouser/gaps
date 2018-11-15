@@ -1278,7 +1278,6 @@ ReadDepthChannel(void)
     // Smooth depth image
     if (!configuration || !configuration->DatasetFormat() ||
         (strcmp(configuration->DatasetFormat(), "processed") &&
-         strcmp(configuration->DatasetFormat(), "sumo") &&
          strcmp(configuration->DatasetFormat(), "scannet"))) {
       RNScalar d_sigma_fraction = 0.015;
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
