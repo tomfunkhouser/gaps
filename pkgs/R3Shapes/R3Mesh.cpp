@@ -3365,9 +3365,12 @@ ClosestPointOnEdge(const R3MeshEdge *e, const R3Point& point, R3MeshIntersection
 R3Point R3Mesh::
 ClosestPointOnFace(const R3MeshFace *face, const R3Point& point, R3MeshIntersection *closest_point) const
 {
-  // Project point point onto face plane
+  // Get face plane and normal
   const R3Plane& plane = FacePlane(face);
   const R3Vector& face_normal = plane.Normal();
+  if (RNIsZero(face_normal.Dot(face_normal))) return FaceCentroid(face);
+
+  // Project point point onto face plane
   RNScalar plane_signed_distance = R3SignedDistance(plane, point);
   R3Point plane_point = point - plane_signed_distance * face_normal;
 

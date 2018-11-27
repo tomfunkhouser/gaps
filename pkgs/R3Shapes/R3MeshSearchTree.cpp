@@ -311,175 +311,186 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
 {
   // Check face normal
   const R3Vector& face_normal = mesh->FaceNormal(face);
-  if (RNIsZero(face_normal.Dot(face_normal))) return;
-  
-  // Check distance to plane
-  const R3Plane& plane = mesh->FacePlane(face);
-  RNScalar plane_signed_distance = R3SignedDistance(plane, query_position);
-  RNScalar plane_distance_squared = plane_signed_distance * plane_signed_distance;
-  if (plane_distance_squared >= max_distance_squared) return;
-
-  // Check distance to bounding box
-  RNScalar bbox_distance_squared = DistanceSquared(query_position, mesh->FaceBBox(face), max_distance_squared);
-  if (bbox_distance_squared >= max_distance_squared) return;
-
-  // Check compatibility 
-  if (IsCompatible) {
-    if (!(*IsCompatible)(query_position, query_normal, mesh, face, compatible_data)) return;
-  }
-
-  // Get face vertices
-  R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
-  R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
-  R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
-
-  // Get vertex positions
-  const R3Point& p0 = mesh->VertexPosition(v0);
-  const R3Point& p1 = mesh->VertexPosition(v1);
-  const R3Point& p2 = mesh->VertexPosition(v2);
-
-  // Project query point onto face plane
-  R3Point plane_point = query_position - plane_signed_distance * face_normal;
-
-  // Check sides of edges
-  R3Vector e0 = p1 - p0;
-  e0.Normalize();
-  R3Vector n0 = mesh->FaceNormal(face) % e0;
-  R3Plane s0(p0, n0);
-  RNScalar b0 = R3SignedDistance(s0, plane_point);
-  R3Vector e1 = p2 - p1;
-  e1.Normalize();
-  R3Vector n1 = mesh->FaceNormal(face) % e1;
-  R3Plane s1(p1, n1);
-  RNScalar b1 = R3SignedDistance(s1, plane_point);
-  R3Vector e2 = p0 - p2;
-  e2.Normalize();
-  R3Vector n2 = mesh->FaceNormal(face) % e2;
-  R3Plane s2(p2, n2);
-  RNScalar b2 = R3SignedDistance(s2, plane_point);
-
-  // Consider plane_point's position in relation to edges of the triangle
-  if ((b0 >= 0) && (b1 >= 0) && (b2 >= 0)) {
-    // Point is inside face
-    if (plane_distance_squared >= min_distance_squared) {
+  if (RNIsZero(face_normal.Dot(face_normal))) {
+    // Face is degenerate -- assume centroid is closest point on face
+    R3Point p = mesh->FaceCentroid(face);
+    RNScalar distance_squared = DistanceSquared(query_position, p);
+    if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
       closest.type = R3_MESH_FACE_TYPE;
       closest.face = face;
-      closest.point = plane_point;
-      max_distance_squared = plane_distance_squared;
+      closest.point = p;
+      max_distance_squared = distance_squared;
     }
   }
-  else {
-    // Point is outside face -- check each edge
-    if (b0 < 0) {
-      // Outside edge0
-      R3Vector edge_vector = p1 - p0;
-      RNScalar edge_length = edge_vector.Length();
-      if (edge_length > 0) {
-        edge_vector /= edge_length;
-        R3Vector point_vector = plane_point - p0;
-        RNScalar t = edge_vector.Dot(point_vector);
-        if (t <= 0) {
-          RNScalar distance_squared = DistanceSquared(query_position, p0);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v0;
-            closest.point = p0;
-            max_distance_squared = distance_squared;
+  else {  
+    // Check distance to plane
+    const R3Plane& plane = mesh->FacePlane(face);
+    RNScalar plane_signed_distance = R3SignedDistance(plane, query_position);
+    RNScalar plane_distance_squared = plane_signed_distance * plane_signed_distance;
+    if (plane_distance_squared >= max_distance_squared) return;
+
+    // Check distance to bounding box
+    RNScalar bbox_distance_squared = DistanceSquared(query_position, mesh->FaceBBox(face), max_distance_squared);
+    if (bbox_distance_squared >= max_distance_squared) return;
+
+    // Check compatibility 
+    if (IsCompatible) {
+      if (!(*IsCompatible)(query_position, query_normal, mesh, face, compatible_data)) return;
+    }
+
+    // Get face vertices
+    R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+    R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+    R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+
+    // Get vertex positions
+    const R3Point& p0 = mesh->VertexPosition(v0);
+    const R3Point& p1 = mesh->VertexPosition(v1);
+    const R3Point& p2 = mesh->VertexPosition(v2);
+
+    // Project query point onto face plane
+    R3Point plane_point = query_position - plane_signed_distance * face_normal;
+
+    // Check sides of edges
+    R3Vector e0 = p1 - p0;
+    e0.Normalize();
+    R3Vector n0 = mesh->FaceNormal(face) % e0;
+    R3Plane s0(p0, n0);
+    RNScalar b0 = R3SignedDistance(s0, plane_point);
+    R3Vector e1 = p2 - p1;
+    e1.Normalize();
+    R3Vector n1 = mesh->FaceNormal(face) % e1;
+    R3Plane s1(p1, n1);
+    RNScalar b1 = R3SignedDistance(s1, plane_point);
+    R3Vector e2 = p0 - p2;
+    e2.Normalize();
+    R3Vector n2 = mesh->FaceNormal(face) % e2;
+    R3Plane s2(p2, n2);
+    RNScalar b2 = R3SignedDistance(s2, plane_point);
+
+    // Consider plane_point's position in relation to edges of the triangle
+    if ((b0 >= 0) && (b1 >= 0) && (b2 >= 0)) {
+      // Point is inside face
+      if (plane_distance_squared >= min_distance_squared) {
+        closest.type = R3_MESH_FACE_TYPE;
+        closest.face = face;
+        closest.point = plane_point;
+        max_distance_squared = plane_distance_squared;
+      }
+    }
+    else {
+      // Point is outside face -- check each edge
+      if (b0 < 0) {
+        // Outside edge0
+        R3Vector edge_vector = p1 - p0;
+        RNScalar edge_length = edge_vector.Length();
+        if (edge_length > 0) {
+          edge_vector /= edge_length;
+          R3Vector point_vector = plane_point - p0;
+          RNScalar t = edge_vector.Dot(point_vector);
+          if (t <= 0) {
+            RNScalar distance_squared = DistanceSquared(query_position, p0);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v0;
+              closest.point = p0;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else if (t >= edge_length) {
-          RNScalar distance_squared = DistanceSquared(query_position, p1);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v1;
-            closest.point = p1;
-            max_distance_squared = distance_squared;
+          else if (t >= edge_length) {
+            RNScalar distance_squared = DistanceSquared(query_position, p1);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v1;
+              closest.point = p1;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else {
-          R3Point point = p0 + t * edge_vector;
-          RNScalar distance_squared = DistanceSquared(query_position, point);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_EDGE_TYPE;
-            closest.edge = mesh->EdgeOnFace(face, 0);
-            closest.point = point;
-            max_distance_squared = distance_squared;
+          else {
+            R3Point point = p0 + t * edge_vector;
+            RNScalar distance_squared = DistanceSquared(query_position, point);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_EDGE_TYPE;
+              closest.edge = mesh->EdgeOnFace(face, 0);
+              closest.point = point;
+              max_distance_squared = distance_squared;
+            }
           }
         }
       }
-    }
-    if (b1 < 0) {
-      // Outside edge1
-      R3Vector edge_vector = p2 - p1;
-      RNScalar edge_length = edge_vector.Length();
-      if (edge_length > 0) {
-        edge_vector /= edge_length;
-        R3Vector point_vector = plane_point - p1;
-        RNScalar t = edge_vector.Dot(point_vector);
-        if (t <= 0) {
-          RNScalar distance_squared = DistanceSquared(query_position, p1);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v1;
-            closest.point = p1;
-            max_distance_squared = distance_squared;
+      if (b1 < 0) {
+        // Outside edge1
+        R3Vector edge_vector = p2 - p1;
+        RNScalar edge_length = edge_vector.Length();
+        if (edge_length > 0) {
+          edge_vector /= edge_length;
+          R3Vector point_vector = plane_point - p1;
+          RNScalar t = edge_vector.Dot(point_vector);
+          if (t <= 0) {
+            RNScalar distance_squared = DistanceSquared(query_position, p1);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v1;
+              closest.point = p1;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else if (t >= edge_length) {
-          RNScalar distance_squared = DistanceSquared(query_position, p2);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v2;
-            closest.point = p2;
-            max_distance_squared = distance_squared;
+          else if (t >= edge_length) {
+            RNScalar distance_squared = DistanceSquared(query_position, p2);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v2;
+              closest.point = p2;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else {
-          R3Point point = p1 + t * edge_vector;
-          RNScalar distance_squared = DistanceSquared(query_position, point);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_EDGE_TYPE;
-            closest.edge = mesh->EdgeOnFace(face, 1);
-            closest.point = point;
-            max_distance_squared = distance_squared;
+          else {
+            R3Point point = p1 + t * edge_vector;
+            RNScalar distance_squared = DistanceSquared(query_position, point);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_EDGE_TYPE;
+              closest.edge = mesh->EdgeOnFace(face, 1);
+              closest.point = point;
+              max_distance_squared = distance_squared;
+            }
           }
         }
       }
-    }
-    if (b2 < 0) {
-      // Outside edge2
-      R3Vector edge_vector = p0 - p2;
-      RNScalar edge_length = edge_vector.Length();
-      if (edge_length > 0) {
-        edge_vector /= edge_length;
-        R3Vector point_vector = plane_point - p2;
-        RNScalar t = edge_vector.Dot(point_vector);
-        if (t <= 0) {
-          RNScalar distance_squared = DistanceSquared(query_position, p2);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v2;
-            closest.point = p2;
-            max_distance_squared = distance_squared;
+      if (b2 < 0) {
+        // Outside edge2
+        R3Vector edge_vector = p0 - p2;
+        RNScalar edge_length = edge_vector.Length();
+        if (edge_length > 0) {
+          edge_vector /= edge_length;
+          R3Vector point_vector = plane_point - p2;
+          RNScalar t = edge_vector.Dot(point_vector);
+          if (t <= 0) {
+            RNScalar distance_squared = DistanceSquared(query_position, p2);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v2;
+              closest.point = p2;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else if (t >= edge_length) {
-          RNScalar distance_squared = DistanceSquared(query_position, p0);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_VERTEX_TYPE;
-            closest.vertex = v0;
-            closest.point = p0;
-            max_distance_squared = distance_squared;
+          else if (t >= edge_length) {
+            RNScalar distance_squared = DistanceSquared(query_position, p0);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_VERTEX_TYPE;
+              closest.vertex = v0;
+              closest.point = p0;
+              max_distance_squared = distance_squared;
+            }
           }
-        }
-        else {
-          R3Point point = p2 + t * edge_vector;
-          RNScalar distance_squared = DistanceSquared(query_position, point);
-          if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
-            closest.type = R3_MESH_EDGE_TYPE;
-            closest.edge = mesh->EdgeOnFace(face, 2);
-            closest.point = point;
-            max_distance_squared = distance_squared;
+          else {
+            R3Point point = p2 + t * edge_vector;
+            RNScalar distance_squared = DistanceSquared(query_position, point);
+            if ((distance_squared >= min_distance_squared) && (distance_squared < max_distance_squared)) {
+              closest.type = R3_MESH_EDGE_TYPE;
+              closest.edge = mesh->EdgeOnFace(face, 2);
+              closest.point = point;
+              max_distance_squared = distance_squared;
+            }
           }
         }
       }
