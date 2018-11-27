@@ -225,7 +225,7 @@ void GLUTRedraw(void)
     if (points && show_point_spheres) {
       // Draw points
       glEnable(GL_LIGHTING);
-      RNLength radius = 0.008 * model->bbox.LongestAxisLength();
+      RNLength radius = 0.1; // 0.008 * model->bbox.LongestAxisLength();
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
@@ -818,6 +818,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-image")) { argc--; argv++; image_name = *argv; }
       else if (!strcmp(*argv, "-scale")) { argc--; argv++; world_radius_scale = atof(*argv); }
       else if (!strcmp(*argv, "-back")) { show_backfacing = TRUE; }
+      else if (!strcmp(*argv, "-spheres")) { show_point_spheres = TRUE; }
       else if (!strcmp(*argv, "-nrows")) { argc--; argv++; nrows = atoi(*argv); }
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 

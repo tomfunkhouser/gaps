@@ -309,6 +309,10 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
   int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *), void *compatible_data,
   R3MeshFace *face) const
 {
+  // Check face normal
+  const R3Vector& face_normal = mesh->FaceNormal(face);
+  if (RNIsZero(face_normal.Dot(face_normal))) return;
+  
   // Check distance to plane
   const R3Plane& plane = mesh->FacePlane(face);
   RNScalar plane_signed_distance = R3SignedDistance(plane, query_position);
@@ -335,7 +339,6 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
   const R3Point& p2 = mesh->VertexPosition(v2);
 
   // Project query point onto face plane
-  const R3Vector& face_normal = mesh->FaceNormal(face);
   R3Point plane_point = query_position - plane_signed_distance * face_normal;
 
   // Check sides of edges
@@ -983,6 +986,10 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
   if (IsCompatible) {
     if (!(*IsCompatible)(ray.Start(), ray.Vector(), mesh, face, compatible_data)) return;
   }
+
+  // Check face
+  R3Vector normal = mesh->FaceNormal(face);
+  if (RNIsZero(normal.Dot(normal))) return;
 
   // Check intersection with plane (this is redundant, but allows checking min_t and max_t)
   RNScalar plane_t;

@@ -875,7 +875,7 @@ Draw(const R3DrawFlags draw_flags) const
 	if (draw_flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]) gluQuadricTexture(sphere, GL_TRUE);
 	else gluQuadricTexture(sphere, GL_FALSE);
 	gluQuadricDrawStyle(sphere, (GLenum) GLU_FILL);
-	gluSphere(sphere, radius, 8, 8);
+	gluSphere(sphere, radius, 16, 8);
     }
 
     // Draw edges
@@ -883,7 +883,7 @@ Draw(const R3DrawFlags draw_flags) const
 	gluQuadricNormals(sphere, (GLenum) GLU_NONE);
 	gluQuadricTexture(sphere, GL_FALSE);
 	gluQuadricDrawStyle(sphere, (GLenum) GLU_SILHOUETTE);
-	gluSphere(sphere, radius, 8, 8);
+	gluSphere(sphere, radius, 16, 8);
     }
 
     // Pop matrix
