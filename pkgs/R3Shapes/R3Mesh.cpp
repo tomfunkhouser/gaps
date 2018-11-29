@@ -6088,6 +6088,28 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     int category;
   } PlyFace;
 
+  // Gather info about what vertex info to write
+  RNBoolean has_vertex_normals = FALSE;
+  RNBoolean has_vertex_texcoords = FALSE;
+  RNBoolean has_vertex_colors = FALSE;
+  for (int i = 0; i < NVertices(); i++) {
+    R3MeshVertex *v = Vertex(i);
+    if (v->flags[R3_MESH_VERTEX_NORMAL_UPTODATE]) has_vertex_normals = TRUE;
+    if (!v->texcoords.IsZero()) has_vertex_texcoords = TRUE;
+    if (!v->color.IsBlack()) has_vertex_colors = TRUE;
+  }
+
+  // Gather info about what face info to write
+  RNBoolean has_face_materials = FALSE;
+  RNBoolean has_face_segments = FALSE;
+  RNBoolean has_face_categories = FALSE;
+  for (int i = 0; i < NFaces(); i++) {
+    R3MeshFace *f = Face(i);
+    if (f->material != -1) has_face_materials = TRUE;
+    if (f->segment != -1) has_face_segments = TRUE;
+    if (f->category != -1) has_face_categories = TRUE;
+  }
+  
   // Element names
   char *elem_names[] = { (char *) "vertex", (char *) "face" };
 
@@ -6125,22 +6147,34 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   ply_describe_property(ply, (char *) "vertex", &vert_props[0]);
   ply_describe_property(ply, (char *) "vertex", &vert_props[1]);
   ply_describe_property(ply, (char *) "vertex", &vert_props[2]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[3]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[4]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[5]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[6]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[7]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[8]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[9]);
-  ply_describe_property(ply, (char *) "vertex", &vert_props[10]);
+  if (has_vertex_normals) {
+    ply_describe_property(ply, (char *) "vertex", &vert_props[3]);
+    ply_describe_property(ply, (char *) "vertex", &vert_props[4]);
+    ply_describe_property(ply, (char *) "vertex", &vert_props[5]);
+  }
+  if (has_vertex_texcoords) {
+    ply_describe_property(ply, (char *) "vertex", &vert_props[6]);
+    ply_describe_property(ply, (char *) "vertex", &vert_props[7]);
+  }
+  if (has_vertex_colors) {
+    ply_describe_property(ply, (char *) "vertex", &vert_props[8]);
+    ply_describe_property(ply, (char *) "vertex", &vert_props[9]);
+    ply_describe_property(ply, (char *) "vertex", &vert_props[10]);
+  }
 
   // Describe face properties
   ply_element_count(ply, (char *) "face", NFaces());
   ply_describe_property(ply, (char *) "face", &face_props[0]);
-  ply_describe_property(ply, (char *) "face", &face_props[1]);
-  ply_describe_property(ply, (char *) "face", &face_props[2]);
-  ply_describe_property(ply, (char *) "face", &face_props[3]);
-
+  if (has_face_materials) {
+    ply_describe_property(ply, (char *) "face", &face_props[1]);
+  }
+  if (has_face_segments) {
+    ply_describe_property(ply, (char *) "face", &face_props[2]);
+  }
+  if (has_face_categories) {
+    ply_describe_property(ply, (char *) "face", &face_props[3]);
+  }
+  
   // Complete header
   ply_header_complete(ply);
 
