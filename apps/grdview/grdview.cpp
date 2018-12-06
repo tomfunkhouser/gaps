@@ -51,8 +51,8 @@ static int show_slices[3] = { 0, 0, 0 };
 static int show_box = 1;
 static int show_axes = 0;
 static int show_principle_axes = 0;
-static float show_threshold = -98765;
-static int show_slice_coords[3] = { 0, 0, 0 };
+static float grid_threshold = -98765;
+static int grid_slice_coords[3] = { 0, 0, 0 };
 
 
 
@@ -107,7 +107,7 @@ void GLUTRedraw(void)
       for (int j = 0; j < grid->YResolution(); j++) {
         for (int k = 0; k < grid->ZResolution(); k++) {
           RNScalar value = grid->GridValue(i, j, k);
-          if (value <= show_threshold) continue;
+          if (value <= grid_threshold) continue;
           RNScalar intensity = 1 - scale * value;
           glColor4f(intensity, intensity, intensity, 0.5*(1-intensity));
           double x = i + 1.0 - (7*i%5)/6.0 - (7*j%5)/6.0 - (7*k%5)/6.0;
@@ -134,7 +134,7 @@ void GLUTRedraw(void)
       for (int j = 0; j < grid->YResolution(); j++) {
         for (int k = 0; k < grid->ZResolution(); k++) {
           RNScalar value = grid->GridValue(i, j, k);
-          if (value <= show_threshold) continue;
+          if (value >= grid_threshold) continue;
           sprintf(buffer, "%.2g", value);
           GLUTDrawText(R3Point((RNScalar) i, (RNScalar) j, (RNScalar) k), buffer);
         }
@@ -147,7 +147,7 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 0.0, 0.0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    grid->DrawIsoSurface(show_threshold);
+    grid->DrawIsoSurface(grid_threshold);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
@@ -155,9 +155,9 @@ void GLUTRedraw(void)
   if (show_slices[RN_X] || show_slices[RN_Y] || show_slices[RN_Z]) {
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
-    if (show_slices[RN_X]) grid->DrawSlice(RN_X, show_slice_coords[RN_X]);
-    if (show_slices[RN_Y]) grid->DrawSlice(RN_Y, show_slice_coords[RN_Y]);
-    if (show_slices[RN_Z]) grid->DrawSlice(RN_Z, show_slice_coords[RN_Z]);
+    if (show_slices[RN_X]) grid->DrawSlice(RN_X, grid_slice_coords[RN_X]);
+    if (show_slices[RN_Y]) grid->DrawSlice(RN_Y, grid_slice_coords[RN_Y]);
+    if (show_slices[RN_Z]) grid->DrawSlice(RN_Z, grid_slice_coords[RN_Z]);
   }
 
   // Draw grid bounding box
@@ -166,9 +166,9 @@ void GLUTRedraw(void)
     glColor3f(0, 0, 0);
     R3Box(0, 0, 0, grid->XResolution()-1, grid->YResolution()-1, grid->ZResolution()-1).Outline();
 #if 0
-    if (show_slices[0]) R3Box(show_slice_coords[0], 0, 0, show_slice_coords[0], grid->YResolution()-1, grid->ZResolution()-1).Outline();
-    if (show_slices[1]) R3Box(0, show_slice_coords[1], 0, grid->XResolution()-1, show_slice_coords[1], grid->ZResolution()-1).Outline();
-    if (show_slices[2]) R3Box(0, 0, show_slice_coords[2], grid->XResolution()-1, grid->YResolution()-1, show_slice_coords[2]).Outline();
+    if (show_slices[0]) R3Box(grid_slice_coords[0], 0, 0, grid_slice_coords[0], grid->YResolution()-1, grid->ZResolution()-1).Outline();
+    if (show_slices[1]) R3Box(0, grid_slice_coords[1], 0, grid->XResolution()-1, grid_slice_coords[1], grid->ZResolution()-1).Outline();
+    if (show_slices[2]) R3Box(0, 0, grid_slice_coords[2], grid->XResolution()-1, grid->YResolution()-1, grid_slice_coords[2]).Outline();
 #endif
   }
 
@@ -324,13 +324,13 @@ void GLUTSpecial(int key, int x, int y)
   // Process keyboard button event 
   switch (key) {
   case GLUT_KEY_DOWN:
-    show_threshold -= threshold_step;
-    if (show_threshold < threshold_range.Min()) show_threshold = threshold_range.Min();
+    grid_threshold -= threshold_step;
+    if (grid_threshold < threshold_range.Min()) grid_threshold = threshold_range.Min();
     break;
 
   case GLUT_KEY_UP:
-    show_threshold += threshold_step;
-    if (show_threshold > threshold_range.Max()) show_threshold = threshold_range.Max();
+    grid_threshold += threshold_step;
+    if (grid_threshold > threshold_range.Max()) grid_threshold = threshold_range.Max();
     break;
 
   case GLUT_KEY_LEFT:
@@ -397,39 +397,39 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case 'X':
-    show_slice_coords[RN_X]++;
-    if (show_slice_coords[RN_X] >= grid->XResolution()) 
-      show_slice_coords[RN_X] = grid->XResolution() - 1;
+    grid_slice_coords[RN_X]++;
+    if (grid_slice_coords[RN_X] >= grid->XResolution()) 
+      grid_slice_coords[RN_X] = grid->XResolution() - 1;
     break;
 
   case 'x':
-    show_slice_coords[RN_X]--;
-    if (show_slice_coords[RN_X] < 0)
-      show_slice_coords[RN_X] = 0;
+    grid_slice_coords[RN_X]--;
+    if (grid_slice_coords[RN_X] < 0)
+      grid_slice_coords[RN_X] = 0;
     break;
 
   case 'Y':
-    show_slice_coords[RN_Y]++;
-    if (show_slice_coords[RN_Y] >= grid->YResolution()) 
-      show_slice_coords[RN_Y] = grid->YResolution() - 1;
+    grid_slice_coords[RN_Y]++;
+    if (grid_slice_coords[RN_Y] >= grid->YResolution()) 
+      grid_slice_coords[RN_Y] = grid->YResolution() - 1;
     break;
 
   case 'y':
-    show_slice_coords[RN_Y]--;
-    if (show_slice_coords[RN_Y] < 0)
-      show_slice_coords[RN_Y] = 0;
+    grid_slice_coords[RN_Y]--;
+    if (grid_slice_coords[RN_Y] < 0)
+      grid_slice_coords[RN_Y] = 0;
     break;
 
   case 'Z':
-    show_slice_coords[RN_Z]++;
-    if (show_slice_coords[RN_Z] >= grid->ZResolution()) 
-      show_slice_coords[RN_Z] = grid->ZResolution() - 1;
+    grid_slice_coords[RN_Z]++;
+    if (grid_slice_coords[RN_Z] >= grid->ZResolution()) 
+      grid_slice_coords[RN_Z] = grid->ZResolution() - 1;
     break;
 
   case 'z':
-    show_slice_coords[RN_Z]--;
-    if (show_slice_coords[RN_Z] < 0)
-      show_slice_coords[RN_Z] = 0;
+    grid_slice_coords[RN_Z]--;
+    if (grid_slice_coords[RN_Z] < 0)
+      grid_slice_coords[RN_Z] = 0;
     break;
 
   case ' ': {
@@ -526,16 +526,16 @@ void GLUTInit(int *argc, char **argv)
 void GLUTMainLoop(void)
 {
   // Set default values
-  if (show_threshold == -98765) {
+  if (grid_threshold == -98765) {
     RNScalar max_threshold = grid->Maximum() - 1.0E-20;
-    show_threshold = grid->Mean() + 3 * grid->StandardDeviation();
-    if (show_threshold > max_threshold) show_threshold = max_threshold;
+    grid_threshold = grid->Mean() + 3 * grid->StandardDeviation();
+    if (grid_threshold > max_threshold) grid_threshold = max_threshold;
   }
 
   // Set slice coords to middle of grid
-  show_slice_coords[RN_X] = grid->XResolution()/2;
-  show_slice_coords[RN_Y] = grid->YResolution()/2;
-  show_slice_coords[RN_Z] = grid->ZResolution()/2;
+  grid_slice_coords[RN_X] = grid->XResolution()/2;
+  grid_slice_coords[RN_Y] = grid->YResolution()/2;
+  grid_slice_coords[RN_Z] = grid->ZResolution()/2;
 
   // Run main loop -- never returns 
   glutMainLoop();
@@ -643,8 +643,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_isosurface")) show_isosurface = 1; 
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1; 
       else if (!strcmp(*argv, "-dont_show_isosurface")) show_isosurface = 0; 
-      else if (!strcmp(*argv, "-show_threshold")) {
-        argc--; argv++; show_threshold = atof(*argv); 
+      else if (!strcmp(*argv, "-grid_threshold")) {
+        argc--; argv++; grid_threshold = atof(*argv); 
       }
       else if (!strcmp(*argv, "-camera")) { 
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;

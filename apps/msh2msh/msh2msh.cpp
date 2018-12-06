@@ -20,6 +20,8 @@ int flip_faces = 0;
 int clean = 0;
 int smooth = 0;
 int swap_edges = 0;
+int fill_holes = 0;
+int delete_interior_faces = 0;
 R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1));
 RNLength min_edge_length = 0;
 RNLength max_edge_length = 0;
@@ -298,6 +300,101 @@ DeleteSmallConnectedComponents(R3Mesh *mesh, RNArea min_area)
 
 
 
+static int
+DeleteInteriorFaces(R3Mesh *mesh)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Get convenient variables
+  int resolution = 1024;
+  R3Point c = mesh->BBox().Centroid();
+  RNScalar r = mesh->BBox().DiagonalRadius();
+  R2Box bbox2d(-r, -r, r, r);
+  R2Grid face_image(bbox2d, r / resolution);
+  R2Grid depth_image(face_image);
+  RNScalar d = face_image.GridToWorldScaleFactor();
+  RNArea pixel_area = d*d;
+  const int nviews = 100;
+
+  // Initialize face marks
+  int *marks = new int [ mesh->NFaces() ];
+  for (int i = 0; i < mesh->NFaces(); i++) marks[i] = 0;
+
+  // Mark faces visible from any exterior view
+  for (int k = 0; k < nviews; k++) {
+    // Create transformation
+    R3Affine transformation = R3identity_affine;
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Translate(-c.Vector());
+
+    // Render image
+    face_image.Clear(-1);
+    depth_image.Clear(RN_INFINITY);
+    for (int i = 0; i < mesh->NFaces(); i++) {
+      R3MeshFace *face = mesh->Face(i);
+      R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+      R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+      R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+      R3Point p0 = mesh->VertexPosition(v0);
+      R3Point p1 = mesh->VertexPosition(v1);
+      R3Point p2 = mesh->VertexPosition(v2);
+      p0.Transform(transformation);
+      p1.Transform(transformation);
+      p2.Transform(transformation);
+      face_image.RenderWorldTriangle(
+        R2Point(p0.X(), p0.Y()),
+        R2Point(p1.X(), p1.Y()),
+        R2Point(p2.X(), p2.Y()),
+        i, i, i,
+        p0.Z(), p1.Z(), p2.Z(),
+        depth_image);
+    }
+
+    // Mark visible faces
+    for (int i = 0; i < face_image.NEntries(); i++) {
+      RNScalar face_value = face_image.GridValue(i);
+      if (face_value < 0) continue;
+      int face_index = (int) (face_value + 0.5);
+      if (face_index < 0) continue;
+      if (face_index >= mesh->NFaces()) continue;
+      marks[face_index]++;
+    }
+  }
+
+  // Find unmarked faces
+  RNArray<R3MeshFace *> unmarked_faces;
+  for (int i = 0; i < mesh->NFaces(); i++) {
+    R3MeshFace *face = mesh->Face(i);
+    int possible_marks = nviews * mesh->FaceArea(face) / pixel_area;
+    if (marks[i] > 1E-3*possible_marks) continue;
+    unmarked_faces.Insert(face);
+  }
+  
+  // Delete unmarked faces
+  for (int i = 0; i < unmarked_faces.NEntries(); i++) {
+    R3MeshFace *face = unmarked_faces.Kth(i);
+    mesh->DeleteFace(face);
+  }
+
+  // Print debug statistics
+  if (print_verbose) {
+    printf("  Deleted interior faces ...\n");
+    printf("    Time = %.2f seconds\n", start_time.Elapsed());
+    printf("    # Deleted Faces = %d\n", unmarked_faces.NEntries());
+    printf("    # Remaining Faces = %d\n", mesh->NFaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // PROGRAM ARGUMENT PARSING
 ////////////////////////////////////////////////////////////////////////
@@ -319,6 +416,8 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-flip")) flip_faces = 1;
       else if (!strcmp(*argv, "-clean")) clean = 1;
       else if (!strcmp(*argv, "-smooth")) smooth = 1;
+      else if (!strcmp(*argv, "-fill_holes")) fill_holes = 1;
+      else if (!strcmp(*argv, "-delete_interior_faces")) delete_interior_faces = 1;
       else if (!strcmp(*argv, "-swap_edges")) swap_edges = 1;
       else if (!strcmp(*argv, "-scale_by_area")) scale_by_area = 1;
       else if (!strcmp(*argv, "-center_at_origin")) center_at_origin = 1;
@@ -429,6 +528,11 @@ int main(int argc, char **argv)
     mesh->Transform(xform);
   }
 
+  // Delete interior faces
+  if (delete_interior_faces) {
+    DeleteInteriorFaces(mesh);
+  }
+
   // Remove small components
   if (min_component_area > 0) {
     DeleteSmallConnectedComponents(mesh, min_component_area);
@@ -445,6 +549,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < mesh->NFaces(); i++) {
       mesh->FlipFace(mesh->Face(i));
     }
+  }
+
+  // Fill holes
+  if (fill_holes) {
+    mesh->FillHoles();
   }
 
   // Smooth

@@ -376,6 +376,8 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
         closest.face = face;
         closest.point = plane_point;
         max_distance_squared = plane_distance_squared;
+        if (b0 < b1) closest.edge = (b0 < b2) ? mesh->EdgeOnFace(face, 0) : mesh->EdgeOnFace(face, 2);
+        else closest.edge = (b1 < b2) ? mesh->EdgeOnFace(face, 1) : mesh->EdgeOnFace(face, 2);
       }
     }
     else {
@@ -617,12 +619,27 @@ FindClosest(const R3Point& query_position, const R3Vector& query_normal, R3MeshI
     closest.edge = mesh->EdgeOnVertex(closest.vertex, closest.face, RN_CCW); 
   }
   else if (closest.type == R3_MESH_EDGE_TYPE) { 
-    closest.vertex = NULL; 
+    R3MeshVertex *v0 = mesh->VertexOnEdge(closest.edge, 0);
+    R3MeshVertex *v1 = mesh->VertexOnEdge(closest.edge, 1);
+    const R3Point& p0 = mesh->VertexPosition(v0);
+    const R3Point& p1 = mesh->VertexPosition(v1);
+    RNScalar dd0 = R3SquaredDistance(query_position, p0);
+    RNScalar dd1 = R3SquaredDistance(query_position, p1);
+    closest.vertex = (dd0 < dd1) ? v0 : v1;
     closest.face = mesh->FaceOnEdge(closest.edge);
   }
   else if (closest.type == R3_MESH_FACE_TYPE) { 
-    closest.vertex = NULL; 
-    closest.edge = NULL; 
+    R3MeshVertex *v0 = mesh->VertexOnFace(closest.face, 0);
+    R3MeshVertex *v1 = mesh->VertexOnFace(closest.face, 1);
+    R3MeshVertex *v2 = mesh->VertexOnFace(closest.face, 2);
+    const R3Point& p0 = mesh->VertexPosition(v0);
+    const R3Point& p1 = mesh->VertexPosition(v1);
+    const R3Point& p2 = mesh->VertexPosition(v2);
+    RNScalar dd0 = R3SquaredDistance(query_position, p0);
+    RNScalar dd1 = R3SquaredDistance(query_position, p1);
+    RNScalar dd2 = R3SquaredDistance(query_position, p2);
+    if (dd0 < dd1) closest.vertex = (dd0 < dd2) ? v0 : v2;
+    else closest.vertex = (dd1 < dd2) ? v1 : v2;
   }
 
   // Just checking
