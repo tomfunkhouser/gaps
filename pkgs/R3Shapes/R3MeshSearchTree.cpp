@@ -1069,7 +1069,7 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
     assert(node->children[1]);
     assert(node->small_faces.IsEmpty());
 
-    // Compute distance from query point to split plane
+    // Compute distance along ray to split plane
     RNScalar side = ray.Start()[node->split_dimension] - node->split_coordinate;
     RNScalar vec = ray.Vector()[node->split_dimension];
     RNScalar plane_t = (side*vec < 0) ? -side/vec : RN_INFINITY;

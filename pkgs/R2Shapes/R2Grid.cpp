@@ -2627,13 +2627,13 @@ RenderGridTriangle(
   // Rasterize lower half of triangle
   int iy0 = (int) (y0 + 0.5);
   int iy1 = (int) (y1 + 0.5);
-  int nysteps = (iy1 - iy0) + 1;
-  double xa_step = (x1a - x0) / nysteps;
-  double xb_step = (x1b - x0) / nysteps;
-  double valuea_step = (value1a  - value0) / nysteps;
-  double valueb_step = (value1b  - value0) / nysteps;
-  double deptha_step = (depth1a  - depth0) / nysteps;
-  double depthb_step = (depth1b  - depth0) / nysteps;
+  int nysteps = iy1 - iy0;
+  double xa_step = (nysteps > 0) ? (x1a - x0) / nysteps : 0;
+  double xb_step = (nysteps > 0) ? (x1b - x0) / nysteps : 0;
+  double valuea_step = (nysteps > 0) ? (value1a  - value0) / nysteps : 0;
+  double valueb_step = (nysteps > 0) ? (value1b  - value0) / nysteps : 0;
+  double deptha_step = (nysteps > 0) ? (depth1a  - depth0) / nysteps : 0;
+  double depthb_step = (nysteps > 0) ? (depth1b  - depth0) / nysteps : 0;
   double xa = x0;
   double xb = x0;
   double valuea = value0;
@@ -2643,9 +2643,9 @@ RenderGridTriangle(
   for (int iy = iy0; iy <= iy1; iy++) {
     int ixa = (int) (xa + 0.5);
     int ixb = (int) (xb + 0.5);
-    int nxsteps = (ixb - ixa) + 1;
-    double value_step = (valueb - valuea) / nxsteps;
-    double depth_step = (depthb - deptha) / nxsteps;
+    int nxsteps = ixb - ixa;
+    double value_step = (nxsteps > 0) ? (valueb - valuea) / nxsteps : 0;
+    double depth_step = (nxsteps > 0) ? (depthb - deptha) / nxsteps : 0;
     double value = valuea;
     double depth = deptha;
     for (int ix = ixa; ix <= ixb; ix++) {
@@ -2667,13 +2667,13 @@ RenderGridTriangle(
   
   // Rasterize upper half of triangle
   int iy2 = (int) (y2 + 0.5);
-  nysteps = (iy2 - iy1) + 1;
-  xa_step = (x2 - x1a) / nysteps;
-  xb_step = (x2 - x1b) / nysteps;
-  valuea_step = (value2  - value1a) / nysteps;
-  valueb_step = (value2  - value1b) / nysteps;
-  deptha_step = (depth2  - depth1a) / nysteps;
-  depthb_step = (depth2  - depth1b) / nysteps;
+  nysteps = iy2 - iy1;
+  xa_step = (nysteps > 0) ? (x2 - x1a) / nysteps : 0;
+  xb_step = (nysteps > 0) ? (x2 - x1b) / nysteps : 0;
+  valuea_step = (nysteps > 0) ? (value2  - value1a) / nysteps : 0;
+  valueb_step = (nysteps > 0) ? (value2  - value1b) / nysteps : 0;
+  deptha_step = (nysteps > 0) ? (depth2  - depth1a) / nysteps : 0;
+  depthb_step = (nysteps > 0) ? (depth2  - depth1b) / nysteps : 0;
   xa = x1a;
   xb = x1b;
   valuea = value1a;
@@ -2683,9 +2683,9 @@ RenderGridTriangle(
   for (int iy = iy1; iy <= iy2; iy++) {
     int ixa = (int) (xa + 0.5);
     int ixb = (int) (xb + 0.5);
-    int nxsteps = (ixb - ixa) + 1;
-    double value_step = (valueb - valuea) / nxsteps;
-    double depth_step = (depthb - deptha) / nxsteps;
+    int nxsteps = ixb - ixa;
+    double value_step = (nxsteps > 0) ? (valueb - valuea) / nxsteps : 0;
+    double depth_step = (nxsteps > 0) ? (depthb - deptha) / nxsteps : 0;
     double value = valuea;
     double depth = deptha;
     for (int ix = ixa; ix <= ixb; ix++) {

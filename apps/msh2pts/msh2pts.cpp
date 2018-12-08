@@ -14,8 +14,10 @@ using namespace gaps;
 
 enum {
   ITERATIVE_FURTHEST_VERTEX,  
-  RANDOM_SURFACE_POINTS,
   RANDOM_VERTICES,
+  RANDOM_SURFACE_POINTS,
+  EXTERIOR_SURFACE_POINTS,
+  VISIBLE_SURFACE_POINTS,
   SCALE_SPACE_MAXIMA,
   SCALE_SPACE_MINIMA,
   SCALE_SPACE_EXTREMA,
@@ -397,7 +399,7 @@ SelectScaleSpaceExtrema(R3Mesh *mesh, int npoints, double min_spacing, const cha
 ////////////////////////////////////////////////////////////////////////
 
 static RNArray<Point *> *
-SelectSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
+SelectRandomSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
 {
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
@@ -718,6 +720,237 @@ SelectVertexPoints(R3Mesh *mesh, int npoints, double min_spacing)
 ////////////////////////////////////////////////////////////////////////
 
 static RNArray<Point *> *
+SelectExteriorSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
+{
+  // Allocate array of points
+  RNArray<Point *> *points = new RNArray<Point *>();
+  if (!points) {
+    fprintf(stderr, "Unable to allocate array of points\n");
+    return NULL;
+  }
+
+  // Initialize grid
+  RNArea area_per_point = mesh->Area() / npoints;
+  RNScalar grid_spacing = sqrt(area_per_point);
+  if (grid_spacing < min_spacing) grid_spacing = min_spacing;
+  R3Grid exterior_grid(mesh->BBox(), grid_spacing, 5, 1024, 2);
+  const RNScalar *exterior_grid_values = exterior_grid.GridValues();
+  grid_spacing = exterior_grid.GridToWorldScaleFactor();
+
+  // Initialize mesh search tree
+  R3MeshSearchTree search_tree(mesh);
+
+  // Initialze point search tree
+  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  R3Kdtree<Point *> kdtree(exterior_grid.WorldBox(), position_offset);
+
+  // Seed search with border voxels (assumed outside)
+  int ix, iy, iz, grid_index;
+  RNArray<const RNScalar *> stack;
+  for (int i = 0; i < exterior_grid.XResolution(); i++) {
+    for (int j = 0; j < exterior_grid.YResolution(); j++) {
+      for (int k = 0; k < exterior_grid.ZResolution(); k++) {
+        if ((i == 0) || (i == exterior_grid.XResolution()-1) ||
+            (j == 0) || (j == exterior_grid.YResolution()-1) ||
+            (k == 0) || (k == exterior_grid.ZResolution()-1)) {
+          exterior_grid.IndicesToIndex(i, j, k, grid_index);
+          stack.Insert(&exterior_grid_values[grid_index]);
+          exterior_grid.SetGridValue(grid_index, 1.0);
+        }
+      }
+    }
+  }
+
+  // Flood fill
+  while (!stack.IsEmpty()) {
+    const RNScalar *exterior_grid_valuep = stack.Tail(); stack.RemoveTail();
+    int grid_index = exterior_grid_valuep - exterior_grid_values;
+    assert((grid_index >= 0) && (grid_index < exterior_grid.NEntries()));
+    assert(exterior_grid.GridValue(grid_index) > 0.5);
+    exterior_grid.IndexToIndices(grid_index, ix, iy, iz);
+    R3Point p0 = exterior_grid.WorldPosition(ix, iy, iz);
+    for (int dz = -1; dz <= 1; dz++) {
+      int gz = iz + dz;
+      if ((gz < 0) || (gz >= exterior_grid.ZResolution())) continue;
+      for (int dy = -1; dy <= 1; dy++) {
+        int gy = iy + dy;
+        if ((gy < 0) || (gy >= exterior_grid.YResolution())) continue;
+        for (int dx = -1; dx <= 1; dx++) {
+          int gx = ix + dx;
+          if ((gx < 0) || (gx >= exterior_grid.XResolution())) continue;
+          if (exterior_grid.GridValue(gx, gy, gz) > 0.5) continue;
+
+#if 1       
+          // Create point sample at front-most surface boundary separating cell from its neighbors
+          RNBoolean blocked = FALSE;
+          R3Point p1 = exterior_grid.WorldPosition(gx, gy, gz);
+          R3Ray ray(p0, p1);
+          R3Point midpoint = 0.5*(p0 + p1);
+          RNArray<R3MeshIntersection *> hits;
+          search_tree.FindAll(midpoint, hits, 0, grid_spacing);
+          RNScalar best_t = FLT_MAX;
+          R3Point best_position = R3zero_point;
+          R3Vector best_normal = R3zero_vector;
+          for (int k = 0; k < hits.NEntries(); k++) {
+            R3MeshIntersection *hit = hits.Kth(k);
+            R3Plane plane = mesh->FacePlane(hit->face);
+            RNScalar d0 = R3SignedDistance(plane, p0);
+            RNScalar d1 = R3SignedDistance(plane, p1);
+            if (RNIsNegativeOrZero(d0*d1)) {
+              if (mesh->Intersection(ray, hit->face, hit)) {
+                if (hit->t < best_t) {
+                  best_position = hit->point;
+                  best_normal = plane.Normal();
+                  if (d0 < 0) best_normal.Flip();
+                  best_t = hit->t;
+                }
+              }
+            }
+            delete hit;
+          }
+          if (best_t < FLT_MAX) {
+            if ((min_spacing == 0) || !kdtree.FindAny(best_position, 0, min_spacing)) {
+              Point *point = new Point(best_position, best_normal);
+              kdtree.InsertPoint(point);
+              points->Insert(point);
+            }
+            blocked = TRUE;
+          }
+#else
+          // FOR SOME REASON, THIS DOES NOT WORK
+          // Create point sample at front-most surface boundary separating cell from its neighbors
+          RNBoolean blocked = FALSE;
+          R3Point p1 = exterior_grid.WorldPosition(gx, gy, gz);
+          R3Ray ray(p0, p1);
+          R3MeshIntersection hit;
+          search_tree.FindIntersection(ray, hit, 0, grid_spacing);
+          if (hit.type != R3_MESH_NULL_TYPE) {
+            if ((min_spacing == 0) || !kdtree.FindAny(hit.point, 0, min_spacing)) {
+              R3Point p = hit.point;
+              R3Vector n = mesh->FaceNormal(hit.face);
+              if (n.Dot(ray.Vector()) > 0) n.Flip();
+              Point *point = new Point(p, n);
+              kdtree.InsertPoint(point);
+              points->Insert(point);
+            }
+            blocked = TRUE;
+          }
+#endif
+          
+          // Continue DFS 
+          if (!blocked) {
+            exterior_grid.IndicesToIndex(gx, gy, gz, grid_index);
+            stack.Insert(&exterior_grid_values[grid_index]);
+            exterior_grid.SetGridValue(grid_index, 1.0);
+          }
+        }
+      }
+    }
+  }
+
+  exterior_grid.WriteFile("exterior.grd");
+
+  // Return points
+  return points;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+static RNArray<Point *> *
+SelectVisibleSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
+{
+  // Allocate array of points
+  RNArray<Point *> *points = new RNArray<Point *>();
+  if (!points) {
+    fprintf(stderr, "Unable to allocate array of points\n");
+    return NULL;
+  }
+
+  // Initialze point search tree
+  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  R3Kdtree<Point *> kdtree(mesh->BBox(), position_offset);
+
+  // Get convenient variables
+  // Need high resolution to avoid z-buffer quantization issues
+  int resolution = 1024; 
+  int nviews = npoints / (resolution * resolution);
+  if (nviews < 128) nviews = 128;
+  int npixels = resolution * resolution * nviews;
+  RNScalar pixel_probability = (RNScalar) npoints / (RNScalar) npixels;
+  R3Point c = mesh->BBox().Centroid();
+  RNScalar r = mesh->BBox().DiagonalRadius();
+  R2Box bbox2d(-r, -r, r, r);
+  R2Grid face_image(bbox2d, r / resolution);
+  R2Grid depth_image(face_image);
+
+  // Insert points visible to random views
+  for (int k = 0; k < nviews; k++) {
+    // Create transformation
+    R3Affine transformation = R3identity_affine;
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Rotate(R3RandomDirection(), RN_TWO_PI * RNRandomScalar());
+    transformation.Translate(-c.Vector());
+
+    // Render image
+    face_image.Clear(-1);
+    depth_image.Clear(RN_INFINITY);
+    for (int i = 0; i < mesh->NFaces(); i++) {
+      R3MeshFace *face = mesh->Face(i);
+      R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
+      R3MeshVertex *v1 = mesh->VertexOnFace(face, 1);
+      R3MeshVertex *v2 = mesh->VertexOnFace(face, 2);
+      R3Point p0 = mesh->VertexPosition(v0);
+      R3Point p1 = mesh->VertexPosition(v1);
+      R3Point p2 = mesh->VertexPosition(v2);
+      p0.Transform(transformation);
+      p1.Transform(transformation);
+      p2.Transform(transformation);
+      face_image.RenderWorldTriangle(
+        R2Point(p0.X(), p0.Y()),
+        R2Point(p1.X(), p1.Y()),
+        R2Point(p2.X(), p2.Y()),
+        i, i, i,
+        p0.Z(), p1.Z(), p2.Z(),
+        depth_image);
+    }
+
+    // Generate points
+    for (int iy = 0; iy < depth_image.YResolution(); iy++) {
+      for (int ix = 0; ix < depth_image.XResolution(); ix++) {
+        if (RNRandomScalar() > pixel_probability) continue;
+        RNScalar face_value = face_image.GridValue(ix, iy);
+        if (face_value < 0)  continue;
+        RNScalar depth = depth_image.GridValue(ix, iy);
+        if (depth == RN_INFINITY) continue;
+        R2Point xy_position = depth_image.WorldPosition(ix, iy);
+        R3Point position(xy_position.X(), xy_position.Y(), depth);
+        position.InverseTransform(transformation);
+        if ((min_spacing > 0) && kdtree.FindAny(position, 0, min_spacing)) continue;
+        int face_index = (int) (face_value + 0.5);
+        if ((face_index < 0) || (face_index >= mesh->NFaces())) continue;
+        R3MeshFace *face = mesh->Face(face_index);
+        R3Vector normal = mesh->FaceNormal(face);
+        R3Vector n = normal; n.Transform(transformation);
+        if (n.Z() > 0) normal.Flip();
+        Point *point = new Point(position, normal);
+        kdtree.InsertPoint(point);
+        points->Insert(point);
+      }
+    }
+  }
+
+  // Return points
+  return points;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+static RNArray<Point *> *
 SelectCenterOfMass(R3Mesh *mesh)
 {
   // Allocate array of points
@@ -809,7 +1042,11 @@ SelectPoints(R3Mesh *mesh, int selection_method)
   if (selection_method == RANDOM_VERTICES) 
     points = SelectVertexPoints(mesh, npoints, min_spacing);
   else if (selection_method == RANDOM_SURFACE_POINTS) 
-    points= SelectSurfacePoints(mesh, npoints, min_spacing);
+    points= SelectRandomSurfacePoints(mesh, npoints, min_spacing);
+  else if (selection_method == EXTERIOR_SURFACE_POINTS) 
+    points= SelectExteriorSurfacePoints(mesh, npoints, min_spacing);
+  else if (selection_method == VISIBLE_SURFACE_POINTS) 
+    points= SelectVisibleSurfacePoints(mesh, npoints, min_spacing);
   else if (selection_method == ITERATIVE_FURTHEST_VERTEX) 
     points= SelectFurthestPoints(mesh, npoints, min_spacing);
   else if (selection_method == PROPERTY_MINIMA) 
@@ -967,7 +1204,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     // Close file
     if (filename) fclose(fp);
   }
-  else {
+  else if (!strcmp(extension, ".pts")) {
     // Open file
     FILE *fp = stdout;
     if (filename) {
@@ -996,6 +1233,17 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
 
     // Close file
     if (filename) fclose(fp);
+  }
+  else {
+    // Create mesh
+    R3Mesh mesh;
+    for (int i = 0; i < points.NEntries(); i++) {
+      Point *point = points[i];
+      mesh.CreateVertex(point->position, point->normal);
+    }
+
+    // Write mesh file
+    if (!mesh.WriteFile(filename)) return FALSE;
   }
 
   // Print message
@@ -1028,6 +1276,8 @@ ParseArgs (int argc, char **argv)
       else if (!strcmp(*argv, "-min_relative_spacing")) { argc--; argv++; min_relative_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-selection_method")) { argc--; argv++; selection_method = atoi(*argv); }
       else if (!strcmp(*argv, "-random_surface_points")) { selection_method = RANDOM_SURFACE_POINTS; }
+      else if (!strcmp(*argv, "-exterior_surface_points")) { selection_method = EXTERIOR_SURFACE_POINTS; }
+      else if (!strcmp(*argv, "-visible_surface_points")) { selection_method = VISIBLE_SURFACE_POINTS; }
       else if (!strcmp(*argv, "-random_vertices")) { selection_method = RANDOM_VERTICES; }
       else if (!strcmp(*argv, "-iterative_furthest_vertex")) { selection_method = ITERATIVE_FURTHEST_VERTEX; }
       else if (!strcmp(*argv, "-center_of_mass")) { selection_method = CENTER_OF_MASS; }
