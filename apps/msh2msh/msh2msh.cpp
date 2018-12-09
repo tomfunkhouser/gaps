@@ -18,10 +18,10 @@ const char *color_name = NULL;
 const char *merge_list_name = NULL;
 int flip_faces = 0;
 int clean = 0;
-int smooth = 0;
 int swap_edges = 0;
 int fill_holes = 0;
 int delete_interior_faces = 0;
+RNScalar smooth_factor = 0;
 R3Affine xform(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1));
 RNLength min_edge_length = 0;
 RNLength max_edge_length = 0;
@@ -415,7 +415,6 @@ int ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-flip")) flip_faces = 1;
       else if (!strcmp(*argv, "-clean")) clean = 1;
-      else if (!strcmp(*argv, "-smooth")) smooth = 1;
       else if (!strcmp(*argv, "-fill_holes")) fill_holes = 1;
       else if (!strcmp(*argv, "-delete_interior_faces")) delete_interior_faces = 1;
       else if (!strcmp(*argv, "-swap_edges")) swap_edges = 1;
@@ -423,6 +422,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-center_at_origin")) center_at_origin = 1;
       else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
       else if (!strcmp(*argv, "-align_principle_axes")) align_principle_axes = 1;
+      else if (!strcmp(*argv, "-smooth"))  { argv++; argc--; smooth_factor = atof(*argv); }
       else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform = R3identity_affine; xform.Scale(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-tx")) { argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-ty")) { argv++; argc--; xform = R3identity_affine; xform.YTranslate(atof(*argv)); xform.Transform(prev_xform);}
@@ -557,8 +557,8 @@ int main(int argc, char **argv)
   }
 
   // Smooth
-  if (smooth) {
-    mesh->Smooth();
+  if (smooth_factor > 0) {
+    mesh->Smooth(smooth_factor);
   }
 
   // Subdivide edges that are too long

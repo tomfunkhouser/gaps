@@ -1063,37 +1063,43 @@ Empty(void)
 void R3Mesh::
 Smooth(RNScalar factor)
 {
-  // Copy vertex positions
+  // Allocate buffer for copy of vertex positions
   R3Point *positions = new R3Point [ NVertices() ];
-  for (int i = 0; i < NVertices(); i++) {
-    R3MeshVertex *vertex = Vertex(i);
-    positions[i] = VertexPosition(vertex);
-  }
+  if (!positions) RNAbort("Unable to allocate vertex positions");
+    
+  // Iteratively average vertex positions
+  for (int iter = 0; iter < factor; iter++) {
+    // Copy vertex positions
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      positions[i] = VertexPosition(vertex);
+    }
 
-  // Update vertex positions
-  for (int i = 0; i < NVertices(); i++) {
-    R3MeshVertex *vertex = Vertex(i);
-    RNScalar weight = 1;
-    R3Point position = positions[vertex->id];
-    RNLength radius = VertexAverageEdgeLength(vertex);
-    if (radius > 0) {
-      for (int j = 0; j < VertexValence(vertex); j++) {
-        R3MeshEdge *edge = EdgeOnVertex(vertex, j);
-        R3MeshVertex *neighbor_vertex = VertexAcrossEdge(edge, vertex);
-        const R3Point& neighbor_position = positions[neighbor_vertex->id];
-        RNLength length = EdgeLength(edge);
-        RNLength sigma = (length > 0) ? length / radius : 1;
-        RNScalar w = factor * exp((length * length) / (-2.0 * sigma * sigma));
-        position += w * neighbor_position;
-        weight += w;
-      }
+    // Update vertex positions
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      RNScalar weight = 1;
+      R3Point position = positions[vertex->id];
+      RNLength radius = VertexAverageEdgeLength(vertex);
+      if (radius > 0) {
+        for (int j = 0; j < VertexValence(vertex); j++) {
+          R3MeshEdge *edge = EdgeOnVertex(vertex, j);
+          R3MeshVertex *neighbor_vertex = VertexAcrossEdge(edge, vertex);
+          const R3Point& neighbor_position = positions[neighbor_vertex->id];
+          RNLength length = EdgeLength(edge);
+          RNLength sigma = (length > 0) ? length / radius : 1;
+          RNScalar w = exp((length * length) / (-2.0 * sigma * sigma));
+          position += w * neighbor_position;
+          weight += w;
+        }
       
-      // Update vertex position
-      R3Point smooth_position = position / weight;
-      SetVertexPosition(vertex, smooth_position);
+        // Update vertex position
+        R3Point smooth_position = position / weight;
+        SetVertexPosition(vertex, smooth_position);
+      }
     }
   }
-
+  
   // Delete copy of vertex positions
   delete [] positions;
 }
@@ -1103,36 +1109,42 @@ Smooth(RNScalar factor)
 void R3Mesh::
 Sharpen(RNScalar factor)
 {
-  // Copy vertex positions
+  // Allocate buffer for copy of vertex positions
   R3Point *positions = new R3Point [ NVertices() ];
-  for (int i = 0; i < NVertices(); i++) {
-    R3MeshVertex *vertex = Vertex(i);
-    positions[i] = VertexPosition(vertex);
-  }
-
-  // Update vertex positions
-  for (int i = 0; i < NVertices(); i++) {
-    R3MeshVertex *vertex = Vertex(i);
-    RNScalar weight = 1;
-    R3Point position = positions[vertex->id];
-    RNLength radius = VertexAverageEdgeLength(vertex);
-    for (int j = 0; j < VertexValence(vertex); j++) {
-      R3MeshEdge *edge = EdgeOnVertex(vertex, j);
-      R3MeshVertex *neighbor_vertex = VertexAcrossEdge(edge, vertex);
-      const R3Point& neighbor_position = positions[neighbor_vertex->id];
-      RNLength length = EdgeLength(edge);
-      RNLength sigma = length / radius;
-      RNScalar w = factor * exp((length * length) / (-2.0 * sigma * sigma));
-      position += w * neighbor_position;
-      weight += w;
+  if (!positions) RNAbort("Unable to allocate vertex positions");
+  
+  // Iteratively average vertex positions
+  for (int iter = 0; iter < factor; iter++) {
+    // Copy vertex positions
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      positions[i] = VertexPosition(vertex);
     }
 
-    // Update vertex position
-    R3Point smooth_position = position / weight;
-    R3Point sharpen_position = 2 * positions[vertex->id] - smooth_position.Vector();
-    SetVertexPosition(vertex, sharpen_position);
-  }
+    // Update vertex positions
+    for (int i = 0; i < NVertices(); i++) {
+      R3MeshVertex *vertex = Vertex(i);
+      RNScalar weight = 1;
+      R3Point position = positions[vertex->id];
+      RNLength radius = VertexAverageEdgeLength(vertex);
+      for (int j = 0; j < VertexValence(vertex); j++) {
+        R3MeshEdge *edge = EdgeOnVertex(vertex, j);
+        R3MeshVertex *neighbor_vertex = VertexAcrossEdge(edge, vertex);
+        const R3Point& neighbor_position = positions[neighbor_vertex->id];
+        RNLength length = EdgeLength(edge);
+        RNLength sigma = length / radius;
+        RNScalar w = exp((length * length) / (-2.0 * sigma * sigma));
+        position += w * neighbor_position;
+        weight += w;
+      }
 
+      // Update vertex position
+      R3Point smooth_position = position / weight;
+      R3Point sharpen_position = 2 * positions[vertex->id] - smooth_position.Vector();
+      SetVertexPosition(vertex, sharpen_position);
+    }
+  }
+  
   // Delete copy of vertex positions
   delete [] positions;
 }
