@@ -1031,6 +1031,12 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Box& box,
 
         // Check if ray start is inside box
         RNBoolean start_inside = R3Contains(box, ray.Start());
+        if (start_inside) {
+	  if (hit_point1) *hit_point1 = ray.Start();
+	  if (hit_normal1) *hit_normal1 = -ray.Vector();
+  	  if (hit_t1) *hit_t1 = 0;
+          return R3_SPAN_CLASS_ID;
+        }
 
 	// Find parametric distance to front plane in each dimension
 	for (RNDimension dim = RN_X; dim <= RN_Z; dim++) {
@@ -1114,6 +1120,12 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Sphere& sphere,
 {
     // Check if sphere contains ray start point
     RNBoolean start_inside = R3Contains(sphere, ray.Start());
+    if (start_inside) {
+      if (hit_point1) *hit_point1 = ray.Start();
+      if (hit_normal1) *hit_normal1 = -ray.Vector();
+      if (hit_t1) *hit_t1 = 0;
+      return R3_SPAN_CLASS_ID;
+    }
 
     // Check if ray points towards sphere
     R3Vector EO = sphere.Center() - ray.Start();
@@ -1162,8 +1174,16 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Sphere& sphere,
 RNClassID R3Intersects(const R3Ray& ray, const R3Cylinder& cylinder, 
     R3Point *hit_point1, R3Vector *hit_normal1, RNScalar *hit_t1)
 {
-    // See Graphics Gems IV, page 356
+    // Check if sphere contains ray start point
+    RNBoolean start_inside = R3Contains(cylinder, ray.Start());
+    if (start_inside) {
+      if (hit_point1) *hit_point1 = ray.Start();
+      if (hit_normal1) *hit_normal1 = -ray.Vector();
+      if (hit_t1) *hit_t1 = 0;
+      return R3_SPAN_CLASS_ID;
+    }
 
+    // See Graphics Gems IV, page 356
     // Compute parametric values of intersection with infinite cylinder
     RNScalar cyl_t1, cyl_t2;
     R3Vector R = ray.Vector();
@@ -1338,6 +1358,15 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Cylinder& cylinder,
 RNClassID R3Intersects(const R3Ray& ray, const R3Cone& cone, 
     R3Point *hit_point1, R3Vector *hit_normal1, RNScalar *hit_t1)
 {
+    // Check if sphere contains ray start point
+    RNBoolean start_inside = R3Contains(cone, ray.Start());
+    if (start_inside) {
+      if (hit_point1) *hit_point1 = ray.Start();
+      if (hit_normal1) *hit_normal1 = -ray.Vector();
+      if (hit_t1) *hit_t1 = 0;
+      return R3_SPAN_CLASS_ID;
+    }
+
     // Transform ray into canonical coordinate system with
     // axis end point at origin and axis going along negative z axis
     R3Ray ray1(ray);

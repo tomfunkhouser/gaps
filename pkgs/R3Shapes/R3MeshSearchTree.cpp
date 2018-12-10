@@ -1063,11 +1063,9 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
   R3MeshSearchTreeNode *node, const R3Box& node_box) const
 {
   // Find intersection with bounding box
-  if (!R3Contains(node_box, ray.Start())) {
-    RNScalar node_box_t;
-    if (!R3Intersects(ray, node_box, NULL, NULL, &node_box_t)) return;
-    if (node_box_t > max_t) return;
-  }
+  RNScalar node_box_t;
+  if (!R3Intersects(ray, node_box, NULL, NULL, &node_box_t)) return;
+  if (node_box_t > max_t) return;
 
   // Update based on closest intersection to each big face
   for (int i = 0; i < node->big_faces.NEntries(); i++) {

@@ -237,10 +237,8 @@ Intersects(const R3Ray& ray, R3Shape **hit_shape,
   RNScalar t;
 
   // Check if ray intersects bounding box
-  if (!R3Contains(BBox(), ray.Start())) {
-    if (!R3Intersects(ray, BBox(), NULL, NULL, &bbox_t)) return FALSE;
-    if (RNIsGreater(bbox_t, max_t)) return FALSE;
-  }
+  if (!R3Intersects(ray, BBox(), NULL, NULL, &bbox_t)) return FALSE;
+  if (RNIsGreater(bbox_t, max_t)) return FALSE;
 
   // Intersect with shapes
   for (int i = 0; i < NShapes(); i++) {

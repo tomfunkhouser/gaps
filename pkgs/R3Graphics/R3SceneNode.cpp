@@ -679,10 +679,8 @@ Intersects(const R3Ray& ray,
   RNScalar t;
 
   // Check if ray intersects bounding box
-  if (!R3Contains(BBox(), ray.Start())) {
-    if (!R3Intersects(ray, BBox(), NULL, NULL, &bbox_t)) return FALSE;
-    if (RNIsGreater(bbox_t, max_t)) return FALSE;
-  }
+  if (!R3Intersects(ray, BBox(), NULL, NULL, &bbox_t)) return FALSE;
+  if (RNIsGreater(bbox_t, max_t)) return FALSE;
 
   // Apply inverse transformation to ray
   R3Ray node_ray = ray;
