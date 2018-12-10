@@ -1029,16 +1029,18 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
     if (!(*IsCompatible)(ray.Start(), ray.Vector(), mesh, face, compatible_data)) return;
   }
 
+
   // Check face
   R3Vector normal = mesh->FaceNormal(face);
   if (RNIsZero(normal.Dot(normal))) return;
 
   // Check intersection with plane (this is redundant, but allows checking min_t and max_t)
   RNScalar plane_t;
-  if (!R3Intersects(ray, mesh->FacePlane(face), NULL, &plane_t)) return;
+  R3Plane plane = mesh->FacePlane(face);
+  if (!R3Intersects(ray, plane, NULL, &plane_t)) return;
   if (plane_t >= max_t) return;
   if (plane_t < min_t) return;
-
+  
   // Check intersection with face
   R3MeshIntersection face_intersection;
   if (!mesh->Intersection(ray, face, &face_intersection)) return;
@@ -1054,7 +1056,6 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
 }
 
 
-
 void R3MeshSearchTree::
 FindIntersection(const R3Ray& ray, R3MeshIntersection& closest, 
   RNScalar min_t, RNScalar& max_t, 
@@ -1062,9 +1063,11 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
   R3MeshSearchTreeNode *node, const R3Box& node_box) const
 {
   // Find intersection with bounding box
-  RNScalar node_box_t;
-  if (!R3Intersects(ray, node_box, NULL, NULL, &node_box_t)) return;
-  if (node_box_t > max_t) return;
+  if (!R3Contains(node_box, ray.Start())) {
+    RNScalar node_box_t;
+    if (!R3Intersects(ray, node_box, NULL, NULL, &node_box_t)) return;
+    if (node_box_t > max_t) return;
+  }
 
   // Update based on closest intersection to each big face
   for (int i = 0; i < node->big_faces.NEntries(); i++) {
@@ -1072,7 +1075,7 @@ FindIntersection(const R3Ray& ray, R3MeshIntersection& closest,
     R3MeshSearchTreeFace *face_container = node->big_faces[i];
     if (face_container->mark == mark) continue;
     face_container->mark = mark;
-  
+
     // Find closest point in mesh face
     FindIntersection(ray, closest, min_t, max_t, 
       IsCompatible, compatible_data, face_container->face);

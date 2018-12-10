@@ -3144,6 +3144,10 @@ Intersection(const R3Ray& ray, R3MeshFace *f, R3MeshIntersection *intersection) 
     intersection->t = RN_INFINITY;
   }
 
+  // Check if degenerate face
+  R3Vector normal = FaceNormal(f);
+  if (RNIsZero(normal.Dot(normal))) return R3_MESH_NULL_TYPE;
+
   // Check if face intersects ray
   RNScalar t;
   R3Point p;
@@ -3160,7 +3164,7 @@ Intersection(const R3Ray& ray, R3MeshFace *f, R3MeshIntersection *intersection) 
       // Check side of first edge
       R3Vector e0 = p1 - p0;
       e0.Normalize();
-      R3Vector n0 = FaceNormal(f) % e0;
+      R3Vector n0 = normal % e0;
       R3Plane s0(p0, n0);
       RNScalar b0 = R3SignedDistance(s0, p);
       if (RNIsNegative(b0)) return R3_MESH_NULL_TYPE;
@@ -3168,7 +3172,7 @@ Intersection(const R3Ray& ray, R3MeshFace *f, R3MeshIntersection *intersection) 
       // Check side of second edge
       R3Vector e1 = p2 - p1;
       e1.Normalize();
-      R3Vector n1 = FaceNormal(f) % e1;
+      R3Vector n1 = normal % e1;
       R3Plane s1(p1, n1);
       RNScalar b1 = R3SignedDistance(s1, p);
       if (RNIsNegative(b1)) return R3_MESH_NULL_TYPE;
@@ -3176,7 +3180,7 @@ Intersection(const R3Ray& ray, R3MeshFace *f, R3MeshIntersection *intersection) 
       // Check side of third edge
       R3Vector e2 = p0 - p2;
       e2.Normalize();
-      R3Vector n2 = FaceNormal(f) % e2;
+      R3Vector n2 = normal % e2;
       R3Plane s2(p2, n2);
       RNScalar b2 = R3SignedDistance(s2, p);
       if (RNIsNegative(b2)) return R3_MESH_NULL_TYPE;
