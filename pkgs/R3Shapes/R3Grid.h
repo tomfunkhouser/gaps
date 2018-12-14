@@ -100,6 +100,8 @@ public:
   void Multiply(const R3Grid& grid);
   void Divide(RNScalar value);
   void Divide(const R3Grid& grid);
+  void Min(const R3Grid& grid);
+  void Max(const R3Grid& grid);
   void Pow(RNScalar exponent);
   void Mask(const R3Grid& mask);
   void Threshold(RNScalar threshold, RNScalar low, RNScalar high);

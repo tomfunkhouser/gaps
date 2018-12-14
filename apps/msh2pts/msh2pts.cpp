@@ -936,7 +936,7 @@ SelectVisibleSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
         R3Vector n = normal; n.Transform(transformation);
         if (n.Z() > 0) normal.Flip();
         Point *point = new Point(position, normal);
-        kdtree.InsertPoint(point);
+        if (min_spacing > 0) kdtree.InsertPoint(point);
         points->Insert(point);
       }
     }

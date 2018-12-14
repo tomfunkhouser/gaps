@@ -1325,6 +1325,42 @@ Divide(const R3Grid& grid)
 
 
 void R3Grid::
+Min(const R3Grid& grid) 
+{
+  // Resolutions must be the same (for now)
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
+
+  // Keep minimum value
+  for (int i = 0; i < grid_size; i++) {
+    RNScalar value0 = grid_values[i];
+    RNScalar value1 = grid.grid_values[i];
+    if (value1 < value0) grid_values[i] = value1;
+  }
+}
+
+
+
+void R3Grid::
+Max(const R3Grid& grid) 
+{
+  // Resolutions must be the same (for now)
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
+
+  // Keep maximum value
+  for (int i = 0; i < grid_size; i++) {
+    RNScalar value0 = grid_values[i];
+    RNScalar value1 = grid.grid_values[i];
+    if (value1 > value0) grid_values[i] = value1;
+  }
+}
+
+
+
+void R3Grid::
 Pow(RNScalar exponent) 
 {
   // Raise each grid value to exponent
@@ -1810,6 +1846,9 @@ Resample(int xresolution, int yresolution, int zresolution)
   grid_size = grid_sheet_size * zresolution;
   if (grid_values) delete [] grid_values;
   grid_values = new_grid_values;
+
+  // Reset transformations
+  SetWorldToGridTransformation(WorldBox());
 }
 
 
