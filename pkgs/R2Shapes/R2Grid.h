@@ -191,13 +191,13 @@ public:
   int ReadRAWFile(const char *filename);
   int ReadGridFile(const char *filename);
   int ReadPNGFile(const char *filename);
-  int ReadImage(const char *filename);
+  int ReadImageFile(const char *filename);
   int WriteFile(const char *filename) const;
   int WritePFMFile(const char *filename) const;
   int WriteRAWFile(const char *filename) const;
   int WriteGridFile(const char *filename) const;
   int WritePNGFile(const char *filename) const;
-  int WriteImage(const char *filename) const;
+  int WriteImageFile(const char *filename) const;
   int ReadGrid(FILE *fp = NULL);
   int WriteGrid(FILE *fp = NULL) const;
   int Print(FILE *fp = NULL) const;

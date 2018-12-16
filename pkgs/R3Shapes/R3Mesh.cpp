@@ -2992,8 +2992,15 @@ void R3Mesh::
 DrawFaces(void) const
 {
   // Draw all faces
-  for (int i = 0; i < faces.NEntries(); i++) 
-    DrawFace(faces[i]);
+  glBegin(GL_TRIANGLES);
+  for (int i = 0; i < faces.NEntries(); i++) {
+    R3MeshFace *f = faces.Kth(i);
+    R3LoadNormal(FaceNormal(f));
+    R3LoadPoint(f->vertex[0]->position);
+    R3LoadPoint(f->vertex[1]->position);
+    R3LoadPoint(f->vertex[2]->position);
+  }
+  glEnd();
 }
 
 

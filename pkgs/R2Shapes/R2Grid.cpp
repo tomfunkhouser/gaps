@@ -3451,7 +3451,7 @@ ReadFile(const char *filename)
   else if (!strncmp(input_extension, ".pnm", 4)) return ReadPNMFile(filename);
   else if (!strncmp(input_extension, ".png", 4)) return ReadPNGFile(filename);
   else if (!strncmp(input_extension, ".grd", 4)) return ReadGridFile(filename);
-  else  return ReadImage(filename);
+  else  return ReadImageFile(filename);
   
   // Should never get here
   fprintf(stderr, "Unrecognized image file extension\n");
@@ -3475,7 +3475,7 @@ WriteFile(const char *filename) const
   else if (!strncmp(input_extension, ".pfm", 4)) return WritePFMFile(filename);
   else if (!strncmp(input_extension, ".png", 4)) return WritePNGFile(filename);
   else if (!strncmp(input_extension, ".grd", 4)) return WriteGridFile(filename);
-  else return WriteImage(filename);
+  else return WriteImageFile(filename);
 
   // Should never get here
   fprintf(stderr, "Unrecognized image file extension\n");
@@ -4256,7 +4256,7 @@ WritePNGFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Grid::
-ReadImage(const char *filename)
+ReadImageFile(const char *filename)
 {
   // Allocate image
   R2Image *image = new R2Image();
@@ -4298,7 +4298,7 @@ ReadImage(const char *filename)
 
 
 int R2Grid::
-WriteImage(const char *filename) const
+WriteImageFile(const char *filename) const
 {
   // Allocate image
   R2Image *image = new R2Image(grid_resolution[0], grid_resolution[1], 3);
