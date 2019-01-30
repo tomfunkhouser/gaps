@@ -1032,6 +1032,123 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
 
 
 
+#if 0
+int MPHouse::
+ReadCategoryFile(R3SurfelScene *scene, const char *filename, const char *root_name)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int count = 0;
+
+  // Find root
+  R3SurfelLabel *root = NULL;
+  if (root_name && strcmp(root_name, "Null")) {
+    root = scene->FindLabelByName(root_name);
+    if (!root) {
+      fprintf(stderr, "Unable to find root label %s\n", root_name);
+      return 0;
+    }
+  }
+ 
+  // Open file
+  FILE* fp = fopen(filename, "r");
+  if (!fp) {
+    fprintf(stderr, "Unable to open category file %s\n", filename);
+    return 0;
+  }
+
+  // Read keys from first line
+  RNArray<char *> keys;
+  char key_buffer[4096];
+  if (fgets(key_buffer, 4096, fp)) {
+    char *token = key_buffer;
+    while (*token &&  (*token != '\r') && (*token != '\n')) {
+      while (*token == ' ') token++;
+      keys.Insert(token);
+      while (*token && (*token != '\t') && (*token != '\r') && (*token != '\n')) token++;
+      *(token++) = '\0';
+    }
+  }
+  
+  // Extract indices of interesting info
+  int label_id_k = -1;
+  int label_name_k = -1;
+  int mpcat40_id_k = -1;
+  int mpcat40_name_k = -1;
+  for (int i = 0; i < keys.NEntries(); i++) {
+    if (!strcmp(keys[i], "index")) label_id_k = i;
+    else if (!strcmp(keys[i], "raw_category")) label_name_k = i; 
+    else if (!strcmp(keys[i], "mpcat40index")) mpcat40_id_k = i; 
+    else if (!strcmp(keys[i], "mpcat40")) mpcat40_name_k = i; 
+  }
+
+  // Check if found id field in header
+  if ((label_id_k < 0) && (mpcat40_id_k < 0) {
+    fprintf(stderr, "Did not find index or mpcat40index in header of %s\n", filename);
+    return 0;
+  }
+
+  // Check if found name field in header
+  if ((label_name_k < 0) && (mpcat40_name_k < 0) {
+    fprintf(stderr, "Did not find raw_category or mpcat40 in header of %s\n", filename);
+    return 0;
+  }
+
+  // Read subsequent lines of file
+  char value_buffer[4096];
+  while (fgets(value_buffer, 4096, fp)) {
+    // Read values
+    RNArray<char *> values;
+    char *token = value_buffer;
+    while (*token &&  (*token != '\r') && (*token != '\n')) {
+      while (*token == ' ') token++;
+      values.Insert(token);
+      while (*token && (*token != '\t') && (*token != '\r') && (*token != '\n')) token++;
+      *(token++) = '\0';
+    }
+
+    // Create category
+    int label_id = (mpcat40_name_k >= 0) ? atoi(values[label_id_k]) : -1;
+    char *label_name =(mpcat40_name_k >= 0) ? RNStrdup(values[label_name_k]) : NULL;
+    int mpcat40_id = (mpcat40_name_k >= 0) ? atoi(values[mpcat40_id_k]) : -1;
+    char *mpcat40_name = (mpcat40_name_k >= 0) ? RNStrdup(values[mpcat40_name_k]) : NULL;
+    int id = (mpcat40_id > 0) ? mpcat40_id : label_id;
+    char *name = (mpcat40_name) ? mpcat40_name : label_name;
+              
+    // Insert labels up to id, so that id matches index
+    while (scene->NLabels() < id) {
+      scene->InsertLabel(new R3SurfelLabel());
+    }
+    
+    // Set label info
+    R3SurfelLabel *label = scene->Label(id);
+    label->SetName(name);
+    label->SetIdentifier(id);
+    label->SetColor(RNRgb(RNRandomScalar(), RNRandomScalar(), RNRandomScalar()));
+    
+    // Update stats
+    count++;
+  }
+  
+  // Close file
+  fclose(fp);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read categories from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Labels = %d\n", count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+#endif
+
+
+
 static int
 LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_name)
 {

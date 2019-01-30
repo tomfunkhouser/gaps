@@ -46,6 +46,12 @@ static GLfloat colors[24][4] = {
 };
 
 
+// Parameters
+
+static RNLength pointset_radius = 1;
+static RNLength floor_height = 0.1;
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // OBJECT STUFF
@@ -59,7 +65,26 @@ CreateObject(R3SurfelViewer *viewer)
   const R3Point& center_point = viewer->CenterPoint();
   int status = 0;
 
-#if 0
+#if 1
+  // Create object with pointset
+  static R3SurfelPointSet *pointset = NULL;
+  static R3SurfelObject *object = NULL;
+  static R3Point last_center_point(0,0,0);
+  if (!R3Contains(center_point, last_center_point)) {
+    last_center_point = center_point;
+    if (pointset) { delete pointset; pointset = NULL; }
+    if (object) { object->ReleaseBlocks(); object = NULL; }
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
+    R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &cylinder_constraint);
+    if (!pointset) return 0;
+    if (pointset->NPoints() == 0) { delete pointset; return 0; }
+    if (pointset->BBox().Volume() == 0) { delete pointset; return 0; }
+    object = CreateObject(scene, pointset);
+    if (object) object->ReadBlocks();
+    viewer->UpdateWorkingSet();
+    status = 1;
+  }
+#elif 0
   // Create object with above ground grid
   static R3SurfelPointSet *pointset = NULL;
   static R3Grid *grid = NULL;
@@ -70,10 +95,10 @@ CreateObject(R3SurfelViewer *viewer)
     if (pointset) { delete pointset; pointset = NULL; }
     if (grid) { delete grid; grid = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     pointset = CreateConnectedPointSet(pointset2, center_point);
     delete pointset2;
@@ -89,7 +114,7 @@ CreateObject(R3SurfelViewer *viewer)
     status = 1;
   }
 #elif 0
-  // Create object with pointset
+  // Create object with processed pointset
   static R3SurfelPointSet *pointset = NULL;
   static R3SurfelObject *object = NULL;
   static R3Point last_center_point(0,0,0);
@@ -97,10 +122,10 @@ CreateObject(R3SurfelViewer *viewer)
     last_center_point = center_point;
     if (pointset) { delete pointset; pointset = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     pointset = CreateConnectedPointSet(pointset2, center_point);
     delete pointset2;
@@ -122,10 +147,10 @@ CreateObject(R3SurfelViewer *viewer)
     last_center_point = center_point;
     if (pointset) { delete pointset; pointset = NULL; }
     if (object) { object->ReleaseBlocks(); object = NULL; }
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     pointset = CreateConnectedPointSet(pointset2, center_point);
     delete pointset2;
@@ -295,7 +320,7 @@ SplitObject(R3SurfelViewer *viewer)
 
     // Split object
     if (object) {
-      R3SurfelCylinderConstraint constraint(center_point, 4);
+      R3SurfelCylinderConstraint constraint(center_point, pointset_radius);
       SplitObject(object, &constraint);
       status = 1;
     }
@@ -343,12 +368,12 @@ ReadObjects(R3SurfelViewer *viewer)
 
     // Create pointset
     R3Point center_point(x, y, z);
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     if (!pointset1) { fprintf(stderr, "Unable to create pointset1\n"); continue; }
     if (pointset1->NPoints() == 0) { fprintf(stderr, "Empty pointset1\n"); delete pointset1; continue; }
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     delete pointset1; 
     if (!pointset2) { fprintf(stderr, "Unable to create pointset2\n"); continue; }
@@ -409,13 +434,13 @@ MeanShift(R3SurfelScene *scene,
   R3Point current_position = start_position;
   for (int iter = 0; iter < 10; iter++) {
     // Create point set
-    R3SurfelCylinderConstraint neighborhood_constraint(current_position, 2);
+    R3SurfelCylinderConstraint neighborhood_constraint(current_position, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &neighborhood_constraint);
     R3Plane bottom_plane = FitSupportPlane(pointset1);
     R3Plane top_plane(bottom_plane[0], bottom_plane[1], bottom_plane[2], bottom_plane[3] - 2.5);
     R3SurfelCylinderConstraint radius_constraint(current_position, radius);
-    R3SurfelPlaneConstraint bottom_plane_constraint(bottom_plane, FALSE, FALSE, TRUE, 0.25);
-    R3SurfelPlaneConstraint top_plane_constraint(top_plane, TRUE, FALSE, FALSE, 0.25);
+    R3SurfelPlaneConstraint bottom_plane_constraint(bottom_plane, FALSE, FALSE, TRUE, 0.1);
+    R3SurfelPlaneConstraint top_plane_constraint(top_plane, TRUE, FALSE, FALSE, 0.1);
     R3SurfelMultiConstraint multiconstraint;
     multiconstraint.InsertConstraint(&radius_constraint);
     multiconstraint.InsertConstraint(&bottom_plane_constraint);
@@ -467,7 +492,7 @@ DrawMeanShift(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    mean_shift_point = MeanShift(scene, center_point, 0.5);
+    mean_shift_point = MeanShift(scene, center_point, pointset_radius);
   }
 
   // Draw mean shift point
@@ -591,7 +616,7 @@ DrawMeanShift(R3SurfelViewer *viewer)
     last_center_point = center_point;
     if (grid) delete grid;
     if (segment) delete segment;
-    R3CylinderConstraint constraint(center_point);
+    R3CylinderConstraint constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset = CreatePointSet(scener, NULL, &cylinder_constraint);
     segment = CreateAboveGroundPointSet(pointset);
     grid = CreateGrid(segment, 0.1);
@@ -646,10 +671,10 @@ DrawGraph(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (graph) delete graph;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     // graph = new R3SurfelPointGraph(*pointset2);
     graph = new R3SurfelPointGraph(*pointset1);
@@ -680,10 +705,10 @@ DrawPrunedGraph(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (graph) delete graph;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     graph = new R3SurfelPointGraph(*pointset2);
     graph->RemoveOutlierEdges(1);
@@ -790,7 +815,7 @@ DrawPointSet(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (segment) delete segment;
-    R3SurfelCylinderConstraint constraint(center_point, 4);
+    R3SurfelCylinderConstraint constraint(center_point, pointset_radius);
     segment = CreatePointSet(scene, NULL, &constraint);
   }
 
@@ -821,10 +846,10 @@ DrawAbovePointSet(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (segment) delete segment;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &cylinder_constraint);
-    R3Plane plane = FitSupportPlane(pointset);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3Plane plane(center_point + floor_height * R3posz_vector, R3posz_vector); //  = FitSupportPlane(pointset);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     segment = CreatePointSet(pointset, &plane_constraint);
     delete pointset;
   }
@@ -856,7 +881,7 @@ DrawConnectedPointSet(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (segment) delete segment;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     segment = CreateConnectedPointSet(pointset1, center_point);
     delete pointset1;
@@ -889,10 +914,10 @@ DrawAboveConnectedPointSet(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (segment) delete segment;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     segment = CreateConnectedPointSet(pointset2, center_point);
     delete pointset2;
@@ -927,10 +952,10 @@ DrawAboveConnectedPointGraph(R3SurfelViewer *viewer)
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
     if (segment) delete segment;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
     R3Plane plane = FitSupportPlane(pointset1);
-    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.25);
+    R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     R3SurfelPointGraph *graph = new R3SurfelPointGraph(*pointset2);
     segment = CreateConnectedPointSet(graph, center_point);
@@ -1026,7 +1051,7 @@ DrawDirections(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &cylinder_constraint);
     graph = new R3SurfelPointGraph(*pointset);
     delete pointset;
@@ -1062,7 +1087,7 @@ DrawGrid(R3SurfelViewer *viewer)
   static R3Point last_center_point(0,0,0);
   if (!R3Contains(center_point, last_center_point)) {
     last_center_point = center_point;
-    R3SurfelCylinderConstraint cylinder_constraint(center_point, 4);
+    R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &cylinder_constraint);
     grid = CreateGrid(pointset);
     delete pointset;
@@ -1271,20 +1296,20 @@ DebugRedraw(R3SurfelViewer *viewer)
 {
   int status = 0;
   if (debug1) DrawPointSet(viewer);
-  if (debug2) DrawGraph(viewer);
-  if (debug4) DrawMeanShift(viewer);
-  if (debug5) DrawConnectedPointSet(viewer);
-  if (debug6) DrawAbovePointSet(viewer);
-  if (debug7) DrawAboveConnectedPointGraph(viewer);
-  if (debug8) DrawAlign(viewer);
-  if (debug9) status |= ExtractObjectWithMesh(viewer);
-  // if (debug8) CreateObject(viewer);
+  if (debug2) DrawAbovePointSet(viewer);
+  if (debug3) DrawGrid(viewer);
+  if (debug9) CreateObject(viewer);
+  // if (debug3) DrawConnectedPointSet(viewer);
+  // if (debug5) DrawAlign(viewer);
+  // if (debug9) status |= ExtractObjectWithMesh(viewer);
+  // if (debug7) DrawAboveConnectedPointGraph(viewer);
+  // if (debug4) DrawMeanShift(viewer);
+  // if (debug2) DrawGraph(viewer);
   // if (debug9) ReadObjects(viewer);
   // if (debug1) DrawEstimateSupportPlane(viewer);
   // if (debug7) status |= RemoveObject(viewer);
   // if (debug8) status |= SplitObject(viewer);
   // if (debug9) status |= MergeObjects(viewer);
-  // if (debug3) DrawGrid(viewer);
   // if (debug7) CreateClusterObjects(viewer);
   // if (debug8) DrawPlanarGrids(viewer);
   // if (debug9) CreatePlanarObjects(viewer);
@@ -1293,7 +1318,6 @@ DebugRedraw(R3SurfelViewer *viewer)
   // if (debug2) DrawFitSupportPlane(viewer);
   // if (debug8) DrawPrunedGraph(viewer);
   // if (debug8) DrawDirections(viewer);
-  // if (debug2) DrawGrid(viewer);
   // DrawMap(viewer);
   return status;
 }

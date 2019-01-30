@@ -226,8 +226,47 @@ RNLength R3Distance(const R3Line& line1, const R3Line& line2)
 
 RNLength R3Distance(const R3Line& line, const R3Ray& ray)
 {
-    // Return distance from line to ray
-    RNAbort("Not implemented");
+    // NOTE: THIS HAS NOT BEEN TESTED, BUT SHOULD WORK
+  
+    // Get vectors in more convenient form
+    const R3Vector v1 = ray.Vector();
+    const R3Vector v2 = line.Vector();
+
+    // Compute useful intermediate values
+    const RNScalar v1v1 = 1.0;  // v1.Dot(v1);
+    const RNScalar v2v2 = 1.0;  // v2.Dot(v2);
+    RNScalar v1v2 = v1.Dot(v2);
+    RNScalar denom = v1v2*v1v2 - v1v1*v2v2;
+
+    // Check if parallel
+    if (RNIsZero(denom)) {
+        // Return distance to any point on ray
+        return R3Distance(line, ray.Start());
+    }
+    else {
+	// Find point on ray closest to line
+	const R3Vector p1 = ray.Start().Vector();
+	const R3Vector p2 = line.Point().Vector();
+	RNScalar p1v1 = v1.Dot(p1);
+	RNScalar p2v2 = v2.Dot(p2);
+	RNScalar p1v2 = v2.Dot(p1);
+	RNScalar p2v1 = v1.Dot(p2);
+	RNScalar t1 = (v1v2*p2v2 + v2v2*p1v1 - v1v2*p1v2 - v2v2*p2v1) / denom;
+        if (RNIsNegativeOrZero(t1)) {
+            // Closest point is behind start of ray, return distance to start
+            return R3Distance(ray.Start(), line); 
+        }
+        else {
+            // Return distance to closest point
+            RNScalar t2 = (v1v2*p1v1 + v1v1*p2v2 - v1v2*p2v1 - v1v1*p1v2) / denom;
+            R3Point point1 = ray.Start() + t1*ray.Vector();
+            R3Point point2 = line.Point() + t2*line.Vector();
+            return R3Distance(point1, point2);
+        }
+    }
+    
+    // Hmmm ...
+    RNAbort("Should not get here");
     return 0.0;
 }
 
@@ -235,7 +274,51 @@ RNLength R3Distance(const R3Line& line, const R3Ray& ray)
 
 RNLength R3Distance(const R3Line& line, const R3Span& span)
 {
-    RNAbort("Not implemented");
+    // NOTE: THIS HAS NOT BEEN TESTED, BUT SHOULD WORK
+  
+    // Get vectors in more convenient form
+    const R3Vector v1 = span.Vector();
+    const R3Vector v2 = line.Vector();
+
+    // Compute useful intermediate values
+    const RNScalar v1v1 = 1.0;  // v1.Dot(v1);
+    const RNScalar v2v2 = 1.0;  // v2.Dot(v2);
+    RNScalar v1v2 = v1.Dot(v2);
+    RNScalar denom = v1v2*v1v2 - v1v1*v2v2;
+
+    // Check if parallel
+    if (RNIsZero(denom)) {
+        // Return distance to any point on ray
+        return R3Distance(line, span.Start());
+    }
+    else {
+	// Find point on span closest to line
+	const R3Vector p1 = span.Start().Vector();
+	const R3Vector p2 = line.Point().Vector();
+	RNScalar p1v1 = v1.Dot(p1);
+	RNScalar p2v2 = v2.Dot(p2);
+	RNScalar p1v2 = v2.Dot(p1);
+	RNScalar p2v1 = v1.Dot(p2);
+	RNScalar t1 = (v1v2*p2v2 + v2v2*p1v1 - v1v2*p1v2 - v2v2*p2v1) / denom;
+        if (RNIsNegativeOrZero(t1)) {
+            // Closest point is behind start of span, return distance to start
+            return R3Distance(span.Start(), line); 
+        }
+        else if (RNIsGreaterOrEqual(t1, span.Length())) {
+            // Closest point is past end of span, return distance to end
+            return R3Distance(span.End(), line); 
+        }
+        else {
+            // Return distance to closest point within span
+            RNScalar t2 = (v1v2*p1v1 + v1v1*p2v2 - v1v2*p2v1 - v1v1*p1v2) / denom;
+            R3Point point1 = span.Start() + t1*span.Vector();
+            R3Point point2 = line.Point() + t2*line.Vector();
+            return R3Distance(point1, point2);
+        }
+    }
+    
+    // Hmmm ...
+    RNAbort("Should not get here");
     return 0.0;
 }
 
@@ -793,16 +876,30 @@ RNLength R3Distance(const R3Halfspace& halfspace1, const R3Halfspace& halfspace2
 
 RNLength R3Distance(const R3Halfspace& halfspace, const R3Box& box)
 {
-    RNAbort("Not implemented");
-    return 0.0;
+    // Return distance between halfspace and box
+    if (box.IsEmpty()) return RN_INFINITY;
+    RNOctant octant = -(halfspace.Normal()).Octant();
+    R3Point corner = box.Corner(~octant & 0x7);
+    RNScalar d = R3SignedDistance(halfspace.Plane(), corner);
+    if (d < 0) return 0.0;
+    return d;
 }
 
 
 
 RNLength R3Distance(const R3Halfspace& halfspace, const R3OrientedBox& box)
 {
-    RNAbort("Not implemented");
-    return 0.0;
+    // Check distance from halfspace to corners of oriented box
+    RNScalar min_d = RN_INFINITY;
+    for (int i = 0; i < 8; i++) {
+        R3Point corner = box.Corner(i);
+        RNScalar d = R3SignedDistance(halfspace.Plane(), corner);
+        if (d <= 0.0) return 0;
+        if (d < min_d) min_d = d;
+    }
+
+    // Return distance to closest corner
+    return min_d;
 }
 
 

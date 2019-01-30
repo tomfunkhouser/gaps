@@ -617,6 +617,7 @@ Redraw(void)
         if (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
         RNBoolean confirmed = (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) ? 1 : 0;
         R3SurfelLabel *label = assignment->Label();
+        if (!strcmp(label->Name(), "Unknown")) continue;
         R3Point position = object->Centroid();
         position[2] = object->BBox().ZMax() + 1;
         R2Point p = viewer.ViewportPoint(position);
@@ -727,7 +728,7 @@ Redraw(void)
     color[2] = center_point_color[2];
     color[3] = 1;
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
-    R3Sphere(center_point, 1).Draw();
+    R3Sphere(center_point, 0.1).Draw();
     glDisable(GL_LIGHTING);
   }
 
@@ -902,6 +903,18 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     mouse_down_position[0] = x;
     mouse_down_position[1] = y;
 
+    // Process thumbwheel
+    if ((button == 3) || (button == 4)) {
+      R3Point viewing_center_point = center_point;
+      const R3Camera& camera = viewer.Camera();
+      R3Plane camera_plane(camera.Origin(), camera.Towards());
+      RNScalar signed_distance = R3SignedDistance(camera_plane, viewing_center_point);
+      if (signed_distance < 0) viewing_center_point -= (signed_distance - 1) * camera.Towards();
+      if (button == 3) viewer.ScaleWorld(viewing_center_point, 0.9);
+      else if (button == 4) viewer.ScaleWorld(viewing_center_point, 1.1);
+      redraw = TRUE;
+    }
+    
     // Start walking when middle or right button goes down with ctrl
     if (ctrl && ((button == 1) || (button == 2))) { 
       flying_viewer = this; 

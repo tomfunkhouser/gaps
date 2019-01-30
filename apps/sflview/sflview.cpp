@@ -299,8 +299,13 @@ void GLUTMouseButton(int button, int state, int x, int y)
   // Invert y coordinate
   y = GLUTwindow_height - y;
   
-  // Determine button status
-  int b = (button == GLUT_LEFT_BUTTON) ? 0 : ((button == GLUT_MIDDLE_BUTTON) ? 1 : 2);
+  // Determine button
+  int b = button;
+  if (button == GLUT_LEFT_BUTTON) b = 0;
+  else if (button == GLUT_MIDDLE_BUTTON) b = 1;
+  else if (button == GLUT_RIGHT_BUTTON) b = 2;
+
+  // Determinte state
   int s = (state == GLUT_DOWN) ? 1 : 0;
 
   // Determine modifiers
