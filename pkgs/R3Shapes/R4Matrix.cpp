@@ -744,7 +744,7 @@ operator*(const R4Matrix& a, RNScalar b)
 
 
 
-inline R4Matrix 
+R4Matrix 
 operator/(const R4Matrix& a, RNScalar b) 
 {
     // Scale matrix
