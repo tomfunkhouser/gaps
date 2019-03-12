@@ -715,11 +715,11 @@ ReadBMP(const char *filename)
   bmfh.bfOffBits = DWordReadLE(fp);
   
   /* Check file header */
-  assert(bmfh.bfType == BMP_BF_TYPE);
+  // assert(bmfh.bfType == BMP_BF_TYPE);
   /* ignore bmfh.bfSize */
   /* ignore bmfh.bfReserved1 */
   /* ignore bmfh.bfReserved2 */
-  assert(bmfh.bfOffBits == BMP_BF_OFF_BITS);
+  // assert(bmfh.bfOffBits == BMP_BF_OFF_BITS);
   
   /* Read info header */
   BMPBITMAPINFOHEADER bmih;
@@ -736,15 +736,15 @@ ReadBMP(const char *filename)
   bmih.biClrImportant = DWordReadLE(fp);
   
   // Check info header 
-  assert(bmih.biSize == BMP_BI_SIZE);
-  assert(bmih.biWidth > 0);
-  assert(bmih.biHeight > 0);
-  assert(bmih.biPlanes == 1);
-  assert(bmih.biBitCount == 24);  /* RGB */
-  assert(bmih.biCompression == BI_RGB);   /* RGB */
+  // assert(bmih.biSize == BMP_BI_SIZE);
+  // assert(bmih.biWidth > 0);
+  // assert(bmih.biHeight > 0);
+  // assert(bmih.biPlanes == 1);
+  // assert(bmih.biBitCount == 24);  /* RGB */
+  // assert(bmih.biCompression == BI_RGB);   /* RGB */
   int lineLength = bmih.biWidth * 3;  /* RGB */
   if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
-  assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
+  // assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
 
   // Assign width, height, and ncomponents
   width = bmih.biWidth;
@@ -766,6 +766,8 @@ ReadBMP(const char *filename)
   fseek(fp, (long) bmfh.bfOffBits, SEEK_SET);
   if (fread(pixels, 1, bmih.biSizeImage, fp) != bmih.biSizeImage) {
     fprintf(stderr, "Error while reading BMP file %s", filename);
+    delete [] pixels;
+    pixels = NULL;
     return 0;
   }
 
