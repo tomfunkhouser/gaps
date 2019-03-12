@@ -523,24 +523,31 @@ Read(const char *filename)
     return 0;
   }
 
+  // Make lower-case copy of extension
+  char extension[1024];
+  int len = strlen(input_extension);
+  if (len > 1023) len = 1023;
+  for (int i = 0; i < len; i++) 
+    extension[i] = tolower(input_extension[i]);
+  extension[len] = '\0';
+
   // Read file of appropriate type
   if (format == R2_IMAGE_JPEG_FORMAT) return ReadJPEG(filename);
   else if (format == R2_IMAGE_PNG_FORMAT) return ReadPNG(filename);
   else if (format == R2_IMAGE_TIFF_FORMAT) return ReadTIFF(filename);
   else if (format == R2_IMAGE_BMP_FORMAT) return ReadBMP(filename);
   else if (format == R2_IMAGE_RAW_FORMAT) return ReadRAW(filename);
-  else if (!strncmp(input_extension, ".bmp", 4)) return ReadBMP(filename);
-  else if (!strncmp(input_extension, ".ppm", 4)) return ReadPPM(filename);
-  else if (!strncmp(input_extension, ".pgm", 4)) return ReadPPM(filename);
-  else if (!strncmp(input_extension, ".pfm", 4)) return ReadPFM(filename);
-  else if (!strncmp(input_extension, ".jpg", 4)) return ReadJPEG(filename);
-  else if (!strncmp(input_extension, ".jpeg", 5)) return ReadJPEG(filename);
-  else if (!strncmp(input_extension, ".JPEG", 5)) return ReadJPEG(filename);
-  else if (!strncmp(input_extension, ".tif", 4)) return ReadTIFF(filename);
-  else if (!strncmp(input_extension, ".tiff", 5)) return ReadTIFF(filename);
-  else if (!strncmp(input_extension, ".png", 4)) return ReadPNG(filename);
-  else if (!strncmp(input_extension, ".raw", 4)) return ReadRAW(filename);
-  else if (!strncmp(input_extension, ".grd", 4)) return ReadGRD(filename);
+  else if (!strncmp(extension, ".bmp", 4)) return ReadBMP(filename);
+  else if (!strncmp(extension, ".ppm", 4)) return ReadPPM(filename);
+  else if (!strncmp(extension, ".pgm", 4)) return ReadPPM(filename);
+  else if (!strncmp(extension, ".pfm", 4)) return ReadPFM(filename);
+  else if (!strncmp(extension, ".jpg", 4)) return ReadJPEG(filename);
+  else if (!strncmp(extension, ".jpeg", 5)) return ReadJPEG(filename);
+  else if (!strncmp(extension, ".tif", 4)) return ReadTIFF(filename);
+  else if (!strncmp(extension, ".tiff", 5)) return ReadTIFF(filename);
+  else if (!strncmp(extension, ".png", 4)) return ReadPNG(filename);
+  else if (!strncmp(extension, ".raw", 4)) return ReadRAW(filename);
+  else if (!strncmp(extension, ".grd", 4)) return ReadGRD(filename);
   
   // Should never get here
   fprintf(stderr, "Unrecognized image file extension");
@@ -559,16 +566,24 @@ Write(const char *filename) const
     return 0;
   }
   
+  // Make lower-case copy of extension
+  char extension[1024];
+  int len = strlen(input_extension);
+  if (len > 1023) len = 1023;
+  for (int i = 0; i < len; i++) 
+    extension[i] = tolower(input_extension[i]);
+  extension[len] = '\0';
+
   // Write file of appropriate type
-  if (!strncmp(input_extension, ".bmp", 4)) return WriteBMP(filename);
-  else if (!strncmp(input_extension, ".pgm", 4)) return WritePPM(filename, 0);
-  else if (!strncmp(input_extension, ".ppm", 4)) return WritePPM(filename, 0);
-  else if (!strncmp(input_extension, ".jpg", 4)) return WriteJPEG(filename);
-  else if (!strncmp(input_extension, ".jpeg", 5)) return WriteJPEG(filename);
-  else if (!strncmp(input_extension, ".tif", 4)) return WriteTIFF(filename);
-  else if (!strncmp(input_extension, ".tiff", 5)) return WriteTIFF(filename);
-  else if (!strncmp(input_extension, ".png", 4)) return WritePNG(filename);
-  else if (!strncmp(input_extension, ".raw", 4)) return WriteRAW(filename);
+  if (!strncmp(extension, ".bmp", 4)) return WriteBMP(filename);
+  else if (!strncmp(extension, ".pgm", 4)) return WritePPM(filename, 0);
+  else if (!strncmp(extension, ".ppm", 4)) return WritePPM(filename, 0);
+  else if (!strncmp(extension, ".jpg", 4)) return WriteJPEG(filename);
+  else if (!strncmp(extension, ".jpeg", 5)) return WriteJPEG(filename);
+  else if (!strncmp(extension, ".tif", 4)) return WriteTIFF(filename);
+  else if (!strncmp(extension, ".tiff", 5)) return WriteTIFF(filename);
+  else if (!strncmp(extension, ".png", 4)) return WritePNG(filename);
+  else if (!strncmp(extension, ".raw", 4)) return WriteRAW(filename);
 
   // Should never get here
   fprintf(stderr, "Unrecognized image file extension");
