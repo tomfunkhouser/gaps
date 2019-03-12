@@ -954,12 +954,6 @@ WriteMesh(R3Mesh *mesh, const char *filename)
 static int 
 ParseArgs(int argc, char **argv)
 {
-  // Check number of arguments
-  if (argc == 1) {
-    printf("Usage: mshalign input1 [input2] output1 [options]\n");
-    exit(0);
-  }
-
   // Parse arguments
   argc--; argv++;
   while (argc > 0) {

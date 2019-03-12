@@ -53,6 +53,19 @@ namespace gaps {
 
 
 
+// Image format constants
+
+enum {
+  R2_IMAGE_UNKNOWN_FORMAT,
+  R2_IMAGE_JPEG_FORMAT,
+  R2_IMAGE_PNG_FORMAT,
+  R2_IMAGE_BMP_FORMAT,
+  R2_IMAGE_TIFF_FORMAT,
+  R2_IMAGE_RAW_FORMAT
+};
+
+
+
 R2Image::
 R2Image(void)
   : width(0), 
@@ -450,12 +463,63 @@ Draw(int x, int y) const
 }
 
 
+
+static int
+R2ImageFileFormat(const char *filename)
+{
+  // Initialize result
+  int format = 0;
+  
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) return 0;
+
+  // Read header/magic/unique identifier
+  unsigned char buffer[8];
+  if ((fread(buffer, 3, sizeof(unsigned char), fp) == 3) &&
+      (buffer[0] = 0xFF) && (buffer[1] = 0xD8) &&
+      (buffer[2] = 0xFF)) {
+    format = R2_IMAGE_JPEG_FORMAT;
+  }
+  else if ((fread(buffer, 8, sizeof(unsigned char), fp) == 8) &&
+    (buffer[0] = 0x89) && (buffer[1] = 0x50) &&
+    (buffer[2] = 0x4E) && (buffer[3] = 0x47) &&
+    (buffer[4] = 0x0D) && (buffer[5] = 0x0A) &&
+    (buffer[6] = 0x1A) && (buffer[7] = 0x0A)) {
+    format = R2_IMAGE_PNG_FORMAT; 
+  }
+  else if ((fread(buffer, 4, sizeof(unsigned char), fp) == 4) &&
+    (buffer[0] = 0x49) && (buffer[1] = 0x49) &&
+    (buffer[2] = 0x2A) && (buffer[3] = 0x00)) {
+    format = R2_IMAGE_TIFF_FORMAT; 
+  }
+  else if ((fread(buffer, 2, sizeof(unsigned char), fp) == 2) &&
+    (buffer[0] = 0x42) && (buffer[1] = 0x4D)) {
+    format = R2_IMAGE_BMP_FORMAT;
+  }
+  else if ((fread(buffer, 2, sizeof(unsigned char), fp) == 2) &&
+    (buffer[0] = 0xD4) && (buffer[1] = 0x31)) {
+    format = R2_IMAGE_RAW_FORMAT;
+  }
+  
+  // Close file
+  fclose(fp);
+  
+  // Return format
+  return format;
+}
+
+
+
 int R2Image::
 Read(const char *filename)
 {
   // Initialize everything
   if (pixels) { delete [] pixels; pixels = NULL; }
   width = height = 0;
+
+  // Parse image format
+  int format = R2ImageFileFormat(filename);
 
   // Parse input filename extension
   const char *input_extension;
@@ -465,7 +529,12 @@ Read(const char *filename)
   }
   
   // Read file of appropriate type
-  if (!strncmp(input_extension, ".bmp", 4)) return ReadBMP(filename);
+  if (format == R2_IMAGE_JPEG_FORMAT) return ReadJPEG(filename);
+  else if (format == R2_IMAGE_PNG_FORMAT) return ReadPNG(filename);
+  else if (format == R2_IMAGE_TIFF_FORMAT) return ReadTIFF(filename);
+  else if (format == R2_IMAGE_BMP_FORMAT) return ReadBMP(filename);
+  else if (format == R2_IMAGE_RAW_FORMAT) return ReadRAW(filename);
+  else if (!strncmp(input_extension, ".bmp", 4)) return ReadBMP(filename);
   else if (!strncmp(input_extension, ".ppm", 4)) return ReadPPM(filename);
   else if (!strncmp(input_extension, ".pgm", 4)) return ReadPPM(filename);
   else if (!strncmp(input_extension, ".pfm", 4)) return ReadPFM(filename);
