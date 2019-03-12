@@ -477,28 +477,27 @@ R2ImageFileFormat(const char *filename)
   // Read header/magic/unique identifier
   unsigned char buffer[8];
   if ((fread(buffer, 3, sizeof(unsigned char), fp) == 3) &&
-      (buffer[0] = 0xFF) && (buffer[1] = 0xD8) &&
-      (buffer[2] = 0xFF)) {
+      (buffer[0] == 0xFF) && (buffer[1] == 0xD8)) {
     format = R2_IMAGE_JPEG_FORMAT;
   }
   else if ((fread(buffer, 8, sizeof(unsigned char), fp) == 8) &&
-    (buffer[0] = 0x89) && (buffer[1] = 0x50) &&
-    (buffer[2] = 0x4E) && (buffer[3] = 0x47) &&
-    (buffer[4] = 0x0D) && (buffer[5] = 0x0A) &&
-    (buffer[6] = 0x1A) && (buffer[7] = 0x0A)) {
+    (buffer[0] == 0x89) && (buffer[1] == 0x50) &&
+    (buffer[2] == 0x4E) && (buffer[3] == 0x47) &&
+    (buffer[4] == 0x0D) && (buffer[5] == 0x0A) &&
+    (buffer[6] == 0x1A) && (buffer[7] == 0x0A)) {
     format = R2_IMAGE_PNG_FORMAT; 
   }
   else if ((fread(buffer, 4, sizeof(unsigned char), fp) == 4) &&
-    (buffer[0] = 0x49) && (buffer[1] = 0x49) &&
-    (buffer[2] = 0x2A) && (buffer[3] = 0x00)) {
+    (buffer[0] == 0x49) && (buffer[1] == 0x49) &&
+    (buffer[2] == 0x2A) && (buffer[3] == 0x00)) {
     format = R2_IMAGE_TIFF_FORMAT; 
   }
   else if ((fread(buffer, 2, sizeof(unsigned char), fp) == 2) &&
-    (buffer[0] = 0x42) && (buffer[1] = 0x4D)) {
+    (buffer[0] == 0x42) && (buffer[1] == 0x4D)) {
     format = R2_IMAGE_BMP_FORMAT;
   }
   else if ((fread(buffer, 2, sizeof(unsigned char), fp) == 2) &&
-    (buffer[0] = 0xD4) && (buffer[1] = 0x31)) {
+    (buffer[0] == 0xD4) && (buffer[1] == 0x31)) {
     format = R2_IMAGE_RAW_FORMAT;
   }
   
