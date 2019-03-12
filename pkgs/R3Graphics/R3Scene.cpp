@@ -1242,12 +1242,13 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
         R2Texture *texture = NULL;
         if (!texture_symbol_table.Find(texture_filename, &texture)) {
           R2Image *image = new R2Image();
-          if (!image->Read(texture_filename)) return 0;
-          texture = new R2Texture(image);
-          texture_symbol_table.Insert(texture_filename, texture);
-          texture->SetFilename(texture_filename);
-          texture->SetName(texture_filename);
-          scene->InsertTexture(texture);
+          if (image->Read(texture_filename)) { 
+            texture = new R2Texture(image);
+            texture_symbol_table.Insert(texture_filename, texture);
+            texture->SetFilename(texture_filename);
+            texture->SetName(texture_filename);
+            scene->InsertTexture(texture);
+          }
         }
         material->SetTexture(texture);
         material->Update();
