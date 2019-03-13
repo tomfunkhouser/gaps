@@ -753,7 +753,7 @@ ReadBMP(const char *filename)
     if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
     int nbytes = rowsize * height;
     pixels = new unsigned char [nbytes];
-    for (int i = 0; i < nbytes; i++) pixels[i] = 0;
+    for (int i = 0; i < nbytes; i++) pixels[i] = 127;
     fclose(fp);
     return 1;
   }
