@@ -744,7 +744,7 @@ ReadBMP(const char *filename)
   // Check if unsupported file type
   // If so, just fill in with default
   if ((bmih.biSize != BMP_BI_SIZE) || (bmih.biPlanes > 1) ||
-   (bmih.biBitCount != 24) || (bmih.biCompression != BI_RGB)) {
+      (bmih.biBitCount != 24) || (bmih.biCompression != BI_RGB)) {
     fprintf(stderr, "Unsupported BMP version\n");
     fclose(fp);
     return 0;
@@ -755,11 +755,9 @@ ReadBMP(const char *filename)
   assert(bmih.biWidth > 0);
   assert(bmih.biHeight > 0);
   assert(bmih.biPlanes == 1);
-  assert(bmih.biBitCount == 24);  /* RGB */
   assert(bmih.biCompression == BI_RGB);   /* RGB */
   int lineLength = bmih.biWidth * bmih.biBitCount / 8;
   if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
-  // assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
 
   // Allocate buffer
   unsigned int buffer_size = lineLength * bmih.biHeight;
@@ -801,11 +799,11 @@ ReadBMP(const char *filename)
     unsigned char *b = &buffer[j * lineLength];
     for (int i = 0; i < width; i++) {
       if (bmih.biBitCount == 1) {
-        // Binary
+        // Binary (this is not right, should be index into color table)
         p[i] = (b[i/8]>>(7-(i%8)) && 0x1) ? 255 : 0;
       }
       else if (bmih.biBitCount == 8) {
-        // Gray level
+        // 8-bit (this is not right, should be index into color table)
         p[i] = b[i];
       }
       else if (bmih.biBitCount == 24) {
