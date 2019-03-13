@@ -748,14 +748,14 @@ ReadBMP(const char *filename)
   // assert(bmih.biPlanes == 1);
   // assert(bmih.biBitCount == 24);  /* RGB */
   // assert(bmih.biCompression == BI_RGB);   /* RGB */
-  int lineLength = bmih.biWidth * 3;  /* RGB */
+  int lineLength = bmih.biWidth * bmih.biBitCount / 8;  /* RGB */
   if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
-  // assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
+  assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
 
   // Assign width, height, and ncomponents
   width = bmih.biWidth;
   height = bmih.biHeight;
-  ncomponents = 3;
+  ncomponents = bmih.biBitCount / 8;
   rowsize = ncomponents * width;
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
 
@@ -778,13 +778,15 @@ ReadBMP(const char *filename)
   }
 
   // Swap blue and red in each pixel
-  for (int j = 0; j < height; j++) {
-    unsigned char *p = &pixels[j * rowsize];
-    for (int i = 0; i < width; i++) {
-      unsigned char c = *p;
-      *(p) = *(p+2);
-      *(p+2) = c;
-      p += 3;
+  if (ncomponents == 3) {
+    for (int j = 0; j < height; j++) {
+      unsigned char *p = &pixels[j * rowsize];
+      for (int i = 0; i < width; i++) {
+        unsigned char c = *p;
+        *(p) = *(p+2);
+        *(p+2) = c;
+        p += 3;
+      }
     }
   }
 
