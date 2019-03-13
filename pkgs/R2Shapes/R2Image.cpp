@@ -475,8 +475,8 @@ R2ImageFileFormat(const char *filename)
   if (!fp) return 0;
   
   // Read header/magic/unique identifier
-  unsigned char buffer[16];
-  int nbytes = fread(buffer, 8, sizeof(unsigned char), fp);
+  unsigned char buffer[16] = { '\0' };
+  int nbytes = fread(buffer, sizeof(unsigned char), 8, fp);
   if (nbytes == 0) return 0;
   else if ((nbytes >= 2) &&
     (buffer[0] == 0xFF) && (buffer[1] == 0xD8)) {
