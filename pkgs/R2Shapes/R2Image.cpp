@@ -740,14 +740,31 @@ ReadBMP(const char *filename)
   bmih.biYPelsPerMeter = LongReadLE(fp);
   bmih.biClrUsed = DWordReadLE(fp);
   bmih.biClrImportant = DWordReadLE(fp);
-  
+
+  // Check if unsupported file type
+  // If so, just fill in with default
+  if ((bmih.biSize != BMP_BI_SIZE) || (bmih.biPlanes > 1) ||
+   (bmih.biBitCount != 24) || (bmih.biCompression != BI_RGB)) {
+    fprintf(stderr, "Unsupported BMP version\n");
+    width = 4;
+    height = 4;
+    ncomponents = 3;
+    rowsize = ncomponents * width;
+    if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
+    int nbytes = rowsize * height;
+    pixels = new unsigned char [nbytes];
+    for (int i = 0; i < nbytes; i++) pixels[i] = 0;
+    fclose(fp);
+    return 1;
+  }
+
   // Check info header 
-  // assert(bmih.biSize == BMP_BI_SIZE);
-  // assert(bmih.biWidth > 0);
-  // assert(bmih.biHeight > 0);
-  // assert(bmih.biPlanes == 1);
-  // assert(bmih.biBitCount == 24);  /* RGB */
-  // assert(bmih.biCompression == BI_RGB);   /* RGB */
+  assert(bmih.biSize == BMP_BI_SIZE);
+  assert(bmih.biWidth > 0);
+  assert(bmih.biHeight > 0);
+  assert(bmih.biPlanes == 1);
+  assert(bmih.biBitCount == 24);  /* RGB */
+  assert(bmih.biCompression == BI_RGB);   /* RGB */
   int lineLength = bmih.biWidth * bmih.biBitCount / 8;  /* RGB */
   if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
   assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
@@ -760,7 +777,7 @@ ReadBMP(const char *filename)
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
 
   // Allocate pixels
-  int nbytes = bmih.biSizeImage;
+  int nbytes = rowsize * height;
   pixels = new unsigned char [nbytes];
   if (!pixels) {
     fprintf(stderr, "Unable to allocate memory for BMP file");
