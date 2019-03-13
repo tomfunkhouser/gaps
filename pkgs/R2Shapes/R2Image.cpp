@@ -746,16 +746,8 @@ ReadBMP(const char *filename)
   if ((bmih.biSize != BMP_BI_SIZE) || (bmih.biPlanes > 1) ||
    (bmih.biBitCount != 24) || (bmih.biCompression != BI_RGB)) {
     fprintf(stderr, "Unsupported BMP version\n");
-    width = 4;
-    height = 4;
-    ncomponents = 3;
-    rowsize = ncomponents * width;
-    if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
-    int nbytes = rowsize * height;
-    pixels = new unsigned char [nbytes];
-    for (int i = 0; i < nbytes; i++) pixels[i] = 127;
     fclose(fp);
-    return 1;
+    return 0;
   }
 
   // Check info header 
@@ -765,14 +757,31 @@ ReadBMP(const char *filename)
   assert(bmih.biPlanes == 1);
   assert(bmih.biBitCount == 24);  /* RGB */
   assert(bmih.biCompression == BI_RGB);   /* RGB */
-  // int lineLength = bmih.biWidth * bmih.biBitCount / 8;  /* RGB */
-  // if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
+  int lineLength = bmih.biWidth * bmih.biBitCount / 8;
+  if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
   // assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
+
+  // Allocate buffer
+  unsigned int buffer_size = lineLength * bmih.biHeight;
+  unsigned char *buffer = new unsigned char [buffer_size];
+  if (!buffer) {
+    fprintf(stderr, "Unable to allocate memory for BMP file");
+    fclose(fp);
+    return 0;
+  }
+
+  // Read buffer 
+  fseek(fp, (long) bmfh.bfOffBits, SEEK_SET);
+  if (fread(buffer, 1, buffer_size, fp) != buffer_size) {
+    fprintf(stderr, "Error while reading BMP file %s", filename);
+    delete [] buffer;
+    return 0;
+  }
 
   // Assign width, height, and ncomponents
   width = bmih.biWidth;
   height = bmih.biHeight;
-  ncomponents = bmih.biBitCount / 8;
+  ncomponents = (bmih.biBitCount <= 8) ? 1 : 3;
   rowsize = ncomponents * width;
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
 
@@ -781,31 +790,35 @@ ReadBMP(const char *filename)
   pixels = new unsigned char [nbytes];
   if (!pixels) {
     fprintf(stderr, "Unable to allocate memory for BMP file");
+    delete [] buffer;
     fclose(fp);
     return 0;
   }
 
-  // Read pixels 
-  fseek(fp, (long) bmfh.bfOffBits, SEEK_SET);
-  if (fread(pixels, 1, bmih.biSizeImage, fp) != bmih.biSizeImage) {
-    fprintf(stderr, "Error while reading BMP file %s", filename);
-    delete [] pixels;
-    pixels = NULL;
-    return 0;
-  }
-
-  // Swap blue and red in each pixel
-  if (ncomponents == 3) {
-    for (int j = 0; j < height; j++) {
-      unsigned char *p = &pixels[j * rowsize];
-      for (int i = 0; i < width; i++) {
-        unsigned char c = *p;
-        *(p) = *(p+2);
-        *(p+2) = c;
-        p += 3;
+  // Copy pixels from buffer
+  for (int j = 0; j < height; j++) {
+    unsigned char *p = &pixels[j * rowsize];
+    unsigned char *b = &buffer[j * lineLength];
+    for (int i = 0; i < width; i++) {
+      if (bmih.biBitCount == 1) {
+        // Binary
+        p[i] = (b[i/8]>>(7-(i%8)) && 0x1) ? 255 : 0;
+      }
+      else if (bmih.biBitCount == 8) {
+        // Gray level
+        p[i] = b[i];
+      }
+      else if (bmih.biBitCount == 24) {
+        // RGB - swap blue and red in each pixel
+        p[i*3+0] = b[i*3+2];
+        p[i*3+1] = b[i*3+1];
+        p[i*3+2] = b[i*3+0];
       }
     }
   }
+
+  // Delete buffer
+  delete [] buffer;
 
   // Close file
   fclose(fp);
@@ -848,9 +861,9 @@ WriteBMP(const char *filename) const
   bmih.biWidth = width;
   bmih.biHeight = height;
   bmih.biPlanes = 1;
-  bmih.biBitCount = 24;       /* RGB */
-  bmih.biCompression = BI_RGB;    /* RGB */
-  bmih.biSizeImage = rowsize * (unsigned int) bmih.biHeight;  /* RGB */
+  bmih.biBitCount = 8 * ncomponents;
+  bmih.biCompression = BI_RGB;   
+  bmih.biSizeImage = rowsize * (unsigned int) bmih.biHeight;  
   bmih.biXPelsPerMeter = 2925;
   bmih.biYPelsPerMeter = 2925;
   bmih.biClrUsed = 0;
@@ -867,16 +880,23 @@ WriteBMP(const char *filename) const
   DWordWriteLE(bmih.biClrUsed, fp);
   DWordWriteLE(bmih.biClrImportant, fp);
 
-  // Write image, swapping blue and red in each pixel
-  int pad = rowsize - width * 3;
+  // Write image
+  int pad = rowsize - width * ncomponents;
   for (int j = 0; j < height; j++) {
     // Write row of pixels BGR
     unsigned char *p = &pixels[j * rowsize];
     for (int i = 0; i < width; i++) {
-      fputc(*(p+2), fp);
-      fputc(*(p+1), fp);
-      fputc(*(p+0), fp);
-      p += 3;
+      if (ncomponents == 1) {
+        // Write gray value
+        fputc(*(p++), fp);
+      }
+      else {
+        // Write BRG, swapping blue and red in each pixel
+        fputc(*(p+2), fp);
+        fputc(*(p+1), fp);
+        fputc(*(p+0), fp);
+        p += 3;
+      }
     }
 
     // Pad row
