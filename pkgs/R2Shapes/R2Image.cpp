@@ -765,9 +765,9 @@ ReadBMP(const char *filename)
   assert(bmih.biPlanes == 1);
   assert(bmih.biBitCount == 24);  /* RGB */
   assert(bmih.biCompression == BI_RGB);   /* RGB */
-  int lineLength = bmih.biWidth * bmih.biBitCount / 8;  /* RGB */
-  if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
-  assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
+  // int lineLength = bmih.biWidth * bmih.biBitCount / 8;  /* RGB */
+  // if ((lineLength % 4) != 0) lineLength = (lineLength / 4 + 1) * 4;
+  // assert(bmih.biSizeImage == (unsigned int) lineLength * (unsigned int) bmih.biHeight);
 
   // Assign width, height, and ncomponents
   width = bmih.biWidth;
