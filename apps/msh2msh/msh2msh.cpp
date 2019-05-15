@@ -12,8 +12,9 @@ using namespace gaps;
 
 // Program arguments
 
-const char *input_name = NULL;
-const char *output_name = NULL;
+const char *input_mesh_name = NULL;
+const char *output_mesh_name = NULL;
+const char *output_xform_name = NULL;
 const char *color_name = NULL;
 const char *merge_list_name = NULL;
 int flip_faces = 0;
@@ -118,6 +119,32 @@ ReadMatrix(R4Matrix& m, const char *filename)
       double value;
       fscanf(fp, "%lf", &value);
       m[i][j] = value;
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+WriteMatrix(const R4Matrix& m, const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Unable to open matrix file: %s\n", filename);
+    return 0;
+  }
+
+  // Write matrix to file
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      fprintf(fp, "%g ", m[i][j]);
     }
   }
 
@@ -442,6 +469,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-remove_small_components")) { argv++; argc--; min_component_area = atof(*argv); }
       else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
       else if (!strcmp(*argv, "-merge_list")) { argv++; argc--; merge_list_name = *argv; }
+      else if (!strcmp(*argv, "-debug_matrix")) { argv++; argc--; output_xform_name = *argv; }
       else if (!strcmp(*argv, "-transform")) {
         R4Matrix m;
         argv++; argc--; m[0][0] = atof(*argv); argv++; argc--; m[0][1] = atof(*argv);
@@ -460,21 +488,21 @@ int ParseArgs(int argc, char **argv)
       argv++; argc--;
     }
     else {
-      if (!input_name) input_name = *argv;
-      else if (!output_name) output_name = *argv;
+      if (!input_mesh_name) input_mesh_name = *argv;
+      else if (!output_mesh_name) output_mesh_name = *argv;
       else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
-  if (!input_name) {
+  if (!input_mesh_name) {
     fprintf(stderr, "You did not specify an input file name.\n");
     return 0;
   }
 
   // Check output filename
-  if (!output_name) {
+  if (!output_mesh_name) {
     fprintf(stderr, "You did not specify an output file name.\n");
     return 0;
   }
@@ -495,7 +523,7 @@ int main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read mesh
-  R3Mesh *mesh = ReadMesh(input_name);
+  R3Mesh *mesh = ReadMesh(input_mesh_name);
   if (!mesh) exit(-1);
 
   // Merge meshes from list
@@ -532,6 +560,11 @@ int main(int argc, char **argv)
   if (translate_by_centroid) {
     R3Point centroid = mesh->Centroid();
     xform.Translate(-centroid.Vector());
+  }
+
+  // Normalize translation, rotation, and scale
+  if (align_by_pca) {
+    xform = mesh->PCANormalizationTransformation();
   }
 
   // Transform 
@@ -587,19 +620,18 @@ int main(int argc, char **argv)
     mesh->SwapEdges();
   }
 
-  // Normalize translation, rotation, and scale
-  if (align_by_pca) {
-    R3Affine xf = mesh->PCANormalizationTransformation();
-    mesh->Transform(xf);
-  }
-
   // Transfer colors
   if (color_name) {
     CopyColors(mesh, color_name);
   }
   
   // Write mesh
-  if (!WriteMesh(mesh, output_name)) exit(-1);
+  if (!WriteMesh(mesh, output_mesh_name)) exit(-1);
+
+  // Write transformation
+  if (!xform.IsIdentity() && output_xform_name) {
+    if (!WriteMatrix(xform.Matrix(), output_xform_name)) exit(-1);
+  }
 
   // Return success 
   return 0;
