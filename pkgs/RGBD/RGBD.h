@@ -35,6 +35,7 @@ class RGBDConfiguration;
 #define RGBD_GREEN_CHANNEL  1
 #define RGBD_BLUE_CHANNEL   2
 #define RGBD_DEPTH_CHANNEL  3
+#define RGBD_USER_CHANNEL  4
 
 #define RGBD_BORDER_BOUNDARY        0x1
 #define RGBD_SILHOUETTE_BOUNDARY    0x2

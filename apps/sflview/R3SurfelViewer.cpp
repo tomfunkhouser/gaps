@@ -435,8 +435,10 @@ Redraw(void)
           glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
-            if (!surfel->HasNormal()) glColor3d(0.5, 0.5, 0.5);
-            else glColor3f(surfel->NX(), surfel->NY(), surfel->NZ());
+            float r = 0.5F + 0.5F * surfel->NX();
+            float g = 0.5F + 0.5F * surfel->NY();
+            float b = 0.5F + 0.5F * surfel->NZ();
+            glColor3f(r, g, b);
             glVertex3fv(surfel->Coords());
           }
           glEnd();
@@ -556,7 +558,7 @@ Redraw(void)
   // Draw normals
   if (normal_visibility) {
     RNLoadRgb(normal_color);
-    RNLength r = 0.025;
+    RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
       for (int j = 0; j < node->NBlocks(); j++) {
@@ -577,6 +579,7 @@ Redraw(void)
           R3LoadPoint(px + r * nx, py + r * ny, pz + r * nz);
         }
         glEnd();
+        glPopMatrix();
       }
     }
   }

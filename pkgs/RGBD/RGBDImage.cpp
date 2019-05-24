@@ -532,7 +532,7 @@ TransformCameraToImage(const R3Point& camera_position, R2Point& image_position) 
 {
   // Get/check depth
   RNScalar depth = -camera_position[2];
-  if ((RNIsZero(depth)) || (depth == R2_GRID_UNKNOWN_VALUE)) return 0;
+  if (RNIsNegativeOrZero(depth)) return 0;
 
   // Get/check intrinsics matrix
   const R3Matrix& intrinsics_matrix = Intrinsics();
@@ -547,20 +547,6 @@ TransformCameraToImage(const R3Point& camera_position, R2Point& image_position) 
   if ((image_position[0] < 0) || (image_position[0] >= NPixels(RN_X))) return 0; 
   if ((image_position[1] < 0) || (image_position[1] >= NPixels(RN_Y))) return 0;
 
-  // Check pixel position
-  int image_ix = (int) (image_position.X() + 0.5);
-  if ((image_ix < 0) || (image_ix >= NPixels(RN_X))) return 0;
-  int image_iy = (int) (image_position.Y() + 0.5);
-  if ((image_iy < 0) || (image_iy >= NPixels(RN_Y))) return 0;
-
-  // Check depth
-  RNScalar image_depth = PixelDepth(image_ix, image_iy);
-  if ((image_depth == R2_GRID_UNKNOWN_VALUE) || (image_depth == 0)) return 0;
-
-  // If depth is not within 10% of image depth, then probably not 
-  if (image_depth < 0.9 * depth) return 0;
-  if (image_depth > 1.1 * depth) return 0;
-  
   // Return success
   return 1;
 }
