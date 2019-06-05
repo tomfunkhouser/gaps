@@ -601,6 +601,21 @@ SetSurfelBorderBoundary(int surfel_index, RNBoolean boundary)
 
 
 void R3SurfelBlock::
+SetSurfelMark(int surfel_index, RNBoolean mark)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel mark
+  surfels[surfel_index].SetMark(mark);
+}
+
+
+
+void R3SurfelBlock::
 SetMarks(RNBoolean mark)
 {
   // Check surfels

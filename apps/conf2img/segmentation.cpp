@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////
 
@@ -137,6 +137,13 @@ public:
   RNScalar Affinity(void) const;
   int NUnclusteredPoints(void) const;
 public:
+  int CreateNeighbors(int max_neighbor_count = 16,
+    double max_neighbor_distance = 0,
+    double max_neighbor_primitive_distance = 0.01,
+    double max_neighbor_normal_angle = RN_PI / 4.0,
+    double max_neighbor_color_difference = 0,
+    double max_neighbor_distance_factor = 10);
+public:
   int AssignPoints(void);  
   int CreateClusters(int primitive_type);
   int CreateSingletonClusters(int primitive_type);
@@ -145,6 +152,7 @@ public:
   int ReassignClusters(void);  
   int DeleteClusters(void);  
   int MergeClusters(void);  
+  int MergeSmallClusters(void);  
   int SplitClusters(void);
   int RefineBoundaries(void);
   int WriteFile(const char *filename) const;
@@ -169,6 +177,7 @@ Point(void)
     normal(0,0,0),
     radius(0),
     area(0),
+    color(0,0,0),
     boundary(0),
     neighbors(),
     cluster(NULL),
@@ -713,7 +722,7 @@ InsertPoint(Point *point, RNScalar affinity)
   }
 
   // Update cluster
-  total_affinity += point->cluster_affinity;
+  total_affinity += affinity; // point->cluster_affinity;
   color = (point->color * points.NEntries()*color) / (points.NEntries()+1);
   area += point->area;
 
@@ -758,6 +767,9 @@ RemovePoint(Point *point)
 void Cluster::
 InsertChild(Cluster *child)
 {
+  // Check
+  assert(child != this);
+
   // Update area
   area += child->area;
 
@@ -791,6 +803,10 @@ InsertChild(Cluster *child)
     possible_affinity += affinity;
     InsertPoint(point, affinity);
   }
+
+  // Update child
+  child->area = 0;
+  child->color = RNblack_rgb;
 
   // Update hierarchy
   child->parent = this;
@@ -985,8 +1001,8 @@ Affinity(Point *point) const
   if (max_cluster_color_difference > 0) {
     RNLength color_difference = 0;
     color_difference += fabs(color.R() - point->color.R());
-    color_difference += fabs(color.R() - point->color.R());
-    color_difference += fabs(color.R() - point->color.R());
+    color_difference += fabs(color.G() - point->color.G());
+    color_difference += fabs(color.B() - point->color.B());
     RNScalar color_difference_affinity = exp(color_difference * color_difference / (-2.0 * 0.25 * max_cluster_color_difference * max_cluster_color_difference));
     affinity *= color_difference_affinity;
   }
@@ -1043,8 +1059,8 @@ Affinity(Cluster *cluster) const
   if (max_pair_color_difference > 0) {
     RNLength color_difference = 0;
     color_difference += fabs(color.R() - cluster->color.R());
-    color_difference += fabs(color.R() - cluster->color.R());
-    color_difference += fabs(color.R() - cluster->color.R());
+    color_difference += fabs(color.G() - cluster->color.G());
+    color_difference += fabs(color.B() - cluster->color.B());
     RNScalar color_difference_affinity = exp(color_difference * color_difference / (-2.0 * 0.25 * max_pair_color_difference * max_pair_color_difference));
     affinity *= color_difference_affinity;
     assert(affinity >= 0);
@@ -1311,6 +1327,63 @@ NUnclusteredPoints(void) const
 
 
 int Segmentation::
+CreateNeighbors(
+  int max_neighbor_count,
+  double max_neighbor_distance,
+  double max_neighbor_primitive_distance,
+  double max_neighbor_normal_angle,
+  double max_neighbor_color_difference,
+  double max_neighbor_distance_factor)
+{
+  // Create kdtree of points
+  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  kdtree = new R3Kdtree<Point *>(points, position_offset);
+  if (!kdtree) {
+    fprintf(stderr, "Unable to create kdtree\n");
+    return 0;
+  }
+  
+  // Create arrays of neighbor points
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    RNArray<Point *> neighbors;
+    if ((max_neighbor_distance_factor > 0) && (point->radius > 0)) {
+      RNScalar max_d = max_neighbor_distance_factor * point->radius;
+      if ((max_neighbor_distance == 0) || (max_d < max_neighbor_distance)) max_neighbor_distance = max_d;
+    }
+    if (max_neighbor_distance == 0) max_neighbor_distance = 10 * point->radius;
+    if (max_neighbor_distance == 0) max_neighbor_distance = 1;
+    if (kdtree->FindClosest(point, 0, max_neighbor_distance, max_neighbor_count, neighbors)) {
+      for (int j = 0; j < neighbors.NEntries(); j++) {
+        Point *neighbor = neighbors.Kth(j);
+        if (neighbor == point) continue;
+        if (max_neighbor_primitive_distance > 0) {
+          RNLength primitive_distance = R3Distance(R3Plane(point->position, point-> normal), neighbor->position);
+          if (primitive_distance > max_neighbor_primitive_distance) continue;
+        }
+        if (max_neighbor_normal_angle > 0) {
+          RNAngle normal_angle = R3InteriorAngle(point->normal, neighbor->normal);
+          if (normal_angle > max_neighbor_normal_angle) continue;
+        }
+        if (max_neighbor_color_difference > 0) {
+          RNLength color_difference = 0;
+          color_difference += fabs(neighbor->color.R() - point->color.R());
+          color_difference += fabs(neighbor->color.G() - point->color.G());
+          color_difference += fabs(neighbor->color.B() - point->color.B());
+          if (color_difference > max_neighbor_color_difference) continue;
+        }
+        point->neighbors.Insert(neighbor);
+      }
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int Segmentation::
 CreateSingletonClusters(int primitive_type)
 {
   // Create cluster for every point
@@ -1347,7 +1420,7 @@ CreateRegionGrowingClusters(int primitive_type)
   if (allow_outlier_points) {
     if ((max_clusters > 0) && (points.NEntries()/(4*max_clusters) > skip))
       skip = points.NEntries()/(4*max_clusters);
-    if ((min_cluster_points > 0) & ((min_cluster_points/4) > skip))
+    if ((min_cluster_points > 0) && ((min_cluster_points/4) > skip))
       skip = min_cluster_points/4;
     if ((min_clusters > 0) && (skip > points.NEntries()/min_clusters))
       skip = points.NEntries()/min_clusters;
@@ -1667,6 +1740,56 @@ MergeClusters(void)
 
 
 int Segmentation::
+MergeSmallClusters(void)
+{
+  // Find small clusters
+  RNArray<Cluster *> small_clusters;
+  for (int i = 0; i < clusters.NEntries(); i++) {
+    Cluster *cluster = clusters.Kth(i);
+    assert(!cluster->parent);
+    if (cluster->points.NEntries() >= min_cluster_points) continue;
+    small_clusters.Insert(cluster);
+  }
+
+  // Check small clusters
+  if (small_clusters.NEntries() < 2) return 1;
+
+  // Merge n-1 small clusters into first one
+  Cluster *cluster0 = small_clusters.Kth(0);
+  for (int i = 1; i < small_clusters.NEntries(); i++) {
+    Cluster *cluster = small_clusters.Kth(i);
+    if (cluster == cluster0) continue;
+    cluster0->InsertChild(cluster);
+    assert(cluster->parent == cluster0);
+    assert(cluster0->points.NEntries() > 0);
+    assert(cluster->points.NEntries() == 0);
+  }
+
+  // Rebuild list of clusters
+  RNArray<Cluster *> all_clusters = clusters;
+  clusters.Empty();
+  for (int i = 0; i < all_clusters.NEntries(); i++) {
+    Cluster *cluster = all_clusters.Kth(i);
+    if (!cluster->parent) {
+      assert((cluster == cluster0) || (cluster->points.NEntries() >= min_cluster_points));
+      cluster->segmentation = this;
+      cluster->segmentation_index = clusters.NEntries();    
+      clusters.Insert(cluster);
+    }
+    else {
+      assert(cluster->points.NEntries() == 0);
+      cluster->parent->RemoveChild(cluster);
+      delete cluster;
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int Segmentation::
 SplitClusters(void)
 {
 #if 0
@@ -1942,6 +2065,14 @@ CreateClusters(int primitive_type)
   // Sort clusters
   clusters.Sort(CompareClusters);
 
+  // Merge small clusters
+  if (!MergeSmallClusters()) return 0;
+
+  // Print debug message
+  if (print_progress) {
+    printf("      SK %.3f %d %d %g\n", step_time.Elapsed(), clusters.NEntries(), NUnclusteredPoints(), Affinity());
+    step_time.Read();
+  }
   // Return success
   return 1;
 }
