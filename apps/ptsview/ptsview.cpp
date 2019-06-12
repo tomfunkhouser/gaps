@@ -755,11 +755,11 @@ ReadModel(const char *mesh_name, const char *point_name)
   assert(model);
 
   // Fill in model name
-  char *namep = strrchr(point_name, '/');
+  const char *namep = strrchr(point_name, '/');
   namep = (namep) ? namep + 1 : (char *) point_name;
   strcpy(model->name, namep);
-  namep = strrchr(model->name, '.');
-  if (namep) *namep = '\0';
+  char *endp = strrchr(model->name, '.');
+  if (endp) *endp = '\0';
 
   // Read mesh
   model->mesh = NULL;
