@@ -482,20 +482,20 @@ operator+=(RNScalar scalar)
 
 
 inline RNPolynomial& RNPolynomial::
-operator-=(RNScalar a)
+operator-=(RNScalar scalar)
 {
   // Subtract constant
-  Subtract(a);
+  Subtract(scalar);
   return *this;
 }
 
 
 
 inline RNPolynomial& RNPolynomial::
-operator*=(RNScalar a)
+operator*=(RNScalar scalar)
 {
   // Multiply by constant
-  Multiply(a);
+  Multiply(scalar);
   return *this;
 }
 
