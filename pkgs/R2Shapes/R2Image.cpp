@@ -800,7 +800,7 @@ ReadBMP(const char *filename)
     for (int i = 0; i < width; i++) {
       if (bmih.biBitCount == 1) {
         // Binary (this is not right, should be index into color table)
-        p[i] = (b[i/8]>>(7-(i%8)) && 0x1) ? 255 : 0;
+        p[i] = (b[i/8]>>(7-(i%8)) & 0x1) ? 255 : 0;
       }
       else if (bmih.biBitCount == 8) {
         // 8-bit (this is not right, should be index into color table)

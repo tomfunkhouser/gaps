@@ -42,12 +42,14 @@ static int create_interior_cameras = 0;
 static int create_world_in_hand_cameras = 0;
 static int create_path_in_room_cameras = 0;
 static int interpolate_camera_trajectory = 0;
-
+static int create_orbit_cameras = 0;
+static int create_random_orbit_cameras = 0;
+static int create_dodeca_cameras = 0;
 
 // Camera parameter variables
 
-static int width = 640;
-static int height = 480;
+static int width = 256;//160;
+static int height = 256;//120;
 static double xfov = 0.5; // half-angle in radians
 static double eye_height = 1.55;
 static double eye_height_radius = 0.05;
@@ -1095,6 +1097,70 @@ FindIndexOfFurthestPointAlongPath(const R2Grid& grid, int start_index,
 // Camera creation functions
 ////////////////////////////////////////////////////////////////////////
 
+
+static void
+CreateRandomOrbitCameras(void)
+{
+  RNTime start_time;
+  start_time.Read();
+  int camera_count = 0;
+
+  RNScalar neardist = 0.01;
+  RNScalar fardist = 10.0;
+  RNScalar aspect = (RNScalar) height / (RNScalar) width;
+  RNScalar yfov = atan(aspect * tan(xfov));
+
+  // TODO: Get node's centroid and radius in world coordinate system
+  // Right now the code just assumes it's the world frame origin.
+  R3Point centroid = R3Point(0.0, 0.0, 0.0);
+  int cameras_to_make = 50; // TODO: Should be a flag.
+  for (int ci = 0; ci < cameras_to_make; ++ci) {
+
+    RNScalar min_elevation = RN_PI / 12.0; // TODO: Should be a flag.
+    RNScalar max_elevation = 4.0 * RN_PI / 12.0; // TODO: Should be a flag.
+    RNScalar elevation_range = max_elevation - min_elevation;
+
+    // TODO It would probably be better if the sampling were stratified.
+    RNScalar rotation = RNRandomScalar() * RN_TWO_PI;
+    RNScalar elevation = RNRandomScalar() * elevation_range + min_elevation;
+
+    RNScalar max_distance = 1.3;  // TODO: Should be a flag.
+    RNScalar min_distance = 0.85; // TODO: Should be a flag.
+    RNScalar distance_range = max_distance - min_distance;
+    RNScalar distance = RNRandomScalar() * distance_range + min_distance;
+
+    // Compute (x,y,z) from azimuth and elevation    
+    RNScalar y = sin(elevation);
+    RNScalar hyp = cos(elevation);
+    RNScalar x = sin(rotation) * hyp;
+    RNScalar z = cos(rotation) * hyp;
+    R3Point viewpoint(distance*x,distance*y,distance*z);
+
+    // Compute camera parameters
+    R3Vector towards = centroid - viewpoint;
+    towards.Normalize();
+    R3Vector right = towards % R3posy_vector;
+    right.Normalize();
+    R3Vector up = right % towards;
+    up.Normalize();
+    R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+    char camera_name[1024];
+    sprintf(camera_name, "%s#%i", "Cam", ci);
+    Camera *insertable_camera = new Camera(camera, camera_name);
+    cameras.Insert(insertable_camera);
+    camera_count++;
+  }
+  // Print statistics
+  if (print_verbose) {
+    printf("Created random orbit cameras ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Cameras = %d\n", camera_count++);
+    fflush(stdout);
+  }
+}
+
+
 static void
 CreateObjectCameras(void)
 {
@@ -1108,7 +1174,7 @@ CreateObjectCameras(void)
   RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
   RNScalar aspect = (RNScalar) height / (RNScalar) width;
   RNAngle yfov = atan(aspect * tan(xfov));
-  
+
   // Create camera with close up view of each object
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
@@ -1127,7 +1193,7 @@ CreateObjectCameras(void)
     for (int j = 0; j < nangles; j++) {
       // Determine view direction
       R3Vector view_direction(-1, 0, 0); 
-      view_direction.YRotate((j+RNRandomScalar()) * angle_spacing);
+      view_direction.YRotate((j+RNRandomScalar()) * (angle_spacing/3));
       view_direction.Normalize();
 
       // Determine camera viewpoint
@@ -1672,6 +1738,7 @@ CreateAndWriteCameras(void)
   if (create_object_cameras) CreateObjectCameras();
   if (create_interior_cameras) CreateInteriorCameras();
   if (create_world_in_hand_cameras) CreateWorldInHandCameras();
+  if (create_random_orbit_cameras) CreateRandomOrbitCameras();
 
   // Create specialized cameras (for SUNCG)
   if (create_room_cameras) CreateRoomCameras();
@@ -1812,6 +1879,16 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_object_cameras") || !strcmp(*argv, "-create_leaf_node_cameras")) {
         create_cameras = create_object_cameras = 1;
         angle_sampling = RN_PI / 6.0;
+      }
+      else if (!strcmp(*argv, "-create_orbit_cameras")) {
+        create_cameras = create_orbit_cameras = 1;
+        angle_sampling = RN_PI / 6.0;
+      }
+      else if (!strcmp(*argv, "-create_random_orbit_cameras")) {
+        create_cameras = create_random_orbit_cameras = 1;
+      }
+      else if (!strcmp(*argv, "-create_dodeca_cameras")) {
+        create_cameras = create_dodeca_cameras = 1;
       }
       else if (!strcmp(*argv, "-create_interior_cameras")) {
         create_cameras = create_interior_cameras = 1;
