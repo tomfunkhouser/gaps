@@ -33,7 +33,6 @@ R3SurfelPointSet *CreatePointSet(R3SurfelScene *scene, R3Point& origin,
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelPointGraph *CreatePointGraph(R3SurfelPointSet *pointset, 
-  const R3SurfelConstraint *constraint = NULL,
   int max_neighbors = 16, RNLength max_distance = 0.5);
 R3SurfelPointGraph *CreatePointGraph(R3SurfelScene *scene, 
   R3SurfelNode *source_node = NULL, const R3SurfelConstraint *constraint = NULL, 
@@ -114,7 +113,7 @@ R3Grid *CreateGrid(R3SurfelScene *scene,
 R3Vector *CreateNormals(R3SurfelPointGraph *graph, 
   RNBoolean fast_and_approximate = FALSE);
 R3Vector *CreateNormals(R3SurfelPointSet *pointset, 
-  int max_neighbors = 16, RNLength max_distance = 0.5);
+  int max_neighbors = 16, RNLength max_neighbor_distance = 0.5);
 
 
 
@@ -124,7 +123,7 @@ R3Vector *CreateNormals(R3SurfelPointSet *pointset,
 
 R3SurfelPointSet *CreateConnectedPointSet(R3SurfelPointGraph *graph, int seed_index);
 R3SurfelPointSet *CreateConnectedPointSet(R3SurfelPointGraph *graph, R3SurfelPoint *seed_point);
-R3SurfelPointSet *CreateConnectedPointSet(R3SurfelPointGraph *graph, const R3Point& seed_position);
+R3SurfelPointSet *CreateConnectedPointSet(R3SurfelPointGraph *graph, const R3Point& center);
 
 
 
@@ -247,7 +246,7 @@ CreateClusterObjects(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Basic geometric funcitons
+// Basic geometric functions
 ////////////////////////////////////////////////////////////////////////
 
 RNLength XYDistance(const R3Point& point1, const R3Point& point2);

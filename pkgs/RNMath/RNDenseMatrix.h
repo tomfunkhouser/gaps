@@ -51,7 +51,7 @@ public:
   virtual void Add(const RNDenseMatrix& matrix);
   virtual void Subtract(const RNDenseMatrix& matrix);
   virtual void Multiply(const RNDenseMatrix& matrix);
-  virtual void Reset(int nrows, int ncolumns, RNScalar *values = NULL);
+  virtual void Reset(int nrows, int ncols, RNScalar *values = NULL);
  
   // Factorization
   int DecomposeLU(RNDenseMatrix& L, RNDenseMatrix& U) const;

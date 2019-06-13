@@ -558,6 +558,12 @@ int main(int argc, char **argv)
 
   // Center mesh at origin
   if (translate_by_centroid) {
+    // R3Point centroid = R3zero_point;
+    // for (int i = 0; i < mesh->NVertices(); i++) {
+    //   R3MeshVertex *vertex = mesh->Vertex(i);
+    //   centroid += mesh->VertexPosition(vertex);
+    // }
+    // if (mesh->NVertices() > 0) centroid /= mesh->NVertices();
     R3Point centroid = mesh->Centroid();
     xform.Translate(-centroid.Vector());
   }

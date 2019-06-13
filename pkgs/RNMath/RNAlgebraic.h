@@ -57,41 +57,41 @@ public:
 
   // Manipulation functions
   void SetOperation(int operation);
-  void Reset(int operation, RNAlgebraic *algebraic1, RNAlgebraic *algebraic2);
+  void Reset(int operation, RNAlgebraic *operand1, RNAlgebraic *operand2);
   void Reset(RNPolynomial *polynomial);
 
   // More manipulation functions
   void Empty(void);
   void Negate(void);
-  void Add(RNScalar constant);
-  void Subtract(RNScalar constant);
-  void Multiply(RNScalar factor);
-  void Divide(RNScalar factor);
-  void Add(const RNPolynomial& polynomial);
-  void Subtract(const RNPolynomial& polynomial);
-  void Multiply(const RNPolynomial& polynomial);
-  void Divide(const RNPolynomial& polynomial);
-  void Add(const RNAlgebraic& algebraic);
-  void Subtract(const RNAlgebraic& algebraic);
-  void Multiply(const RNAlgebraic& algebraic);
-  void Divide(const RNAlgebraic& algebraic);
+  void Add(RNScalar value);
+  void Subtract(RNScalar value);
+  void Multiply(RNScalar value);
+  void Divide(RNScalar value);
+  void Add(const RNPolynomial& value);
+  void Subtract(const RNPolynomial& value);
+  void Multiply(const RNPolynomial& value);
+  void Divide(const RNPolynomial& value);
+  void Add(const RNAlgebraic& value);
+  void Subtract(const RNAlgebraic& value);
+  void Multiply(const RNAlgebraic& value);
+  void Divide(const RNAlgebraic& value);
 
   // Assignment operators
-  RNAlgebraic& operator=(const RNAlgebraic& algebraic);
-  RNAlgebraic& operator+=(const RNAlgebraic& algebraic);
-  RNAlgebraic& operator-=(const RNAlgebraic& algebraic);
-  RNAlgebraic& operator*=(const RNAlgebraic& algebraic);
-  RNAlgebraic& operator/=(const RNAlgebraic& algebraic);
-  RNAlgebraic& operator=(const RNPolynomial& polynomial);
-  RNAlgebraic& operator+=(const RNPolynomial& polynomial);
-  RNAlgebraic& operator-=(const RNPolynomial& polynomial);
-  RNAlgebraic& operator*=(const RNPolynomial& polynomial);
-  RNAlgebraic& operator/=(const RNPolynomial& polynomial);
-  RNAlgebraic& operator=(RNScalar scalar);
-  RNAlgebraic& operator+=(RNScalar scalar);
-  RNAlgebraic& operator-=(RNScalar scalar);
-  RNAlgebraic& operator*=(RNScalar scalar);
-  RNAlgebraic& operator/=(RNScalar scalar);
+  RNAlgebraic& operator=(const RNAlgebraic& value);
+  RNAlgebraic& operator+=(const RNAlgebraic& value);
+  RNAlgebraic& operator-=(const RNAlgebraic& value);
+  RNAlgebraic& operator*=(const RNAlgebraic& value);
+  RNAlgebraic& operator/=(const RNAlgebraic& value);
+  RNAlgebraic& operator=(const RNPolynomial& value);
+  RNAlgebraic& operator+=(const RNPolynomial& value);
+  RNAlgebraic& operator-=(const RNPolynomial& value);
+  RNAlgebraic& operator*=(const RNPolynomial& value);
+  RNAlgebraic& operator/=(const RNPolynomial& value);
+  RNAlgebraic& operator=(RNScalar value);
+  RNAlgebraic& operator+=(RNScalar value);
+  RNAlgebraic& operator-=(RNScalar value);
+  RNAlgebraic& operator*=(RNScalar value);
+  RNAlgebraic& operator/=(RNScalar value);
   
   // Arithmetic operators
   friend RNAlgebraic operator-(const RNAlgebraic& algebraic);
@@ -234,120 +234,120 @@ Polynomial(void) const
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator+=(RNScalar a)
+operator+=(RNScalar value)
 {
   // Add constant
-  Add(a);
+  Add(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator-=(RNScalar a)
+operator-=(RNScalar value)
 {
   // Subtract constant
-  Subtract(a);
+  Subtract(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator*=(RNScalar a)
+operator*=(RNScalar value)
 {
   // Multiply by constant
-  Multiply(a);
+  Multiply(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator/=(RNScalar a)
+operator/=(RNScalar value)
 {
   // Divide by constant
-  Divide(a);
+  Divide(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator+=(const RNPolynomial& p)
+operator+=(const RNPolynomial& value)
 {
   // Add polynomial
-  Add(p);
+  Add(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator-=(const RNPolynomial& p)
+operator-=(const RNPolynomial& value)
 {
   // Subtract polynomial
-  Subtract(p);
+  Subtract(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator*=(const RNPolynomial& p)
+operator*=(const RNPolynomial& value)
 {
   // Multiply polynomial
-  Multiply(p);
+  Multiply(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator/=(const RNPolynomial& p)
+operator/=(const RNPolynomial& value)
 {
   // Multiply polynomial
-  Divide(p);
+  Divide(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator+=(const RNAlgebraic& algebraic)
+operator+=(const RNAlgebraic& value)
 {
   // Add algebraic
-  Add(algebraic);
+  Add(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator-=(const RNAlgebraic& algebraic)
+operator-=(const RNAlgebraic& value)
 {
   // Subtract algebraic
-  Subtract(algebraic);
+  Subtract(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator*=(const RNAlgebraic& algebraic)
+operator*=(const RNAlgebraic& value)
 {
   // Multiply algebraic
-  Multiply(algebraic);
+  Multiply(value);
   return *this;
 }
 
 
 
 inline RNAlgebraic& RNAlgebraic::
-operator/=(const RNAlgebraic& algebraic)
+operator/=(const RNAlgebraic& value)
 {
   // Multiply algebraic
-  Divide(algebraic);
+  Divide(value);
   return *this;
 }
 
@@ -387,11 +387,11 @@ operator+(const RNAlgebraic& algebraic, const RNPolynomial& polynomial)
 
 
 inline RNAlgebraic 
-operator+(const RNAlgebraic& algebraic, RNScalar constant)
+operator+(const RNAlgebraic& algebraic, RNScalar value)
 {
   // Return sum
   RNAlgebraic result(algebraic);
-  result.Add(constant);
+  result.Add(value);
   return result;
 }
 
@@ -409,11 +409,11 @@ operator+(const RNPolynomial& polynomial, const RNAlgebraic& algebraic)
 
 
 inline RNAlgebraic 
-operator+(RNScalar constant, const RNAlgebraic& algebraic)
+operator+(RNScalar scalar, const RNAlgebraic& algebraic)
 {
   // Return sum
   RNAlgebraic result(algebraic);
-  result.Add(constant);
+  result.Add(scalar);
   return result;
 }
 
@@ -442,11 +442,11 @@ operator-(const RNAlgebraic& algebraic, const RNPolynomial& polynomial)
 
 
 inline RNAlgebraic 
-operator-(const RNAlgebraic& algebraic, RNScalar constant)
+operator-(const RNAlgebraic& algebraic, RNScalar scalar)
 {
   // Return difference
   RNAlgebraic result(algebraic);
-  result.Subtract(constant);
+  result.Subtract(scalar);
   return result;
 }
 
@@ -464,12 +464,12 @@ operator-(const RNPolynomial& polynomial, const RNAlgebraic& algebraic)
 
 
 inline RNAlgebraic 
-operator-(RNScalar constant, const RNAlgebraic& algebraic)
+operator-(RNScalar scalar, const RNAlgebraic& algebraic)
 {
   // Return difference
   RNAlgebraic result(algebraic);
   result.Negate();
-  result.Add(constant);
+  result.Add(scalar);
   return result;
 }
 
@@ -498,11 +498,11 @@ operator*(const RNAlgebraic& algebraic, const RNPolynomial& polynomial)
 
 
 inline RNAlgebraic 
-operator*(const RNAlgebraic& algebraic, RNScalar a)
+operator*(const RNAlgebraic& algebraic, RNScalar scalar)
 {
   // Return product
   RNAlgebraic result(algebraic);
-  result.Multiply(a);
+  result.Multiply(scalar);
   return result;
 }
 
@@ -519,11 +519,11 @@ operator*(const RNPolynomial& polynomial, const RNAlgebraic& algebraic)
 
 
 inline RNAlgebraic 
-operator*(RNScalar a, const RNAlgebraic& algebraic)
+operator*(RNScalar scalar, const RNAlgebraic& algebraic)
 {
   // Return product
   RNAlgebraic result(algebraic);
-  result.Multiply(a);
+  result.Multiply(scalar);
   return result;
 }
 
@@ -552,11 +552,11 @@ operator/(const RNAlgebraic& algebraic, const RNPolynomial& polynomial)
 
 
 inline RNAlgebraic 
-operator/(const RNAlgebraic& algebraic, RNScalar a)
+operator/(const RNAlgebraic& algebraic, RNScalar scalar)
 {
   // Return quotient
   RNAlgebraic result(algebraic);
-  result.Divide(a);
+  result.Divide(scalar);
   return result;
 }
 
@@ -573,10 +573,10 @@ operator/(const RNPolynomial& polynomial, const RNAlgebraic& algebraic)
 
 
 inline RNAlgebraic 
-operator/(RNScalar a, const RNAlgebraic& algebraic)
+operator/(RNScalar scalar, const RNAlgebraic& algebraic)
 {
   // Return quotent
-  RNAlgebraic result(a, 0);
+  RNAlgebraic result(scalar, 0);
   result.Divide(algebraic);
   return result;
 }

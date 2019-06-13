@@ -24,7 +24,7 @@ public:
   // Constructors/destructors
   RGBDImage(void);
   RGBDImage(const char *color_filename, const char *depth_filename,
-    const R3Matrix& intrinisics_matrix, const R4Matrix& camera_to_world_matrix,
+    const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix,
     int width = 0, int height = 0);
   virtual ~RGBDImage(void);
 

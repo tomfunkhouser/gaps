@@ -36,7 +36,7 @@ extern int RGBDTransformWorldToImage(const R3Point& world_position, R2Point& ima
 
 extern int RGBDTransformCameraToTexture(const R3Point& camera_position, R2Point& texture_position, const RGBDImage *image, const RGBDSurface *surface);
 extern int RGBDTransformCameraToSurface(const R3Point& camera_position, R2Point& surface_position, const RGBDImage *image, const RGBDSurface *surface);
-extern int RGBDTransformCameraToWorld(const R3Point& camera_position, R3Point& wold_position, const RGBDImage *image);
+extern int RGBDTransformCameraToWorld(const R3Point& camera_position, R3Point& world_position, const RGBDImage *image);
 extern int RGBDTransformCameraToImage(const R3Point& camera_position, R2Point& image_position, const RGBDImage *image);
 
 extern int RGBDTransformImageToTexture(const R2Point& image_position, R2Point& texture_position, const RGBDImage *image, const RGBDSurface *surface);

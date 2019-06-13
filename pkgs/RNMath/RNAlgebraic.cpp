@@ -1427,29 +1427,29 @@ Negate(void)
 
 
 void RNAlgebraic::
-Add(RNScalar a)
+Add(RNScalar value)
 {
   // Just checking
   assert(IsValid());
 
   // Check value
-  if (a == 0.0) return;
+  if (value == 0.0) return;
 
   // Add scalar
   switch(operation) {
   case RN_ZERO_OPERATION: 
     operation = RN_POLYNOMIAL_OPERATION;
-    polynomial = new RNPolynomial(a, 0);
+    polynomial = new RNPolynomial(value, 0);
     return;
 
   case RN_POLYNOMIAL_OPERATION:
-    polynomial->Add(a);
+    polynomial->Add(value);
     return;
 
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
     operation = RN_ADD_OPERATION;
-    operands[0] = new RNAlgebraic(a, 0);
+    operands[0] = new RNAlgebraic(value, 0);
     operands[1] = e;
     return; }
   }
@@ -1458,30 +1458,30 @@ Add(RNScalar a)
 
 
 void RNAlgebraic::
-Subtract(RNScalar a)
+Subtract(RNScalar value)
 {
   // Just checking
   assert(IsValid());
 
   // Check value
-  if (a == 0.0) return;
+  if (value == 0.0) return;
 
   // Subtract scalar
   switch(operation) {
   case RN_ZERO_OPERATION: 
     operation = RN_POLYNOMIAL_OPERATION;
-    polynomial = new RNPolynomial(-a, 0);
+    polynomial = new RNPolynomial(-value, 0);
     return;
     
   case RN_POLYNOMIAL_OPERATION:
-    polynomial->Subtract(a);
+    polynomial->Subtract(value);
     return;
     
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
     operation = RN_SUBTRACT_OPERATION;
     operands[0] = e;
-    operands[1] = new RNAlgebraic(a, 0);
+    operands[1] = new RNAlgebraic(value, 0);
     return; }
   }
 }
@@ -1489,28 +1489,28 @@ Subtract(RNScalar a)
 
 
 void RNAlgebraic::
-Multiply(RNScalar factor)
+Multiply(RNScalar value)
 {
   // Just checking
   assert(IsValid());
 
-  // Check factor 
-  if (factor == 0.0) {
+  // Check value 
+  if (value == 0.0) {
     Empty();
   }
-  else if (factor != 1.0) {
+  else if (value != 1.0) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
     
     case RN_POLYNOMIAL_OPERATION:
-      polynomial->Multiply(factor);
+      polynomial->Multiply(value);
       return;
     
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
       operation = RN_MULTIPLY_OPERATION;
-      operands[0] = new RNAlgebraic(factor, 0);
+      operands[0] = new RNAlgebraic(value, 0);
       operands[1] = e;
       return; }
     }
@@ -1520,13 +1520,13 @@ Multiply(RNScalar factor)
 
 
 void RNAlgebraic::
-Divide(RNScalar factor)
+Divide(RNScalar value)
 {
   // Just checking
   assert(IsValid());
 
-  // Check factor
-  if (factor == 0.0) {
+  // Check value
+  if (value == 0.0) {
     if (IsZero()) {
       Empty();
     }
@@ -1536,19 +1536,19 @@ Divide(RNScalar factor)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else if (factor != 1.0) {
+  else if (value != 1.0) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
       
     case RN_POLYNOMIAL_OPERATION:
-      polynomial->Divide(factor);
+      polynomial->Divide(value);
       return;
     
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
       operation = RN_DIVIDE_OPERATION;
-      operands[0] = new RNAlgebraic(factor, 0);
+      operands[0] = new RNAlgebraic(value, 0);
       operands[1] = e;
       return; }
     }
@@ -1558,29 +1558,29 @@ Divide(RNScalar factor)
 
 
 void RNAlgebraic::
-Add(const RNPolynomial& a)
+Add(const RNPolynomial& value)
 {
   // Just checking
   assert(IsValid());
 
   // Check value
-  if (a.IsZero()) return;
+  if (value.IsZero()) return;
 
   // Add scalar
   switch(operation) {
   case RN_ZERO_OPERATION: 
     operation = RN_POLYNOMIAL_OPERATION;
-    polynomial = new RNPolynomial(a);
+    polynomial = new RNPolynomial(value);
     return;
 
   case RN_POLYNOMIAL_OPERATION:
-    polynomial->Add(a);
+    polynomial->Add(value);
     return;
 
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
     operation = RN_ADD_OPERATION;
-    operands[0] = new RNAlgebraic(a, 0);
+    operands[0] = new RNAlgebraic(value, 0);
     operands[1] = e;
     return; }
   }
@@ -1589,31 +1589,31 @@ Add(const RNPolynomial& a)
 
 
 void RNAlgebraic::
-Subtract(const RNPolynomial& a)
+Subtract(const RNPolynomial& value)
 {
   // Just checking
   assert(IsValid());
 
   // Check value
-  if (a.IsZero()) return;
+  if (value.IsZero()) return;
 
   // Subtract scalar
   switch(operation) {
   case RN_ZERO_OPERATION: 
     operation = RN_POLYNOMIAL_OPERATION;
-    polynomial = new RNPolynomial(a);
+    polynomial = new RNPolynomial(value);
     polynomial->Negate();
     return;
     
   case RN_POLYNOMIAL_OPERATION:
-    polynomial->Subtract(a);
+    polynomial->Subtract(value);
     return;
     
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
     operation = RN_SUBTRACT_OPERATION;
     operands[0] = e;
-    operands[1] = new RNAlgebraic(a, 0);
+    operands[1] = new RNAlgebraic(value, 0);
     return; }
   }
 }
@@ -1621,29 +1621,29 @@ Subtract(const RNPolynomial& a)
 
 
 void RNAlgebraic::
-Multiply(const RNPolynomial& factor)
+Multiply(const RNPolynomial& value)
 {
   // Just checking
   assert(IsValid());
 
-  // Check factor 
-  if (factor.IsZero()) {
+  // Check value 
+  if (value.IsZero()) {
     Empty();
   }
-  else if (!factor.IsOne()) {
+  else if (!value.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
     
     case RN_POLYNOMIAL_OPERATION:
       assert(polynomial);
-      if (TRUE || (factor.NTerms() == 1) || (polynomial->NTerms() == 1)) {
-        polynomial->Multiply(factor);
+      if (TRUE || (value.NTerms() == 1) || (polynomial->NTerms() == 1)) {
+        polynomial->Multiply(value);
       }
       else {
         operation = RN_MULTIPLY_OPERATION;
         operands[0] = new RNAlgebraic(polynomial);
-        operands[1] = new RNAlgebraic(factor, 0);
+        operands[1] = new RNAlgebraic(value, 0);
         polynomial = NULL;
       }
       return;
@@ -1651,7 +1651,7 @@ Multiply(const RNPolynomial& factor)
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
       operation = RN_MULTIPLY_OPERATION;
-      operands[0] = new RNAlgebraic(factor, 0);
+      operands[0] = new RNAlgebraic(value, 0);
       operands[1] = e;
       return; }
     }
@@ -1661,13 +1661,13 @@ Multiply(const RNPolynomial& factor)
 
 
 void RNAlgebraic::
-Divide(const RNPolynomial& factor)
+Divide(const RNPolynomial& value)
 {
   // Just checking
   assert(IsValid());
 
-  // Check factor
-  if (factor.IsZero()) {
+  // Check value
+  if (value.IsZero()) {
     if (IsZero()) {
       Empty();
     }
@@ -1677,7 +1677,7 @@ Divide(const RNPolynomial& factor)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else if (!factor.IsOne()){
+  else if (!value.IsOne()){
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
@@ -1685,14 +1685,14 @@ Divide(const RNPolynomial& factor)
     case RN_POLYNOMIAL_OPERATION:
       operation = RN_DIVIDE_OPERATION;
       operands[0] = new RNAlgebraic(polynomial);
-      operands[1] = new RNAlgebraic(factor, 0);
+      operands[1] = new RNAlgebraic(value, 0);
       polynomial = NULL;
       return;
     
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
       operation = RN_DIVIDE_OPERATION;
-      operands[0] = new RNAlgebraic(factor, 0);
+      operands[0] = new RNAlgebraic(value, 0);
       operands[1] = e;
       return; }
     }
@@ -1702,27 +1702,27 @@ Divide(const RNPolynomial& factor)
 
 
 void RNAlgebraic::
-Add(const RNAlgebraic& algebraic)
+Add(const RNAlgebraic& value)
 {
   // Just checking
   assert(IsValid());
-  assert(algebraic.IsValid());
+  assert(value.IsValid());
 
-  // Check algebraic
-  if (algebraic.IsZero()) return;
+  // Check value
+  if (value.IsZero()) return;
 
-  // Add algebraic
+  // Add value
   switch(operation) {
   case RN_ZERO_OPERATION: 
-    *this = algebraic;
+    *this = value;
     return;
 
   case RN_POLYNOMIAL_OPERATION:
-    if (algebraic.operation == RN_POLYNOMIAL_OPERATION) {
-      polynomial->Add(*(algebraic.polynomial));
+    if (value.operation == RN_POLYNOMIAL_OPERATION) {
+      polynomial->Add(*(value.polynomial));
     }
     else {
-      operands[0] = new RNAlgebraic(algebraic);
+      operands[0] = new RNAlgebraic(value);
       operands[1] = new RNAlgebraic(polynomial);
       operation = RN_ADD_OPERATION;
       polynomial = NULL;
@@ -1731,7 +1731,7 @@ Add(const RNAlgebraic& algebraic)
 
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
-    operands[0] = new RNAlgebraic(algebraic);
+    operands[0] = new RNAlgebraic(value);
     operands[1] = e;
     operation = RN_ADD_OPERATION;
     return; }
@@ -1741,28 +1741,28 @@ Add(const RNAlgebraic& algebraic)
 
 
 void RNAlgebraic::
-Subtract(const RNAlgebraic& algebraic)
+Subtract(const RNAlgebraic& value)
 {
   // Just checking
   assert(IsValid());
-  assert(algebraic.IsValid());
+  assert(value.IsValid());
 
-  // Check algebraic
-  if (algebraic.IsZero()) return;
+  // Check value
+  if (value.IsZero()) return;
 
-  // Subtract algebraic
+  // Subtract value
   switch(operation) {
   case RN_ZERO_OPERATION: 
-    *this = algebraic;
+    *this = value;
     Negate();
     return;
 
   case RN_POLYNOMIAL_OPERATION:
-    if (algebraic.operation == RN_POLYNOMIAL_OPERATION) {
-      polynomial->Subtract(*(algebraic.polynomial));
+    if (value.operation == RN_POLYNOMIAL_OPERATION) {
+      polynomial->Subtract(*(value.polynomial));
     }
     else {
-      operands[1] = new RNAlgebraic(algebraic);
+      operands[1] = new RNAlgebraic(value);
       operands[0] = new RNAlgebraic(polynomial);
       operation = RN_SUBTRACT_OPERATION;
       polynomial = NULL;
@@ -1771,7 +1771,7 @@ Subtract(const RNAlgebraic& algebraic)
 
   default: {
     RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
-    operands[1] = new RNAlgebraic(algebraic);
+    operands[1] = new RNAlgebraic(value);
     operands[0] = e;
     operation = RN_SUBTRACT_OPERATION;
     return; }
@@ -1781,35 +1781,35 @@ Subtract(const RNAlgebraic& algebraic)
 
 
 void RNAlgebraic::
-Multiply(const RNAlgebraic& algebraic)
+Multiply(const RNAlgebraic& value)
 {
   // Just checking
   assert(IsValid());
-  assert(algebraic.IsValid());
+  assert(value.IsValid());
 
   // Check factor 
-  if (algebraic.IsZero()) {
+  if (value.IsZero()) {
     Empty();
   }
-  else if (!algebraic.IsOne()) {
+  else if (!value.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
       
     case RN_POLYNOMIAL_OPERATION:
-      if (algebraic.operation == RN_POLYNOMIAL_OPERATION) {
-        if (TRUE || (polynomial->NTerms() == 1) || (algebraic.polynomial->NTerms() == 1)) {
-          polynomial->Multiply(*(algebraic.polynomial));
+      if (value.operation == RN_POLYNOMIAL_OPERATION) {
+        if (TRUE || (polynomial->NTerms() == 1) || (value.polynomial->NTerms() == 1)) {
+          polynomial->Multiply(*(value.polynomial));
         }
         else {
-          operands[1] = new RNAlgebraic(algebraic);
+          operands[1] = new RNAlgebraic(value);
           operands[0] = new RNAlgebraic(polynomial);
           operation = RN_MULTIPLY_OPERATION;
           polynomial = NULL;
         }
       }
       else {
-        operands[1] = new RNAlgebraic(algebraic);
+        operands[1] = new RNAlgebraic(value);
         operands[0] = new RNAlgebraic(polynomial);
         operation = RN_MULTIPLY_OPERATION;
         polynomial = NULL;
@@ -1818,7 +1818,7 @@ Multiply(const RNAlgebraic& algebraic)
     
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
-      operands[0] = new RNAlgebraic(algebraic);
+      operands[0] = new RNAlgebraic(value);
       operands[1] = e;
       operation = RN_MULTIPLY_OPERATION;
       return; }
@@ -1829,14 +1829,14 @@ Multiply(const RNAlgebraic& algebraic)
 
 
 void RNAlgebraic::
-Divide(const RNAlgebraic& algebraic)
+Divide(const RNAlgebraic& value)
 {
   // Just checking
   assert(IsValid());
-  assert(algebraic.IsValid());
+  assert(value.IsValid());
 
   // Check factor
-  if (algebraic.IsZero()) {
+  if (value.IsZero()) {
     if (IsZero()) {
       Empty();
     }
@@ -1846,13 +1846,13 @@ Divide(const RNAlgebraic& algebraic)
       polynomial = new RNPolynomial(RN_INFINITY, 0);
     }
   }
-  else if (!algebraic.IsOne()) {
+  else if (!value.IsOne()) {
     switch(operation) {
     case RN_ZERO_OPERATION: 
       return;
       
     case RN_POLYNOMIAL_OPERATION:
-      operands[1] = new RNAlgebraic(algebraic);
+      operands[1] = new RNAlgebraic(value);
       operands[0] = new RNAlgebraic(polynomial);
       operation = RN_DIVIDE_OPERATION;
       polynomial = NULL;
@@ -1860,7 +1860,7 @@ Divide(const RNAlgebraic& algebraic)
     
     default: {
       RNAlgebraic *e = new RNAlgebraic(operation, operands[0], operands[1]);
-      operands[0] = new RNAlgebraic(algebraic);
+      operands[0] = new RNAlgebraic(value);
       operands[1] = e;
       operation = RN_DIVIDE_OPERATION;
       return; }
@@ -1871,14 +1871,14 @@ Divide(const RNAlgebraic& algebraic)
 
 
 RNAlgebraic& RNAlgebraic::
-operator=(RNScalar a)
+operator=(RNScalar value)
 {
   // Empty this algebraic
   Empty();
 
   // Assign constant
   operation = RN_POLYNOMIAL_OPERATION;
-  polynomial = new RNPolynomial(a, 0);
+  polynomial = new RNPolynomial(value, 0);
 
   // Return this
   return *this;
@@ -1887,14 +1887,14 @@ operator=(RNScalar a)
 
 
 RNAlgebraic& RNAlgebraic::
-operator=(const RNPolynomial& p)
+operator=(const RNPolynomial& value)
 {
   // Empty this algebraic
   Empty();
 
   // Assign polynomial
   operation = RN_POLYNOMIAL_OPERATION;
-  polynomial = new RNPolynomial(p);
+  polynomial = new RNPolynomial(value);
 
   // Return this
   return *this;
@@ -1903,16 +1903,16 @@ operator=(const RNPolynomial& p)
 
 
 RNAlgebraic& RNAlgebraic::
-operator=(const RNAlgebraic& algebraic)
+operator=(const RNAlgebraic& value)
 {
   // Just checking
-  assert(algebraic.IsValid());
+  assert(value.IsValid());
 
-  // Empty this algebraic
+  // Empty this value
   Empty();
 
   // Copy operation
-  this->operation = algebraic.operation;
+  this->operation = value.operation;
 
   // Copy operands
   switch(operation) {
@@ -1920,12 +1920,12 @@ operator=(const RNAlgebraic& algebraic)
     break;
 
   case RN_POLYNOMIAL_OPERATION:
-    polynomial = new RNPolynomial(*(algebraic.polynomial));
+    polynomial = new RNPolynomial(*(value.polynomial));
     break;
 
   default:
-    operands[0] = new RNAlgebraic(*(algebraic.operands[0]));
-    operands[1] = new RNAlgebraic(*(algebraic.operands[1]));
+    operands[0] = new RNAlgebraic(*(value.operands[0]));
+    operands[1] = new RNAlgebraic(*(value.operands[1]));
     break;
   }
 

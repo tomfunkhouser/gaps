@@ -51,10 +51,10 @@ public:
 
   // Direction name manipulation functions
   virtual void SetName(const char *name);
-  virtual void SetColorDirectory(const char *name);
-  virtual void SetDepthDirectory(const char *name);
-  virtual void SetTextureDirectory(const char *name);
-  virtual void SetDatasetFormat(const char *name);
+  virtual void SetColorDirectory(const char *directory);
+  virtual void SetDepthDirectory(const char *directory);
+  virtual void SetTextureDirectory(const char *directory);
+  virtual void SetDatasetFormat(const char *format);
 
   // Input/output
   virtual int ReadFile(const char *filename, int read_every_kth_image = 1);

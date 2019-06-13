@@ -100,13 +100,13 @@ public:
 
   // Arithmetic operators
   R3MeshProperty& operator=(const R3MeshProperty& property);
-  R3MeshProperty& operator+=(RNScalar scale);
+  R3MeshProperty& operator+=(RNScalar value);
   R3MeshProperty& operator+=(const R3MeshProperty& property);
-  R3MeshProperty& operator-=(RNScalar scale);
+  R3MeshProperty& operator-=(RNScalar value);
   R3MeshProperty& operator-=(const R3MeshProperty& property);
-  R3MeshProperty& operator*=(RNScalar scale);
+  R3MeshProperty& operator*=(RNScalar value);
   R3MeshProperty& operator*=(const R3MeshProperty& property);
-  R3MeshProperty& operator/=(RNScalar scale);
+  R3MeshProperty& operator/=(RNScalar value);
   R3MeshProperty& operator/=(const R3MeshProperty& property);
 
   // Input/output functions

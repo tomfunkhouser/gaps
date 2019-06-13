@@ -797,7 +797,7 @@ void Redraw(void)
   R3Camera *camera = cameras.Kth(next_image_index);
   next_image_index++;
 
-  // Intialize transformations
+  // Initialize transformations
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 

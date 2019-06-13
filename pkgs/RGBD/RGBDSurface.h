@@ -111,7 +111,7 @@ public:
   virtual void UpdateOpenGL(void);
 
   // Mesh search functions
-  virtual R3MeshFace *SearchMeshFaceIndex(const R2Point& texture_position, double *barycentric_coordinates = NULL) const;
+  virtual R3MeshFace *SearchMeshFaceIndex(const R2Point& texture_position, double *barycentrics = NULL) const;
   virtual void InvalidateMeshFaceIndex(void);
   virtual void UpdateMeshFaceIndex(void);
   
@@ -243,7 +243,7 @@ TexelChannelValue(int ix, int iy, int channel_index) const
 
 
 inline RNScalar RGBDSurface::
-TexelChannelValue(const R2Point& image_position, int channel_index) const
+TexelChannelValue(const R2Point& texture_position, int channel_index) const
 {
   // Check channel
   if (!channels[channel_index]) {
@@ -252,7 +252,7 @@ TexelChannelValue(const R2Point& image_position, int channel_index) const
   }
   
   // Return value in channel at pixel position
-  return channels[channel_index]->GridValue(image_position);
+  return channels[channel_index]->GridValue(texture_position);
 }
 
 

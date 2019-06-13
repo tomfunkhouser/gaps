@@ -191,12 +191,12 @@ Transform(const R3Transformation& transformation)
 ////////////////////////////////////////////////////////////////////////
 
 void RGBDConfiguration::
-SetName(const char *str)
+SetName(const char *name)
 {
   // Set directory name
-  if (name) free(name);
-  if (str && strcmp(str, "-")) name = RNStrdup(str);
-  else name = NULL;
+  if (this->name) free(this->name);
+  if (name && strcmp(name, "-")) this->name = RNStrdup(name);
+  else this->name = NULL;
 }
 
 
