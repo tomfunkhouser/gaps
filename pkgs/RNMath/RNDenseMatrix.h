@@ -59,12 +59,12 @@ public:
   int DecomposeEigen(RNVector& eigenvalues, RNDenseMatrix& eigenvectors);
 
   // Assignment operators
-  virtual RNDenseMatrix& operator=(const RNDenseMatrix& matrix);
-  virtual RNDenseMatrix& operator+=(const RNDenseMatrix& matrix);
-  virtual RNDenseMatrix& operator-=(const RNDenseMatrix& matrix);
-  virtual RNDenseMatrix& operator*=(const RNDenseMatrix& matrix);
-  virtual RNDenseMatrix& operator*=(RNScalar a);
-  virtual RNDenseMatrix& operator/=(RNScalar a);
+  RNDenseMatrix& operator=(const RNDenseMatrix& matrix);
+  RNDenseMatrix& operator+=(const RNDenseMatrix& matrix);
+  RNDenseMatrix& operator-=(const RNDenseMatrix& matrix);
+  RNDenseMatrix& operator*=(const RNDenseMatrix& matrix);
+  RNDenseMatrix& operator*=(RNScalar a);
+  RNDenseMatrix& operator/=(RNScalar a);
 
   // Arithmetic operators
   friend RNDenseMatrix operator-(const RNDenseMatrix& matrix);

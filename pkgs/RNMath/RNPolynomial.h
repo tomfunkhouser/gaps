@@ -66,24 +66,24 @@ public:
   RNPolynomial& operator+=(const RNPolynomial& polynomial);
   RNPolynomial& operator-=(const RNPolynomial& polynomial);
   RNPolynomial& operator*=(const RNPolynomial& polynomial);
-  RNPolynomial& operator=(RNScalar a);
-  RNPolynomial& operator+=(RNScalar a);
-  RNPolynomial& operator-=(RNScalar a);
-  RNPolynomial& operator*=(RNScalar a);
-  RNPolynomial& operator/=(RNScalar a);
+  RNPolynomial& operator=(RNScalar scalar);
+  RNPolynomial& operator+=(RNScalar scalar);
+  RNPolynomial& operator-=(RNScalar scalar);
+  RNPolynomial& operator*=(RNScalar scalar);
+  RNPolynomial& operator/=(RNScalar scalar);
   
   // Arithmetic operators
   friend RNPolynomial operator-(const RNPolynomial& polynomial);
   friend RNPolynomial operator+(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2);
-  friend RNPolynomial operator+(const RNPolynomial& polynomial, RNScalar a);
-  friend RNPolynomial operator+(RNScalar a, const RNPolynomial& polynomial);
+  friend RNPolynomial operator+(const RNPolynomial& polynomial, RNScalar scalar);
+  friend RNPolynomial operator+(RNScalar scalar, const RNPolynomial& polynomial);
   friend RNPolynomial operator-(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2);
-  friend RNPolynomial operator-(const RNPolynomial& polynomial, RNScalar a);
-  friend RNPolynomial operator-(RNScalar a, const RNPolynomial& polynomial);
+  friend RNPolynomial operator-(const RNPolynomial& polynomial, RNScalar scalar);
+  friend RNPolynomial operator-(RNScalar scalar, const RNPolynomial& polynomial);
   friend RNPolynomial operator*(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2);
-  friend RNPolynomial operator*(const RNPolynomial& polynomial, RNScalar a);
-  friend RNPolynomial operator*(RNScalar a, const RNPolynomial& polynomial);
-  friend RNPolynomial operator/(const RNPolynomial& polynomial, RNScalar a);
+  friend RNPolynomial operator*(const RNPolynomial& polynomial, RNScalar scalar);
+  friend RNPolynomial operator*(RNScalar scalar, const RNPolynomial& polynomial);
+  friend RNPolynomial operator/(const RNPolynomial& polynomial, RNScalar scalar);
 
   // Construction functions
   void AddTerm(RNScalar c, RNBoolean already_unique = FALSE);
@@ -129,7 +129,7 @@ private:
 class RNPolynomialTerm {
 public:
   // Constructor/destructor
-  RNPolynomialTerm(RNScalar c = 0.0, int nv = 0, const int *v = NULL, const RNScalar *e = NULL, 
+  RNPolynomialTerm(RNScalar _c = 0.0, int _n = 0, const int *_v = NULL, const RNScalar *_e = NULL, 
     RNBoolean already_sorted = FALSE, RNBoolean already_unique = FALSE);
   RNPolynomialTerm(const RNPolynomialTerm& term);
   ~RNPolynomialTerm(void);
@@ -461,21 +461,21 @@ operator*=(const RNPolynomial& polynomial)
 
 
 inline RNPolynomial& RNPolynomial::
-operator=(RNScalar a)
+operator=(RNScalar scalar)
 {
   // Assign constant
   Empty();
-  Add(a);
+  Add(scalar);
   return *this;
 }
 
 
 
 inline RNPolynomial& RNPolynomial::
-operator+=(RNScalar a)
+operator+=(RNScalar scalar)
 {
   // Add constant
-  Add(a);
+  Add(scalar);
   return *this;
 }
 
@@ -502,10 +502,10 @@ operator*=(RNScalar a)
 
 
 inline RNPolynomial& RNPolynomial::
-operator/=(RNScalar a)
+operator/=(RNScalar scalar)
 {
   // Divide by constant
-  Divide(a);
+  Divide(scalar);
   return *this;
 }
 
@@ -534,22 +534,22 @@ operator+(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2)
 
 
 inline RNPolynomial 
-operator+(const RNPolynomial& polynomial, RNScalar constant)
+operator+(const RNPolynomial& polynomial, RNScalar scalar)
 {
   // Return sum
   RNPolynomial result(polynomial);
-  result.Add(constant);
+  result.Add(scalar);
   return result;
 }
 
 
 
 inline RNPolynomial 
-operator+(RNScalar constant, const RNPolynomial& polynomial)
+operator+(RNScalar scalar, const RNPolynomial& polynomial)
 {
   // Return sum
   RNPolynomial result(polynomial);
-  result.Add(constant);
+  result.Add(scalar);
   return result;
 }
 
@@ -567,23 +567,23 @@ operator-(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2)
 
 
 inline RNPolynomial 
-operator-(const RNPolynomial& polynomial, RNScalar constant)
+operator-(const RNPolynomial& polynomial, RNScalar scalar)
 {
   // Return difference
   RNPolynomial result(polynomial);
-  result.Subtract(constant);
+  result.Subtract(scalar);
   return result;
 }
 
 
 
 inline RNPolynomial 
-operator-(RNScalar constant, const RNPolynomial& polynomial)
+operator-(RNScalar scalar, const RNPolynomial& polynomial)
 {
   // Return difference
   RNPolynomial result(polynomial);
   result.Negate();
-  result.Add(constant);
+  result.Add(scalar);
   return result;
 }
 
@@ -601,33 +601,33 @@ operator*(const RNPolynomial& polynomial1, const RNPolynomial& polynomial2)
 
 
 inline RNPolynomial 
-operator*(const RNPolynomial& polynomial, RNScalar a)
+operator*(const RNPolynomial& polynomial, RNScalar scalar)
 {
   // Return product
   RNPolynomial result(polynomial);
-  result.Multiply(a);
+  result.Multiply(scalar);
   return result;
 }
 
 
 
 inline RNPolynomial 
-operator*(RNScalar a, const RNPolynomial& polynomial)
+operator*(RNScalar scalar, const RNPolynomial& polynomial)
 {
   // Return product
   RNPolynomial result(polynomial);
-  result.Multiply(a);
+  result.Multiply(scalar);
   return result;
 }
 
 
 
 inline RNPolynomial 
-operator/(const RNPolynomial& polynomial, RNScalar a)
+operator/(const RNPolynomial& polynomial, RNScalar scalar)
 {
   // Return quotient
   RNPolynomial result(polynomial);
-  result.Divide(a);
+  result.Divide(scalar);
   return result;
 }
 

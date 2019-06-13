@@ -387,11 +387,11 @@ operator+(const RNAlgebraic& algebraic, const RNPolynomial& polynomial)
 
 
 inline RNAlgebraic 
-operator+(const RNAlgebraic& algebraic, RNScalar value)
+operator+(const RNAlgebraic& algebraic, RNScalar scalar)
 {
   // Return sum
   RNAlgebraic result(algebraic);
-  result.Add(value);
+  result.Add(scalar);
   return result;
 }
 

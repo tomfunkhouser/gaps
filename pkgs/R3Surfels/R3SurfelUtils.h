@@ -33,10 +33,10 @@ R3SurfelPointSet *CreatePointSet(R3SurfelScene *scene, R3Point& origin,
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelPointGraph *CreatePointGraph(R3SurfelPointSet *pointset, 
-  int max_neighbors = 16, RNLength max_distance = 0.5);
+  int max_neighbors = 16, RNLength max_neighbor_distance = 0.5);
 R3SurfelPointGraph *CreatePointGraph(R3SurfelScene *scene, 
   R3SurfelNode *source_node = NULL, const R3SurfelConstraint *constraint = NULL, 
-  int max_neighbors = 16, RNLength max_distance = 0.5);
+  int max_neighbors = 16, RNLength max_neighbor_distance = 0.5);
 
 
 

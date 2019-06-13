@@ -26,8 +26,8 @@ RNDenseLUMatrix(void)
 
 
 RNDenseLUMatrix::
-RNDenseLUMatrix(int nrows, int ncols, RNScalar *values)
-  : RNDenseMatrix(nrows, ncols, values),
+RNDenseLUMatrix(int _nrows, int _ncols, RNScalar *_values)
+  : RNDenseMatrix(_nrows, _ncols, _values),
     pivots(NULL)
 {
   // Perform LU decomposition

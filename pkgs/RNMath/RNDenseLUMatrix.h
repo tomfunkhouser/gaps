@@ -15,7 +15,7 @@ class RNDenseLUMatrix : public RNDenseMatrix {
 public:
   // Constructor/destructor
   RNDenseLUMatrix(void);
-  RNDenseLUMatrix(int nrows, int ncols, RNScalar *values = NULL);
+  RNDenseLUMatrix(int _nrows, int _ncols, RNScalar *_values = NULL);
   RNDenseLUMatrix(const RNDenseLUMatrix& matrix);
   RNDenseLUMatrix(const RNDenseMatrix& matrix);
   RNDenseLUMatrix(const RNMatrix& matrix);
