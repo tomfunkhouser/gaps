@@ -674,6 +674,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-load_images_ending_at_index")) { argc--; argv++; load_images_ending_at_index = atoi(*argv); }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-write_every_kth_image")) { argc--; argv++; write_every_kth_image = atoi(*argv); }
+      else if (!strcmp(*argv, "-textur_aggregation_method")) { argc--; argv++; texture_aggregation_method = atoi(*argv); }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-compute_surface_textures")) {}
       else if (!strcmp(*argv, "-negate_yz")) {}
@@ -746,6 +747,7 @@ main(int argc, char **argv)
       else if (!strcmp(*argv, "-load_images_ending_at_index")) { argc--; argv++; }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; }
       else if (!strcmp(*argv, "-write_every_kth_image")) { argc--; argv++; }
+      else if (!strcmp(*argv, "-texture_aggregation_method")) { argc--; argv++; }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; }
       else if (!strcmp(*argv, "-viewpoint_bbox")) { argc -= 6; argv += 6; }
       else if (!strcmp(*argv, "-compute_surface_textures")) {
