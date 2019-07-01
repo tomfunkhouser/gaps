@@ -43,6 +43,7 @@ static int print_verbose = 0;
 enum {
   WEIGHTED_AVERAGE_TEXTURE_AGGREGATION,
   WEIGHTED_MEDIAN_TEXTURE_AGGREGATION,
+  WEIGHTED_MODE_TEXTURE_AGGREGATION,
   NUM_TEXTURE_AGGREGATION_METHODS
 };
 
@@ -381,6 +382,20 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
           if (dd < best_dd) {
             color = colors[i];
             best_dd = dd;
+          }
+        }
+      }
+      else if (texture_aggregation_method == WEIGHTED_MODE_TEXTURE_AGGREGATION) {
+        // Compute weighted mode
+        RNScalar best_sum = 0;
+        for (int i = 0; i < count; i++) {
+          RNScalar sum = 0;
+          for (int j = 0; j < count; j++) {
+            if (colors[i] == colors[j]) sum += weights[j];
+          }
+          if (sum > best_sum) {
+            color = colors[i];
+            best_sum = sum;
           }
         }
       }
