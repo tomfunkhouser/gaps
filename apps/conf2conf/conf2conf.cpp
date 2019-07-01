@@ -30,8 +30,21 @@ static int load_images_starting_at_index = 0;
 static int load_images_ending_at_index = INT_MAX;
 static int load_every_kth_image = 1;
 static int write_every_kth_image = 1;
+static int texture_aggregation_method = 0;
 static double texel_spacing = 0;
 static int print_verbose = 0;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////
+
+enum {
+  WEIGHTED_AVERAGE_TEXTURE_AGGREGATION,
+  WEIGHTED_MEDIAN_TEXTURE_AGGREGATION,
+  NUM_TEXTURE_AGGREGATION_METHODS
+};
 
 
 
@@ -304,9 +317,24 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
         // Get image
         RGBDImage *image = configuration->Image(i);
 
-        // Get position in image
+        // Get position in camera coordinates
+        R3Point camera_position;
+        if (!RGBDTransformTextureToCamera(texture_position, camera_position, surface, image)) continue;
+        
+        // Get position in image coordinates
         R2Point image_position;
-        if (!RGBDTransformTextureToImage(texture_position, image_position, surface, image)) continue;
+        if (!RGBDTransformCameraToImage(camera_position, image_position, image)) continue;
+
+        // Check transformed depth
+        RNScalar transformed_depth = -camera_position[2];
+        if (RNIsNegativeOrZero(transformed_depth)) continue;
+
+        // Check captured depth
+        RNScalar captured_depth = image->PixelDepth(image_position);
+        if (RNIsNegativeOrZero(captured_depth)) continue;
+
+        // Check depth difference
+        if (RNIsNotEqual(captured_depth, transformed_depth, 0.1 * captured_depth)) continue;
 
         // Get rgb from image
         RNScalar r = image->PixelChannelValue(image_position, RGBD_RED_CHANNEL);
@@ -335,29 +363,31 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
       if (count == 0) continue;
       if (weight_sum == 0) continue;
 
-#if 1
-      // Compute weighted mean
-      RNRgb color = weighted_color_sum / weight_sum;
-#else
-      // Compute weighted median
+      // Compute color for pixel
       RNRgb color = RNblack_rgb;
-      RNScalar best_dd = FLT_MAX;
-      for (int i = 0; i < count; i++) {
-        RNScalar dd = 0;
-        for (int j = 0; j < count; j++) {
-          if (i != j) {
-            RNScalar dr = colors[i].R() - colors[j].R();
-            RNScalar dg = colors[i].G() - colors[j].G();
-            RNScalar db = colors[i].B() - colors[j].B();
-            dd += weights[j]*weights[j] * (dr*dr + dg*dg + db*db);
+      if (texture_aggregation_method == WEIGHTED_MEDIAN_TEXTURE_AGGREGATION) {
+        // Compute weighted median
+        RNScalar best_dd = FLT_MAX;
+        for (int i = 0; i < count; i++) {
+          RNScalar dd = 0;
+          for (int j = 0; j < count; j++) {
+            if (i != j) {
+              RNScalar dr = colors[i].R() - colors[j].R();
+              RNScalar dg = colors[i].G() - colors[j].G();
+              RNScalar db = colors[i].B() - colors[j].B();
+              dd += weights[j]*weights[j] * (dr*dr + dg*dg + db*db);
+            }
+          }
+          if (dd < best_dd) {
+            color = colors[i];
+            best_dd = dd;
           }
         }
-        if (dd < best_dd) {
-          color = colors[i];
-          best_dd = dd;
-        }
       }
-#endif
+      else {
+        // Compute weighted average
+        color = weighted_color_sum / weight_sum;
+      }
       
       // Update the texture channels
       red_channel.SetGridValue(ix, iy, color.R());
