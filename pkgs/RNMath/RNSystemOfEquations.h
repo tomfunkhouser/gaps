@@ -400,8 +400,8 @@ static int
 MinimizeCERES(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance)
 {
   // Print error message
-  fprintf(stderr, "Cannot minimize equation: Ceres solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_CERES and -lceres xxx to compilation and link commands.\n");
+  RNFail("Cannot minimize equation: Ceres solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_CERES and -lceres xxx to compilation and link commands.\n");
   return 0;
 }
 
@@ -486,7 +486,7 @@ SPLMJacobian(double *x, struct splm_ccsm *jac, int n, int m, void *data)
 
   // Just checking
   if (ntriplets != jac->nnz) {
-    fprintf(stderr, "Mismatching number of derivatives: %d %d\n", ntriplets, jac->nnz);
+    RNFail("Mismatching number of derivatives: %d %d\n", ntriplets, jac->nnz);
     abort();
   }
 
@@ -522,7 +522,7 @@ MinimizeSPLM(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance
   // Run the solver
   double info[SPLM_INFO_SZ];
   int status = sparselm_derccs(SPLMFunction, SPLMJacobian, x, y, n, 0, m, jnnz, -1, 16, NULL, info, (void *) system);
-  if (status == SPLM_ERROR) fprintf(stderr, "Error in SPLM solver\n");
+  if (status == SPLM_ERROR) RNFail("Error in SPLM solver\n");
   else { for (int i = 0; i < n; i++) io[i] = x[i]; }
 
 #if 0
@@ -547,8 +547,8 @@ static int
 MinimizeSPLM(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance)
 {
   // Print error message
-  fprintf(stderr, "Cannot minimize equation: SPLM solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_SPLM and -lsplm to compilation and link commands.\n");
+  RNFail("Cannot minimize equation: SPLM solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_SPLM and -lsplm to compilation and link commands.\n");
   return 0;
 }
 
@@ -691,7 +691,7 @@ MinimizeMINPACK(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolera
 
   // Run the solver
   int status = lmder1(MinpackCallback, (void *) system, m, n, x, y, jacobian, m, tol, ipvt, wa, lwa);
-  if (status == 0) fprintf(stderr, "Error in Minpack solver\n");
+  if (status == 0) RNFail("Error in Minpack solver\n");
   else { for (int i = 0; i < n; i++) io[i] = x[i]; }
 
   // Delete temporary data
@@ -707,7 +707,7 @@ MinimizeMINPACK(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolera
 
   // Run the solver
   int status = lmdif1(MinpackFunction, (void *) system, m, n, x, y, tol, iwa, wa, lwa);
-  if (status == 0) fprintf(stderr, "Error in Minpack solver\n");
+  if (status == 0) RNFail("Error in Minpack solver\n");
   else { for (int i = 0; i < n; i++) io[i] = x[i]; }
 
   // Delete temporary data
@@ -729,8 +729,8 @@ static int
 MinimizeMINPACK(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance)
 {
   // Print error message
-  fprintf(stderr, "Cannot minimize equation: Minpack solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_MINPACK and -lminpack to compilation and link commands.\n");
+  RNFail("Cannot minimize equation: Minpack solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_MINPACK and -lminpack to compilation and link commands.\n");
   return 0;
 }
 
@@ -755,7 +755,7 @@ MinimizeCSPARSE(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolera
   // Allocate matrix
   cs *a = cs_spalloc (0, n, max_nz, 1, 1);
   if (!a) {
-    fprintf(stderr, "Unable to allocate cs matrix: %d %d\n", n, max_nz);
+    RNFail("Unable to allocate cs matrix: %d %d\n", n, max_nz);
     return 0;
   }
     
@@ -822,7 +822,7 @@ MinimizeCSPARSE(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolera
   // Solve linear system
   // int status = cs_lusol (1, ATA, x, RN_EPSILON);
   int status = cs_cholsol (1, ATA, x);
-  if (status == 0) fprintf(stderr, "Error in CSPARSE solver\n");
+  if (status == 0) RNFail("Error in CSPARSE solver\n");
   else { for (int i = 0; i < n; i++) io[i] = x[i]; }
 
   // Delete stuff
@@ -844,8 +844,8 @@ static int
 MinimizeCSPARSE(const RNSystemOfEquations *system, RNScalar *io, RNScalar tolerance)
 {
   // Print error message
-  fprintf(stderr, "Cannot minimize equation: CSparse solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_CSPARSE and -lCSparse to compilation and link commands.\n");
+  RNFail("Cannot minimize equation: CSparse solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_CSPARSE and -lCSparse to compilation and link commands.\n");
   return 0;
 }
 
@@ -862,7 +862,7 @@ Minimize(RNScalar *x, int solver, RNScalar tolerance) const
   else if (solver == RN_MINPACK_SOLVER) return MinimizeMINPACK(this, x, tolerance);
   else if (solver == RN_CERES_SOLVER) return MinimizeCERES(this, x, tolerance);
   else if (solver == RN_CSPARSE_SOLVER) return MinimizeCSPARSE(this, x, tolerance);
-  fprintf(stderr, "System of equation solver not recognized: %d\n", solver);
+  RNFail("System of equation solver not recognized: %d\n", solver);
   return 0;
 }
 

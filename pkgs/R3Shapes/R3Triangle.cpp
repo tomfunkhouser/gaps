@@ -207,7 +207,7 @@ R3Triangle(const R3Triangle& triangle)
   : plane(triangle.plane),
     bbox(triangle.bbox),
     flags(triangle.flags),
-    mark(triangle.mark)
+    mark(0)
 {
     // Copy vertices 
     if (!triangle.v[0] || triangle.v[0]->Flags()[R3_VERTEX_SHARED_FLAG]) v[0] = triangle.v[0];
@@ -461,6 +461,37 @@ BSphere(void) const
     R3Point centroid = Centroid();
     RNLength radius = R3Distance(centroid, v[0]->Position());
     return R3Sphere(centroid, radius);
+}
+
+
+
+R3Triangle& R3Triangle::
+operator=(const R3Triangle& triangle)
+{
+    // Delete prevous vertices
+    if (v[0] && !v[0]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[0];
+    if (v[1] && !v[1]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[1];
+    if (v[2] && !v[2]->Flags()[R3_VERTEX_SHARED_FLAG]) delete v[2];
+  
+    // Copy properties
+    plane = triangle.plane;
+    bbox = triangle.bbox;
+    flags = triangle.flags;
+    mark = 0;
+
+    // Copy vertices 
+    if (!triangle.v[0] || triangle.v[0]->Flags()[R3_VERTEX_SHARED_FLAG]) v[0] = triangle.v[0];
+    else v[0] = new R3TriangleVertex(*(triangle.v[0]));
+    if (!triangle.v[1] || triangle.v[1]->Flags()[R3_VERTEX_SHARED_FLAG]) v[1] = triangle.v[1];
+    else v[1] = new R3TriangleVertex(*(triangle.v[1]));
+    if (!triangle.v[2] || triangle.v[2]->Flags()[R3_VERTEX_SHARED_FLAG]) v[2] = triangle.v[2];
+    else v[2] = new R3TriangleVertex(*(triangle.v[2]));
+
+    // Update the triangle
+    Update();
+
+    // Return this
+    return *this;
 }
 
 

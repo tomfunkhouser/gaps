@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 {
   // Check arguments
   if (argc != 3) {
-    fprintf(stderr, "Usage: img2img inputfile outputfile\n");
+    RNFail("Usage: img2img inputfile outputfile\n");
     return 1;
   }
 

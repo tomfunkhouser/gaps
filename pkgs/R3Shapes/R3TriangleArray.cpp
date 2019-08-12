@@ -262,6 +262,46 @@ BSphere(void) const
 
 
 
+R3TriangleArray& R3TriangleArray::
+operator=(const R3TriangleArray& array)
+{
+    // Delete previous triangles and vertices
+    for (int i = 0; i < triangles.NEntries(); i++) delete triangles[i];
+    for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
+    triangles.Empty();
+    vertices.Empty();
+    
+    // Copy vertices
+    for (int i = 0; i < array.vertices.NEntries(); i++) {
+      R3TriangleVertex *oldv = array.vertices.Kth(i);
+      R3TriangleVertex *newv = new R3TriangleVertex(*oldv);
+      vertices.Insert(newv);
+      newv->SetSharedFlag();
+      oldv->SetMark(i);
+    }
+
+    // Copy triangles
+    for (int i = 0; i < array.triangles.NEntries(); i++) {
+      R3Triangle *oldt = array.triangles.Kth(i);
+      R3TriangleVertex *v0 = vertices.Kth(oldt->V0()->Mark());
+      R3TriangleVertex *v1 = vertices.Kth(oldt->V1()->Mark());
+      R3TriangleVertex *v2 = vertices.Kth(oldt->V2()->Mark());
+      R3Triangle *newt = new R3Triangle(v0, v1, v2);
+      triangles.Insert(newt);
+    }
+
+    // Copy bbox
+    bbox = array.bbox;
+
+    // Update everything
+    Update();
+
+    // Return this
+    return *this;
+}
+
+
+
 void R3TriangleArray::
 Flip (void)
 {

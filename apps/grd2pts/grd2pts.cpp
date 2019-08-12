@@ -153,7 +153,7 @@ CreateMask(R3Grid *grid, RNBoolean local_maxima_only)
   // Create mask
   R3Grid *mask = new R3Grid(*grid);
   if (!mask) {
-    fprintf(stderr, "Unable to allocate mask\n");
+    RNFail("Unable to allocate mask\n");
     return NULL;
   }
 
@@ -218,7 +218,7 @@ CreatePoints(R3Grid *grid, R3Grid *mask, int npoints, RNLength min_spacing)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -285,7 +285,7 @@ WritePoints(const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "w");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -315,7 +315,7 @@ WritePoints(const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "wb");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -331,7 +331,7 @@ WritePoints(const RNArray<Point *>& points, const char *filename)
       coordinates[4] = point->normal.Y();
       coordinates[5] = point->normal.Z();
       if (fwrite(coordinates, sizeof(float), 6, fp) != (unsigned int) 6) {
-        fprintf(stderr, "Unable to write point to output file %s\n", filename);
+        RNFail("Unable to write point to output file %s\n", filename);
         return FALSE;
       }
     }
@@ -372,7 +372,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-sigma")) { argv++; argc--; sigma = atof(*argv); }
       else if (!strcmp(*argv, "-local_maxima_only")) local_maxima_only = TRUE; 
       else { 
-        fprintf(stderr, "Invalid program argument: %s\n", *argv); 
+        RNFail("Invalid program argument: %s\n", *argv); 
         exit(1); 
       }
     }
@@ -384,13 +384,13 @@ ParseArgs(int argc, char **argv)
 
   // Check grid filenames
   if (grid_names.IsEmpty()) {
-    fprintf(stderr, "You did not specify any files.\n");
+    RNFail("You did not specify any files.\n");
     return 0;
   }
 
   // Check points filename
   if (grid_names.NEntries() < 2) {
-    fprintf(stderr, "You did not specify a points file.\n");
+    RNFail("You did not specify a points file.\n");
     return 0;
   }
 

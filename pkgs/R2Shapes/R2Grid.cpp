@@ -672,7 +672,7 @@ FillHoles(void)
 
     // Divide by total weight
     if (weight > 0) *valuep = sum / weight;
-    else fprintf(stderr, "Zero weight in fill holes\n"); 
+    else RNFail("Zero weight in fill holes\n"); 
 
     // Push neighbors with unknown values onto queue
     if ((x > 0) && (GridValue(x-1, y) == R2_GRID_UNKNOWN_VALUE)) {
@@ -3441,7 +3441,7 @@ ReadFile(const char *filename)
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Input file has no extension (e.g., .pfm).\n");
+    RNFail("Input file has no extension (e.g., .pfm).\n");
     return 0;
   }
   
@@ -3454,7 +3454,7 @@ ReadFile(const char *filename)
   else  return ReadImageFile(filename);
   
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension\n");
+  RNFail("Unrecognized image file extension\n");
   return 0;
 }
 
@@ -3466,7 +3466,7 @@ WriteFile(const char *filename) const
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Output file has no extension (e.g., .pfm).\n");
+    RNFail("Output file has no extension (e.g., .pfm).\n");
     return 0;
   }
   
@@ -3478,7 +3478,7 @@ WriteFile(const char *filename) const
   else return WriteImageFile(filename);
 
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension\n");
+  RNFail("Unrecognized image file extension\n");
   return 0;
 }
 
@@ -3494,27 +3494,27 @@ ReadRAWFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open raw image file %s", filename);
+    RNFail("Unable to open raw image file %s", filename);
     return 0;
   }
 
   // Read header
   unsigned int header[4];
   if (fread(header, sizeof(unsigned int), 4, fp) != 4) {
-    fprintf(stderr, "Unable to header to raw image file %s", filename);
+    RNFail("Unable to header to raw image file %s", filename);
     return -1;
   }
 
   // Check magic number
   const unsigned int magic = 54321;
   if (header[0] != magic) {
-    fprintf(stderr, "Invalid header in raw image file %s", filename);
+    RNFail("Invalid header in raw image file %s", filename);
     return -1;
   }
 
   // Check number of channels
   if (header[3] != 1) {
-    fprintf(stderr, "Invalid number of channels (%d)in raw image file %s", header[3], filename);
+    RNFail("Invalid number of channels (%d)in raw image file %s", header[3], filename);
     return -1;
   }
 
@@ -3526,7 +3526,7 @@ ReadRAWFile(const char *filename)
   unsigned int npixels = width * height;
   float *pixels = new float [ npixels ];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate data for raw image file %s", filename);
+    RNFail("Unable to allocate data for raw image file %s", filename);
     return -1;
   }
 
@@ -3534,7 +3534,7 @@ ReadRAWFile(const char *filename)
   int count = npixels;
   while (count > 0) {
     int n = fread(&pixels[npixels-count], sizeof(float), count, fp);
-    if (n < 0) { fprintf(stderr, "Unable to read pixels from %s\n", filename); return 0; }
+    if (n < 0) { RNFail("Unable to read pixels from %s\n", filename); return 0; }
     count -= n;
   }
 
@@ -3570,7 +3570,7 @@ WriteRAWFile(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open raw image file %s", filename);
+    RNFail("Unable to open raw image file %s", filename);
     return 0;
   }
 
@@ -3580,7 +3580,7 @@ WriteRAWFile(const char *filename) const
   unsigned int yres = (unsigned int) grid_resolution[1];
   unsigned int header[4] = { magic, xres, yres, 1 };
   if (fwrite(header, sizeof(unsigned int), 4, fp) != 4) {
-    fprintf(stderr, "Unable to header to raw image file %s", filename);
+    RNFail("Unable to header to raw image file %s", filename);
     return -1;
   }
 
@@ -3592,7 +3592,7 @@ WriteRAWFile(const char *filename) const
     RNScalar *valuesp = &grid_values[i * grid_resolution[0]];
     for (int i = 0; i < grid_resolution[0]; i++) pixels[i] = (float) valuesp[i];
     if (fwrite(pixels, sizeof(float), grid_resolution[0], fp) != (unsigned int) grid_resolution[0]) {
-      fprintf(stderr, "Unable to write grid values to file %s\n", filename);
+      RNFail("Unable to write grid values to file %s\n", filename);
       return 0;
     }
   }
@@ -3620,15 +3620,15 @@ ReadPNMFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image: %s\n", filename);
+    RNFail("Unable to open image: %s\n", filename);
     return 0;
   }
 
   // Read magic header
   int c;
-  c = fgetc(fp); if (c != 'P') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != '5') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != '\n') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != 'P') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '5') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '\n') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
 
   // Read width
   int width_count = 0;
@@ -3637,13 +3637,13 @@ ReadPNMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (width_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { width_string[width_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad width character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad width character %c in %s\n", c, filename); return 0; }
     else width_string[width_count++] = c;
   }
 
   // Check width
   if ((width_count == 0) || (width_count > 128)) {
-    fprintf(stderr, "Error reading width in %s\n", filename); 
+    RNFail("Error reading width in %s\n", filename); 
     return 0; 
   }
 
@@ -3654,13 +3654,13 @@ ReadPNMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (height_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { height_string[height_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad height character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad height character %c in %s\n", c, filename); return 0; }
     else height_string[height_count++] = c;
   }
 
   // Check height
   if ((height_count == 0) || (height_count > 128)) {
-    fprintf(stderr, "Error reading height in %s\n", filename); 
+    RNFail("Error reading height in %s\n", filename); 
     return 0; 
   }
 
@@ -3671,13 +3671,13 @@ ReadPNMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (max_value_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { max_value_string[max_value_count] = '\0'; break; }
-    if (!isdigit(c) && (c != '.') && (c != '-')) { fprintf(stderr, "Bad max_value character %c in %s\n", c, filename); return 0; }
+    if (!isdigit(c) && (c != '.') && (c != '-')) { RNFail("Bad max_value character %c in %s\n", c, filename); return 0; }
     max_value_string[max_value_count++] = c;
   }
 
   // Check max_value
   if ((max_value_count == 0) || (max_value_count > 128)) {
-    fprintf(stderr, "Error reading max_value in %s\n", filename); 
+    RNFail("Error reading max_value in %s\n", filename); 
     return 0; 
   }
 
@@ -3697,7 +3697,7 @@ ReadPNMFile(const char *filename)
   if (grid_values) delete [] grid_values;
   grid_values = new RNScalar [ grid_size ];
   if (!grid_values) {
-    fprintf(stderr, "Unable to allocate %d pixels for %s\n", grid_size, filename);
+    RNFail("Unable to allocate %d pixels for %s\n", grid_size, filename);
     return 0;
   }
 
@@ -3727,7 +3727,7 @@ ReadPNMFile(const char *filename)
       grid_values[i] = value;
     }
     else {
-      fprintf(stderr, "Unrecognized maximum value in %s\n", filename);
+      RNFail("Unrecognized maximum value in %s\n", filename);
       return 0;
     }
   }
@@ -3751,15 +3751,15 @@ ReadPFMFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image: %s\n", filename);
+    RNFail("Unable to open image: %s\n", filename);
     return 0;
   }
 
   // Read magic header
   int c;
-  c = fgetc(fp); if (c != 'P') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != 'f') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != '\n') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != 'P') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != 'f') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '\n') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
 
   // Read width
   int width_count = 0;
@@ -3768,13 +3768,13 @@ ReadPFMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (width_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { width_string[width_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad width character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad width character %c in %s\n", c, filename); return 0; }
     else width_string[width_count++] = c;
   }
 
   // Check width
   if ((width_count == 0) || (width_count > 128)) {
-    fprintf(stderr, "Error reading width in %s\n", filename); 
+    RNFail("Error reading width in %s\n", filename); 
     return 0; 
   }
 
@@ -3785,13 +3785,13 @@ ReadPFMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (height_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { height_string[height_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad height character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad height character %c in %s\n", c, filename); return 0; }
     else height_string[height_count++] = c;
   }
 
   // Check height
   if ((height_count == 0) || (height_count > 128)) {
-    fprintf(stderr, "Error reading height in %s\n", filename); 
+    RNFail("Error reading height in %s\n", filename); 
     return 0; 
   }
 
@@ -3802,13 +3802,13 @@ ReadPFMFile(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (endian_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { endian_string[endian_count] = '\0'; break; }
-    if (!isdigit(c) && (c != '.') && (c != '-')) { fprintf(stderr, "Bad endian character %c in %s\n", c, filename); return 0; }
+    if (!isdigit(c) && (c != '.') && (c != '-')) { RNFail("Bad endian character %c in %s\n", c, filename); return 0; }
     endian_string[endian_count++] = c;
   }
 
   // Check endian
   if ((endian_count == 0) || (endian_count > 128)) {
-    fprintf(stderr, "Error reading endian in %s\n", filename); 
+    RNFail("Error reading endian in %s\n", filename); 
     return 0; 
   }
 
@@ -3816,13 +3816,13 @@ ReadPFMFile(const char *filename)
   int width = atoi(width_string);
   int height = atoi(height_string);
   float endian = (float) atof(endian_string);
-  if (endian == -999.0F) fprintf(stderr, "Just trying to avoid compiler warning for unused variable\n");
+  if (endian == -999.0F) RNFail("Just trying to avoid compiler warning for unused variable\n");
 
   // Allocate pixels
   int npixels = width * height;
   float *pixels = new float [ npixels ];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate pixels for %s\n", filename);
+    RNFail("Unable to allocate pixels for %s\n", filename);
     return 0;
   }
 
@@ -3830,7 +3830,7 @@ ReadPFMFile(const char *filename)
   int count = npixels;
   while (count > 0) {
     int n = fread(&pixels[npixels-count], sizeof(float), count, fp);
-    if (n <= 0) { fprintf(stderr, "Unable to read pixels from %s\n", filename); return 0; }
+    if (n <= 0) { RNFail("Unable to read pixels from %s\n", filename); return 0; }
     count -= n;
   }
 
@@ -3867,7 +3867,7 @@ WritePFMFile(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open pfm image file %s", filename);
+    RNFail("Unable to open pfm image file %s", filename);
     return 0;
   }
 
@@ -3884,7 +3884,7 @@ WritePFMFile(const char *filename) const
     RNScalar *valuesp = &grid_values[i * grid_resolution[0]];
     for (int i = 0; i < grid_resolution[0]; i++) pixels[i] = valuesp[i];
     if (fwrite(pixels, sizeof(float), grid_resolution[0], fp) != (unsigned int) grid_resolution[0]) {
-      fprintf(stderr, "Unable to write grid values to file %s\n", filename);
+      RNFail("Unable to write grid values to file %s\n", filename);
       return 0;
     }
   }
@@ -3995,7 +3995,7 @@ ReadGrid(FILE *fp)
   int count = grid_size;
   while (count > 0) {
     int n = fread(&grid_values[grid_size-count], sizeof(RNScalar), count, fp);
-    if (n < 0) { fprintf(stderr, "Unable to read pixels from grid\n"); return 0; }
+    if (n < 0) { RNFail("Unable to read pixels from grid\n"); return 0; }
     count -= n;
   }
 
@@ -4052,7 +4052,7 @@ ReadPNGFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open PNG file %s\n", filename);
+    RNFail("Unable to open PNG file %s\n", filename);
     return 0;
    }
 
@@ -4170,7 +4170,7 @@ WritePNGFile(const char *filename) const
   // Open the file 
   FILE *fp = fopen(filename, "wb");
   if (fp == NULL) {
-    fprintf(stderr, "Unable to open PNG file %s\n", filename);
+    RNFail("Unable to open PNG file %s\n", filename);
     return 0;
   }
   
@@ -4261,13 +4261,13 @@ ReadImageFile(const char *filename)
   // Allocate image
   R2Image *image = new R2Image();
   if (!image) {
-    fprintf(stderr, "Unable to allocate image for %s\n", filename);
+    RNFail("Unable to allocate image for %s\n", filename);
     return 0;
   }
 
   // Read image
   if (!image->Read(filename)) { 
-    // fprintf(stderr, "Unable to read image from %s\n", filename);
+    // RNFail("Unable to read image from %s\n", filename);
     delete image; 
     return 0; 
   }
@@ -4303,7 +4303,7 @@ WriteImageFile(const char *filename) const
   // Allocate image
   R2Image *image = new R2Image(grid_resolution[0], grid_resolution[1], 3);
   if (!image) {
-    fprintf(stderr, "Unable to allocate image for %s\n", filename);
+    RNFail("Unable to allocate image for %s\n", filename);
     return 0;
   }
 
@@ -4329,7 +4329,7 @@ WriteImageFile(const char *filename) const
 
   // Write image
   if (!image->Write(filename)) { 
-    // fprintf(stderr, "Unable to write image to %s\n", filename);
+    // RNFail("Unable to write image to %s\n", filename);
     delete image; 
     return 0; 
   }

@@ -95,7 +95,7 @@ WriteMesh(R3Mesh *mesh, char *filename)
 
   // Write mesh
   if (!mesh->WriteFile(filename)) {
-    fprintf(stderr, "Unable to write mesh to %s\n", filename);
+    RNFail("Unable to write mesh to %s\n", filename);
     return 0;
   }
 
@@ -139,7 +139,7 @@ WriteJson(R3Mesh *mesh, const char *filename)
   // Open file
   FILE* fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open json file %s\n", filename);
+    RNFail("Unable to open json file %s\n", filename);
     return 0;
   }
 
@@ -196,7 +196,7 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
   int npoints = mesh->NFaces();
   segmentation->point_buffer = new Point [ npoints ];
   if (!segmentation->point_buffer) {
-    fprintf(stderr, "Unable to allocate points\n");
+    RNFail("Unable to allocate points\n");
     return 0;
   }
 
@@ -225,7 +225,7 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
   Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
   segmentation->kdtree = new R3Kdtree<Point *>(segmentation->points, position_offset);
   if (!segmentation->kdtree) {
-    fprintf(stderr, "Unable to create kdtree\n");
+    RNFail("Unable to create kdtree\n");
     return 0;
   }
   
@@ -538,7 +538,7 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; output_json_name = *argv;
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -546,14 +546,14 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_mesh_name) input_mesh_name = *argv;
       else if (!output_mesh_name) output_mesh_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check filenames
   if (!input_mesh_name || !output_mesh_name) {
-    fprintf(stderr, "Usage: mshseg inputmesh outputmesh\n");
+    RNFail("Usage: mshseg inputmesh outputmesh\n");
     return 0;
   }
 

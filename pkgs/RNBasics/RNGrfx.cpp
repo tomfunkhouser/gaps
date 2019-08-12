@@ -178,8 +178,7 @@ void
 RNGrfxError(const char *message)
 {
     // Fatal error
-    fprintf(stderr, "%s\n", message);
-    abort();
+    RNAbort("%s\n", message);
 }
 
 

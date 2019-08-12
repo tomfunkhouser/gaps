@@ -46,7 +46,7 @@ ReadWeights(const char *filename, RNScalar *& weights, int& nweights)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open edge weight file %s\n", filename);
+    RNFail("Unable to open edge weight file %s\n", filename);
     return NULL;
   }
 
@@ -58,21 +58,21 @@ ReadWeights(const char *filename, RNScalar *& weights, int& nweights)
 
   // Check number of weights
   if (nweights == 0) {
-    fprintf(stderr, "There are no weights in %s\n", filename);
+    RNFail("There are no weights in %s\n", filename);
     return NULL;
   }
 
   // Allocate array for weights
   weights = new RNScalar [ nweights ];
   if (!weights) {
-    fprintf(stderr, "Unable to allocate weights for %s\n", filename);
+    RNFail("Unable to allocate weights for %s\n", filename);
     return NULL;
   }
 
   // Read weights
   for (int i = 0; i < nweights; i++) {
     if (fscanf(fp, "%lf", &weights[i]) != 1) {
-      fprintf(stderr, "Unable to read weight %d from %s\n", i, filename);
+      RNFail("Unable to read weight %d from %s\n", i, filename);
       return NULL;
     }
   }
@@ -114,7 +114,7 @@ CreatePoints(R3Mesh *mesh, RNScalar *weights, int nweights, R3Point *points, int
     if (nweights > 0) {
       if (weights == NULL) nweights = 0;
       else if (nweights != mesh->NFaces()) {
-        fprintf(stderr, "Invalid number of weights (%d) for sampling faces (%d)\n", nweights, mesh->NFaces());
+        RNFail("Invalid number of weights (%d) for sampling faces (%d)\n", nweights, mesh->NFaces());
         return 0;
       }
     }
@@ -170,7 +170,7 @@ CreatePoints(R3Mesh *mesh, RNScalar *weights, int nweights, R3Point *points, int
     if (nweights > 0) {
       if (weights == NULL) nweights = 0;
       else if (nweights != mesh->NEdges()) {
-        fprintf(stderr, "Invalid number of weights (%d) for sampling edges (%d)\n", nweights, mesh->NEdges());
+        RNFail("Invalid number of weights (%d) for sampling edges (%d)\n", nweights, mesh->NEdges());
         return 0;
       }
     }
@@ -230,7 +230,7 @@ CreatePoints(R3Mesh *mesh, RNScalar *weights, int nweights, R3Point *points, int
       if (nweights > 0) {
         if (weights == NULL) nweights = 0;
         else if (nweights != mesh->NVertices()) {
-          fprintf(stderr, "Invalid number of weights (%d) for sampling vertices (%d)\n", nweights, mesh->NVertices());
+          RNFail("Invalid number of weights (%d) for sampling vertices (%d)\n", nweights, mesh->NVertices());
           return 0;
         }
       }
@@ -666,7 +666,7 @@ Align(R3Mesh *mesh1, R3Mesh *mesh2,
   R3Point *points1 = new R3Point [ max_points ];
   int npoints1 = CreatePoints(mesh1, weights1, nweights1, points1, max_points, sample_method);
   if ((scale1 == 0) || (npoints1 == 0)) {
-    fprintf(stderr, "Unable to process first mesh\n");
+    RNFail("Unable to process first mesh\n");
     return 0;
   }
 
@@ -681,7 +681,7 @@ Align(R3Mesh *mesh1, R3Mesh *mesh2,
   R3Point *points2 = new R3Point [ max_points ];
   int npoints2 = CreatePoints(mesh2, weights2, nweights2, points2, max_points, sample_method);
   if ((scale2 == 0) || (npoints2 == 0)) {
-    fprintf(stderr, "Unable to process second mesh\n");
+    RNFail("Unable to process second mesh\n");
     return 0;
   }
 
@@ -988,14 +988,14 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-sample_faces")) sample_method = 0; 
       else if (!strcmp(*argv, "-sample_edges")) sample_method = 1; 
       else if (!strcmp(*argv, "-sample_vertices")) sample_method = 2; 
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input1_name) input1_name = *argv;
       else if (!input2_name) input2_name = *argv;
       else if (!output1_name) output1_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }

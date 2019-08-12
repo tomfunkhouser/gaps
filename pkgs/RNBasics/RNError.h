@@ -35,6 +35,7 @@ void RNWarning(const char *fmt, ...);
 }
 
 
+
 /* Define my own assert function */
 
 #ifdef assert

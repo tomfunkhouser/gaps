@@ -27,20 +27,20 @@ R3Polyline(void)
 
 
 R3Polyline::
-R3Polyline(const R3Polyline& curve)
+R3Polyline(const R3Polyline& polyline)
   : vertex_positions(NULL),
     vertex_parameters(NULL),
     vertex_datas(NULL),
-    nvertices(curve.nvertices),
-    bbox(curve.BBox())
+    nvertices(polyline.nvertices),
+    bbox(polyline.BBox())
 {
   // Copy vertex_positions and parameters
   if (nvertices > 0) {
     this->vertex_positions = new R3Point [ nvertices ];
     this->vertex_parameters = new RNScalar [ nvertices ];
     for (int i = 0; i < nvertices; i++) {
-      this->vertex_positions[i] = curve.vertex_positions[i];
-      this->vertex_parameters[i] = curve.vertex_parameters[i];
+      this->vertex_positions[i] = polyline.vertex_positions[i];
+      this->vertex_parameters[i] = polyline.vertex_parameters[i];
     }
   }
 }
@@ -415,6 +415,37 @@ PointDerivative(RNScalar u) const
 
 
 
+R3Polyline& R3Polyline::
+operator=(const R3Polyline& polyline)
+{
+  // Delete previous everything
+  if (vertex_positions) delete [] vertex_positions;
+  if (vertex_parameters) delete [] vertex_parameters;
+  if (vertex_datas) delete [] vertex_datas;
+  this->vertex_positions = NULL;
+  this->vertex_parameters = NULL;
+  this->vertex_datas = NULL;
+  
+  // Copy properties
+  this->nvertices = polyline.nvertices;
+  this->bbox = polyline.BBox();
+
+  // Copy vertex_positions and parameters
+  if (nvertices > 0) {
+    this->vertex_positions = new R3Point [ nvertices ];
+    this->vertex_parameters = new RNScalar [ nvertices ];
+    for (int i = 0; i < nvertices; i++) {
+      this->vertex_positions[i] = polyline.vertex_positions[i];
+      this->vertex_parameters[i] = polyline.vertex_parameters[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3Polyline::
 Transform(const R3Transformation& transformation)
 {
@@ -471,7 +502,7 @@ SetVertexData(int k, void *data)
   if (!vertex_datas) {
     vertex_datas = new void * [ NVertices() ];
     if (!vertex_datas) {
-      fprintf(stderr, "Unable to allocate vertex datas\n");
+      RNFail("Unable to allocate vertex datas\n");
       return;
     }
   }

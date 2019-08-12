@@ -66,7 +66,7 @@ WriteText(R3Grid *grid, const char *txt_name)
   if (txt_name) {
     fp = fopen(txt_name, "w");
     if (!fp) {
-      fprintf(stderr, "Unable to open TXT file %s\n", txt_name);
+      RNFail("Unable to open TXT file %s\n", txt_name);
       return 0;
     }  
   }
@@ -108,7 +108,7 @@ ParseArgs(int argc, char **argv)
         print_verbose = 1; 
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -116,7 +116,7 @@ ParseArgs(int argc, char **argv)
       if (!grid_name) grid_name = *argv;
       else if (!txt_name) txt_name = *argv;
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -125,7 +125,7 @@ ParseArgs(int argc, char **argv)
 
   // Check grid filename
   if (!grid_name) {
-    fprintf(stderr, "You did not specify a grid file.\n");
+    RNFail("You did not specify a grid file.\n");
     return 0;
   }
 

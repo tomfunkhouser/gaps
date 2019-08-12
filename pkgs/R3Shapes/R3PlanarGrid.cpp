@@ -268,7 +268,7 @@ ReadFile(const char *filename)
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Input file has no extension (e.g., .pfm).\n");
+    RNFail("Input file has no extension (e.g., .pfm).\n");
     return 0;
   }
   
@@ -276,7 +276,7 @@ ReadFile(const char *filename)
   if (!strncmp(input_extension, ".grd", 4)) return ReadGridFile(filename);
   
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  RNFail("Unrecognized image file extension");
   return 0;
 }
 
@@ -288,7 +288,7 @@ WriteFile(const char *filename) const
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Output file has no extension (e.g., .pfm).\n");
+    RNFail("Output file has no extension (e.g., .pfm).\n");
     return 0;
   }
   
@@ -296,7 +296,7 @@ WriteFile(const char *filename) const
   if (!strncmp(input_extension, ".grd", 4)) return WriteGridFile(filename);
 
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  RNFail("Unrecognized image file extension");
   return 0;
 }
 

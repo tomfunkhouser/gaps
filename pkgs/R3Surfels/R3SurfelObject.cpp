@@ -218,7 +218,7 @@ PointSet(RNBoolean leaf_level) const
   // Allocate point set
   R3SurfelPointSet *pointset = new R3SurfelPointSet();
   if (!pointset) {
-    fprintf(stderr, "Unable to allocate point set\n");
+    RNFail("Unable to allocate point set\n");
     return NULL;
   }
 

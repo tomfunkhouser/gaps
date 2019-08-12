@@ -73,7 +73,7 @@ OpenScene(const char *scene_name, const char *database_name)
   // Allocate scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -152,7 +152,7 @@ ReadModel(char *filename)
   // Allocate model
   R3Scene *model = new R3Scene();
   if (!model) {
-    fprintf(stderr, "Unable to allocate model for %s\n", filename);
+    RNFail("Unable to allocate model for %s\n", filename);
     return NULL;
   }
 
@@ -523,7 +523,7 @@ ParseArgs(int argc, char **argv)
         initial_camera = TRUE;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -532,14 +532,14 @@ ParseArgs(int argc, char **argv)
       if (!scene_name) scene_name = *argv;
       else if (!database_name) database_name = *argv;
       else if (!model_name) model_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check surfels name
   if (!scene_name || !database_name) {
-    fprintf(stderr, "Usage: sflview scenefile databasefile [options]\n");
+    RNFail("Usage: sflview scenefile databasefile [options]\n");
     return FALSE;
   }
 

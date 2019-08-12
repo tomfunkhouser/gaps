@@ -711,7 +711,7 @@ int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres
   double xscale = (double) image.Width() / (double) xres;
   double yscale = (double) image.Height() / (double) yres;
   if (RNIsNotEqual(xscale, yscale, 0.01)) {
-    fprintf(stderr, "Warning: anisotropic scaling of color image by factor %g\n", yscale/xscale);
+    RNFail("Warning: anisotropic scaling of color image by factor %g\n", yscale/xscale);
   }
   
   // Copy original image and then initialize to zeroes

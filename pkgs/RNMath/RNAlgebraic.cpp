@@ -2214,9 +2214,6 @@ UpdateVariableIndex(int max_variables, int& variable_count,
 }
 
 
-void DebugBreakpoint(void) {};
-
-
 RNBoolean RNAlgebraic::
 IsValid(void) const
 {
@@ -2226,21 +2223,21 @@ IsValid(void) const
   // Check invariants
   switch(operation) {
   case RN_ZERO_OPERATION: 
-    if (polynomial) { printf("E1\n"); DebugBreakpoint(); return FALSE; }
-    if (operands[0]) { printf("E2\n"); DebugBreakpoint(); return FALSE; }
-    if (operands[1]) { printf("E3\n"); DebugBreakpoint(); return FALSE; }
+    if (polynomial) { printf("E1\n"); return FALSE; }
+    if (operands[0]) { printf("E2\n"); return FALSE; }
+    if (operands[1]) { printf("E3\n"); return FALSE; }
     break;
     
   case RN_POLYNOMIAL_OPERATION: 
-    if (!polynomial) { printf("E4\n"); DebugBreakpoint(); return FALSE; }
-    if (operands[0]) { printf("E5\n"); DebugBreakpoint(); return FALSE; }
-    if (operands[1]) { printf("E6\n"); DebugBreakpoint(); return FALSE; }
+    if (!polynomial) { printf("E4\n"); return FALSE; }
+    if (operands[0]) { printf("E5\n"); return FALSE; }
+    if (operands[1]) { printf("E6\n"); return FALSE; }
     break;
 
   default:
-    if (polynomial) { printf("E7\n"); DebugBreakpoint(); return FALSE; }
-    if (!operands[0]) { printf("E8\n"); DebugBreakpoint(); return FALSE; }
-    if (!operands[1]) { printf("E9\n"); DebugBreakpoint(); return FALSE; }
+    if (polynomial) { printf("E7\n"); return FALSE; }
+    if (!operands[0]) { printf("E8\n"); return FALSE; }
+    if (!operands[1]) { printf("E9\n"); return FALSE; }
     break;
   }
 

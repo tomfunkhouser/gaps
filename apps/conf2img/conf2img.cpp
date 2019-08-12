@@ -144,14 +144,14 @@ ReadConfiguration(const char *filename)
 
   // Read file
   if (!configuration.ReadFile(filename, load_every_kth_image)) {
-    fprintf(stderr, "Unable to read configuration from %s\n", filename);
+    RNFail("Unable to read configuration from %s\n", filename);
     return 0;
   }
 
 #if 0
   // Read all channels ... for now
   if (!configuration.ReadChannels()) {
-    fprintf(stderr, "Unable to read channels for %s\n", filename);
+    RNFail("Unable to read channels for %s\n", filename);
     return 0;
   }
 #endif
@@ -203,7 +203,7 @@ ReadCameras(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open cameras file %s\n", filename);
+    RNFail("Unable to open cameras file %s\n", filename);
     return 0;
   }
 
@@ -1418,20 +1418,20 @@ RenderImagesWithMesa(const char *output_image_directory)
   // Create mesa context
   OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 32, 0, 0, NULL);
   if (!ctx) {
-    fprintf(stderr, "Unable to create mesa context\n");
+    RNFail("Unable to create mesa context\n");
     return 0;
   }
 
   // Create frame buffer
   void *frame_buffer = malloc(width * height * 4 * sizeof(GLubyte) );
   if (!frame_buffer) {
-    fprintf(stderr, "Unable to allocate mesa frame buffer\n");
+    RNFail("Unable to allocate mesa frame buffer\n");
     return 0;
   }
 
   // Assign mesa context
   if (!OSMesaMakeCurrent(ctx, frame_buffer, GL_UNSIGNED_BYTE, width, height)) {
-    fprintf(stderr, "Unable to make mesa context current\n");
+    RNFail("Unable to make mesa context current\n");
     return 0;
   }
 
@@ -1550,7 +1550,7 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; background[2] = atof(*argv);
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -1558,7 +1558,7 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_configuration_filename) input_configuration_filename = *argv;
       else if (!output_image_directory) output_image_directory = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
@@ -1571,7 +1571,7 @@ ParseArgs(int argc, char **argv)
   
   // Check filenames
   if (!input_configuration_filename || !output_image_directory) {
-    fprintf(stderr, "Usage: conf2img inputconfigurationfile outputimagedirectory [options]\n");
+    RNFail("Usage: conf2img inputconfigurationfile outputimagedirectory [options]\n");
     return 0;
   }
 

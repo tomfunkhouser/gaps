@@ -1885,6 +1885,18 @@ FindFurthest(const R3Point& query_position,
   return furthest_point;
 }
 
+
+
+template <class PtrType>
+R3Kdtree<PtrType>& R3Kdtree<PtrType>::
+operator=(const R3Kdtree<PtrType>& tree)
+{
+  RNAbort("Not implemented");
+  return *this;
+}
+
+
+
 #endif
 
 

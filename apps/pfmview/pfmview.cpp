@@ -557,7 +557,7 @@ ParseArgs(int argc, char **argv)
         selected_grid_range.Reset(min_value, max_value);
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -570,7 +570,7 @@ ParseArgs(int argc, char **argv)
 
   // Check grid filename
   if (grid_names.IsEmpty()) {
-    fprintf(stderr, "Usage: pfmview grid_name [options].\n");
+    RNFail("Usage: pfmview grid_name [options].\n");
     return 0;
   }
 

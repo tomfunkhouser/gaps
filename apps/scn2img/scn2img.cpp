@@ -131,7 +131,7 @@ ReadScene(const char *filename)
   // Allocate scene
   scene = new R3Scene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene for %s\n", filename);
+    RNFail("Unable to allocate scene for %s\n", filename);
     return NULL;
   }
 
@@ -231,7 +231,7 @@ ReadCameras(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open cameras file %s\n", filename);
+    RNFail("Unable to open cameras file %s\n", filename);
     return 0;
   }
 
@@ -280,7 +280,7 @@ WriteNodeNames(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open node name file %s\n", filename);
+    RNFail("Unable to open node name file %s\n", filename);
     return 0;
   }
 
@@ -1236,20 +1236,20 @@ RenderImagesWithMesa(const char *output_image_directory)
   // Create mesa context
   OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 32, 0, 0, NULL);
   if (!ctx) {
-    fprintf(stderr, "Unable to create mesa context\n");
+    RNFail("Unable to create mesa context\n");
     return 0;
   }
 
   // Create frame buffer
   void *frame_buffer = malloc(width * height * 4 * sizeof(GLubyte) );
   if (!frame_buffer) {
-    fprintf(stderr, "Unable to allocate mesa frame buffer\n");
+    RNFail("Unable to allocate mesa frame buffer\n");
     return 0;
   }
 
   // Assign mesa context
   if (!OSMesaMakeCurrent(ctx, frame_buffer, GL_UNSIGNED_BYTE, width, height)) {
-    fprintf(stderr, "Unable to make mesa context current\n");
+    RNFail("Unable to make mesa context current\n");
     return 0;
   }
 
@@ -1524,7 +1524,7 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; background[2] = atof(*argv);
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -1533,7 +1533,7 @@ ParseArgs(int argc, char **argv)
       if (!input_scene_name) input_scene_name = *argv;
       else if (!input_cameras_name) input_cameras_name = *argv;
       else if (!output_image_directory) output_image_directory = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
@@ -1557,7 +1557,7 @@ ParseArgs(int argc, char **argv)
 
   // Check filenames
   if (!input_scene_name || !input_cameras_name || !output_image_directory) {
-    fprintf(stderr, "Usage: scn2img inputscenefile inputcamerasfile outputimagedirectory\n");
+    RNFail("Usage: scn2img inputscenefile inputcamerasfile outputimagedirectory\n");
     return 0;
   }
 

@@ -109,7 +109,7 @@ ReadMatrix(R4Matrix& m, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open matrix file: %s\n", filename);
+    RNFail("Unable to open matrix file: %s\n", filename);
     return 0;
   }
 
@@ -137,7 +137,7 @@ WriteMatrix(const R4Matrix& m, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open matrix file: %s\n", filename);
+    RNFail("Unable to open matrix file: %s\n", filename);
     return 0;
   }
 
@@ -167,7 +167,7 @@ MergeList(R3Mesh *mesh, const char *filename)
   // Open list file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open list %s\n", filename);
+    RNFail("Unable to open list %s\n", filename);
     return 0;
   }
 
@@ -484,26 +484,26 @@ int ParseArgs(int argc, char **argv)
         xform.Transform(R3Affine(m));
         xform.Transform(prev_xform);
       }  
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input_mesh_name) input_mesh_name = *argv;
       else if (!output_mesh_name) output_mesh_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
   if (!input_mesh_name) {
-    fprintf(stderr, "You did not specify an input file name.\n");
+    RNFail("You did not specify an input file name.\n");
     return 0;
   }
 
   // Check output filename
   if (!output_mesh_name) {
-    fprintf(stderr, "You did not specify an output file name.\n");
+    RNFail("You did not specify an output file name.\n");
     return 0;
   }
 

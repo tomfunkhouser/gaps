@@ -583,6 +583,57 @@ Empty(void)
 
 
 void R2Polygon::
+RemovePoint(int k)
+{
+    // Copy points down one
+    npoints--;
+    for (int i = k; k < npoints; i++) {
+      points[i] = points[i+1];
+    }
+
+    // Update bounding box
+    bbox = R2null_box;
+    for (int i = 0; i < npoints; i++) {
+        bbox.Union(points[i]);
+    }
+}
+
+
+
+void R2Polygon::
+InsertPoint(int k, const R2Point& position)
+{
+    // Add point in position k, moving others starting at k+1 up to make room
+    R2Point *p = new R2Point [npoints+1];
+    for (int i = 0; i < k; i++) p[i] = points[i];
+    p[k] = position;
+    for (int i = k; i < npoints; i++) p[i+1] = points[i];
+    if (points) delete [] points;
+    points = p;
+    npoints++;
+    
+    // Update bounding box
+    bbox.Union(position);
+}
+
+
+
+void R2Polygon::
+SetPoint(int k, const R2Point& position)
+{
+    // Set point
+    points[k] = position;
+
+    // Update bounding box
+    bbox = R2null_box;
+    for (int i = 0; i < npoints; i++) {
+        bbox.Union(points[i]);
+    }
+}
+
+
+
+void R2Polygon::
 Clip(const R2Line& line) 
 {
   // Check number of points
@@ -695,6 +746,34 @@ Transform(const R2Transformation& transformation)
 
 
 
+R2Polygon& R2Polygon::
+operator=(const R2Polygon& polygon) 
+{
+  // Delete previous points
+  if (points) {
+    delete points;
+    points = NULL;
+  }
+  
+  // Copy properties
+  clockwise = polygon.clockwise;
+  bbox = polygon.bbox;
+
+  // Copy points
+  npoints = polygon.npoints;
+  if (npoints > 0) {
+    points = new R2Point [ npoints ];
+    for (int i = 0; i < npoints; i++) {
+      points[i] = polygon.points[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 void R2Polygon::
 Print(FILE *fp) const
 {
@@ -713,7 +792,7 @@ ReadTheraFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open polygon file: %s\n", filename);
+    RNFail("Unable to open polygon file: %s\n", filename);
     return 0;
   }
 
@@ -721,14 +800,14 @@ ReadTheraFile(const char *filename)
   int ndimensions;
   double polygon_depth, sample_spacing;
   if (fscanf(fp, "%d %d %lf %lf", &ndimensions, &npoints, &polygon_depth, &sample_spacing) != 4) {
-    fprintf(stderr, "Unable to read polygon file header: %s\n", filename);
+    RNFail("Unable to read polygon file header: %s\n", filename);
     return 0;
   }
 
   // Allocate points
   points = new R2Point [ npoints ];
   if (!points) {
-    fprintf(stderr, "Unable to allocate points for polygon: %s\n", filename);
+    RNFail("Unable to allocate points for polygon: %s\n", filename);
     return 0;
   }
 
@@ -736,7 +815,7 @@ ReadTheraFile(const char *filename)
   for (int i = 0; i < npoints; i++) {
     double x, y;
     if (fscanf(fp, "%lf %lf", &x, &y) != 2) {
-      fprintf(stderr, "Unable to read point %d from polygon file %s\n", npoints, filename);
+      RNFail("Unable to read point %d from polygon file %s\n", npoints, filename);
       return 0;
     }
 

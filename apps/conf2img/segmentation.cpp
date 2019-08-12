@@ -1339,7 +1339,7 @@ CreateNeighbors(
   Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
   kdtree = new R3Kdtree<Point *>(points, position_offset);
   if (!kdtree) {
-    fprintf(stderr, "Unable to create kdtree\n");
+    RNFail("Unable to create kdtree\n");
     return 0;
   }
   
@@ -2085,7 +2085,7 @@ WriteFile(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open segmentation file %s\n", filename);
+    RNFail("Unable to open segmentation file %s\n", filename);
     return 0;
   }
 

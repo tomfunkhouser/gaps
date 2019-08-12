@@ -559,6 +559,16 @@ InsertPoints(R2KdtreeNode<PtrType> *node, const R2Box& node_box, PtrType *points
 
 
 template <class PtrType>
+R2Kdtree<PtrType>& R2Kdtree<PtrType>::
+operator=(const R2Kdtree<PtrType>& kdtree)
+{
+  RNAbort("Not implemented");
+  return *this;
+}
+
+
+  
+template <class PtrType>
 void R2Kdtree<PtrType>::
 Outline(R2KdtreeNode<PtrType> *node, const R2Box& node_box) const
 {

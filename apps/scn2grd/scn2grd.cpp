@@ -37,7 +37,7 @@ ReadScene(const char *filename)
   // Allocate scene
   R3Scene *scene = new R3Scene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene for %s\n", filename);
+    RNFail("Unable to allocate scene for %s\n", filename);
     return NULL;
   }
 
@@ -161,7 +161,7 @@ CreateGrid(R3Scene *scene, R3SceneNode *node)
   // Allocate grid
   R3Grid *grid = new R3Grid(bbox, grid_spacing, grid_min_resolution, grid_max_resolution);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     return NULL;
   }
 
@@ -207,20 +207,20 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-spacing")) { argc--; argv++; grid_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-boundary_radius")) { argc--; argv++; grid_boundary_radius = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; grid_max_resolution = atoi(*argv); }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input_scene_filename) input_scene_filename = *argv;
       else if (!output_grid_filename) output_grid_filename = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
   if (!input_scene_filename || !output_grid_filename) {
-    fprintf(stderr, "Usage: scn2grd inputscenefile outputgridfile [options]\n");
+    RNFail("Usage: scn2grd inputscenefile outputgridfile [options]\n");
     return 0;
   }
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
   if (selected_node_name) {
     node = scene->Node(selected_node_name);
     if (!node) {
-      fprintf(stderr, "Unable to find selected node %s\n", selected_node_name);
+      RNFail("Unable to find selected node %s\n", selected_node_name);
       exit(-1);
     }
   }

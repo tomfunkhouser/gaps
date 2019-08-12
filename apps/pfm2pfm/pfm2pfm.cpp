@@ -356,7 +356,7 @@ Poisson(R2Grid *grid, R2Grid *dx_grid, R2Grid *dy_grid)
   // Solve system of equations
   if (equations.NEquations() >= n) {
     if (!equations.Minimize(x, RN_CSPARSE_SOLVER, 1E-3)) {
-      fprintf(stderr, "Unable to minimize system of equations\n");
+      RNFail("Unable to minimize system of equations\n");
       delete [] x;
       return;
     }
@@ -505,7 +505,7 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
     case THRESHOLD_GRID_OPERATION: 
       grid1 = ReadGrid(operation->operand1);
       if (!grid1) {
-        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
+        RNFail("Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
         return 0;
       }
       break;
@@ -513,12 +513,12 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
     case POISSON_OPERATION: 
       grid1 = ReadGrid(operation->operand1);
       if (!grid1) {
-        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
+        RNFail("Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
         return 0;
       }
       grid2 = ReadGrid(operation->operand2);
       if (!grid2) {
-        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand2, i);
+        RNFail("Unable to read grid file (%s) for operation %d\n", operation->operand2, i);
         return 0;
       }
       break;
@@ -635,7 +635,7 @@ ApplyOperations(R2Grid *grid, Operation *operations, int noperations)
       break; }
 
     default: 
-      fprintf(stderr, "Unknown operation type (%d) in operation %d\n", operation->type, i); 
+      RNFail("Unknown operation type (%d) in operation %d\n", operation->type, i); 
       return 0; 
     }
 
@@ -1089,7 +1089,7 @@ ParseArgs(int argc, char **argv)
         operation->type = TMP_OPERATION;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -1097,7 +1097,7 @@ ParseArgs(int argc, char **argv)
       if (!input_name) input_name = *argv;
       else if (!output_name) output_name = *argv;
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -1106,13 +1106,13 @@ ParseArgs(int argc, char **argv)
 
   // Check input filename
   if (!input_name) {
-    fprintf(stderr, "You did not specify an input file.\n");
+    RNFail("You did not specify an input file.\n");
     return 0;
   }
 
   // Check output filename
   if (!output_name) {
-    fprintf(stderr, "You did not specify an output file.\n");
+    RNFail("You did not specify an output file.\n");
     return 0;
   }
 

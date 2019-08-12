@@ -2963,6 +2963,68 @@ FillHoles(void)
 
 
 
+R3Mesh& R3Mesh::
+operator=(const R3Mesh& mesh)
+{
+  // Delete everything
+  Empty();
+  
+  // Copy bbox
+  bbox = mesh.bbox;
+
+  // Copy vertices 
+  vertex_block = new R3MeshVertex [ mesh.NVertices() ];
+  for (int i = 0; i < mesh.NVertices(); i++) {
+    R3MeshVertex *vertex = mesh.Vertex(i);
+    const R3Point& position = mesh.VertexPosition(vertex);
+    const R3Vector& normal = mesh.VertexNormal(vertex);
+    const RNRgb& color = mesh.VertexColor(vertex);
+    const R2Point& texcoords = mesh.VertexTextureCoords(vertex);
+    R3MeshVertex *copy_vertex = this->CreateVertex(position, normal, color, texcoords, &vertex_block[i] );
+    if (this->VertexID(copy_vertex) != i) RNAbort("Mismatching vertex id"); 
+  }
+
+  // Copy edges
+  edge_block = new R3MeshEdge [ mesh.NEdges() ];
+  for (int i = 0; i < mesh.NEdges(); i++) {
+    R3MeshEdge *edge = mesh.Edge(i);
+    R3MeshVertex *v0 = mesh.VertexOnEdge(edge, 0);
+    R3MeshVertex *v1 = mesh.VertexOnEdge(edge, 1);
+    int i0 = mesh.VertexID(v0);
+    int i1 = mesh.VertexID(v1);
+    R3MeshVertex *copy_v0 = this->Vertex(i0);
+    R3MeshVertex *copy_v1 = this->Vertex(i1);
+    R3MeshEdge *copy_edge = this->CreateEdge(copy_v0, copy_v1, &edge_block[i] );
+    if (this->EdgeID(copy_edge) != i) RNAbort("Mismatching edge id"); 
+  }
+
+  // Copy faces
+  face_block = new R3MeshFace [ mesh.NFaces() ];
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *face = mesh.Face(i);
+    R3MeshVertex *v0 = mesh.VertexOnFace(face, 0);
+    R3MeshVertex *v1 = mesh.VertexOnFace(face, 1);
+    R3MeshVertex *v2 = mesh.VertexOnFace(face, 2);
+    int i0 = mesh.VertexID(v0);
+    int i1 = mesh.VertexID(v1);
+    int i2 = mesh.VertexID(v2);
+    R3MeshVertex *copy_v0 = this->Vertex(i0);
+    R3MeshVertex *copy_v1 = this->Vertex(i1);
+    R3MeshVertex *copy_v2 = this->Vertex(i2);
+    R3MeshFace *copy_face = this->CreateFace(copy_v0, copy_v1, copy_v2, &face_block[i]);
+    if (this->FaceID(copy_face) != i) RNAbort("Mismatching face id"); 
+    this->SetFaceMaterial(copy_face, mesh.FaceMaterial(face));
+    this->SetFaceSegment(copy_face, mesh.FaceSegment(face));
+    this->SetFaceCategory(copy_face, mesh.FaceCategory(face));
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // DRAW FUNCTIONS
@@ -3853,7 +3915,7 @@ DijkstraDistance(const R3MeshVertex *source_vertex, const R3MeshVertex *destinat
   // Allocate temporary data
   DijkstraData *vertex_data = new DijkstraData [ NVertices() ];
   if (!vertex_data) {
-    fprintf(stderr, "Unable to allocate temporary data for geodesic distances.\n");
+    RNFail("Unable to allocate temporary data for geodesic distances.\n");
     return RN_INFINITY;
   }
 
@@ -3936,14 +3998,14 @@ DijkstraDistances(const RNArray<R3MeshVertex *>& source_vertices, RNLength max_d
   // Allocate array of distances (to return)
   RNLength *distances = new RNLength [ NVertices() ];
   if (!distances) {
-    fprintf(stderr, "Unable to allocate array of distances.\n");
+    RNFail("Unable to allocate array of distances.\n");
     return NULL;
   }
 
   // Allocate temporary data
   DijkstraData *vertex_data = new DijkstraData [ NVertices() ];
   if (!vertex_data) {
-    fprintf(stderr, "Unable to allocate temporary data for geodesic distances.\n");
+    RNFail("Unable to allocate temporary data for geodesic distances.\n");
     delete [] distances;
     return NULL;
   }
@@ -4020,14 +4082,14 @@ DijkstraDistances(const RNArray<R3MeshVertex *>& source_vertices, RNLength max_d
   // Allocate array of distances (to return)
   RNLength *distances = new RNLength [ NVertices() ];
   if (!distances) {
-    fprintf(stderr, "Unable to allocate array of distances.\n");
+    RNFail("Unable to allocate array of distances.\n");
     return NULL;
   }
 
   // Allocate temporary data
   DijkstraData *vertex_data = new DijkstraData [ NVertices() ];
   if (!vertex_data) {
-    fprintf(stderr, "Unable to allocate temporary data for geodesic distances.\n");
+    RNFail("Unable to allocate temporary data for geodesic distances.\n");
     delete [] distances;
     return NULL;
   }
@@ -4656,7 +4718,7 @@ ReadObjFile(const char *filename)
       // Read texture coordinates
       double u, v;
       if (sscanf(bufferp, "%s%lf%lf", keyword, &u, &v) != 3) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -4668,7 +4730,7 @@ ReadObjFile(const char *filename)
       // Read texture coordinates
       double x, y, z;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -4683,7 +4745,7 @@ ReadObjFile(const char *filename)
       if (sscanf(bufferp, "%s%s%s%s%s", keyword, s[0], s[1], s[2], s[3]) != 5) {
         quad = 0;;
         if (sscanf(bufferp, "%s%s%s%s", keyword, s[0], s[1], s[2]) != 4) {
-          fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+          RNFail("Syntax error on line %d in OBJ file", line_count);
           return 0;
         }
       }
@@ -4778,7 +4840,7 @@ ReadOffFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -5534,7 +5596,7 @@ ReadHoppeFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -5664,7 +5726,7 @@ ReadIfsFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "rb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -5893,7 +5955,7 @@ ReadVRMLFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 

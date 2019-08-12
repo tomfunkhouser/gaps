@@ -77,7 +77,7 @@ CreateSamplePoints(R3Mesh *mesh,
   // Allocate points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -180,7 +180,7 @@ CreateSamplePoints(R3SurfelPointSet *pointset,
   // Allocate points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     delete normals;
     return NULL;
   }
@@ -247,7 +247,7 @@ CreateSamplePoints(R3SurfelObject *object,
   // Create points
   RNArray<Point *> *points = CreateSamplePoints(pointset, npoints, zmin, zmax);
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     delete pointset;
     object->ReleaseBlocks();
     return NULL;
@@ -290,7 +290,7 @@ CreateSamplePoints(R3SurfelScene *scene, const R3Point& center_point,
   // Create points
   RNArray<Point *> *points = CreateSamplePoints(pointset, max_npoints, zmin, zmax);
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     delete pointset;
     return NULL;
   }
@@ -720,7 +720,7 @@ CreateModel(const RNArray<Point *>& points, RNCoord zmin = RN_UNKNOWN,
   // Allocate model
   Model *model = new Model();
   if (!model) {
-    fprintf(stderr, "Unable to allocate model for surfels\n");
+    RNFail("Unable to allocate model for surfels\n");
     return NULL;
   }
 
@@ -987,13 +987,13 @@ CreateMeshModel(const char *filename)
   // Allocate mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh for %s\n", filename);
+    RNFail("Unable to allocate mesh for %s\n", filename);
     return NULL;
   }
 
   // Read mesh
   if (!mesh->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh from %s\n", filename);
+    RNFail("Unable to read mesh from %s\n", filename);
     delete mesh;
     return NULL;
   }
@@ -1010,14 +1010,14 @@ CreateMeshModels(const char *list_name)
   // Allocate array of models
   RNArray<Model *> *models = new RNArray<Model *>();
   if (!models) {
-    fprintf(stderr, "Unable to allocate array of models\n");
+    RNFail("Unable to allocate array of models\n");
     return NULL;
   }
 
   // Open list file
   FILE *fp = fopen(list_name, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open mesh list file: %s\n", list_name);
+    RNFail("Unable to open mesh list file: %s\n", list_name);
     return NULL;
   }
 

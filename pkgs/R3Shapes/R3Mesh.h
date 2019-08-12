@@ -507,7 +507,9 @@ class R3Mesh {
      // Fill hole bounded by the given edge
     void FillHoles(void);
      // Fill all holes in mesh
-
+    R3Mesh& operator=(const R3Mesh& mesh);
+     // Copy mesh
+  
     // GEOMETRY MANIPULATION FUNCTIONS
     virtual void Smooth(RNScalar factor = 1.0);
       // Smooth mesh

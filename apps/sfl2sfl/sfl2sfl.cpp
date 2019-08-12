@@ -38,7 +38,7 @@ OpenScene(const char *input_scene_name, const char *input_database_name)
   // Allocate scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -153,7 +153,7 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
@@ -161,7 +161,7 @@ ParseArgs(int argc, char **argv)
       else if (!input_database_name) input_database_name = *argv;
       else if (!output_scene_name) output_scene_name = *argv;
       else if (!output_database_name) output_database_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
@@ -175,7 +175,7 @@ ParseArgs(int argc, char **argv)
 
   // Check file names
   if (!input_scene_name || !output_scene_name) {
-    fprintf(stderr, "Usage: sfl2sfl input_scene output_scene [options]\n");
+    RNFail("Usage: sfl2sfl input_scene output_scene [options]\n");
     return FALSE;
   }
 

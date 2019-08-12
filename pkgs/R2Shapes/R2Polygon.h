@@ -59,7 +59,11 @@ class R2Polygon : public R2Solid {
         virtual void Empty(void);
         virtual void Clip(const R2Line& line);
         virtual void Clip(const R2Box& box);
+        virtual void RemovePoint(int k);
+        virtual void InsertPoint(int k, const R2Point& position);
+        virtual void SetPoint(int k, const R2Point& position);
 	virtual void Transform(const R2Transformation& transformation);
+        R2Polygon& operator=(const R2Polygon& polygon);
 
         // Draw functions/operators
         virtual void Draw(const R2DrawFlags draw_flags = R2_DEFAULT_DRAW_FLAGS) const;

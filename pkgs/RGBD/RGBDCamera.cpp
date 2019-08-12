@@ -160,7 +160,7 @@ ReadScanNetFile(const char *filename)
   // Open camera file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    RNFail("Unable to open camera file %s\n", filename);
     return 0;
   }
 
@@ -235,7 +235,7 @@ WriteScanNetFile(const char *filename) const
   // Open camera file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    RNFail("Unable to open camera file %s\n", filename);
     return 0;
   }
 
@@ -291,7 +291,7 @@ ReadMatterportFile(const char *filename)
   // Open camera file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    RNFail("Unable to open camera file %s\n", filename);
     return 0;
   }
 
@@ -299,7 +299,7 @@ ReadMatterportFile(const char *filename)
   double width, height, fx, fy, cx, cy, k1, k2, p1, p2, k3;
   if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &width, &height,
     &fx, &fy, &cx, &cy, &k1, &k2, &p1, &p2, &k3) != (unsigned int) 11) {
-    fprintf(stderr, "Unable to read Matterport intrinsics matrix.\n");
+    RNFail("Unable to read Matterport intrinsics matrix.\n");
     return 0;
   }
 
@@ -345,7 +345,7 @@ WriteMatterportFile(const char *filename) const
   // Open camera file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open camera file %s\n", filename);
+    RNFail("Unable to open camera file %s\n", filename);
     return 0;
   }
 

@@ -39,7 +39,7 @@ OpenScene(const char *scene_name, const char *database_name)
   // Allocate scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -155,21 +155,21 @@ CreateNode(R3SurfelScene *scene, const char *node_name, const char *parent_name)
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return NULL;
   }    
 
   // Find parent node
   R3SurfelNode *parent_node = tree->FindNodeByName(parent_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find parent node with name %s\n", parent_name);
+    RNFail("Unable to find parent node with name %s\n", parent_name);
     return NULL;
   }
 
   // Create node
   R3SurfelNode *node = new R3SurfelNode(node_name);
   if (!node) {
-    fprintf(stderr, "Unable to allocate node\n");
+    RNFail("Unable to allocate node\n");
     return NULL;
   }
             
@@ -188,14 +188,14 @@ CreateObject(R3SurfelScene *scene, const char *object_name,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return NULL;
   }    
 
   // Find parent object
   R3SurfelObject *parent_object = scene->FindObjectByName(parent_name);
   if (!parent_object) {
-    fprintf(stderr, "Unable to find parent object with name %s\n", parent_name);
+    RNFail("Unable to find parent object with name %s\n", parent_name);
     return NULL;
   }
 
@@ -204,7 +204,7 @@ CreateObject(R3SurfelScene *scene, const char *object_name,
   if (strcmp(node_name, "None") && strcmp(node_name, "none") && strcmp(node_name, "NONE")) {
     node = tree->FindNodeByName(node_name);
     if (!node) {
-      fprintf(stderr, "Unable to find parent node with name %s\n", node_name);
+      RNFail("Unable to find parent node with name %s\n", node_name);
       return NULL;
     }
   }
@@ -212,7 +212,7 @@ CreateObject(R3SurfelScene *scene, const char *object_name,
   // Create object
   R3SurfelObject *object = new R3SurfelObject(object_name);
   if (!object) {
-    fprintf(stderr, "Unable to allocate object\n");
+    RNFail("Unable to allocate object\n");
     return NULL;
   }
          
@@ -234,21 +234,21 @@ CreateLabel(R3SurfelScene *scene, const char *label_name, const char *parent_nam
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return NULL;
   }    
 
   // Find parent label
   R3SurfelLabel *parent_label = scene->FindLabelByName(parent_name);
   if (!parent_label) {
-    fprintf(stderr, "Unable to find parent label with name %s\n", parent_name);
+    RNFail("Unable to find parent label with name %s\n", parent_name);
     return NULL;
   }
 
   // Create label
   R3SurfelLabel *label = new R3SurfelLabel(label_name);
   if (!label) {
-    fprintf(stderr, "Unable to allocate label\n");
+    RNFail("Unable to allocate label\n");
     return NULL;
   }
          
@@ -374,21 +374,21 @@ LoadSurfels(R3SurfelScene *scene, R3SurfelNode *parent_node,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return NULL;
   }    
 
   // Get surfel database
   R3SurfelDatabase *database = tree->Database();
   if (!database) {
-    fprintf(stderr, "Scene has no database\n");
+    RNFail("Scene has no database\n");
     return NULL;
   }    
 
   // Create node
   R3SurfelNode *node = new R3SurfelNode(node_name);
   if (!node) {
-    fprintf(stderr, "Unable to allocate node\n");
+    RNFail("Unable to allocate node\n");
     return NULL;
   }
             
@@ -398,7 +398,7 @@ LoadSurfels(R3SurfelScene *scene, R3SurfelNode *parent_node,
   // Create block
   R3SurfelBlock *block = new R3SurfelBlock(points, npoints);
   if (!block) {
-    fprintf(stderr, "Unable to allocate block\n");
+    RNFail("Unable to allocate block\n");
     return NULL;
   }
           
@@ -435,14 +435,14 @@ LoadSurfels(R3SurfelScene *scene, const char *surfels_filename,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return NULL;
   }    
 
   // Get surfel database
   R3SurfelDatabase *database = tree->Database();
   if (!database) {
-    fprintf(stderr, "Scene has no database\n");
+    RNFail("Scene has no database\n");
     return NULL;
   }    
 
@@ -454,7 +454,7 @@ LoadSurfels(R3SurfelScene *scene, const char *surfels_filename,
       strcmp(parent_object_name, "NONE")) {
     parent_object = scene->FindObjectByName(parent_object_name);
     if (!parent_object) {
-      fprintf(stderr, "Unable to find parent object with name %s\n", parent_object_name);
+      RNFail("Unable to find parent object with name %s\n", parent_object_name);
       return NULL;
     }
   }
@@ -462,14 +462,14 @@ LoadSurfels(R3SurfelScene *scene, const char *surfels_filename,
   // Find parent node
   R3SurfelNode *parent_node = tree->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find parent node with name %s\n", parent_node_name);
+    RNFail("Unable to find parent node with name %s\n", parent_node_name);
     return NULL;
   }
 
   // Create node
   R3SurfelNode *node = new R3SurfelNode(node_name);
   if (!node) {
-    fprintf(stderr, "Unable to allocate node for %s\n", surfels_filename);
+    RNFail("Unable to allocate node for %s\n", surfels_filename);
     return NULL;
   }
 
@@ -479,13 +479,13 @@ LoadSurfels(R3SurfelScene *scene, const char *surfels_filename,
   // Create block
   R3SurfelBlock *block = new R3SurfelBlock();
   if (!block) {
-    fprintf(stderr, "Unable to allocate block for %s\n", surfels_filename);
+    RNFail("Unable to allocate block for %s\n", surfels_filename);
     return NULL;
   }
 
   // Read block
   if (!block->ReadFile(surfels_filename)) {
-    fprintf(stderr, "Unable to read block from %s\n", surfels_filename);
+    RNFail("Unable to read block from %s\n", surfels_filename);
     return NULL;
   }
 
@@ -532,7 +532,7 @@ LoadSurfels(R3SurfelScene *scene, const char *surfels_filename,
     // Create object
     R3SurfelObject *object = new R3SurfelObject(object_name);
     if (!object) {
-      fprintf(stderr, "Unable to create object\n");
+      RNFail("Unable to create object\n");
       return NULL;
     }
 
@@ -576,7 +576,7 @@ LoadSurfelsList(R3SurfelScene *scene, const char *list_filename,
   // Open file
   FILE *fp = fopen(list_filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", list_filename);
+    RNFail("Unable to open %s\n", list_filename);
     return 0;
   }
 
@@ -630,35 +630,35 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return 0;
   }    
 
   // Get surfel database
   R3SurfelDatabase *database = tree->Database();
   if (!database) {
-    fprintf(stderr, "Scene has no database\n");
+    RNFail("Scene has no database\n");
     return 0;
   }    
 
   // Find parent object
   R3SurfelObject *parent_object = scene->FindObjectByName(parent_object_name);
   if (!parent_object) {
-    fprintf(stderr, "Unable to find parent object with name %s\n", parent_object_name);
+    RNFail("Unable to find parent object with name %s\n", parent_object_name);
     return 0;
   }
 
   // Find parent node
   R3SurfelNode *parent_node = tree->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find parent node with name %s\n", parent_node_name);
+    RNFail("Unable to find parent node with name %s\n", parent_node_name);
     return 0;
   }
 
   // Read mesh file
   R3Mesh mesh;
   if (!mesh.ReadFile(mesh_filename)) {
-    fprintf(stderr, "Unable to read mesh from %s\n", mesh_filename);
+    RNFail("Unable to read mesh from %s\n", mesh_filename);
     return 0;
   }
 
@@ -745,7 +745,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     // Create object
     R3SurfelObject *object = new R3SurfelObject(segment_name);
      if (!object) {
-      fprintf(stderr, "Unable to allocate object\n");
+      RNFail("Unable to allocate object\n");
       return 0;
     }
    
@@ -755,7 +755,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     // Create node
     R3SurfelNode *node = new R3SurfelNode(segment_name);
     if (!node) {
-      fprintf(stderr, "Unable to allocate node\n");
+      RNFail("Unable to allocate node\n");
       return 0;
     }
             
@@ -769,7 +769,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     RNArray<const R3Surfel *>& tmp = *((RNArray<const R3Surfel *> *) segment_surfels);
     R3SurfelBlock *block = new R3SurfelBlock(tmp, mesh_centroid);
     if (!block) {
-      fprintf(stderr, "Unable to allocate block\n");
+      RNFail("Unable to allocate block\n");
       return 0;
     }
     
@@ -834,28 +834,28 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no tree\n");
+    RNFail("Scene has no tree\n");
     return 0;
   }    
 
   // Get surfel database
   R3SurfelDatabase *database = tree->Database();
   if (!database) {
-    fprintf(stderr, "Scene has no database\n");
+    RNFail("Scene has no database\n");
     return 0;
   }    
 
   // Find parent node
   R3SurfelNode *parent_node = tree->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find parent node with name %s\n", parent_node_name);
+    RNFail("Unable to find parent node with name %s\n", parent_node_name);
     return 0;
   }
 
   // Open list file
   FILE *list_fp = fopen(list_filename, "r");
   if (!list_fp) {
-    fprintf(stderr, "Unable to open %s\n", list_filename);
+    RNFail("Unable to open %s\n", list_filename);
     return 0;
   }
 
@@ -884,7 +884,7 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
     // Create run node
     R3SurfelNode *run_node = new R3SurfelNode(run_name);
     if (!run_node) {
-      fprintf(stderr, "Unable to allocate node\n");
+      RNFail("Unable to allocate node\n");
       return 0;
     }
             
@@ -904,7 +904,7 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
       // Open file
       FILE *obj_fp = fopen(obj_filename, "r");
       if (!obj_fp) {
-        fprintf(stderr, "Unable to open laser pose file: %s\n", obj_filename);
+        RNFail("Unable to open laser pose file: %s\n", obj_filename);
         return 0;
       }
 
@@ -913,7 +913,7 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
       sprintf(scan_name, "scan_%d", laser_index);
       R3SurfelNode *scan_node = new R3SurfelNode(scan_name);
       if (!scan_node) {
-        fprintf(stderr, "Unable to allocate node\n");
+        RNFail("Unable to allocate node\n");
         return 0;
       }
             
@@ -933,7 +933,7 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
           // Parse point
           double x, y, z; 
           if (sscanf(buffer, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-            fprintf(stderr, "Error reading line %d from %s\n", line_count, obj_filename);
+            RNFail("Error reading line %d from %s\n", line_count, obj_filename);
             return 0;
           }
           
@@ -954,7 +954,7 @@ LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename,
           // Get scanline string
           char scanline_string[1024];
           if (sscanf(buffer, "%s%s", keyword, scanline_string) != 2) {
-            fprintf(stderr, "Error reading line %d from %s\n", line_count, obj_filename);
+            RNFail("Error reading line %d from %s\n", line_count, obj_filename);
             return 0;
           }
 
@@ -1046,7 +1046,7 @@ ReadCategoryFile(R3SurfelScene *scene, const char *filename, const char *root_na
   if (root_name && strcmp(root_name, "Null")) {
     root = scene->FindLabelByName(root_name);
     if (!root) {
-      fprintf(stderr, "Unable to find root label %s\n", root_name);
+      RNFail("Unable to find root label %s\n", root_name);
       return 0;
     }
   }
@@ -1054,7 +1054,7 @@ ReadCategoryFile(R3SurfelScene *scene, const char *filename, const char *root_na
   // Open file
   FILE* fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open category file %s\n", filename);
+    RNFail("Unable to open category file %s\n", filename);
     return 0;
   }
 
@@ -1085,13 +1085,13 @@ ReadCategoryFile(R3SurfelScene *scene, const char *filename, const char *root_na
 
   // Check if found id field in header
   if ((label_id_k < 0) && (mpcat40_id_k < 0) {
-    fprintf(stderr, "Did not find index or mpcat40index in header of %s\n", filename);
+    RNFail("Did not find index or mpcat40index in header of %s\n", filename);
     return 0;
   }
 
   // Check if found name field in header
   if ((label_name_k < 0) && (mpcat40_name_k < 0) {
-    fprintf(stderr, "Did not find raw_category or mpcat40 in header of %s\n", filename);
+    RNFail("Did not find raw_category or mpcat40 in header of %s\n", filename);
     return 0;
   }
 
@@ -1159,7 +1159,7 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
   // Open file
   FILE *fp = fopen(list_filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", list_filename);
+    RNFail("Unable to open %s\n", list_filename);
     return 0;
   }
 
@@ -1168,7 +1168,7 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
   if (root_name && strcmp(root_name, "Null")) {
     root = scene->FindLabelByName(root_name);
     if (!root) {
-      fprintf(stderr, "Unable to find root label %s\n", root_name);
+      RNFail("Unable to find root label %s\n", root_name);
       return 0;
     }
   }
@@ -1185,7 +1185,7 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
     if (*bufferp == '\0') continue;
     if (*bufferp == '#') continue;
     if (sscanf(buffer, "%s%d%s%s%d%lf%lf%lf", label_name, &identifier, assignment_keystroke, parent_name, &visibility, &r, &g, &b) != (unsigned int) 8) {
-      fprintf(stderr, "Invalid format for label %d in %s\n", count, list_filename);
+      RNFail("Invalid format for label %d in %s\n", count, list_filename);
       return 0;
     }
           
@@ -1204,7 +1204,7 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
     else {
       parent = scene->FindLabelByName(parent_name);
       if (!parent) {
-        fprintf(stderr, "Unable to find label's parent (%s) in label %d of %s\n", parent_name, count, list_filename);
+        RNFail("Unable to find label's parent (%s) in label %d of %s\n", parent_name, count, list_filename);
         return 0;
       }
     }
@@ -1244,7 +1244,7 @@ LoadAssignmentList(R3SurfelScene *scene, const char *list_filename)
   // Open file
   FILE *fp = fopen(list_filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", list_filename);
+    RNFail("Unable to open %s\n", list_filename);
     return 0;
   }
 
@@ -1261,14 +1261,14 @@ LoadAssignmentList(R3SurfelScene *scene, const char *list_filename)
       // Find object
       R3SurfelObject *object = scene->FindObjectByName(object_name);
       if (!object) {
-        fprintf(stderr, "Unable to find object %s in assignments file %s\n", object_name, list_filename);
+        RNFail("Unable to find object %s in assignments file %s\n", object_name, list_filename);
         return 0;
       }
 
       // Find label
       R3SurfelLabel *label = scene->FindLabelByName(label_name);
       if (!label) {
-        fprintf(stderr, "Unable to find label %s in assignments file %s\n", label_name, list_filename);
+        RNFail("Unable to find label %s in assignments file %s\n", label_name, list_filename);
         return 0;
       }
 
@@ -1310,7 +1310,7 @@ LoadFeatureList(R3SurfelScene *scene, const char *list_filename)
   // Open file
   FILE *fp = fopen(list_filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", list_filename);
+    RNFail("Unable to open %s\n", list_filename);
     return 0;
   }
 
@@ -1368,28 +1368,28 @@ LoadScene(R3SurfelScene *scene1,
   // Find parent surfel tree node in scene1
   R3SurfelNode *parent_node = scene1->Tree()->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find parent node with name %s\n", parent_node_name);
+    RNFail("Unable to find parent node with name %s\n", parent_node_name);
     return 0;
   }
 
   // Find parent object in scene1
   R3SurfelObject *parent_object = scene1->FindObjectByName(parent_object_name);
   if (!parent_object) {
-    fprintf(stderr, "Unable to find parent object with name %s\n", parent_object_name);
+    RNFail("Unable to find parent object with name %s\n", parent_object_name);
     return 0;
   }
 
   // Find parent label in scene1
   R3SurfelLabel *parent_label = scene1->FindLabelByName(parent_label_name);
   if (!parent_label) {
-    fprintf(stderr, "Unable to find parent label with name %s\n", parent_label_name);
+    RNFail("Unable to find parent label with name %s\n", parent_label_name);
     return 0;
   }
 
   // Allocate scene2
   R3SurfelScene *scene2 = new R3SurfelScene();
   if (!scene2) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return 0;
   }
 
@@ -1492,14 +1492,14 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) { 
-    fprintf(stderr, "Unable to open extrinsics file %s\n", filename); 
+    RNFail("Unable to open extrinsics file %s\n", filename); 
     return 0; 
   }
 
@@ -1522,7 +1522,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
            depth_name, &depth_timestamp, color_name, &color_timestamp,
            &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
            &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 21) {
-          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          RNFail("Error parsing line %d of %s\n", line_number, filename);
           return 0;
         }
       }
@@ -1531,7 +1531,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
            depth_name, color_name,
            &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
            &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 19) {
-          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          RNFail("Error parsing line %d of %s\n", line_number, filename);
           return 0;
         }
       }
@@ -1554,7 +1554,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
       // Find node
       R3SurfelNode *node = tree->FindNodeByName(node_name);
       if (!node) {
-        // fprintf(stderr, "Unable to find node %s for %s\n", node_name, filename);
+        // RNFail("Unable to find node %s for %s\n", node_name, filename);
         // return 0;
         continue;
       }
@@ -1565,7 +1565,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
       // Find scan
       R3SurfelScan *scan = tree->FindScanByName(scan_name);
       if (!scan) {
-        // fprintf(stderr, "Unable to find scan %s for %s\n", scan_name, filename);
+        // RNFail("Unable to find scan %s for %s\n", scan_name, filename);
         // return 0;
         continue;
       }
@@ -1692,7 +1692,7 @@ TransferLabels(R3SurfelScene *scene1,
   // Allocate scene2
   R3SurfelScene *scene2 = new R3SurfelScene();
   if (!scene2) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return 0;
   }
 
@@ -1749,14 +1749,14 @@ Mask(R3SurfelScene *scene, const char *node_name, R3SurfelConstraint *constraint
   // Get useful variables
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
   // Get surfel database
   R3SurfelDatabase *database = tree->Database();
   if (!database) {
-    fprintf(stderr, "Tree has no surfel database\n");
+    RNFail("Tree has no surfel database\n");
     return 0;
   }    
 
@@ -1765,7 +1765,7 @@ Mask(R3SurfelScene *scene, const char *node_name, R3SurfelConstraint *constraint
   if (strcmp(node_name, "All") && strcmp(node_name, "Root")) {
     node = tree->FindNodeByName(node_name);
     if (!node) {
-      fprintf(stderr, "Unable to find node with name %s\n", node_name);
+      RNFail("Unable to find node with name %s\n", node_name);
       return 0;
     }
   }
@@ -1817,7 +1817,7 @@ RemoveInteriorNodes(R3SurfelScene *scene)
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
@@ -1886,7 +1886,7 @@ SplitSurfelTreeNodes(R3SurfelScene *scene, const char *node_name,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
@@ -1895,7 +1895,7 @@ SplitSurfelTreeNodes(R3SurfelScene *scene, const char *node_name,
   if (strcmp(node_name, "All")) {
     node = tree->FindNodeByName(node_name);
     if (!node) {
-      fprintf(stderr, "Unable to find node with name %s\n", node_name);
+      RNFail("Unable to find node with name %s\n", node_name);
       return 0;
     }
   }
@@ -1953,13 +1953,13 @@ CreateMultiresolutionNodes(R3SurfelScene *scene, const char *node_name,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
   // Temporary
   if (strcmp(node_name, "All")) {
-    fprintf(stderr, "-create_multiresolution_nodes only supported for All nodes\n");
+    RNFail("-create_multiresolution_nodes only supported for All nodes\n");
     return 0;
   }
 
@@ -1991,7 +1991,7 @@ CreateMultiresolutionBlocks(R3SurfelScene *scene, const char *node_name,
   // Get surfel tree
   R3SurfelTree *tree = scene->Tree();
   if (!tree) {
-    fprintf(stderr, "Scene has no surfel tree\n");
+    RNFail("Scene has no surfel tree\n");
     return 0;
   }    
 
@@ -2000,7 +2000,7 @@ CreateMultiresolutionBlocks(R3SurfelScene *scene, const char *node_name,
   if (strcmp(node_name, "All")) {
     node = tree->FindNodeByName(node_name);
     if (!node) {
-      fprintf(stderr, "Unable to find node with name %s\n", node_name);
+      RNFail("Unable to find node with name %s\n", node_name);
       return 0;
     }
   }
@@ -2304,21 +2304,21 @@ CreateClusterObjects(R3SurfelScene *scene,
   // Find parent object
   R3SurfelObject *parent_object = scene->FindObjectByName(parent_object_name);
   if (!parent_object) {
-    fprintf(stderr, "Unable to find object with name %s\n", parent_object_name);
+    RNFail("Unable to find object with name %s\n", parent_object_name);
     return 0;
   }
 
   // Find parent node
   R3SurfelNode *parent_node = scene->Tree()->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find node with name %s\n", parent_node_name);
+    RNFail("Unable to find node with name %s\n", parent_node_name);
     return 0;
   }
 
   // Find source node
   R3SurfelNode *source_node = scene->Tree()->FindNodeByName(source_node_name);
   if (!source_node) {
-    fprintf(stderr, "Unable to find node with name %s\n", source_node_name);
+    RNFail("Unable to find node with name %s\n", source_node_name);
     return 0;
   }
 
@@ -2329,7 +2329,7 @@ CreateClusterObjects(R3SurfelScene *scene,
     max_offplane_distance, max_normal_angle, 
     min_points_per_object, chunk_size);
   if (!objects) {
-    fprintf(stderr, "No cluster objects created\n");
+    RNFail("No cluster objects created\n");
     return 0;
   }
 
@@ -2368,21 +2368,21 @@ CreatePlanarObjects(R3SurfelScene *scene,
   // Find parent object
   R3SurfelObject *parent_object = scene->FindObjectByName(parent_object_name);
   if (!parent_object) {
-    fprintf(stderr, "Unable to find object with name %s\n", parent_object_name);
+    RNFail("Unable to find object with name %s\n", parent_object_name);
     return 0;
   }
 
   // Find parent node
   R3SurfelNode *parent_node = scene->Tree()->FindNodeByName(parent_node_name);
   if (!parent_node) {
-    fprintf(stderr, "Unable to find node with name %s\n", parent_node_name);
+    RNFail("Unable to find node with name %s\n", parent_node_name);
     return 0;
   }
 
   // Find source node
   R3SurfelNode *source_node = scene->Tree()->FindNodeByName(source_node_name);
   if (!source_node) {
-    fprintf(stderr, "Unable to find node with name %s\n", source_node_name);
+    RNFail("Unable to find node with name %s\n", source_node_name);
     return 0;
   }
 
@@ -2394,7 +2394,7 @@ CreatePlanarObjects(R3SurfelScene *scene,
     min_area, min_density, min_points, 
     grid_spacing, accuracy_factor, chunk_size);
   if (!objects) {
-    fprintf(stderr, "No planar objects created\n");
+    RNFail("No planar objects created\n");
     return 0;
   }
 
@@ -2460,7 +2460,7 @@ OutputBlobs(R3SurfelScene *scene, const char *directory_name)
     // Open file
     FILE *fp = fopen(filename, "w");
     if (!fp) {
-      fprintf(stderr, "Unable to open xyz file %s\n", filename);
+      RNFail("Unable to open xyz file %s\n", filename);
       delete pointset;
       return 0;
     }
@@ -2570,7 +2570,7 @@ ParseConstraint(int& argc, char **& argv)
     else if (!strcmp(comparison_type_string, "GreaterOrEqual")) comparison_type = R3_SURFEL_CONSTRAINT_GREATER_OR_EQUAL;
     else if (!strcmp(comparison_type_string, "Less")) comparison_type = R3_SURFEL_CONSTRAINT_LESS;
     else if (!strcmp(comparison_type_string, "LessOrEqual")) comparison_type = R3_SURFEL_CONSTRAINT_LESS_OR_EQUAL;
-    else { fprintf(stderr, "Unrecognized constraint comparison type: %s\n", comparison_type_string); return NULL; }
+    else { RNFail("Unrecognized constraint comparison type: %s\n", comparison_type_string); return NULL; }
 
     // Parse surfel operand
     argc--; argv++; const char *surfel_operand_string = *argv;
@@ -2580,7 +2580,7 @@ ParseConstraint(int& argc, char **& argv)
     else if (!strcmp(surfel_operand_string, "Y")) surfel_operand_type = R3_SURFEL_CONSTRAINT_Y;
     else if (!strcmp(surfel_operand_string, "Z")) surfel_operand_type = R3_SURFEL_CONSTRAINT_Z;
     else if (CheckForNumber(surfel_operand_string)) surfel_operand_value = atof(surfel_operand_string); 
-    else { fprintf(stderr, "Unrecognized surfel operand: %s\n", surfel_operand_string); return NULL; }
+    else { RNFail("Unrecognized surfel operand: %s\n", surfel_operand_string); return NULL; }
   
     // Parse grid operand
     argc--; argv++; const char *grid_operand_string = *argv;
@@ -2588,7 +2588,7 @@ ParseConstraint(int& argc, char **& argv)
     int grid_operand_type = R3_SURFEL_CONSTRAINT_OPERAND;
     if (!strcmp(grid_operand_string, "Value")) grid_operand_type = R3_SURFEL_CONSTRAINT_VALUE;
     else if (CheckForNumber(grid_operand_string)) grid_operand_value = atof(grid_operand_string); 
-    else { fprintf(stderr, "Unrecognized grid operand: %s\n", grid_operand_string); return NULL; }
+    else { RNFail("Unrecognized grid operand: %s\n", grid_operand_string); return NULL; }
 
     // Parse epsilon
     argc--; argv++; double epsilon = atof(*argv);
@@ -2603,7 +2603,7 @@ ParseConstraint(int& argc, char **& argv)
   }
 
   // Did not recognize constraint type
-  fprintf(stderr, "Unrecognized constraint type: %s\n", constraint_type); 
+  RNFail("Unrecognized constraint type: %s\n", constraint_type); 
   return NULL;
 }
 
@@ -2618,7 +2618,7 @@ int main(int argc, char **argv)
   // Check program arguments
   if (argc < 3) {
     // Print usage
-    fprintf(stderr, "Usage: surfelprocess scenefile databasefile [operations]\n");
+    RNFail("Usage: surfelprocess scenefile databasefile [operations]\n");
     exit(-1);
   }
 
@@ -2883,7 +2883,7 @@ int main(int argc, char **argv)
       if (!OutputBlobs(scene, blob_directory_name)) exit(-1);
     }
     else { 
-      fprintf(stderr, "Invalid operation: %s", *argv); 
+      RNFail("Invalid operation: %s", *argv); 
       exit(1); 
     }
     argv++; argc--;

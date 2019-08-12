@@ -716,7 +716,7 @@ Blocks(void) const
   // Create array of blocks
   RNArray<R3SurfelBlock *> *blocks = new RNArray<R3SurfelBlock *>();
   if (!blocks) {
-    fprintf(stderr, "Unable to allocate array of blocks\n");
+    RNFail("Unable to allocate array of blocks\n");
     return NULL;
   }
 
@@ -753,7 +753,7 @@ Nodes(void) const
   // Create array of nodes
   RNArray<R3SurfelNode *> *nodes = new RNArray<R3SurfelNode *>();
   if (!nodes) {
-    fprintf(stderr, "Unable to allocate array of nodes\n");
+    RNFail("Unable to allocate array of nodes\n");
     return NULL;
   }
 
@@ -792,7 +792,7 @@ Objects(void) const
   // Create array of objects
   RNArray<R3SurfelObject *> *objects = new RNArray<R3SurfelObject *>();
   if (!objects) {
-    fprintf(stderr, "Unable to allocate array of objects\n");
+    RNFail("Unable to allocate array of objects\n");
     return NULL;
   }
 
@@ -865,7 +865,7 @@ ReadFile(const char *filename)
   // Create block
   R3SurfelBlock *block = new R3SurfelBlock();
   if (!block) {
-    fprintf(stderr, "Unable to allocate block for %s\n", filename);
+    RNFail("Unable to allocate block for %s\n", filename);
     return 0;
   }
 
@@ -896,7 +896,7 @@ WriteFile(const char *filename) const
     return WriteXYZFile(filename);
   }
   else { 
-    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
+    RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
     return 0; 
   }
 
@@ -912,7 +912,7 @@ WriteXYZFile(const char *filename) const
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 

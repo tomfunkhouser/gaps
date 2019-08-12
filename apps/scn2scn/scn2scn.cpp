@@ -42,7 +42,7 @@ ReadScene(const char *filename)
   // Allocate scene
   R3Scene *scene = new R3Scene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene for %s\n", filename);
+    RNFail("Unable to allocate scene for %s\n", filename);
     return NULL;
   }
 
@@ -196,7 +196,7 @@ ReadMatrix(R4Matrix& m, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open matrix file: %s\n", filename);
+    RNFail("Unable to open matrix file: %s\n", filename);
     return 0;
   }
 
@@ -350,7 +350,7 @@ RemoveNodes(R3Scene *scene)
   if (select_nodes_in_subtree_name) {
     select_subtree_node = scene->Node(select_nodes_in_subtree_name);
     if (!select_subtree_node) {
-      fprintf(stderr, "Unable to find select subtree node %s\n", select_nodes_in_subtree_name);
+      RNFail("Unable to find select subtree node %s\n", select_nodes_in_subtree_name);
       return 0;
     }
   }
@@ -444,7 +444,7 @@ ParseArgs(int argc, char **argv)
         argv++; argc--; input_lights_name = *argv;
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -452,14 +452,14 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_name) input_name = *argv;
       else if (!output_name) output_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
   if (!input_name || !output_name) {
-    fprintf(stderr, "Usage: scn2scn inputfile outputfile [options]\n");
+    RNFail("Usage: scn2scn inputfile outputfile [options]\n");
     return 0;
   }
 

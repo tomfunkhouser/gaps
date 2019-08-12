@@ -641,7 +641,7 @@ RNPolynomialTerm(RNScalar _c, int _n, const int *_v, const RNScalar *_e,
 #else
     // Check number of variables
     if (_n > max_variables) {
-      fprintf(stderr, "RNPolynomialTerm max variables exceeded\n");
+      RNFail("RNPolynomialTerm max variables exceeded\n");
       return;
     }
 #endif

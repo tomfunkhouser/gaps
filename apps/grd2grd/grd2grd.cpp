@@ -154,7 +154,7 @@ ApplyOperations(R3Grid *grid, Operation *operations, int noperations)
     case MASK_GRID_OPERATION: 
       grid1 = ReadGrid(operation->operand1);
       if (!grid1) {
-        fprintf(stderr, "Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
+        RNFail("Unable to read grid file (%s) for operation %d\n", operation->operand1, i);
         return 0;
       }
     }
@@ -203,7 +203,7 @@ ApplyOperations(R3Grid *grid, Operation *operations, int noperations)
       grid->Threshold(atof(operation->operand1), value1, value2); 
       break; }
     default: 
-      fprintf(stderr, "Unknown operation type (%d) in operation %d\n", operation->type, i); 
+      RNFail("Unknown operation type (%d) in operation %d\n", operation->type, i); 
       return 0; 
     }
   }
@@ -411,7 +411,7 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; operation->operand1 = *argv;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -419,7 +419,7 @@ ParseArgs(int argc, char **argv)
       if (!input_name) input_name = *argv;
       else if (!output_name) output_name = *argv;
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
     }
@@ -428,13 +428,13 @@ ParseArgs(int argc, char **argv)
 
   // Check input filename
   if (!input_name) {
-    fprintf(stderr, "You did not specify an input file.\n");
+    RNFail("You did not specify an input file.\n");
     return 0;
   }
 
   // Check output filename
   if (!output_name) {
-    fprintf(stderr, "You did not specify an output file.\n");
+    RNFail("You did not specify an output file.\n");
     return 0;
   }
 

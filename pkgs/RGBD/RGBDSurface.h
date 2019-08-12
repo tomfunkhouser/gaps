@@ -180,7 +180,7 @@ Channel(int channel_index) const
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD Channel is not resident in memory -- cannot get it\n");
+    RNFail("RGBD Channel is not resident in memory -- cannot get it\n");
     return NULL;
   }
   
@@ -232,7 +232,7 @@ TexelChannelValue(int ix, int iy, int channel_index) const
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD Channel is not resident in memory -- cannot get value\n");
+    RNFail("RGBD Channel is not resident in memory -- cannot get value\n");
     return R2_GRID_UNKNOWN_VALUE;
   }
   
@@ -247,7 +247,7 @@ TexelChannelValue(const R2Point& texture_position, int channel_index) const
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD Channel is not resident in memory -- cannot get value\n");
+    RNFail("RGBD Channel is not resident in memory -- cannot get value\n");
     return R2_GRID_UNKNOWN_VALUE;
   }
   

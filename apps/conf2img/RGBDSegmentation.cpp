@@ -39,7 +39,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
   // Allocate points 
   segmentation->point_buffer = new Point [ depth_image.NEntries() ];
   if (!segmentation->point_buffer) {
-    fprintf(stderr, "Unable to allocate points\n");
+    RNFail("Unable to allocate points\n");
     return 0;
   }
 
@@ -91,7 +91,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
   Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
   segmentation->kdtree = new R3Kdtree<Point *>(segmentation->points, position_offset);
   if (!segmentation->kdtree) {
-    fprintf(stderr, "Unable to create kdtree\n");
+    RNFail("Unable to create kdtree\n");
     return 0;
   }
   
@@ -162,7 +162,7 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
   // Allocate segmentation
   Segmentation *segmentation = new Segmentation();
   if (!segmentation) {
-    fprintf(stderr, "Unable to allocate segmentation.\n");
+    RNFail("Unable to allocate segmentation.\n");
     return NULL;
   }
 
@@ -170,21 +170,21 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
   if (!RGBDCreateSegmentationPoints(segmentation,
     px_image, py_image, pz_image, nx_image, ny_image, nz_image,
     depth_image, radius_image, boundary_image, color_image)) {
-    fprintf(stderr, "Unable to create points for segmentation.\n");
+    RNFail("Unable to create points for segmentation.\n");
     delete segmentation;
     return 0;
   }
 
   // Check points
   if (segmentation->points.NEntries() == 0) {
-    fprintf(stderr, "Zero points for segmentation.\n");
+    RNFail("Zero points for segmentation.\n");
     delete segmentation;
     return 0;
   }
 
   // Create clusters
   if (!segmentation->CreateClusters(PLANE_PRIMITIVE_TYPE)) {
-    fprintf(stderr, "Unable to create clusters for segmentation.\n");
+    RNFail("Unable to create clusters for segmentation.\n");
     delete segmentation;
     return 0;
   }
@@ -202,7 +202,7 @@ RGBDWriteSegmentation(Segmentation *segmentation, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open segmentation file %s\n", filename);
+    RNFail("Unable to open segmentation file %s\n", filename);
     return 0;
   }
 

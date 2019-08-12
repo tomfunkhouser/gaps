@@ -2016,7 +2016,7 @@ DrawObject(R3SurfelObject *object, RNFlags draw_flags) const
     if (!node->DrawResidentDescendents(draw_flags)) {
       if (!node->DrawResidentAncestor(draw_flags)) {
         // const char *object_name = (object->Name()) ? object->Name() : "None";
-        // fprintf(stderr, "Did not draw object %s\n", object_name);
+        // RNFail("Did not draw object %s\n", object_name);
       }
     }
   }

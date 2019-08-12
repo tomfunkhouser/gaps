@@ -887,7 +887,7 @@ ReadFile(const char *filename, R3SceneNode *parent_node)
   // Parse input filename extension
   const char *extension;
   if (!(extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Filename %s has no extension (e.g., .txt)\n", filename);
+    RNFail("Filename %s has no extension (e.g., .txt)\n", filename);
     return 0;
   }
 
@@ -920,7 +920,7 @@ ReadFile(const char *filename, R3SceneNode *parent_node)
     if (!ReadSUNCGFile(filename, parent_node)) return 0;
   }
   else {
-    fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
+    RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
   }
 
@@ -950,7 +950,7 @@ WriteFile(const char *filename) const
   // Parse input filename extension
   const char *extension;
   if (!(extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Filename %s has no extension (e.g., .txt)\n", filename);
+    RNFail("Filename %s has no extension (e.g., .txt)\n", filename);
     return 0;
   }
 
@@ -965,7 +965,7 @@ WriteFile(const char *filename) const
     if (!WriteSUNCGFile(filename)) return 0;
   }
   else {
-    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
+    RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
   }
 
@@ -1051,7 +1051,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
   else strncpy(filename, mtlname, 1024);
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -1079,7 +1079,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
     // Get keyword
     char keyword[80];
     if (sscanf(bufferp, "%s", keyword) != 1) {
-      fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+      RNFail("Syntax error on line %d in file %s", line_count, filename);
       return 0;
     }
 
@@ -1088,7 +1088,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       char name[1024];
       if (sscanf(bufferp, "%s%s", keyword, name) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1104,7 +1104,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double r, g, b;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &r, &g, &b) != (unsigned int) 4) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1118,7 +1118,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double r, g, b;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &r, &g, &b) != (unsigned int) 4) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1132,7 +1132,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double r, g, b;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &r, &g, &b) != (unsigned int) 4) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1146,7 +1146,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double r, g, b;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &r, &g, &b) != (unsigned int) 4) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1160,7 +1160,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double r, g, b;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &r, &g, &b) != (unsigned int) 4) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1174,7 +1174,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double transparency;
       if (sscanf(bufferp, "%s%lf", keyword, &transparency) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1188,7 +1188,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double opacity;
       if (sscanf(bufferp, "%s%lf", keyword, &opacity) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1202,7 +1202,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double ns;
       if (sscanf(bufferp, "%s%lf", keyword, &ns) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1216,7 +1216,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       double index_of_refraction;
       if (sscanf(bufferp, "%s%lf", keyword, &index_of_refraction) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1230,7 +1230,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       // Parse line
       char texture_name[1024];
       if (sscanf(bufferp, "%s%s", keyword, texture_name) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -1238,7 +1238,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       if (material) {
         char texture_filename[1024];
         if (dirname) sprintf(texture_filename, "%s/%s", dirname, texture_name);
-        else strncpy(texture_filename, texture_name, 1024);
+        if (!dirname || !RNFileExists(texture_filename)) strncpy(texture_filename, texture_name, 1024);
         R2Texture *texture = NULL;
         if (!texture_symbol_table.Find(texture_filename, &texture)) {
           R2Image *image = new R2Image();
@@ -1294,7 +1294,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
     // Get keyword
     char keyword[80];
     if (sscanf(bufferp, "%s", keyword) != 1) {
-      fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+      RNFail("Syntax error on line %d in OBJ file", line_count);
       return 0;
     }
 
@@ -1303,7 +1303,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Read vertex coordinates
       double x, y, z;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -1316,25 +1316,35 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Read texture coordinates
       double u, v;
       if (sscanf(bufferp, "%s%lf%lf", keyword, &u, &v) != 3) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
       // Create texture coordinates
       R2Point *vt = new R2Point(u, v);
       texture_coords.Insert(vt);
+
+      // Not sure about this ...
+      if (texture_coords.NEntries() == verts.NEntries()) {
+        verts.Tail()->SetTextureCoords(*vt);
+      }
     }
     else if (!strcmp(keyword, "vn")) {
-      // Read texture coordinates
+      // Read normal
       double x, y, z;
       if (sscanf(bufferp, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
       // Create normal
       R3Vector *vn = new R3Vector(x, y, z);
       normals.Insert(vn);
+
+      // Not sure about this ...
+      if (normals.NEntries() == verts.NEntries()) {
+        verts.Tail()->SetNormal(*vn);
+      }
     }
     else if (!strcmp(keyword, "f")) {
       // Read vertex indices
@@ -1343,7 +1353,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       if (sscanf(bufferp, "%s%s%s%s%s", keyword, s[0], s[1], s[2], s[3]) != 5) {
         quad = 0;;
         if (sscanf(bufferp, "%s%s%s%s", keyword, s[0], s[1], s[2]) != 4) {
-          fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+          RNFail("Syntax error on line %d in OBJ file", line_count);
           return 0;
         }
       }
@@ -1409,7 +1419,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Read fields
       char mtlname[1024];
       if (sscanf(bufferp, "%s%s", keyword, mtlname) != 2) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -1430,7 +1440,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Read fields
       char mtlname[1024];
       if (sscanf(bufferp, "%s%s", keyword, mtlname) != 2) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -1443,7 +1453,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Find material
       if (!material_symbol_table.Find(mtlname, &material)) {
-        fprintf(stderr, "Unable to find material %s at on line %d in OBJ file\n", mtlname, line_count);
+        RNFail("Unable to find material %s at on line %d in OBJ file\n", mtlname, line_count);
         return 0;
       }
     }
@@ -1451,7 +1461,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
       // Read name
       char name[1024];
       if (sscanf(bufferp, "%s%s", keyword, name) != 2) {
-        fprintf(stderr, "Syntax error on line %d in OBJ file", line_count);
+        RNFail("Syntax error on line %d in OBJ file", line_count);
         return 0;
       }
 
@@ -1508,7 +1518,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *filename, RNArray<R3Mater
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -1522,7 +1532,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *filename, RNArray<R3Mater
 
   // Read file
   if (!ReadObj(scene, node, dirname, fp, returned_materials)) {
-    fprintf(stderr, "Unable to read OBJ file %s\n", filename);
+    RNFail("Unable to read OBJ file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1561,7 +1571,7 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
   else strncpy(filename, mtlname, 1024);
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -1775,14 +1785,14 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
   // Write material file
   fprintf(fp, "mtllib %s\n", mtl_filename);
   if (!WriteObjMtlFile(scene, dirname, mtl_filename)) {
-    fprintf(stderr, "Unable to write OBJ material file %s\n", mtl_filename);
+    RNFail("Unable to write OBJ material file %s\n", mtl_filename);
     fclose(fp);
     return 0;
   }
@@ -1793,7 +1803,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   int nnormals = 0;
   int ntexture_coords = 0;
   if (!WriteObj(scene, node, node->Transformation(), ngroups, nvertices, nnormals, ntexture_coords, fp)) {
-    fprintf(stderr, "Unable to write OBJ file %s\n", filename);
+    RNFail("Unable to write OBJ file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1832,7 +1842,7 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
   // Read ply file
   R3Mesh mesh;
   if (!mesh.ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh %s\n", filename);
+    RNFail("Unable to read mesh %s\n", filename);
     return 0;
   }
   
@@ -1923,7 +1933,7 @@ ReadMesh(const char *filename)
   // Read mesh file
   R3Mesh mesh;
   if (!mesh.ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh %s\n", filename);
+    RNFail("Unable to read mesh %s\n", filename);
     return NULL;
   }
   
@@ -2055,7 +2065,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -2085,7 +2095,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Point p1, p2, p3;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, 
         &p1[0], &p1[1], &p1[2], &p2[0], &p2[1], &p2[2], &p3[0], &p3[1], &p3[2]) != 10) {
-        fprintf(stderr, "Unable to read triangle at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read triangle at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2097,7 +2107,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2109,7 +2119,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       int m;
       R3Point p1, p2;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf", &m, &p1[0], &p1[1], &p1[2], &p2[0], &p2[1], &p2[2]) != 7) {
-        fprintf(stderr, "Unable to read box at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read box at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2123,7 +2133,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2136,7 +2146,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Point c;
       double r;
       if (fscanf(fp, "%d%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r) != 5) {
-        fprintf(stderr, "Unable to read sphere at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read sphere at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2145,7 +2155,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2158,7 +2168,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Point c;
       double r, h;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r, &h) != 6) {
-        fprintf(stderr, "Unable to read cylinder at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read cylinder at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2169,7 +2179,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2182,7 +2192,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Point c;
       double r, h;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &r, &h) != 6) {
-        fprintf(stderr, "Unable to read cone at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read cone at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2193,7 +2203,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2205,7 +2215,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       int m;
       char meshname[256];
       if (fscanf(fp, "%d%s", &m, meshname) != 2) {
-        fprintf(stderr, "Unable to parse mesh command %d in file %s\n", command_number, filename);
+        RNFail("Unable to parse mesh command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2223,7 +2233,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2235,7 +2245,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       int m;
       double x1, y1, z1, x2, y2, z2;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf", &m, &x1, &y1, &z1, &x2, &y2, &z2) != 7) {
-        fprintf(stderr, "Unable to read line at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read line at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2246,7 +2256,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Get material and element from m
       if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
-        fprintf(stderr, "Invalid material id at command %d in file %s\n", command_number, filename);
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2264,7 +2274,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
         &matrix[4], &matrix[5], &matrix[6], &matrix[7], 
         &matrix[8], &matrix[9], &matrix[10], &matrix[11], 
         &matrix[12], &matrix[13], &matrix[14], &matrix[15]) != 17) {
-        fprintf(stderr, "Unable to read begin at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read begin at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2282,7 +2292,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Check depth
       if (depth >= max_depth-1) {
-        fprintf(stderr, "Maximum node depth exceeded\n");
+        RNFail("Maximum node depth exceeded\n");
         return 0;
       }
       
@@ -2294,7 +2304,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
     else if (!strcmp(cmd, "end")) {
       // Check stack depth
       if (depth <= 0) {
-        fprintf(stderr, "Extra end statement at command %d in file %s\n", command_number, filename);
+        RNFail("Extra end statement at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2309,7 +2319,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%s", 
           &ka[0], &ka[1], &ka[2], &kd[0], &kd[1], &kd[2], &ks[0], &ks[1], &ks[2], &kt[0], &kt[1], &kt[2], 
           &e[0], &e[1], &e[2], &n, &ir, texture_name) != 18) {
-        fprintf(stderr, "Unable to read material at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read material at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2331,7 +2341,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
         // Read texture file
         R2Image *image = new R2Image();
         if (!image->Read(buffer)) {
-          fprintf(stderr, "Unable to read texture from %s at command %d in file %s\n", buffer, command_number, filename);
+          RNFail("Unable to read texture from %s at command %d in file %s\n", buffer, command_number, filename);
           return 0;
         }
         
@@ -2351,7 +2361,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Vector d;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf", 
         &c[0], &c[1], &c[2], &d[0], &d[1], &d[2]) != 6) {
-        fprintf(stderr, "Unable to read directional light at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read directional light at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2368,7 +2378,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Point p;
       double ca, la, qa;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &ca, &la, &qa) != 9) {
-        fprintf(stderr, "Unable to read point light at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read point light at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2384,7 +2394,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       double ca, la, qa, sc, sd;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", 
         &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &d[0], &d[1], &d[2], &ca, &la, &qa, &sc, &sd) != 14) {
-        fprintf(stderr, "Unable to read point light at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read point light at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2403,7 +2413,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       double radius, ca, la, qa;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", 
         &c[0], &c[1], &c[2], &p[0], &p[1], &p[2], &d[0], &d[1], &d[2], &radius, &ca, &la, &qa) != 13) {
-        fprintf(stderr, "Unable to read area light at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read area light at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2420,7 +2430,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       R3Vector t, u;
       RNScalar xfov, neardist, fardist;
       if (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &e[0], &e[1], &e[2], &t[0], &t[1], &t[2], &u[0], &u[1], &u[2], &xfov, &neardist, &fardist) != 12) {
-        fprintf(stderr, "Unable to read camera at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read camera at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2432,7 +2442,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Read data
       char scenename[256];
       if (fscanf(fp, "%s", scenename) != 1) {
-        fprintf(stderr, "Unable to read include command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read include command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2446,7 +2456,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
 
       // Read scene from included file
       if (!ReadFile(buffer, group_nodes[depth])) {
-        fprintf(stderr, "Unable to read included scene: %s\n", buffer);
+        RNFail("Unable to read included scene: %s\n", buffer);
         return 0;
       }
     }
@@ -2454,7 +2464,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Read data
       double r, g, b;
       if (fscanf(fp, "%lf%lf%lf", &r, &g, &b) != 3) {
-        fprintf(stderr, "Unable to read background at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read background at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2465,7 +2475,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Read data
       double r, g, b;
       if (fscanf(fp, "%lf%lf%lf", &r, &g, &b) != 3) {
-        fprintf(stderr, "Unable to read ambient at command %d in file %s\n", command_number, filename);
+        RNFail("Unable to read ambient at command %d in file %s\n", command_number, filename);
         return 0;
       }
 
@@ -2473,7 +2483,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       SetAmbient(RNRgb(r, g, b));
     }
     else {
-      fprintf(stderr, "Unrecognized command %d in file %s: %s\n", command_number, filename, cmd);
+      RNFail("Unrecognized command %d in file %s: %s\n", command_number, filename, cmd);
       return 0;
     }
 	
@@ -2619,22 +2629,40 @@ WritePrincetonElement(const R3Scene *scene, R3SceneElement *element,
     else if (shape->ClassID() == R3Cone::CLASS_ID()) {
       R3Cone *cone = (R3Cone *) shape;
       R3Point center = cone->Axis().Midpoint();
-      if (RNIsNotEqual(cone->Axis().Vector().Dot(R3posz_vector), 1.0)) fprintf(stderr, "Warning: cone not axis aligned\n");
+      if (RNIsNotEqual(cone->Axis().Vector().Dot(R3posz_vector), 1.0)) RNFail("Warning: cone not axis aligned\n");
       fprintf(fp, "%scone  %d   %g %g %g   %g %g\n", indent, material_index,
         center.X(), center.Y(), center.Z(), cone->Radius(), cone->Height());
     }
     else if (shape->ClassID() == R3Cylinder::CLASS_ID()) {
       R3Cylinder *cylinder = (R3Cylinder *) shape;
       R3Point center = cylinder->Axis().Midpoint();
-      if (RNIsNotEqual(cylinder->Axis().Vector().Dot(R3posz_vector), 1.0)) fprintf(stderr, "Warning: cylinder not axis aligned\n");
+      if (RNIsNotEqual(cylinder->Axis().Vector().Dot(R3posz_vector), 1.0)) RNFail("Warning: cylinder not axis aligned\n");
       fprintf(fp, "%scylinder  %d   %g %g %g   %g %g\n", indent, material_index,
         center.X(), center.Y(), center.Z(), cylinder->Radius(), cylinder->Height());
     }
+    else if (shape->ClassID() == R3Rectangle::CLASS_ID()) {
+      R3Rectangle *rectangle = (R3Rectangle *) shape;
+      R3TriangleVertex *v0 = new R3TriangleVertex(rectangle->Corner(0,0));
+      R3TriangleVertex *v1 = new R3TriangleVertex(rectangle->Corner(1,0));
+      R3TriangleVertex *v2 = new R3TriangleVertex(rectangle->Corner(1,1));
+      R3TriangleVertex *v3 = new R3TriangleVertex(rectangle->Corner(0,1));
+      if (transformation.IsMirrored()) { R3TriangleVertex *swap = v0; v0 = v3; v3 = swap; }
+      if (transformation.IsMirrored()) { R3TriangleVertex *swap = v1; v1 = v2; v2 = swap; }
+      const R3Point& p0 = v0->Position();
+      const R3Point& p1 = v1->Position();
+      const R3Point& p2 = v2->Position();
+      const R3Point& p3 = v3->Position();
+      fprintf(fp, "%stri  %d   %g %g %g   %g %g %g   %g %g %g\n", indent, material_index,
+        p0.X(), p0.Y(), p0.Z(), p1.X(), p1.Y(), p1.Z(), p2.X(), p2.Y(), p2.Z());
+      fprintf(fp, "%stri  %d   %g %g %g   %g %g %g   %g %g %g\n", indent, material_index,
+        p0.X(), p0.Y(), p0.Z(), p2.X(), p2.Y(), p2.Z(), p3.X(), p3.Y(), p3.Z());
+    }
     else if (shape->ClassID() == R3Triangle::CLASS_ID()) {
       R3Triangle *triangle = (R3Triangle *) shape;
-      R3TriangleVertex *v0 = (transformation.IsMirrored()) ? triangle->V2() : triangle->V0();
+      R3TriangleVertex *v0 = triangle->V0();
       R3TriangleVertex *v1 = triangle->V1();
-      R3TriangleVertex *v2 = (transformation.IsMirrored()) ? triangle->V0() : triangle->V2();
+      R3TriangleVertex *v2 = triangle->V2();
+      if (transformation.IsMirrored()) { R3TriangleVertex *swap = v0; v0 = v2; v2 = swap; }
       const R3Point& p0 = v0->Position();
       const R3Point& p1 = v1->Position();
       const R3Point& p2 = v2->Position();
@@ -2656,7 +2684,7 @@ WritePrincetonElement(const R3Scene *scene, R3SceneElement *element,
       }
     }
     else {
-      fprintf(stderr, "Warning: unrecognized shape type %d\n", shape->ClassID());
+      RNFail("Warning: unrecognized shape type %d\n", shape->ClassID());
       // return 0;
     }
   }
@@ -2761,7 +2789,7 @@ WritePrincetonFile(const char *filename) const
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -2833,7 +2861,7 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -2856,7 +2884,7 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
     // Get keyword
     char keyword[256];
     if (sscanf(bufferp, "%s", keyword) != 1) {
-      fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+      RNFail("Syntax error on line %d in file %s", line_count, filename);
       return 0;
     }
 
@@ -2866,7 +2894,7 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
       int model_index;
       char model_name[1024];
       if (sscanf(bufferp, "%s%d%s", keyword, &model_index, model_name) != (unsigned int) 3) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -2879,28 +2907,28 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
 
       // Read obj file
       char model_filename[1024];
-      sprintf(model_filename, "models/%s.obj", model_name);
+      sprintf(model_filename, "../models/%s.obj", model_name);
       if (!ReadObj(this, node, model_filename)) return 0;
     }
     else if (!strcmp(keyword, "parentIndex")) {
       // Read fields
       int parent_index;
       if (sscanf(bufferp, "%s%d", keyword, &parent_index) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
       // Check parent index
       if (parent_index < 0) {
         if (nodes.NEntries() != 1) {
-          fprintf(stderr, "Root node was not first in file %s", filename);
+          RNFail("Root node was not first in file %s", filename);
           return 0;
         }
       }
       else {
         // Just checking
         if (parent_index >= nodes.NEntries()) {
-          fprintf(stderr, "Invalid parent node index %d on line %d in file %s", parent_index, line_count, filename);
+          RNFail("Invalid parent node index %d on line %d in file %s", parent_index, line_count, filename);
           return 0;
         }
 
@@ -2920,7 +2948,7 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
       if (sscanf(bufferp, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", 
         keyword, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
         &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 17) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -2966,7 +2994,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -3002,7 +3030,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
     // Get keyword
     char keyword[256];
     if (sscanf(bufferp, "%s", keyword) != 1) {
-      fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+      RNFail("Syntax error on line %d in file %s", line_count, filename);
       return 0;
     }
 
@@ -3011,7 +3039,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
       // Read fields
       int model_index;
       if (sscanf(bufferp, "%s%d", keyword, &model_index) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -3031,7 +3059,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
       // Read fields
       int root_index;
       if (sscanf(bufferp, "%s%d", keyword, &root_index) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -3052,7 +3080,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
       // Read fields
       int parent_index;
       if (sscanf(bufferp, "%s%d", keyword, &parent_index) != (unsigned int) 2) {
-        fprintf(stderr, "Syntax error on line %d in file %s", line_count, filename);
+        RNFail("Syntax error on line %d in file %s", line_count, filename);
         return 0;
       }
 
@@ -3081,7 +3109,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
     else if (!strcmp(keyword, "leaf_group")) {
       // Check current node
       if (!current_node) {
-        fprintf(stderr, "leaf_group before first newModel at line %d in %s\n", line_count, filename);
+        RNFail("leaf_group before first newModel at line %d in %s\n", line_count, filename);
         return 0;
       }
 
@@ -3134,20 +3162,20 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
   // Read header
   char buffer[4096];
   if (!fgets(buffer, 4096, fp)) {
-    fprintf(stderr, "Unable to read object parse file %s\n", filename);
+    RNFail("Unable to read object parse file %s\n", filename);
     return 0;
   }
 
   // Check header
   if (strncmp(buffer, "OBJECT PARSE 1.0", 16)) {
-    fprintf(stderr, "Error in header of oject parse file %s\n", filename);
+    RNFail("Error in header of oject parse file %s\n", filename);
     return 0;
   }
 
@@ -3176,7 +3204,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
           &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
           &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15], 
           &score, &dummy, &dummy, &dummy, &dummy) != (unsigned int) 24) {
-          fprintf(stderr, "Error parsing assignment at line %d of %s\n", line_number, filename);
+          RNFail("Error parsing assignment at line %d of %s\n", line_number, filename);
           return 0;
         }
 
@@ -3212,7 +3240,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
         char model_name[1024], mesh_name[1024];
         if (sscanf(bufferp, "%s%d%lf%lf%lf%lf%lf%s%s%d%d%d%d%d", keyword, 
           &dummy, &cx, &cy, &cz, &r, &h, model_name, mesh_name, &dummy, &dummy, &dummy, &dummy, &dummy) != (unsigned int) 14) {
-          fprintf(stderr, "Error parsing model at line %d of %s\n", line_number, filename);
+          RNFail("Error parsing model at line %d of %s\n", line_number, filename);
           return 0;
         }
 
@@ -3235,7 +3263,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
       else if (!strcmp(keyword, "MD")) {
         // Parse model directory
         if (sscanf(bufferp, "%s%s", keyword, mesh_directory) != (unsigned int) 2) {
-          fprintf(stderr, "Error parsing model directory at line %d of %s\n", line_number, filename);
+          RNFail("Error parsing model directory at line %d of %s\n", line_number, filename);
           return 0;
         }
       }
@@ -3264,7 +3292,7 @@ ReadRectangleFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -3285,7 +3313,7 @@ ReadRectangleFile(const char *filename, R3SceneNode *parent_node)
     double x1, y1, x2, y2, x3, y3, x4, y4, zmin, zmax, score;
     if (sscanf(bufferp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%s", 
        &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4, &zmin, &zmax, &score, name) != (unsigned int) 12) {
-      fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+      RNFail("Error parsing line %d of %s\n", line_number, filename);
       return 0;
     }
 
@@ -3341,27 +3369,27 @@ GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, 
 {
   // Check object type
   if (object->type() != Json::objectValue) {
-    // fprintf(stderr, "JSON: not an object\n");
+    // RNFail("JSON: not an object\n");
     return 0;
   }
 
   // Check object member
   if (!object->isMember(str)) {
-    // fprintf(stderr, "JSON object has no member named %s\n", str);
+    // RNFail("JSON object has no member named %s\n", str);
     return 0;
   }
 
   // Get object member
   result = &((*object)[str]);
   if (result->type() == Json::nullValue) {
-    // fprintf(stderr, "JSON object has null member named %s\n", str);
+    // RNFail("JSON object has null member named %s\n", str);
     return 0;
   }
 
   // Check member type
   if (expected_type > 0) {
     if (result->type() != expected_type) {
-      // fprintf(stderr, "JSON object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
+      // RNFail("JSON object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
       return 0;
     }
   }
@@ -3369,7 +3397,7 @@ GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, 
   // Check for empty strings
   if (result->type() == Json::stringValue) {
     if (result->asString().length() == 0) {
-      // fprintf(stderr, "JSON object has zero length string named %s\n", str);
+      // RNFail("JSON object has zero length string named %s\n", str);
       return 0;
     }
   }
@@ -3385,27 +3413,27 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 {
   // Check array type
   if (array->type() != Json::arrayValue) {
-    fprintf(stderr, "JSON: not an array\n");
+    RNFail("JSON: not an array\n");
     return 0;
   }
 
   // Check array size
   if (array->size() <= k) {
-    // fprintf(stderr, "JSON array has no member %d\n", k);
+    // RNFail("JSON array has no member %d\n", k);
     return 0;
   }
 
   // Get entry
   result = &((*array)[k]);
   if (result->type() == Json::nullValue) {
-    // fprintf(stderr, "JSON array has null member %d\n", k);
+    // RNFail("JSON array has null member %d\n", k);
     return 0;
   }
 
   // Check entry type
   if (expected_type > 0) {
     if (result->type() != expected_type) {
-      // fprintf(stderr, "JSON array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
+      // RNFail("JSON array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
       return 0;
     }
   }
@@ -3579,7 +3607,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
   // Open file
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open SUNCG file %s\n", filename);
+    RNFail("Unable to open SUNCG file %s\n", filename);
     return 0;
   }
 
@@ -3590,7 +3618,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
   fseek(fp, 0, SEEK_SET);
   char* buffer = new char[size + 1];
   unsigned long const usize = static_cast<unsigned long const>(size);
-  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  if (fread(buffer, 1, usize, fp) != usize) { RNFail("Unable to read %s\n", filename); return 0; }
   else { buffer[size] = 0; text = buffer; }
   delete[] buffer;
 
@@ -3602,7 +3630,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
   Json::Reader json_reader;
   Json::Value *json_items, *json_item, *json_value;
   if (!json_reader.parse(text, json_root, false)) {
-    fprintf(stderr, "Unable to parse %s\n", filename);
+    RNFail("Unable to parse %s\n", filename);
     return 0;
   }
 
@@ -3612,7 +3640,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
   if (GetJsonObjectMember(json_value, &json_root, "version", Json::stringValue)) {
     strncpy(version, json_value->asString().c_str(), 1024);
     if (strncmp(version, "suncg", 5)) {
-      fprintf(stderr, "Unrecognized version %s in SUNCG file %s\n", version, filename);
+      RNFail("Unrecognized version %s in SUNCG file %s\n", version, filename);
       return 0;
     }
   }
@@ -4092,7 +4120,7 @@ WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
     fprintf(fp, "      }");
   }
   else if (!strncmp(node->Name(), "Box#", 4)) {
-    fprintf(stderr, "Warning: skipping %s\n", node->Name());
+    RNFail("Warning: skipping %s\n", node->Name());
   }
   
   // Return success
@@ -4107,7 +4135,7 @@ WriteSUNCGFile(const char *filename) const
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s", filename);
+    RNFail("Unable to open file %s", filename);
     return 0;
   }
 
@@ -4205,7 +4233,7 @@ ReadSUNCGLightsFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open lights file %s\n", filename);
+    RNFail("Unable to open lights file %s\n", filename);
     return 0;
   }
 
@@ -4224,7 +4252,7 @@ ReadSUNCGLightsFile(const char *filename)
       double intensity, r, g, b, dx, dy, dz;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,
         &intensity, &r, &g, &b, &dx, &dy, &dz) != (unsigned int) 9) {
-        fprintf(stderr, "Unable to parse directional light from line %d from %s\n", line_number, filename);
+        RNFail("Unable to parse directional light from line %d from %s\n", line_number, filename);
         return 0;
       }
 
@@ -4239,7 +4267,7 @@ ReadSUNCGLightsFile(const char *filename)
       double intensity, r, g, b, px, py, pz, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &ca, &la, &qa) != (unsigned int) 12) {
-        fprintf(stderr, "Unable to parse point light from line %d from %s\n", line_number, filename);
+        RNFail("Unable to parse point light from line %d from %s\n", line_number, filename);
         return 0;
       }
 
@@ -4254,7 +4282,7 @@ ReadSUNCGLightsFile(const char *filename)
       double intensity, r, g, b, px, py, pz, dx, dy, dz, sd, sc, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px, &py, &pz, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 17) {
-        fprintf(stderr, "Unable to parse spot light from line %d from %s\n", line_number, filename);
+        RNFail("Unable to parse spot light from line %d from %s\n", line_number, filename);
         return 0;
       }
 
@@ -4270,7 +4298,7 @@ ReadSUNCGLightsFile(const char *filename)
       double intensity, r, g, b, px1, py1, pz1, px2, py2, pz2, dx, dy, dz, sd, sc, ca, la, qa;
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, reference_frame,  
         &intensity, &r, &g, &b, &px1, &py1, &pz1, &px2, &py2, &pz2, &dx, &dy, &dz, &sd, &sc, &ca, &la, &qa) != (unsigned int) 20) {
-        fprintf(stderr, "Unable to parse line light from line %d from %s\n", line_number, filename);
+        RNFail("Unable to parse line light from line %d from %s\n", line_number, filename);
         return 0;
       }
 
@@ -4284,7 +4312,7 @@ ReadSUNCGLightsFile(const char *filename)
       InsertCopiesOfLight(this, &light, reference_frame);
     }
     else {
-      fprintf(stderr, "Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
+      RNFail("Unrecognized light type %s at line %d of %s\n", cmd, line_number, filename);
       return 0;
     }
   }
@@ -4304,7 +4332,7 @@ ReadSUNCGModelFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open lights file %s\n", filename);
+    RNFail("Unable to open lights file %s\n", filename);
     return 0;
   }
 
@@ -4331,7 +4359,7 @@ ReadSUNCGModelFile(const char *filename)
 
   // Check if found model_id
   if (model_id_k < 0) {
-    fprintf(stderr, "Did not find \"model_id\" in header on line %d of %s\n", line_number, filename);
+    RNFail("Did not find \"model_id\" in header on line %d of %s\n", line_number, filename);
     return 0;
   }
 
@@ -4351,7 +4379,7 @@ ReadSUNCGModelFile(const char *filename)
     // Check number of values
     if (values.NEntries() == 0) continue;
     if (values.NEntries() != keys.NEntries()) {
-      fprintf(stderr, "Invalid number of entries at line %d in %s\n", line_number, filename);
+      RNFail("Invalid number of entries at line %d in %s\n", line_number, filename);
       return 0;
     }
 

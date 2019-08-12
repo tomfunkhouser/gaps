@@ -609,7 +609,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -625,7 +625,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "rb");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -645,7 +645,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -665,7 +665,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -688,7 +688,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -709,7 +709,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -729,7 +729,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     fclose(fp);
   }
   else {
-    fprintf(stderr, "Unrecognized point file extension: %s\n", extension);
+    RNFail("Unrecognized point file extension: %s\n", extension);
     return NULL;
   }
 
@@ -841,7 +841,7 @@ int ParseArgs(int argc, char **argv)
         initial_camera = TRUE;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -850,14 +850,14 @@ int ParseArgs(int argc, char **argv)
       char *ext = strrchr(*argv, '.');
       if (ext && (!strcmp(ext, ".pts") || !strcmp(ext, ".xyz") || !strcmp(ext, ".xyzn") || !strcmp(ext, ".vts") || !strcmp(ext, ".pid"))) point_names.Insert(*argv);
       else if (ext && (!strcmp(ext, ".off") || !strcmp(ext, ".ply") || !strcmp(ext, ".obj"))) mesh_names.Insert(*argv);
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check points name
   if (point_names.IsEmpty()) {
-    fprintf(stderr, "You did not specify a points filename\n");
+    RNFail("You did not specify a points filename\n");
     return FALSE;
   }
 

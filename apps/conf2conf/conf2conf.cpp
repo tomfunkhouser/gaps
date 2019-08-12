@@ -31,6 +31,7 @@ static int load_images_ending_at_index = INT_MAX;
 static int load_every_kth_image = 1;
 static int write_every_kth_image = 1;
 static int texture_aggregation_method = 0;
+static int texture_aggregation_weighting = 1;
 static double texel_spacing = 0;
 static int print_verbose = 0;
 
@@ -41,9 +42,9 @@ static int print_verbose = 0;
 ////////////////////////////////////////////////////////////////////////
 
 enum {
-  WEIGHTED_AVERAGE_TEXTURE_AGGREGATION,
-  WEIGHTED_MEDIAN_TEXTURE_AGGREGATION,
-  WEIGHTED_MODE_TEXTURE_AGGREGATION,
+  MEAN_TEXTURE_AGGREGATION,
+  MEDIAN_TEXTURE_AGGREGATION,
+  MODE_TEXTURE_AGGREGATION,
   NUM_TEXTURE_AGGREGATION_METHODS
 };
 
@@ -114,13 +115,13 @@ ReadConfiguration(const char *filename)
   // Allocate configuration
   RGBDConfiguration *configuration = new RGBDConfiguration();
   if (!configuration) {
-    fprintf(stderr, "Unable to allocate configuration for %s\n", filename);
+    RNFail("Unable to allocate configuration for %s\n", filename);
     return NULL;
   }
   
   // Read file
   if (!configuration->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read configuration from %s\n", filename);
+    RNFail("Unable to read configuration from %s\n", filename);
     return NULL;
   }
 
@@ -189,7 +190,7 @@ ReadMesh(RGBDConfiguration *configuration, const char *filename)
   // Allocate mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh for %s\n", filename);
+    RNFail("Unable to allocate mesh for %s\n", filename);
     return NULL;
   }
 
@@ -202,7 +203,7 @@ ReadMesh(RGBDConfiguration *configuration, const char *filename)
   // Create surface      
   RGBDSurface *surface = new RGBDSurface("-", mesh, texel_spacing);
   if (!surface) {
-    fprintf(stderr, "Unable to allocate surface for %s\n", filename);
+    RNFail("Unable to allocate surface for %s\n", filename);
     delete mesh;
     return NULL;
   }
@@ -238,9 +239,6 @@ TextureScore(RGBDImage *image, RGBDSurface *surface,
   const R2Point& image_position, const R2Point& texture_position,
   const RNRgb& color)
 {
-  // Don't allow purely black pixels ???
-  if (color == RNblack_rgb) return 0.0;
-
   // Get convenient variables
   R3Point E = image->WorldViewpoint();
   R3Point P = surface->TexelWorldPosition(texture_position);
@@ -292,9 +290,9 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
   // Allocate storage for accumulating statistics
   if (configuration->NImages() == 0) return 1;
   RNRgb *colors = new RNRgb [ configuration->NImages() ];
-  if (!colors) { fprintf(stderr, "Unable to allocate memory\n"); return 0; }
+  if (!colors) { RNFail("Unable to allocate memory\n"); return 0; }
   RNScalar *weights = new RNScalar [ configuration->NImages() ];
-  if (!weights) { fprintf(stderr, "Unable to allocate memory\n"); delete [] colors; return 0; }
+  if (!weights) { RNFail("Unable to allocate memory\n"); delete [] colors; return 0; }
 
   // Fill the texture RGB channels
   for (int ix = 0; ix < width; ix++) {
@@ -347,10 +345,17 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
         if (g == R2_GRID_UNKNOWN_VALUE) continue;
         if (b == R2_GRID_UNKNOWN_VALUE) continue;
 
-        // Compute weight
+        // Get/check color
+        // Don't allow purely black pixels ???
         RNRgb color(r, g, b);
-        RNScalar weight = TextureScore(image, surface, image_position, texture_position, color);
-        if (weight <= 0) continue;
+        if (color == RNblack_rgb) continue;
+
+        // Compute weight
+        RNScalar weight = 1.0;
+        if (texture_aggregation_weighting == 1) {
+          weight = TextureScore(image, surface, image_position, texture_position, color);
+          if (weight <= 0) continue;
+        }
         
         // Update statistics
         weight_sum += weight;
@@ -366,7 +371,11 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
 
       // Compute color for pixel
       RNRgb color = RNblack_rgb;
-      if (texture_aggregation_method == WEIGHTED_MEDIAN_TEXTURE_AGGREGATION) {
+      if (texture_aggregation_method == MEAN_TEXTURE_AGGREGATION) {
+        // Compute weighted mean
+        color = weighted_color_sum / weight_sum;
+      }
+      else if (texture_aggregation_method == MEDIAN_TEXTURE_AGGREGATION) {
         // Compute weighted median
         RNScalar best_dd = FLT_MAX;
         for (int i = 0; i < count; i++) {
@@ -376,7 +385,7 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
               RNScalar dr = colors[i].R() - colors[j].R();
               RNScalar dg = colors[i].G() - colors[j].G();
               RNScalar db = colors[i].B() - colors[j].B();
-              dd += weights[j]*weights[j] * (dr*dr + dg*dg + db*db);
+              dd += weights[j] * weights[j] * (dr*dr + dg*dg + db*db);
             }
           }
           if (dd < best_dd) {
@@ -385,7 +394,7 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
           }
         }
       }
-      else if (texture_aggregation_method == WEIGHTED_MODE_TEXTURE_AGGREGATION) {
+      else if (texture_aggregation_method == MODE_TEXTURE_AGGREGATION) {
         // Compute weighted mode
         RNScalar best_sum = 0;
         for (int i = 0; i < count; i++) {
@@ -400,8 +409,8 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
         }
       }
       else {
-        // Compute weighted average
-        color = weighted_color_sum / weight_sum;
+        RNFail("Unrecognized texture aggregation method: %d", texture_aggregation_method);
+        return 0;
       }
       
       // Update the texture channels
@@ -689,7 +698,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-load_images_ending_at_index")) { argc--; argv++; load_images_ending_at_index = atoi(*argv); }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
       else if (!strcmp(*argv, "-write_every_kth_image")) { argc--; argv++; write_every_kth_image = atoi(*argv); }
-      else if (!strcmp(*argv, "-textur_aggregation_method")) { argc--; argv++; texture_aggregation_method = atoi(*argv); }
+      else if (!strcmp(*argv, "-texture_aggregation_method")) { argc--; argv++; texture_aggregation_method = atoi(*argv); }
+      else if (!strcmp(*argv, "-texture_aggregation_weighting")) { argc--; argv++; texture_aggregation_weighting = atoi(*argv); }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; texel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-compute_surface_textures")) {}
       else if (!strcmp(*argv, "-negate_yz")) {}
@@ -702,20 +712,20 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; viewpoint_bbox[1][1] = atof(*argv);
         argc--; argv++; viewpoint_bbox[1][2] = atof(*argv);
       }    
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input_configuration_filename) input_configuration_filename = *argv;
       else if (!output_configuration_filename) output_configuration_filename = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check filenames
   if (!input_configuration_filename || !output_configuration_filename) {
-    fprintf(stderr, "Usage: texture inputconfigurationfile outputconfigurationfile [options]\n");
+    RNFail("Usage: texture inputconfigurationfile outputconfigurationfile [options]\n");
     return 0;
   }
 
@@ -763,6 +773,7 @@ main(int argc, char **argv)
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; }
       else if (!strcmp(*argv, "-write_every_kth_image")) { argc--; argv++; }
       else if (!strcmp(*argv, "-texture_aggregation_method")) { argc--; argv++; }
+      else if (!strcmp(*argv, "-texture_aggregation_weighting")) { argc--; argv++; }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; }
       else if (!strcmp(*argv, "-viewpoint_bbox")) { argc -= 6; argv += 6; }
       else if (!strcmp(*argv, "-compute_surface_textures")) {
@@ -795,7 +806,7 @@ main(int argc, char **argv)
         if (!Transform(configuration, matrix)) exit(-1);
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -803,7 +814,7 @@ main(int argc, char **argv)
     else {
       static int nfilenames = 0;
       if (nfilenames < 2) nfilenames++;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }

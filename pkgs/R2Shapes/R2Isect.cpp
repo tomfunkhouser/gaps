@@ -709,9 +709,9 @@ RNClassID R2Intersects(const R2Box& box1, const R2Box& box2,
         RNCoord xmin = box1.XMin();
         if (xmin < box2.XMin()) xmin = box2.XMin();
         RNCoord ymin = box1.YMin();
-        if (ymin > box2.YMin()) ymin = box2.YMin();
+        if (ymin < box2.YMin()) ymin = box2.YMin();
         RNCoord xmax = box1.XMax();
-        if (xmax < box2.XMax()) xmax = box2.XMax();
+        if (xmax > box2.XMax()) xmax = box2.XMax();
         RNCoord ymax = box1.YMax();
         if (ymax > box2.YMax()) ymax = box2.YMax();
         *result = R2Box(xmin, ymin, xmax, ymax);

@@ -55,7 +55,7 @@ ReadMesh(char *filename)
 
   // Read mesh from file
   if (!mesh->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh from %s\n", filename);
+    RNFail("Unable to read mesh from %s\n", filename);
     return NULL;
   }
 
@@ -84,7 +84,7 @@ WriteProperties(R3MeshPropertySet *properties, char *filename)
 
   // Write properties to file
   if (!properties->Write(filename)) {
-    fprintf(stderr, "Unable to write properties to %s\n", filename);
+    RNFail("Unable to write properties to %s\n", filename);
     return 0;
   }
 
@@ -252,7 +252,7 @@ CreateGrid(R3Mesh *mesh)
   // Create grid
   R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     exit(-1);
   }
 
@@ -279,7 +279,7 @@ CreateVertexSampling(R3Mesh *mesh, int num_vertices, RNScalar *weights)
   // Create array of selected vertices
   RNArray<R3MeshVertex *> *selected_vertices = new RNArray<R3MeshVertex *>();
   if (!selected_vertices) {
-    fprintf(stderr, "Unable to create array of sample vertices\n");
+    RNFail("Unable to create array of sample vertices\n");
     return NULL;
   }
 
@@ -392,7 +392,7 @@ ComputeBasicProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -448,7 +448,7 @@ ComputeCoordinateProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -596,7 +596,7 @@ ComputeCurvatureProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -808,7 +808,7 @@ ComputeLaplacianProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -940,14 +940,14 @@ ComputeVolumeProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
   // Rasterize mesh surface into a grid
   R3Grid *grid = CreateGrid(mesh);
   if (!grid) {
-    fprintf(stderr, "Unable to create grid from mesh\n");
+    RNFail("Unable to create grid from mesh\n");
     return NULL;
   }
 
@@ -1010,7 +1010,7 @@ ComputeBoundaryProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1071,7 +1071,7 @@ ComputeDijkstraDistanceProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1138,7 +1138,7 @@ ComputeDijkstraHistogramProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1154,7 +1154,7 @@ ComputeDijkstraHistogramProperties(R3Mesh *mesh)
   RNScalar *weights = new RNScalar [ mesh->NVertices() ];
   RNArray<R3MeshVertex *> *samples = CreateVertexSampling(mesh, nsamples, weights);
   if (!samples) {
-    fprintf(stderr, "Unable to sample vertices\n");
+    RNFail("Unable to sample vertices\n");
     return NULL;
   }
 
@@ -1240,7 +1240,7 @@ ComputeRayTracingProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1349,7 +1349,7 @@ ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
   // Open file
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open json file %s\n", filename);
+    RNFail("Unable to open json file %s\n", filename);
     return 0;
   }
 
@@ -1360,7 +1360,7 @@ ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
   fseek(fp, 0, SEEK_SET);
   char* buffer = new char[size + 1];
   unsigned long const usize = static_cast<unsigned long const>(size);
-  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  if (fread(buffer, 1, usize, fp) != usize) { RNFail("Unable to read %s\n", filename); return 0; }
   else { buffer[size] = 0; text = buffer; }
   delete[] buffer;
 
@@ -1371,14 +1371,14 @@ ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
   Json::Value json_root;
   Json::Reader json_reader;
   if (!json_reader.parse(text, json_root, false)) {
-    fprintf(stderr, "Unable to parse %s\n", filename);
+    RNFail("Unable to parse %s\n", filename);
     return 0;
   }
 
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate Aproperty set.\n");
+    RNFail("Unable to allocate Aproperty set.\n");
     return NULL;
   }
 
@@ -1424,7 +1424,7 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
   // Open file
   FILE* fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open label mapping file %s\n", filename);
+    RNFail("Unable to open label mapping file %s\n", filename);
     return 0;
   }
 
@@ -1454,7 +1454,7 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
 
   // Check if found key fields in header
   if ((id_index < 0) || (name_index < 0) || (nyuId_index < 0) || (nyu40id_index < 0)) {
-    fprintf(stderr, "Did not find index, category, nyuId, and nyu40id in header of %s\n", filename);
+    RNFail("Did not find index, category, nyuId, and nyu40id in header of %s\n", filename);
     return 0;
   }
 
@@ -1510,7 +1510,7 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
   // Open file
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open json file %s\n", filename);
+    RNFail("Unable to open json file %s\n", filename);
     return 0;
   }
 
@@ -1521,7 +1521,7 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
   fseek(fp, 0, SEEK_SET);
   char* buffer = new char[size + 1];
   unsigned long const usize = static_cast<unsigned long const>(size);
-  if (fread(buffer, 1, usize, fp) != usize) { fprintf(stderr, "Unable to read %s\n", filename); return 0; }
+  if (fread(buffer, 1, usize, fp) != usize) { RNFail("Unable to read %s\n", filename); return 0; }
   else { buffer[size] = 0; text = buffer; }
   delete[] buffer;
 
@@ -1532,14 +1532,14 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
   Json::Value json_root;
   Json::Reader json_reader;
   if (!json_reader.parse(text, json_root, false)) {
-    fprintf(stderr, "Unable to parse %s\n", filename);
+    RNFail("Unable to parse %s\n", filename);
     return 0;
   }
 
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1656,7 +1656,7 @@ ReadMTurkProperties(R3Mesh *mesh, const char *segmentation_filename,
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1707,7 +1707,7 @@ ComputeMapProperties(R3Mesh *mesh, const char *filename)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1722,7 +1722,7 @@ ComputeMapProperties(R3Mesh *mesh, const char *filename)
   // Open map file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open map file: %s\n", filename);
+    RNFail("Unable to open map file: %s\n", filename);
     return NULL;
   }
 
@@ -1733,7 +1733,7 @@ ComputeMapProperties(R3Mesh *mesh, const char *filename)
     // Read corresponding vertex ID
     int id;
     if (fscanf(fp, "%d", &id) != (unsigned int) 1) { 
-      fprintf(stderr, "Unable to read %s\n", filename); 
+      RNFail("Unable to read %s\n", filename); 
       return NULL; 
     }
 
@@ -1785,7 +1785,7 @@ ComputeSolidTextureProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1847,7 +1847,7 @@ ComputeProperties(R3Mesh *mesh)
   // Allocate property set
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate property set.\n");
+    RNFail("Unable to allocate property set.\n");
     return NULL;
   }
 
@@ -1997,7 +1997,7 @@ ParseArgs(int argc, char **argv)
         compute_raytrace_properties = 1;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -2005,14 +2005,14 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_mesh_name) input_mesh_name = *argv;
       else if (!output_properties_name) output_properties_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check input filename
   if (!input_mesh_name || !output_properties_name) {
-    fprintf(stderr, "Usage: msh2prp meshfile propertiesfile [options]\n");
+    RNFail("Usage: msh2prp meshfile propertiesfile [options]\n");
     return 0;
   }
 

@@ -423,6 +423,33 @@ Transform(const R2Transformation& transformation)
 
 
 
+R2Polyline& R2Polyline::
+operator=(const R2Polyline& polyline) 
+{
+  // Delete previous points
+  if (points) {
+    delete points;
+    points = NULL;
+  }
+  
+  // Copy bbox
+  bbox = polyline.bbox;
+
+  // Copy points
+  npoints = polyline.npoints;
+  if (npoints > 0) {
+    points = new R2Point [ npoints ];
+    for (int i = 0; i < npoints; i++) {
+      points[i] = polyline.points[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 void R2Polyline::
 Print(FILE *fp) const
 {

@@ -53,6 +53,7 @@ class R2Polyline : public R2Curve {
         // Manipulation functions/operators
         virtual void Empty(void);
 	virtual void Transform(const R2Transformation& transformation);
+        R2Polyline& operator=(const R2Polyline& polyline);
 
         // Draw functions/operators
         virtual void Draw(const R2DrawFlags draw_flags = R2_DEFAULT_DRAW_FLAGS) const;

@@ -36,13 +36,13 @@ int main(int argc, char **argv)
   // Create mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh data structure.\n");
+    RNFail("Unable to allocate mesh data structure.\n");
     exit(1);
   }
 
   // Read mesh
   if (!mesh->ReadFile(argv[1])) {
-    fprintf(stderr, "Unable to read file: %s\n", argv[1]);
+    RNFail("Unable to read file: %s\n", argv[1]);
     exit(1);
   }
 

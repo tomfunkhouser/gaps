@@ -213,7 +213,7 @@ SelectPropertyExtrema(R3Mesh *mesh, int npoints, double min_spacing, const char 
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -379,7 +379,7 @@ SelectScaleSpaceExtrema(R3Mesh *mesh, int npoints, double min_spacing, const cha
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -404,7 +404,7 @@ SelectRandomSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -532,14 +532,14 @@ SelectFurthestPoints(R3Mesh *mesh, const RNArray<R3MeshVertex *>& seeds, int npo
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
   // Allocate vertex data
   VertexData *vertex_data = new VertexData [ mesh->NVertices() ];
   if (!vertex_data) {
-    fprintf(stderr, "Unable to allocate vertex data\n");
+    RNFail("Unable to allocate vertex data\n");
     return NULL;
   }
 
@@ -624,7 +624,7 @@ SelectFurthestPoints(R3Mesh *mesh, const RNArray<Point *>& seeds, int npoints, d
   for (int i = 0; i < seeds.NEntries(); i++) {
     R3MeshVertex *vertex = seeds[i]->vertex;
     if (vertex) seed_vertices.Insert(vertex);
-    else { fprintf(stderr, "Not implemented\n"); return NULL; }
+    else { RNFail("Not implemented\n"); return NULL; }
   }
 
   // Select furthest points
@@ -654,7 +654,7 @@ SelectVertexPoints(R3Mesh *mesh, int npoints, double min_spacing)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -725,7 +725,7 @@ SelectExteriorSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -864,7 +864,7 @@ SelectVisibleSurfacePoints(R3Mesh *mesh, int npoints, double min_spacing)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -956,7 +956,7 @@ SelectCenterOfMass(R3Mesh *mesh)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -981,7 +981,7 @@ SelectVertexClosestToCenterOfMass(R3Mesh *mesh)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -1068,7 +1068,7 @@ SelectPoints(R3Mesh *mesh, int selection_method)
 
   // Check points
   if (!points) {
-    fprintf(stderr, "Error selecting points\n");
+    RNFail("Error selecting points\n");
     return 0;
   }
 
@@ -1124,7 +1124,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "w");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1132,7 +1132,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     // Write vertex ids
     for (int i = 0; i < points.NEntries(); i++) {
       Point *point = points[i];
-      if (!point->vertex) { fprintf(stderr, "Incompatible output type: pid\n"); return 0; }
+      if (!point->vertex) { RNFail("Incompatible output type: pid\n"); return 0; }
       int vertex_id = (point->vertex) ? mesh->VertexID(point->vertex) : -1;
       fprintf(fp, "%d\n", vertex_id);
     }
@@ -1146,7 +1146,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "w");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1168,7 +1168,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "w");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1190,7 +1190,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "w");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1210,7 +1210,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
     if (filename) {
       fp = fopen(filename, "wb");
       if (!fp) {
-        fprintf(stderr, "Unable to open output file %s\n", filename);
+        RNFail("Unable to open output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1226,7 +1226,7 @@ WritePoints(R3Mesh *mesh, const RNArray<Point *>& points, const char *filename)
       coordinates[4] = point->normal.Y();
       coordinates[5] = point->normal.Z();
       if (fwrite(coordinates, sizeof(float), 6, fp) != (unsigned int) 6) {
-        fprintf(stderr, "Unable to write point to output file %s\n", filename);
+        RNFail("Unable to write point to output file %s\n", filename);
         return FALSE;
       }
     }
@@ -1290,7 +1290,7 @@ ParseArgs (int argc, char **argv)
       else if (!strcmp(*argv, "-scale_space_extrema")) { argc--; argv++;  property_name = *argv; selection_method = SCALE_SPACE_EXTREMA; }
       else if (!strcmp(*argv, "-v")) { print_verbose = TRUE; }
       else if (!strcmp(*argv, "-debug")) { print_debug = TRUE; }
-      else { fprintf(stderr, "Invalid program argument: %s\n", *argv); return 0; }
+      else { RNFail("Invalid program argument: %s\n", *argv); return 0; }
       argv++; argc--;
     }
     else {
@@ -1304,7 +1304,7 @@ ParseArgs (int argc, char **argv)
   // Check mesh name
   if (!mesh_name) {
     // Print usage statement
-    fprintf(stderr, 
+    RNFail(
       "Usage: off2pts <options> input_mesh output_points\n\n"
       "options:\n"
       " -npoints #\n"      

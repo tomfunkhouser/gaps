@@ -82,7 +82,7 @@ CreatePointSet(R3SurfelScene *scene,
   // Create point set
   R3SurfelPointSet *pointset = new R3SurfelPointSet();
   if (!pointset) {
-    fprintf(stderr, "Unable to allocate point set\n");
+    RNFail("Unable to allocate point set\n");
     return NULL;
   }
 
@@ -1136,7 +1136,7 @@ CreateGrid(R3SurfelPointSet *pointset,
   // Create grid
   R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     return NULL;
   }
 
@@ -1195,7 +1195,7 @@ CreateGrid(R3SurfelScene *scene, const R3Box& bbox,
   // Create grid
   R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     return NULL;
   }
 
@@ -1253,7 +1253,7 @@ CreateGrid(R3SurfelScene *scene,
   // Create grid
   R3Grid *grid = new R3Grid(xres, yres, zres, bbox);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     return NULL;
   }
 
@@ -1304,7 +1304,7 @@ CreateNormals(R3SurfelPointGraph *graph, RNBoolean fast_and_approximate)
   // Allocate normals
   R3Vector *normals = new R3Vector [ graph->NPoints() ];
   if (!normals) {
-    fprintf(stderr, "Unable to allocate normals\n");
+    RNFail("Unable to allocate normals\n");
     return NULL;
   }
 
@@ -1375,7 +1375,7 @@ CreateNormals(R3SurfelPointSet *pointset,
   // Create graph
   R3SurfelPointGraph *graph = new R3SurfelPointGraph(*pointset, max_neighbors, max_neighbor_distance);
   if (!graph) {
-    fprintf(stderr, "Unable to create graph\n");
+    RNFail("Unable to create graph\n");
     return NULL;
   }
 
@@ -1473,7 +1473,7 @@ CreateNodeSet(R3SurfelScene *scene,
   // Create node set
   R3SurfelNodeSet *nodeset = new R3SurfelNodeSet();
   if (!nodeset) {
-    fprintf(stderr, "Unable to allocate node set\n");
+    RNFail("Unable to allocate node set\n");
     return NULL;
   }
 
@@ -1498,7 +1498,7 @@ CreateObjectSet(R3SurfelScene *scene,
   // Create object set
   R3SurfelObjectSet *objectset = new R3SurfelObjectSet();
   if (!objectset) {
-    fprintf(stderr, "Unable to allocate object set\n");
+    RNFail("Unable to allocate object set\n");
     return NULL;
   }
 
@@ -1879,7 +1879,7 @@ CreatePlanarGrids(R3SurfelPointGraph *graph,
   // Create array of grids
   RNArray<R3PlanarGrid *> *grids = new RNArray<R3PlanarGrid *>();
   if (!grids) {
-    fprintf(stderr, "Unable to allocate array of grids\n");
+    RNFail("Unable to allocate array of grids\n");
     return NULL;
   }
 
@@ -1972,7 +1972,7 @@ CreatePlanarGrids(R3SurfelScene *scene,
   // Create array of planar grids
   RNArray<R3PlanarGrid *> *grids = new RNArray<R3PlanarGrid *>();
   if (!grids) {
-    fprintf(stderr, "Unable to allocate array of grids\n");
+    RNFail("Unable to allocate array of grids\n");
     return NULL;
   }
 
@@ -2053,7 +2053,7 @@ CreatePlanarObjects(R3SurfelScene *scene,
   // Create array of objects
   RNArray<R3SurfelObject *> *objects = new RNArray<R3SurfelObject *>();
   if (!objects) {
-    fprintf(stderr, "Unable to allocate array of objects\n");
+    RNFail("Unable to allocate array of objects\n");
     return NULL;
   }
 
@@ -2266,7 +2266,7 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
   // Create array of objects
   RNArray<R3SurfelObject *> *objects = new RNArray<R3SurfelObject *>();
   if (!objects) {
-    fprintf(stderr, "Unable to create array of objects\n");
+    RNFail("Unable to create array of objects\n");
     for (int i = 0; i < clusters.NEntries(); i++) delete clusters[i];
     if (normals) delete [] normals;
     return NULL;
@@ -2299,7 +2299,7 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
     // Create block
     R3SurfelBlock *block = new R3SurfelBlock(surfels, cluster->points.NEntries(), origin);
     if (!block) {
-      fprintf(stderr, "Unable to create node\n");
+      RNFail("Unable to create node\n");
       for (int i = 0; i < clusters.NEntries(); i++) delete clusters[i];
       if (normals) delete [] normals;
       delete [] surfels;
@@ -2314,7 +2314,7 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
     sprintf(node_name, "O%d\n", objects->NEntries());
     R3SurfelNode *node = new R3SurfelNode(node_name);
     if (!node) {
-      fprintf(stderr, "Unable to create node\n");
+      RNFail("Unable to create node\n");
       for (int i = 0; i < clusters.NEntries(); i++) delete clusters[i];
       if (normals) delete [] normals;
       delete block;
@@ -2326,7 +2326,7 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
     sprintf(object_name, "O%d\n", objects->NEntries());
     R3SurfelObject *object = new R3SurfelObject(object_name);
     if (!object) {
-      fprintf(stderr, "Unable to create object\n");
+      RNFail("Unable to create object\n");
       for (int i = 0; i < clusters.NEntries(); i++) delete clusters[i];
       if (normals) delete [] normals;
       delete block;
@@ -2390,7 +2390,7 @@ CreateClusterObjects(R3SurfelScene *scene,
   // Create array of objects
   RNArray<R3SurfelObject *> *objects = new RNArray<R3SurfelObject *>();
   if (!objects) {
-    fprintf(stderr, "Unable to allocate array of objects\n");
+    RNFail("Unable to allocate array of objects\n");
     return NULL;
   }
 

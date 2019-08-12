@@ -15,6 +15,7 @@ struct R3MeshPropertySet {
 public:
   // Constructor/destructor
   R3MeshPropertySet(R3Mesh *mesh = NULL);
+  R3MeshPropertySet(const R3MeshPropertySet& set);
   ~R3MeshPropertySet(void);
 
   // Property set info
@@ -38,6 +39,7 @@ public:
   void Remove(const char *name);
   void Remove(int k);
   void Reset(R3Mesh *mesh);
+  R3MeshPropertySet& operator=(const R3MeshPropertySet& set);
   
   // Input/output functions
   int Read(const char *filename);

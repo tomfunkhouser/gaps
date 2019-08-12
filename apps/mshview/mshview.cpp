@@ -570,7 +570,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case ' ': {
     // Print camera
     const R3Camera& camera = viewer->Camera();
-    fprintf(stderr, "%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
+    RNFail("%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
            camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
            camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
            camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
@@ -777,7 +777,7 @@ int ParseArgs(int argc, char **argv)
         initial_camera_up.Reset(ux, uy, uz);
         initial_camera = TRUE;
       }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
@@ -788,7 +788,7 @@ int ParseArgs(int argc, char **argv)
 
   // Check mesh filename
   if (mesh_names.IsEmpty()) {
-    fprintf(stderr, "You did not specify a mesh file name.\n");
+    RNFail("You did not specify a mesh file name.\n");
     return 0;
   }
 

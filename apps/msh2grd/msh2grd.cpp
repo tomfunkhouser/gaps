@@ -81,7 +81,7 @@ CreateGrid(R3Mesh *mesh)
   // Allocate grid
   R3Grid *grid = new R3Grid(mesh->BBox(), grid_spacing, min_resolution, max_resolution);
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     exit(-1);
   }
 
@@ -207,19 +207,19 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-spacing")) { argc--; argv++; grid_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-min_resolution")) { argc--; argv++; min_resolution = atoi(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     }
     else {
       if (!mesh_name) mesh_name = *argv;
       else if (!grid_name) grid_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     }
     argv++; argc--;
   }
 
   // Check mesh filename
   if (!mesh_name || !grid_name) {
-    fprintf(stderr, "Usage: msh2grd mesh grid [options]\n");
+    RNFail("Usage: msh2grd mesh grid [options]\n");
     return 0;
   }
 

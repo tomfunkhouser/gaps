@@ -39,6 +39,8 @@ public:
   const char *Name(void) const;
   const char *ColorDirectory(void) const;
   const char *DepthDirectory(void) const;
+  const char *CategoryDirectory(void) const;
+  const char *InstanceDirectory(void) const;
   const char *TextureDirectory(void) const;
   const char *DatasetFormat(void) const;
   
@@ -53,6 +55,8 @@ public:
   virtual void SetName(const char *name);
   virtual void SetColorDirectory(const char *directory);
   virtual void SetDepthDirectory(const char *directory);
+  virtual void SetCategoryDirectory(const char *directory);
+  virtual void SetInstanceDirectory(const char *directory);
   virtual void SetTextureDirectory(const char *directory);
   virtual void SetDatasetFormat(const char *format);
 
@@ -73,10 +77,14 @@ public:
   // Read/release functions
   virtual int ReadChannels(void);
   virtual int ReleaseChannels(void);
-  virtual int ReadDepthChannels(void);
-  virtual int ReleaseDepthChannels(void);
   virtual int ReadColorChannels(void);
   virtual int ReleaseColorChannels(void);
+  virtual int ReadDepthChannels(void);
+  virtual int ReleaseDepthChannels(void);
+  virtual int ReadCategoryChannels(void);
+  virtual int ReleaseCategoryChannels(void);
+  virtual int ReadInstanceChannels(void);
+  virtual int ReleaseInstanceChannels(void);
 
   // Update functions
   virtual void InvalidateWorldBBox(void);
@@ -89,6 +97,8 @@ private:
   char *name;
   char *color_directory;
   char *depth_directory;
+  char *category_directory;
+  char *instance_directory;
   char *texture_directory;
   char *dataset_format;
   R3Box world_bbox;
@@ -169,6 +179,24 @@ DepthDirectory(void) const
 {
   // Return name of depth directory
   return depth_directory;
+}
+
+
+
+inline const char *RGBDConfiguration::
+CategoryDirectory(void) const
+{
+  // Return name of category directory
+  return category_directory;
+}
+
+
+
+inline const char *RGBDConfiguration::
+InstanceDirectory(void) const
+{
+  // Return name of instance directory
+  return instance_directory;
 }
 
 

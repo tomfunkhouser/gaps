@@ -114,7 +114,7 @@ ParseXMLToken(const char *buffer, const char *key, int line_number, const char *
     return str;
   }
   else {
-    fprintf(stderr, "Error parsing %s on line %d of %s\n", key, line_number, filename); 
+    RNFail("Error parsing %s on line %d of %s\n", key, line_number, filename); 
     fflush(stderr);
     abort();
     return NULL;
@@ -129,14 +129,14 @@ ReadMap(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open match file: %s\n", filename);
+    RNFail("Unable to open match file: %s\n", filename);
     return 0;
   }
 
   // Create Map
   Map *map = new Map();
   if (!map) {
-    fprintf(stderr, "Unable to allocate map for %s\n", filename);
+    RNFail("Unable to allocate map for %s\n", filename);
     return NULL;
   }
 

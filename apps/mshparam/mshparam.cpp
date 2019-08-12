@@ -19,7 +19,7 @@ static char *output_mesh_filename = NULL;
 static char *output_texture_directory = NULL;
 static int separate_face_segments = 0;
 static int separate_face_materials = 0;
-static double texel_spacing = 0.01;
+static double texel_spacing = 1;
 static int flatten = 0;
 static int print_verbose = 0;
 
@@ -375,7 +375,6 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
 {
   // Check directory name
   if (!directory_name) return 1;
-  if (texel_spacing == 0) texel_spacing = 0.01;
   
   // Compute bounding box of texture coordinates
   R2Box texcoords_bbox = R2null_box;
@@ -395,7 +394,7 @@ WriteTextures(R3Mesh *mesh, const char *directory_name, RNLength texel_spacing)
   if (RNIsZero(texcoords_ylength)) return 0;
 
   // Compute width and height from texel_spacing
-  if (texel_spacing <= 0) texel_spacing = 0.01;
+  if (texel_spacing <= 0) texel_spacing = 1;
   int width = (int) (texcoords_bbox.XLength() / texel_spacing + 0.5);
   int height = (int) (texcoords_bbox.YLength() / texel_spacing + 0.5);
   if ((width <= 0) || (height == 0)) return 0;

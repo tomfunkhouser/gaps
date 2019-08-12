@@ -51,7 +51,7 @@ OpenScene(const char *input_scene_name, const char *input_database_name)
   // Allocate scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -163,7 +163,7 @@ ReadGrid(const char *directory_name, const char *category_name, const char *fiel
   // Allocate grid
   R2Grid *grid = new R2Grid();
   if (!grid) {
-    fprintf(stderr, "Unable to allocate grid\n");
+    RNFail("Unable to allocate grid\n");
     return NULL;
   }
 
@@ -1913,21 +1913,21 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-pixel_spacing")) { argc--; argv++; pixel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
       else if (!strcmp(*argv, "-chunk_size")) { argc--; argv++; chunk_size = atof(*argv); }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input_scene_name) input_scene_name = *argv;
       else if (!input_database_name) input_database_name = *argv;
       else if (!output_directory_name) output_directory_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check file names
   if (!input_scene_name || !input_database_name || !output_directory_name) {
-    fprintf(stderr, "Usage: sfl2img scenefile databasefile [options]\n");
+    RNFail("Usage: sfl2img scenefile databasefile [options]\n");
     return FALSE;
   }
 

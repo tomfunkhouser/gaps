@@ -362,7 +362,7 @@ ReadFile(const char *filename)
     // Open file
     FILE *fp;
     if (!(fp = fopen(filename, "r"))) {
-      fprintf(stderr, "Unable to open file %s\n", filename);
+      RNFail("Unable to open file %s\n", filename);
       return 0;
     }
 
@@ -372,7 +372,7 @@ ReadFile(const char *filename)
       // Create block
       R3SurfelBlock *block = new R3SurfelBlock();
       if (!block) {
-        fprintf(stderr, "Unable to create block for %s\n", buffer);
+        RNFail("Unable to create block for %s\n", buffer);
         return 0;
       }
     
@@ -399,7 +399,7 @@ ReadFile(const char *filename)
     // Create block
     R3SurfelBlock *block = new R3SurfelBlock();
     if (!block) {
-      fprintf(stderr, "Unable to create block\n");
+      RNFail("Unable to create block\n");
       return 0;
     }
     
@@ -444,7 +444,7 @@ WriteFile(const char *filename) const
     if (!database->ReleaseBlock(block)) return 0;
   }
   else {
-    fprintf(stderr, "Invalid file extension %s for database with more than one block\n", extension);
+    RNFail("Invalid file extension %s for database with more than one block\n", extension);
     return 0;
   }
 
@@ -514,7 +514,7 @@ ReadChar(FILE *fp, char *ptr, int count, int /* swap_endian */)
 {
   // Read the values
   if (fread(ptr, sizeof(char), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read char from database file\n");
+    RNFail("Unable to read char from database file\n");
     return 0;
   }
 
@@ -530,7 +530,7 @@ ReadShort(FILE *fp, RNInt16 *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(RNInt16), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read short from database file\n");
+    RNFail("Unable to read short from database file\n");
     return 0;
   }
 
@@ -550,7 +550,7 @@ ReadUnsignedShort(FILE *fp, RNUInt16 *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(RNUInt16), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read unsigned short from database file\n");
+    RNFail("Unable to read unsigned short from database file\n");
     return 0;
   }
 
@@ -568,7 +568,7 @@ ReadInt(FILE *fp, int *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(int), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read integer from database file\n");
+    RNFail("Unable to read integer from database file\n");
     return 0;
   }
 
@@ -586,7 +586,7 @@ ReadUnsignedInt(FILE *fp, unsigned int *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(unsigned int), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read unsigned integer from database file\n");
+    RNFail("Unable to read unsigned integer from database file\n");
     return 0;
   }
 
@@ -605,7 +605,7 @@ ReadFloat(FILE *fp, float *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(float), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read float from database file\n");
+    RNFail("Unable to read float from database file\n");
     return 0;
   }
 
@@ -624,7 +624,7 @@ ReadDouble(FILE *fp, double *ptr, int count, int swap_endian)
 {
   // Read the values
   if (fread(ptr, sizeof(double), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read double from database file\n");
+    RNFail("Unable to read double from database file\n");
     return 0;
   }
 
@@ -642,7 +642,7 @@ ReadUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endi
 {
   // Read the values
   if (fread(ptr, sizeof(unsigned long long), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to read unsigned long long from database file\n");
+    RNFail("Unable to read unsigned long long from database file\n");
     return 0;
   }
 
@@ -666,7 +666,7 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
     while (sofar < count) {
       size_t status = fread(ptr, sizeof(R3Surfel), count - sofar, fp);
       if (status > 0) sofar += status;
-      else { fprintf(stderr, "Unable to read surfel from database file\n"); return 0; }
+      else { RNFail("Unable to read surfel from database file\n"); return 0; }
     }
   }
   else {
@@ -704,7 +704,7 @@ WriteChar(FILE *fp, char *ptr, int count, int /* swap_endian */)
 {
   // Write the values
   if (fwrite(ptr, sizeof(char), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write integer to database file\n");
+    RNFail("Unable to write integer to database file\n");
     return 0;
   }
 
@@ -723,7 +723,7 @@ WriteShort(FILE *fp, RNInt16 *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(RNInt16), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write short to database file\n");
+    RNFail("Unable to write short to database file\n");
     return 0;
   }
 
@@ -746,7 +746,7 @@ WriteUnsignedShort(FILE *fp, RNUInt16 *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(RNUInt16), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write unsigned short to database file\n");
+    RNFail("Unable to write unsigned short to database file\n");
     return 0;
   }
 
@@ -768,7 +768,7 @@ WriteInt(FILE *fp, int *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(int), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write integer to database file\n");
+    RNFail("Unable to write integer to database file\n");
     return 0;
   }
 
@@ -789,7 +789,7 @@ WriteUnsignedInt(FILE *fp, unsigned int *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(unsigned int), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write integer to database file\n");
+    RNFail("Unable to write integer to database file\n");
     return 0;
   }
 
@@ -811,7 +811,7 @@ WriteFloat(FILE *fp, float *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(float), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write float to database file\n");
+    RNFail("Unable to write float to database file\n");
     return 0;
   }
 
@@ -833,7 +833,7 @@ WriteDouble(FILE *fp, double *ptr, int count, int swap_endian)
 
   // Write the values
   if (fwrite(ptr, sizeof(double), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write double to database file\n");
+    RNFail("Unable to write double to database file\n");
     return 0;
   }
 
@@ -854,7 +854,7 @@ WriteUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_end
 
   // Write the values
   if (fwrite(ptr, sizeof(unsigned long long), count, fp) != (size_t) count) {
-    fprintf(stderr, "Unable to write unsigned long long to database file\n");
+    RNFail("Unable to write unsigned long long to database file\n");
     return 0;
   }
 
@@ -888,7 +888,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   while (sofar < count) {
     size_t status = fwrite(ptr, sizeof(R3Surfel), count - sofar, fp);
     if (status > 0) sofar += status;
-    else { fprintf(stderr, "Unable to write surfel to database file\n"); return 0; }
+    else { RNFail("Unable to write surfel to database file\n"); return 0; }
   }
 
   // Swap endian back
@@ -925,7 +925,7 @@ InternalReadBlock(R3SurfelBlock *block)
   // Allocate surfels
   block->surfels = new R3Surfel [ block->nsurfels ];
   if (!block->surfels) {
-    fprintf(stderr, "Unable to allocate surfels\n");
+    RNFail("Unable to allocate surfels\n");
     return 0;
   }
   
@@ -1007,13 +1007,13 @@ InternalSyncBlock(R3SurfelBlock *block)
 
   // Check file rwaccess
   if (!strstr(rwaccess, "+")) {
-    fprintf(stderr, "Unable to write block to read-only file\n");
+    RNFail("Unable to write block to read-only file\n");
     return 0;
   }
 
   // Check database version
   if ((major_version != current_major_version) || (minor_version != current_minor_version)) {
-    fprintf(stderr, "Unable to write block to database with different version\n");
+    RNFail("Unable to write block to database with different version\n");
     return 0;
   }
 
@@ -1028,7 +1028,7 @@ InternalSyncBlock(R3SurfelBlock *block)
   }
   else {
     // Surfels must be put at end of file
-    RNFileSeek(fp, 0, SEEK_END);
+    RNFileSeek(fp, 0, RN_FILE_SEEK_END);
     block->file_surfels_offset = RNFileTell(fp);
     block->file_surfels_count = block->nsurfels;
   }
@@ -1101,7 +1101,7 @@ OpenFile(const char *filename, const char *rwaccess)
   // Open file
   fp = fopen(filename, this->rwaccess);
   if (!fp) {
-    fprintf(stderr, "Unable to open database file %s with rwaccess %s\n", filename, rwaccess);
+    RNFail("Unable to open database file %s with rwaccess %s\n", filename, rwaccess);
     return 0;
   }
 
@@ -1115,7 +1115,7 @@ OpenFile(const char *filename, const char *rwaccess)
     char buffer[1024]; 
     if (!ReadChar(fp, buffer, 32, 0)) return 0;
     if (strcmp(buffer, "R3SurfelDatabase")) {
-      fprintf(stderr, "Incorrect header (%s) in database file %s\n", buffer, filename);
+      RNFail("Incorrect header (%s) in database file %s\n", buffer, filename);
       return 0;
     }
 
@@ -1125,7 +1125,7 @@ OpenFile(const char *filename, const char *rwaccess)
     if (endian_test1 != 1) swap_endian = 1;
     if (!ReadUnsignedInt(fp, &endian_test2, 1, swap_endian)) return 0;
     if (endian_test2 != 1) {
-      fprintf(stderr, "Incorrect endian (%x) in database file %s\n", endian_test1, filename);
+      RNFail("Incorrect endian (%x) in database file %s\n", endian_test1, filename);
       return 0;
     }
 
@@ -1133,7 +1133,7 @@ OpenFile(const char *filename, const char *rwaccess)
     if (!ReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
     if (!ReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
     if ((major_version < 1) || (major_version > 3)) {
-      fprintf(stderr, "Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
+      RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
       return 0;
     }
   

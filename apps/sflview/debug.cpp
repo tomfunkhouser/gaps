@@ -349,7 +349,7 @@ ReadObjects(R3SurfelViewer *viewer)
   // Open file
   FILE *fp = fopen("objects.txt", "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open objects.txt\n");
+    RNFail("Unable to open objects.txt\n");
     return 0;
   }
 
@@ -360,7 +360,7 @@ ReadObjects(R3SurfelViewer *viewer)
     // Get label
     R3SurfelLabel *label = scene->FindLabelByName(label_name);
     if (!label) {
-      fprintf(stderr, "Unable to find label %s\n", label_name);
+      RNFail("Unable to find label %s\n", label_name);
       continue;
     }
 
@@ -370,22 +370,22 @@ ReadObjects(R3SurfelViewer *viewer)
     R3Point center_point(x, y, z);
     R3SurfelCylinderConstraint cylinder_constraint(center_point, pointset_radius);
     R3SurfelPointSet *pointset1 = CreatePointSet(scene, NULL, &cylinder_constraint);
-    if (!pointset1) { fprintf(stderr, "Unable to create pointset1\n"); continue; }
-    if (pointset1->NPoints() == 0) { fprintf(stderr, "Empty pointset1\n"); delete pointset1; continue; }
+    if (!pointset1) { RNFail("Unable to create pointset1\n"); continue; }
+    if (pointset1->NPoints() == 0) { RNFail("Empty pointset1\n"); delete pointset1; continue; }
     R3Plane plane = FitSupportPlane(pointset1);
     R3SurfelPlaneConstraint plane_constraint(plane, FALSE, FALSE, TRUE, 0.1);
     R3SurfelPointSet *pointset2 = CreatePointSet(pointset1, &plane_constraint);
     delete pointset1; 
-    if (!pointset2) { fprintf(stderr, "Unable to create pointset2\n"); continue; }
-    if (pointset2->NPoints() == 0) { fprintf(stderr, "Empty pointset2\n"); delete pointset2; continue; }
+    if (!pointset2) { RNFail("Unable to create pointset2\n"); continue; }
+    if (pointset2->NPoints() == 0) { RNFail("Empty pointset2\n"); delete pointset2; continue; }
     R3SurfelPointGraph *graph = new R3SurfelPointGraph(*pointset2);
     delete pointset2;
-    if (!graph) { fprintf(stderr, "Unable to create graph\n"); continue; }
-    if (graph->NPoints() == 0) { fprintf(stderr, "Empty graph\n"); delete graph; continue; }
+    if (!graph) { RNFail("Unable to create graph\n"); continue; }
+    if (graph->NPoints() == 0) { RNFail("Empty graph\n"); delete graph; continue; }
     R3SurfelPointSet *pointset = CreateConnectedPointSet(graph, center_point);
     delete graph;
-    if (!pointset) { fprintf(stderr, "Unable to create pointset\n"); continue; }
-    if (pointset->NPoints() == 0) { fprintf(stderr, "Empty pointset\n"); delete pointset; continue; }
+    if (!pointset) { RNFail("Unable to create pointset\n"); continue; }
+    if (pointset->NPoints() == 0) { RNFail("Empty pointset\n"); delete pointset; continue; }
 
     printf("HERE2 %s %g %g %g %d\n", label_name, x, y, z, pointset->NPoints());
 
@@ -393,13 +393,13 @@ ReadObjects(R3SurfelViewer *viewer)
     char object_name[1024];
     sprintf(object_name, "%s_%.3f_%.3f_%.3f", label_name, x, y, z);
     R3SurfelObject *object = CreateObject(scene, pointset, NULL, object_name, NULL, object_name, TRUE);
-    if (!object) { fprintf(stderr, "Unable to create object %s %g %g %g\n", label_name, x, y, z); delete pointset; continue; }
+    if (!object) { RNFail("Unable to create object %s %g %g %g\n", label_name, x, y, z); delete pointset; continue; }
 
     printf("HERE3 %s %g %g %g\n", label_name, x, y, z);
 
     // Assign label
     R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR);
-    if (!assignment) { fprintf(stderr, "Unable to create assignment %s %g %g %g\n", label_name, x, y, z); delete pointset; continue; }
+    if (!assignment) { RNFail("Unable to create assignment %s %g %g %g\n", label_name, x, y, z); delete pointset; continue; }
     scene->InsertLabelAssignment(assignment);
 
     printf("HERE4 %s %g %g %g\n", label_name, x, y, z);
@@ -987,7 +987,7 @@ CreateDirections(R3SurfelPointGraph *graph)
   // Allocate directions
   R3Vector *directions = new R3Vector [ graph->NPoints() ];
   if (!directions) {
-    fprintf(stderr, "Unable to allocate directions\n");
+    RNFail("Unable to allocate directions\n");
     return NULL;
   }
 

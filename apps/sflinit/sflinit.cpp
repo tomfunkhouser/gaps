@@ -36,7 +36,7 @@ OpenScene(const char *scene_name, const char *database_name)
   // Allocate surfel scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -111,20 +111,20 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!scene_name) scene_name = *argv;
       else if (!database_name) database_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check arguments
   if (!scene_name || !database_name) {
-    fprintf(stderr, "Usage: sflinit scenefile databasefile [options]\n");
+    RNFail("Usage: sflinit scenefile databasefile [options]\n");
     return 0;
   }
 

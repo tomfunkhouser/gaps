@@ -100,7 +100,7 @@ R3Light::
 ~R3Light(void)
 {
     // Unload
-    if (id > 0) { fprintf(stderr, "Will not get here because id is not used yet.\n"); }
+    if (id > 0) { RNFail("Will not get here because id is not used yet.\n"); }
 
     // Remove light from scene
     if (scene) scene->RemoveLight(this);

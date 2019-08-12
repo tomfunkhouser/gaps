@@ -42,7 +42,7 @@ ReadMesh(const char *filename)
 
   // Read mesh from file
   if (!mesh->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh from %s\n", filename);
+    RNFail("Unable to read mesh from %s\n", filename);
     return NULL;
   }
 
@@ -72,7 +72,7 @@ ReadProperties(R3Mesh *mesh, const char *filename)
   // Allocate properties
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate properties for %s\n", filename);
+    RNFail("Unable to allocate properties for %s\n", filename);
     return NULL;
   }
 
@@ -124,7 +124,7 @@ WriteProperties(R3MeshPropertySet *properties, const char *filename)
 
   // Write properties to file
   if (!properties->Write(filename)) {
-    fprintf(stderr, "Unable to write properties to %s\n", filename);
+    RNFail("Unable to write properties to %s\n", filename);
     return 0;
   }
 
@@ -241,10 +241,10 @@ FindProperties(R3MeshPropertySet *properties, const char *property_name)
     // Insert properties names read from a file
     char buffer[1024];
     FILE *fp = fopen(property_name, "r");
-    if (!fp) { fprintf(stderr, "Invalid property name: %s\n", property_name); exit(-1); }
+    if (!fp) { RNFail("Invalid property name: %s\n", property_name); exit(-1); }
     while (fscanf(fp, "%s", buffer) == (unsigned int) 1) {
       R3MeshProperty *property = properties->Property(buffer);
-      if (!property) { fprintf(stderr, "Unrecognized property %s in file %s\n", buffer, property_name); exit(-1); }
+      if (!property) { RNFail("Unrecognized property %s in file %s\n", buffer, property_name); exit(-1); }
       result.Insert(property);
     }
     fclose(fp);
@@ -252,7 +252,7 @@ FindProperties(R3MeshPropertySet *properties, const char *property_name)
 
   // Check if found any properties
   if (result.IsEmpty()) {
-    fprintf(stderr, "No properties found for %s\n", property_name);
+    RNFail("No properties found for %s\n", property_name);
     exit(-1);
   }
 
@@ -277,7 +277,7 @@ GetProperty(R3MeshPropertySet *properties, const char *name)
   if (new_property.Read(name)) return new_property;
 
   // Property not found
-  fprintf(stderr, "Unable to get property %s\n", name); 
+  RNFail("Unable to get property %s\n", name); 
   exit(-1); 
 }
 
@@ -388,7 +388,7 @@ ApplyOperation(R3MeshPropertySet *properties, R3MeshProperty *property, const ch
     property->Threshold(threshold, below_value, above_value);
   }
   else { 
-    fprintf(stderr, "Unrecognized operation: %s\n", operation_name); 
+    RNFail("Unrecognized operation: %s\n", operation_name); 
     exit(-1); 
   }
 
@@ -515,7 +515,7 @@ Rename(R3MeshPropertySet *properties, const char *property_name, const char *new
 {
   // Find properties matching property_name
   RNArray<R3MeshProperty *> subset = FindProperties(properties, property_name);
-  if (subset.NEntries() != 1) { fprintf(stderr, "Unable to find unambiguous property %s\n", property_name); abort(); }
+  if (subset.NEntries() != 1) { RNFail("Unable to find unambiguous property %s\n", property_name); abort(); }
   subset[0]->SetName((char *) new_property_name);
 }
 
@@ -673,7 +673,7 @@ ApplyOperations(R3Mesh *mesh, R3MeshPropertySet *properties, int argc, char **ar
       print_verbose = 1;
     }
     else {
-      fprintf(stderr, "Invalid program argument: %s\n", *argv);
+      RNFail("Invalid program argument: %s\n", *argv);
       return 0;
     }
 

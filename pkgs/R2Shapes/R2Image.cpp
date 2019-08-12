@@ -450,7 +450,7 @@ Draw(int x, int y) const
   case 2: glDrawPixels(width, height, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, pixels); break;
   case 3: glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels); break;
   case 4: glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels); break;
-  default: fprintf(stderr, "Unrecognized number of components in image: %d\n", ncomponents); break;
+  default: RNFail("Unrecognized number of components in image: %d\n", ncomponents); break;
   }
 
   // Reset projection matrix
@@ -525,7 +525,7 @@ Read(const char *filename)
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Input file has no extension (e.g., .jpg).\n");
+    RNFail("Input file has no extension (e.g., .jpg).\n");
     return 0;
   }
 
@@ -556,7 +556,7 @@ Read(const char *filename)
   else if (!strncmp(extension, ".grd", 4)) return ReadGRD(filename);
   
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  RNFail("Unrecognized image file extension");
   return 0;
 }
 
@@ -568,7 +568,7 @@ Write(const char *filename) const
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    fprintf(stderr, "Output file has no extension (e.g., .jpg).\n");
+    RNFail("Output file has no extension (e.g., .jpg).\n");
     return 0;
   }
   
@@ -592,7 +592,7 @@ Write(const char *filename) const
   else if (!strncmp(extension, ".raw", 4)) return WriteRAW(filename);
 
   // Should never get here
-  fprintf(stderr, "Unrecognized image file extension");
+  RNFail("Unrecognized image file extension");
   return 0;
 }
 
@@ -708,7 +708,7 @@ ReadBMP(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    RNFail("Unable to open image file: %s", filename);
     return 0;
   }
 
@@ -745,7 +745,7 @@ ReadBMP(const char *filename)
   // If so, just fill in with default
   if ((bmih.biSize != BMP_BI_SIZE) || (bmih.biPlanes > 1) ||
       (bmih.biBitCount != 24) || (bmih.biCompression != BI_RGB)) {
-    fprintf(stderr, "Unsupported BMP version\n");
+    RNFail("Unsupported BMP version\n");
     fclose(fp);
     return 0;
   }
@@ -763,7 +763,7 @@ ReadBMP(const char *filename)
   unsigned int buffer_size = lineLength * bmih.biHeight;
   unsigned char *buffer = new unsigned char [buffer_size];
   if (!buffer) {
-    fprintf(stderr, "Unable to allocate memory for BMP file");
+    RNFail("Unable to allocate memory for BMP file");
     fclose(fp);
     return 0;
   }
@@ -771,7 +771,7 @@ ReadBMP(const char *filename)
   // Read buffer 
   fseek(fp, (long) bmfh.bfOffBits, SEEK_SET);
   if (fread(buffer, 1, buffer_size, fp) != buffer_size) {
-    fprintf(stderr, "Error while reading BMP file %s", filename);
+    RNFail("Error while reading BMP file %s", filename);
     delete [] buffer;
     return 0;
   }
@@ -787,7 +787,7 @@ ReadBMP(const char *filename)
   int nbytes = rowsize * height;
   pixels = new unsigned char [nbytes];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate memory for BMP file");
+    RNFail("Unable to allocate memory for BMP file");
     delete [] buffer;
     fclose(fp);
     return 0;
@@ -836,7 +836,7 @@ WriteBMP(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    RNFail("Unable to open image file: %s", filename);
     return 0;
   }
 
@@ -920,14 +920,14 @@ ReadPPM(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    RNFail("Unable to open image file: %s", filename);
     return 0;
   }
 
   // Read magic identifier
   char buffer[128];
   if (!fgets(buffer, 128, fp)) {
-    fprintf(stderr, "Unable to read magic id in PPM file");
+    RNFail("Unable to read magic id in PPM file");
     fclose(fp);
     return 0;
   }
@@ -942,7 +942,7 @@ ReadPPM(const char *filename)
 
   // Read width and height
   if (fscanf(fp, "%d%d", &width, &height) != 2) {
-    fprintf(stderr, "Unable to read width and height in PPM file");
+    RNFail("Unable to read width and height in PPM file");
     fclose(fp);
     return 0;
   }
@@ -950,7 +950,7 @@ ReadPPM(const char *filename)
   // Read max value
   int max_value;
   if (fscanf(fp, "%d", &max_value) != 1) {
-    fprintf(stderr, "Unable to read max_value in PPM file");
+    RNFail("Unable to read max_value in PPM file");
     fclose(fp);
     return 0;
   }
@@ -964,7 +964,7 @@ ReadPPM(const char *filename)
   int nbytes = rowsize * height;
   pixels = new unsigned char [nbytes];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate memory for PPM file");
+    RNFail("Unable to allocate memory for PPM file");
     fclose(fp);
     return 0;
   }
@@ -978,7 +978,7 @@ ReadPPM(const char *filename)
 	// Read pixel values
 	int value;
 	if (fscanf(fp, "%d", &value) != 1) {
-	  fprintf(stderr, "Unable to read data at (%d,%d) in PGM file", i, j);
+	  RNFail("Unable to read data at (%d,%d) in PGM file", i, j);
 	  fclose(fp);
 	  return 0;
 	}
@@ -998,7 +998,7 @@ ReadPPM(const char *filename)
 	// Read pixel values
 	int r, g, b;
 	if (fscanf(fp, "%d%d%d", &r, &g, &b) != 3) {
-	  fprintf(stderr, "Unable to read data at (%d,%d) in PPM file", i, j);
+	  RNFail("Unable to read data at (%d,%d) in PPM file", i, j);
 	  fclose(fp);
 	  return 0;
 	}
@@ -1046,7 +1046,7 @@ ReadPPM(const char *filename)
     }
   }
   else {
-    fprintf(stderr, "Unrecognized magic header in pbm file: %s\n", buffer);
+    RNFail("Unrecognized magic header in pbm file: %s\n", buffer);
     fclose(fp);
     return 0;
   }
@@ -1074,7 +1074,7 @@ WritePPM(const char *filename, int ascii) const
     // Open file
     FILE *fp = fopen(filename, "w");
     if (!fp) {
-      fprintf(stderr, "Unable to open image file: %s", filename);
+      RNFail("Unable to open image file: %s", filename);
       return 0;
     }
 
@@ -1105,7 +1105,7 @@ WritePPM(const char *filename, int ascii) const
     // Open file
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
-      fprintf(stderr, "Unable to open image file: %s", filename);
+      RNFail("Unable to open image file: %s", filename);
       return 0;
     }
     
@@ -1146,15 +1146,15 @@ ReadPFM(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image: %s\n", filename);
+    RNFail("Unable to open image: %s\n", filename);
     return 0;
   }
 
   // Read magic header
   int c;
-  c = fgetc(fp); if (c != 'P') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != 'f') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
-  c = fgetc(fp); if (c != '\n') { fprintf(stderr, "Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != 'P') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != 'f') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
+  c = fgetc(fp); if (c != '\n') { RNFail("Bad magic keyword in %s\n", filename); return 0; }
 
   // Read width
   int width_count = 0;
@@ -1163,13 +1163,13 @@ ReadPFM(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (width_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { width_string[width_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad width character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad width character %c in %s\n", c, filename); return 0; }
     else width_string[width_count++] = c;
   }
 
   // Check width
   if ((width_count == 0) || (width_count > 128)) {
-    fprintf(stderr, "Error reading width in %s\n", filename); 
+    RNFail("Error reading width in %s\n", filename); 
     return 0; 
   }
 
@@ -1180,13 +1180,13 @@ ReadPFM(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (height_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { height_string[height_count] = '\0'; break; }
-    else if (!isdigit(c)) { fprintf(stderr, "Bad height character %c in %s\n", c, filename); return 0; }
+    else if (!isdigit(c)) { RNFail("Bad height character %c in %s\n", c, filename); return 0; }
     else height_string[height_count++] = c;
   }
 
   // Check height
   if ((height_count == 0) || (height_count > 128)) {
-    fprintf(stderr, "Error reading height in %s\n", filename); 
+    RNFail("Error reading height in %s\n", filename); 
     return 0; 
   }
 
@@ -1197,13 +1197,13 @@ ReadPFM(const char *filename)
     c = fgetc(fp); 
     if ((c == ' ') && (endian_count == 0)) { continue; }
     else if ((c == ' ') || (c == '\n')) { endian_string[endian_count] = '\0'; break; }
-    if (!isdigit(c) && (c != '.') && (c != '-')) { fprintf(stderr, "Bad endian character %c in %s\n", c, filename); return 0; }
+    if (!isdigit(c) && (c != '.') && (c != '-')) { RNFail("Bad endian character %c in %s\n", c, filename); return 0; }
     endian_string[endian_count++] = c;
   }
 
   // Check endian
   if ((endian_count == 0) || (endian_count > 128)) {
-    fprintf(stderr, "Error reading endian in %s\n", filename); 
+    RNFail("Error reading endian in %s\n", filename); 
     return 0; 
   }
 
@@ -1211,13 +1211,13 @@ ReadPFM(const char *filename)
   width = atoi(width_string);
   height = atoi(height_string);
   float endian = atof(endian_string);
-  if (endian == -999.0F) fprintf(stderr, "Just trying to avoid compiler warning for unused variable\n");
+  if (endian == -999.0F) RNFail("Just trying to avoid compiler warning for unused variable\n");
 
   // Allocate values
   int npixels = width * height;
   float *values = new float [ npixels ];
   if (!values) {
-    fprintf(stderr, "Unable to allocate values for %s\n", filename);
+    RNFail("Unable to allocate values for %s\n", filename);
     return 0;
   }
 
@@ -1225,7 +1225,7 @@ ReadPFM(const char *filename)
   int count = npixels;
   while (count > 0) {
     int n = (int) fread(&values[npixels-count], sizeof(float), count, fp);
-    if (n <= 0) { fprintf(stderr, "read error\n"); abort(); }
+    if (n <= 0) { RNFail("read error\n"); abort(); }
     count -= n;
   }
 
@@ -1311,7 +1311,7 @@ ReadJPEG(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    RNFail("Unable to open image file: %s", filename);
     return 0;
   }
 
@@ -1335,7 +1335,7 @@ ReadJPEG(const char *filename)
   int nbytes = rowsize * height;
   this->pixels = new unsigned char [nbytes];
   if (!this->pixels) {
-    fprintf(stderr, "Unable to allocate memory for JPEG file");
+    RNFail("Unable to allocate memory for JPEG file");
     fclose(fp);
     return 0;
   }
@@ -1373,7 +1373,7 @@ WriteJPEG(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    RNFail("Unable to open image file: %s", filename);
     return 0;
   }
 
@@ -1432,7 +1432,7 @@ ReadTIFF(const char *filename)
   // Open file
   TIFF* tif = TIFFOpen(filename, "r");
   if (!tif) {
-    fprintf(stderr, "Unable to open TIFF file %s\n", filename);
+    RNFail("Unable to open TIFF file %s\n", filename);
     return 0;
   }
 
@@ -1445,13 +1445,13 @@ ReadTIFF(const char *filename)
   // Allocate buffer for data
   uint32* raster = (uint32*) _TIFFmalloc(npixels * sizeof (uint32));
   if (!raster) {
-    fprintf(stderr, "Unable to allocate data for TIFF file %s\n", filename);
+    RNFail("Unable to allocate data for TIFF file %s\n", filename);
     return 0;
   }
 
   // Read data into buffer
   if (!TIFFReadRGBAImage(tif, w, h, raster, 0)) {
-    fprintf(stderr, "Unable to read TIFF file %s\n", filename);
+    RNFail("Unable to read TIFF file %s\n", filename);
     return 0;
   }
 
@@ -1464,7 +1464,7 @@ ReadTIFF(const char *filename)
   int nbytes = rowsize * height;
   pixels = new unsigned char [nbytes];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate memory for TIFF file %s", filename);
+    RNFail("Unable to allocate memory for TIFF file %s", filename);
     return 0;
   }
 
@@ -1503,7 +1503,7 @@ WriteTIFF(const char *filename) const
   // Open TIFF file
   TIFF *out = TIFFOpen(filename, "w");
   if (!out) {
-    fprintf(stderr, "Unable to open TIFF file %s\n", filename);
+    RNFail("Unable to open TIFF file %s\n", filename);
     return 0;
   }
 
@@ -1522,7 +1522,7 @@ WriteTIFF(const char *filename) const
   int scanline_size = TIFFScanlineSize(out);
   unsigned char *buf = (unsigned char *)_TIFFmalloc(scanline_size);
   if (!buf) {
-    fprintf(stderr, "Unable to allocate memory for TIFF scan lines\n");
+    RNFail("Unable to allocate memory for TIFF scan lines\n");
     return 0;
   }
 
@@ -1530,7 +1530,7 @@ WriteTIFF(const char *filename) const
   for (int row = 0; row < height; row++) {
     const unsigned char *p = Pixels(row);
     if (TIFFWriteScanline(out, (tdata_t) p, height - row - 1, 0) < 0) {
-      fprintf(stderr, "Unable to write scanline to TIFF image %s\n", filename);
+      RNFail("Unable to write scanline to TIFF image %s\n", filename);
       return 0;
     }
   }
@@ -1562,7 +1562,7 @@ ReadPNG(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open PNG file %s\n", filename);
+    RNFail("Unable to open PNG file %s\n", filename);
     return 0;
    }
 
@@ -1643,7 +1643,7 @@ WritePNG(const char *filename) const
   // Open the file 
   FILE *fp = fopen(filename, "wb");
   if (fp == NULL) {
-    fprintf(stderr, "Unable to open PNG file %s\n", filename);
+    RNFail("Unable to open PNG file %s\n", filename);
     return 0;
   }
   
@@ -1668,7 +1668,7 @@ WritePNG(const char *filename) const
   else if (ncomponents == 2) color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
   else if (ncomponents == 3) color_type = PNG_COLOR_TYPE_RGB;
   else if (ncomponents == 4) color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-  else { fprintf(stderr, "Invalid number of components for %s\n", filename); return 0; }
+  else { RNFail("Invalid number of components for %s\n", filename); return 0; }
 
   // Fill in the image data 
   png_set_IHDR(png_ptr, info_ptr, width, height,
@@ -1720,21 +1720,21 @@ ReadRAW(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open raw image file %s", filename);
+    RNFail("Unable to open raw image file %s", filename);
     return 0;
   }
 
   // Read header
   unsigned int header[4];
   if (fread(header, sizeof(unsigned int), 4, fp) != 4) {
-    fprintf(stderr, "Unable to read header to raw image file %s", filename);
+    RNFail("Unable to read header to raw image file %s", filename);
     return 0;
   }
 
   // Check magic number
   static const unsigned int magic = 54321;
   if (header[0] != magic) {
-    fprintf(stderr, "Invalid header in raw image file %s", filename);
+    RNFail("Invalid header in raw image file %s", filename);
     return 0;
   }
 
@@ -1749,14 +1749,14 @@ ReadRAW(const char *filename)
   int nbytes = rowsize * height;
   pixels = new unsigned char [nbytes];
   if (!pixels) {
-    fprintf(stderr, "Unable to allocate memory for RAW file");
+    RNFail("Unable to allocate memory for RAW file");
     return 0;
   }
 
   // Allocate buffer
   float *buf = new float [ width ];
   if (!buf) {
-    fprintf(stderr, "Unable to allocate buffer for raw image file %s", filename);
+    RNFail("Unable to allocate buffer for raw image file %s", filename);
     return 0;
   }
 
@@ -1765,7 +1765,7 @@ ReadRAW(const char *filename)
     for (int j = 0; j < height; j++) {
       // Read buffer for one row
       if (fread(buf, sizeof(float), width, fp) != (unsigned int) width) {
-        fprintf(stderr, "Unable to read data from raw image file %s", filename);
+        RNFail("Unable to read data from raw image file %s", filename);
         return 0;
       }
 
@@ -1798,7 +1798,7 @@ WriteRAW(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open raw image file %s", filename);
+    RNFail("Unable to open raw image file %s", filename);
     return 0;
   }
 
@@ -1806,14 +1806,14 @@ WriteRAW(const char *filename) const
   static const unsigned int magic = 54321;
   unsigned int header[4] = { magic, (unsigned int) width, (unsigned int) height, (unsigned int) ncomponents };
   if (fwrite(header, sizeof(unsigned int), 4, fp) != 4) {
-    fprintf(stderr, "Unable to write header to raw image file %s", filename);
+    RNFail("Unable to write header to raw image file %s", filename);
     return 0;
   }
 
   // Allocate buffer
   float *buf = new float [ width ];
   if (!buf) {
-    fprintf(stderr, "Unable to allocate buffer for raw image file %s", filename);
+    RNFail("Unable to allocate buffer for raw image file %s", filename);
     return 0;
   }
 
@@ -1830,7 +1830,7 @@ WriteRAW(const char *filename) const
 
       // Write buffer
       if (fwrite(buf, sizeof(float), width, fp) != (unsigned int) width) {
-        fprintf(stderr, "Unable to write data to raw image file %s", filename);
+        RNFail("Unable to write data to raw image file %s", filename);
         return 0;
       }
     }

@@ -30,6 +30,20 @@ R3MeshPropertySet(R3Mesh *mesh)
 
 
 R3MeshPropertySet::
+R3MeshPropertySet(const R3MeshPropertySet& set)
+  : mesh(set.mesh),
+    properties()
+{
+  // Copy properties
+  for (int i = 0; i < set.NProperties(); i++) {
+    R3MeshProperty *property = set.Property(i);
+    Insert(new R3MeshProperty(*property));
+  }
+}
+
+
+
+R3MeshPropertySet::
 ~R3MeshPropertySet(void)
 {
   // Empty all properties
@@ -139,7 +153,27 @@ Reset(R3Mesh *mesh)
 }
 
 
+R3MeshPropertySet& R3MeshPropertySet::
+operator=(const R3MeshPropertySet& set)
+{
+  // Delete everything
+  Empty();
 
+  // Copy mesh
+  mesh = set.mesh;
+  
+  // Copy properties
+  for (int i = 0; i < set.NProperties(); i++) {
+    R3MeshProperty *property = set.Property(i);
+    Insert(new R3MeshProperty(*property));
+  }
+
+  // Return this
+  return *this;
+}
+
+
+ 
 ////////////////////////////////////////////////////////////////////////
 // Input/output functions
 ////////////////////////////////////////////////////////////////////////
@@ -149,7 +183,7 @@ Read(const char *filename)
 {
   // Check mesh
   if (!mesh) {
-    fprintf(stderr, "Property set must be associated with mesh before file can be read: %s\n", filename);
+    RNFail("Property set must be associated with mesh before file can be read: %s\n", filename);
     return 0;
   }
   
@@ -175,7 +209,7 @@ ReadARFF(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open ARFF file: %s\n", filename);
+    RNFail("Unable to open ARFF file: %s\n", filename);
     return 0;
   }
 
@@ -183,7 +217,7 @@ ReadARFF(const char *filename)
   const int max_line_size = 64 * 1024;
   char *buffer = new char [ max_line_size ];
   if (!buffer) {
-    fprintf(stderr, "Unable to allocate buffer for reading ARFF file\n");
+    RNFail("Unable to allocate buffer for reading ARFF file\n");
     return 0;
   }
   
@@ -219,17 +253,17 @@ ReadARFF(const char *filename)
     for (int i = 0; i < property_count; i++) {
       R3MeshProperty *property = Property(NProperties()-property_count+i);
       if (!bufferp) { 
-        fprintf(stderr, "Unable to read property value %d for vertex %d\n", i, vertex_index);
+        RNFail("Unable to read property value %d for vertex %d\n", i, vertex_index);
         delete [] buffer;
         return 0;
       }
       if (sscanf(bufferp, "%lf", &property_value) != (unsigned int) 1) {
-        fprintf(stderr, "Unable to read property value %d for vertex %d\n", i, vertex_index);
+        RNFail("Unable to read property value %d for vertex %d\n", i, vertex_index);
         delete [] buffer;
         return 0;
       }
       if (vertex_index >= mesh->NVertices()) {
-        fprintf(stderr, "Too many data lines in %s\n", filename);
+        RNFail("Too many data lines in %s\n", filename);
         delete [] buffer;
         return 0;
       }
@@ -241,7 +275,7 @@ ReadARFF(const char *filename)
 
   // Check if read value for every vertex
   // if (vertex_index != mesh->NVertices()) {
-  //   fprintf(stderr, "Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
+  //   RNFail("Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
   //   delete [] buffer;
   //   return 0;
   // }
@@ -267,27 +301,27 @@ ReadBinary(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open binary file: %s\n", filename);
+    RNFail("Unable to open binary file: %s\n", filename);
     return 0;
   }
 
   // Read number of vertices
   int vertex_count = 0;
   if (fread(&vertex_count, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read binary file: %s\n", filename);
+    RNFail("Unable to read binary file: %s\n", filename);
     return 0;
   }
 
   // Read number of properties
   int property_count = 0;
   if (fread(&property_count, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read binary file: %s\n", filename);
+    RNFail("Unable to read binary file: %s\n", filename);
     return 0;
   }
   
   // Check number of vertices
   if (vertex_count != mesh->NVertices()) {
-    fprintf(stderr, "Mismatching number of vertices in %s\n", filename);
+    RNFail("Mismatching number of vertices in %s\n", filename);
     return 0;
   }
   
@@ -334,27 +368,27 @@ ReadToronto(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open toronto file: %s\n", filename);
+    RNFail("Unable to open toronto file: %s\n", filename);
     return 0;
   }
 
   // Read header
   int nprops, nfaces, dummy;
   if (fscanf(fp, "%d%d%d\n", &nprops, &nfaces, &dummy) != (unsigned int) 3) {
-    fprintf(stderr, "Unable to read toronto file: %s\n", filename);
+    RNFail("Unable to read toronto file: %s\n", filename);
     return 0;
   }
 
   // Check header
   if ((nprops == 0) || (nfaces == 0) || (nfaces != mesh->NFaces())) {
-    fprintf(stderr, "Invalid header in toronto file: %s\n", filename);
+    RNFail("Invalid header in toronto file: %s\n", filename);
     return 0;
   }
 
   // Allocate memory for face values
   double *face_values = new double [ nprops * nfaces ];
   if (!face_values) {
-    fprintf(stderr, "Unable to allocate memory for toronto file: %s\n", filename);
+    RNFail("Unable to allocate memory for toronto file: %s\n", filename);
     return 0;
   }
 
@@ -362,7 +396,7 @@ ReadToronto(const char *filename)
   for (int j = 0; j < nfaces; j++) {
     for (int i = 0; i < nprops; i++) {
       if (fscanf(fp, "%lf", &face_values[i*nfaces+j]) != (unsigned int) 1) {
-        fprintf(stderr, "Unable to read value %d for face %d in %s\n", i, j, filename);
+        RNFail("Unable to read value %d for face %d in %s\n", i, j, filename);
         return 0;
       }
     }
@@ -426,13 +460,13 @@ ReadProperty(const char *filename)
   // Create mesh property
   R3MeshProperty *property = new R3MeshProperty(mesh, start);
   if (!property) {
-    fprintf(stderr, "Unable to create mesh property for %s\n", filename);
+    RNFail("Unable to create mesh property for %s\n", filename);
     return 0;
   }
 
   // Read data 
   if (!property->Read(filename)) {
-    fprintf(stderr, "Unable to read values from %s\n", filename);
+    RNFail("Unable to read values from %s\n", filename);
     return 0;
   }
 
@@ -450,7 +484,7 @@ Write(const char *filename) const
 {
   // Check mesh
   if (!mesh) {
-    fprintf(stderr, "Property set must be associated with mesh before file can be written: %s\n", filename);
+    RNFail("Property set must be associated with mesh before file can be written: %s\n", filename);
     return 0;
   }
   
@@ -469,7 +503,7 @@ Write(const char *filename) const
   else if (!strcmp(extension, ".dat")) return WriteValues(filename);
 
   // None of the extensions matched
-  fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
+  RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
   return 0;
 }
 
@@ -481,7 +515,7 @@ WriteARFF(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open ARFF file: %s\n", filename);
+    RNFail("Unable to open ARFF file: %s\n", filename);
     return 0;
   }
 
@@ -521,21 +555,21 @@ WriteBinary(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open binary file: %s\n", filename);
+    RNFail("Unable to open binary file: %s\n", filename);
     return 0;
   }
 
   // Write number of vertices
   int vertex_count = mesh->NVertices();
   if (fwrite(&vertex_count, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to write binary file: %s\n", filename);
+    RNFail("Unable to write binary file: %s\n", filename);
     return 0;
   }
   
   // Write number of properties
   int property_count = NProperties();
   if (fwrite(&property_count, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to write binary file: %s\n", filename);
+    RNFail("Unable to write binary file: %s\n", filename);
     return 0;
   }
   
@@ -547,7 +581,7 @@ WriteBinary(const char *filename) const
     for (int j = 0; j < NProperties(); j++) {
       RNScalar32 value = Property(j)->VertexValue(i);
       if (fwrite(&value, sizeof(RNScalar32), 1, fp) != (unsigned int) 1) {
-        fprintf(stderr, "Unable to write value to binary file: %s\n", filename);
+        RNFail("Unable to write value to binary file: %s\n", filename);
         return 0;
       }
     }
@@ -582,7 +616,7 @@ WriteValues(const char *filename) const
     // Open file
     FILE *fp = fopen(name, "w");
     if (!fp) {
-      fprintf(stderr, "Unable to open values file: %s\n", name);
+      RNFail("Unable to open values file: %s\n", name);
       return 0;
     }
 

@@ -50,7 +50,8 @@ public:
   // Internal manipulation functions
   void InsertPoints(R2KdtreeNode<PtrType> *node, const R2Box& node_box, PtrType *points, int npoints);
   int PartitionPoints(PtrType *points, int npoints, RNDimension dim, int imin, int imax);
-
+  R2Kdtree<PtrType>& operator=(const R2Kdtree<PtrType>& kdtree);
+  
   // Internal visualization functions
   void Outline(R2KdtreeNode<PtrType> *node, const R2Box& bbox) const;
   void Outline(void) const;
@@ -63,7 +64,7 @@ public:
   const R2Point Position(PtrType point) const { 
     if (position_offset >= 0) return *((R2Point *) ((unsigned char *) point + position_offset)); 
     else if (position_callback) return (*position_callback)(point, position_callback_data);
-    else { fprintf(stderr, "Invalid position callback\n"); abort(); return R2null_point; }
+    else { RNFail("Invalid position callback\n"); abort(); return R2null_point; }
   } ;
 
 public:

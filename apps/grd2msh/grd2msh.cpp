@@ -72,7 +72,7 @@ CreateMesh(R3Grid *grid, RNScalar threshold)
   // Create mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh\n");
+    RNFail("Unable to allocate mesh\n");
     return NULL;
   }
 
@@ -81,7 +81,7 @@ CreateMesh(R3Grid *grid, RNScalar threshold)
   static R3Point points[max_points];
   int npoints = grid->GenerateIsoSurface(threshold, points, max_points);
   if (npoints == 0) {
-    fprintf(stderr, "Empty isosurface for threshold: %g\n", threshold);
+    RNFail("Empty isosurface for threshold: %g\n", threshold);
     return NULL;
   }
 
@@ -152,7 +152,7 @@ ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) print_verbose = TRUE; 
       else if (!strcmp(*argv, "-threshold")) { argc--; argv++; threshold = atof(*argv); }
       else { 
-        fprintf(stderr, "Invalid program argument: %s\n", *argv); 
+        RNFail("Invalid program argument: %s\n", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -161,7 +161,7 @@ ParseArgs(int argc, char **argv)
       if (!grid_name) grid_name = *argv;
       else if (!mesh_name) mesh_name = *argv;
       else { 
-        fprintf(stderr, "Invalid program argument: %s\n", *argv); 
+        RNFail("Invalid program argument: %s\n", *argv); 
         exit(1); 
       }
       argv++; argc--;

@@ -32,6 +32,8 @@ RGBDConfiguration(void)
     name(NULL),
     color_directory(NULL),
     depth_directory(NULL),
+    category_directory(NULL),
+    instance_directory(NULL),
     texture_directory(NULL),
     dataset_format(NULL),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
@@ -53,6 +55,8 @@ RGBDConfiguration::
   // Delete directory names
   if (color_directory) free(color_directory);
   if (depth_directory) free(depth_directory);
+  if (category_directory) free(category_directory);
+  if (instance_directory) free(instance_directory);
   if (texture_directory) free(texture_directory);
 
   // Delete dataset format
@@ -224,6 +228,28 @@ SetDepthDirectory(const char *directory)
 
 
 void RGBDConfiguration::
+SetCategoryDirectory(const char *directory)
+{
+  // Set directory name
+  if (category_directory) free(category_directory);
+  if (directory && strcmp(directory, "-")) category_directory = RNStrdup(directory);
+  else category_directory = NULL;
+}
+
+
+
+void RGBDConfiguration::
+SetInstanceDirectory(const char *directory)
+{
+  // Set directory name
+  if (instance_directory) free(instance_directory);
+  if (directory && strcmp(directory, "-")) instance_directory = RNStrdup(directory);
+  else instance_directory = NULL;
+}
+
+
+
+void RGBDConfiguration::
 SetTextureDirectory(const char *directory)
 {
   // Set directory name
@@ -264,7 +290,7 @@ ReadFile(const char *filename, int read_every_kth_image)
     if (!ReadConfigurationFile(filename, read_every_kth_image)) return 0;
   }
   else {
-    fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
+    RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
   }
 
@@ -291,7 +317,7 @@ WriteFile(const char *filename, int write_every_kth_image) const
     if (!WriteObjFile(filename)) return 0;
   }
   else {
-    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
+    RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
   }
 
@@ -316,7 +342,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
   // Open configuration file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open configuration file %s\n", filename);
+    RNFail("Unable to open configuration file %s\n", filename);
     return 0;
   }
 
@@ -334,7 +360,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse dataset format
       char name[1024] = { '\0' };
       if (sscanf(buffer, "%s%s", cmd, name) != (unsigned int) 2) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -345,7 +371,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse name
       char name[1024] = { '\0' };
       if (sscanf(buffer, "%s%s", cmd, name) != (unsigned int) 2) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -355,7 +381,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
     else if (!strcmp(cmd, "depth_resolution")) {
       // Parse dimensions
       if (sscanf(buffer, "%s%d%d", cmd, &image_width, &image_height) != (unsigned int) 3) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
     }
@@ -363,22 +389,26 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse dimensions
       if ((image_width == 0) || (image_height == 0)) {
         if (sscanf(buffer, "%s%d%d", cmd, &image_width, &image_height) != (unsigned int) 3) {
-          fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+          RNFail("Error parsing line %d of %s\n", line_number, filename);
           return 0;
         }
       }
     }
-    else if (!strcmp(cmd, "depth_directory") || !strcmp(cmd, "color_directory") || !strcmp(cmd, "texture_directory") || !strcmp(cmd, "image_directory")) {
+    else if (!strcmp(cmd, "depth_directory") || !strcmp(cmd, "color_directory") ||
+             !strcmp(cmd, "category_directory") || !strcmp(cmd, "instance_directory") ||
+             !strcmp(cmd, "texture_directory") || !strcmp(cmd, "image_directory")) {
       // Parse directory name
       char dirname[1024];
       if (sscanf(buffer, "%s%s", cmd, dirname) != (unsigned int) 2) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
       // Assign directory name (this leaks memory, but who cares)
-      if (!strcmp(cmd, "depth_directory")) SetDepthDirectory(dirname);
-      else if (!strcmp(cmd, "color_directory")) SetColorDirectory(dirname);
+      if (!strcmp(cmd, "color_directory")) SetColorDirectory(dirname);
+      else if (!strcmp(cmd, "depth_directory")) SetDepthDirectory(dirname);
+      else if (!strcmp(cmd, "category_directory")) SetCategoryDirectory(dirname);
+      else if (!strcmp(cmd, "instance_directory")) SetInstanceDirectory(dirname);
       else if (!strcmp(cmd, "image_directory")) SetColorDirectory(dirname);
       else if (!strcmp(cmd, "texture_directory")) SetTextureDirectory(dirname);
     }
@@ -386,14 +416,14 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse intrinsics filename
       char intrinsics_filename[2048];
       if (sscanf(buffer, "%s%s", cmd, intrinsics_filename) != (unsigned int) 2) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
       // Open intrinsics file
       FILE *intrinsics_fp = fopen(intrinsics_filename, "r");
       if (!intrinsics_fp) {
-        fprintf(stderr, "Unable to open intrinsics file %s\n", intrinsics_filename);
+        RNFail("Unable to open intrinsics file %s\n", intrinsics_filename);
         return 0;
       }
 
@@ -403,7 +433,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
         double width, height, fx, fy, cx, cy, k1, k2, p1, p2, k3;
         if (fscanf(intrinsics_fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &width, &height,
           &fx, &fy, &cx, &cy, &k1, &k2, &p1, &p2, &k3) != (unsigned int) 11) {
-          fprintf(stderr, "Unable to read Matterport intrinsics matrix.\n");
+          RNFail("Unable to read Matterport intrinsics matrix.\n");
           return 0;
         }
 
@@ -414,7 +444,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
         // Read matrix
         RNScalar m[9];
         if (fscanf(intrinsics_fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != (unsigned int) 9) {
-          fprintf(stderr, "Unable to read intrinsics file %s\n", filename);
+          RNFail("Unable to read intrinsics file %s\n", filename);
           return 0;
         }
 
@@ -429,7 +459,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       // Parse matrix
       double m[9];
       if (sscanf(buffer, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]) != (unsigned int) 10) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -442,7 +472,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
 
       // Check intrinsics matrix
       if (intrinsics_matrix.IsIdentity()) {
-        fprintf(stderr, "Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
+        RNFail("Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
         return 0;
       }
       
@@ -453,7 +483,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
          depth_filename, color_filename,
          &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
          &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 19) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -467,13 +497,46 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       image->SetCameraToWorld(R3Affine(R4Matrix(m), 0));
       InsertImage(image);
     }
+    else if (!strcmp(cmd, "labeled_image")) {
+      // Update/check image count
+      if ((read_every_kth_image > 1) && ((++image_count % read_every_kth_image) != 1)) continue;
+
+      // Check intrinsics matrix
+      if (intrinsics_matrix.IsIdentity()) {
+        RNFail("Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
+        return 0;
+      }
+      
+      // Parse image names and alignment transformation
+      RNScalar m[16];
+      char depth_filename[2048], color_filename[2048], category_filename[2048], instance_filename[2048];
+      if (sscanf(buffer, "%s%s%s%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
+         depth_filename, color_filename, category_filename, instance_filename,
+         &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
+         &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 21) {
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
+        return 0;
+      }
+
+      // Create RGBD image
+      // RGBDImage *image = new RGBDImage(color_filename, depth_filename, intrinsics_matrix, R4Matrix(m), image_width, image_height);
+      RGBDImage *image = AllocateImage();
+      image->SetNPixels(image_width, image_height);
+      image->SetColorFilename(color_filename);
+      image->SetDepthFilename(depth_filename);
+      image->SetCategoryFilename(category_filename);
+      image->SetInstanceFilename(instance_filename);
+      image->SetIntrinsics(intrinsics_matrix);
+      image->SetCameraToWorld(R3Affine(R4Matrix(m), 0));
+      InsertImage(image);
+    }
     else if (!strcmp(cmd, "frame")) {
       // Update/check image count
       if ((read_every_kth_image > 1) && ((++image_count % read_every_kth_image) != 1)) continue;
 
       // Check intrinsics matrix
       if (intrinsics_matrix.IsIdentity()) {
-        fprintf(stderr, "Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
+        RNFail("Unable to process scan without prior setting of intrinsics matrix in %s\n", filename);
         return 0;
       }
       
@@ -485,7 +548,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
          depth_filename, &depth_timestamp, color_filename, &color_timestamp,
          &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], 
          &m[8], &m[9], &m[10], &m[11], &m[12], &m[13], &m[14], &m[15]) != (unsigned int) 21) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -505,7 +568,7 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       RNScalar pixel_spacing, c[3], n[3], u[3], r[2];
       if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, texture_filename, &pixel_spacing, 
          &c[0], &c[1], &c[2], &n[0], &n[1], &n[2], &u[0], &u[1], &u[2], &r[0], &r[1]) != (unsigned int) 14) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
@@ -531,14 +594,14 @@ ReadConfigurationFile(const char *filename, int read_every_kth_image)
       char texture_filename[2048], mesh_filename[2048];
       RNScalar pixel_spacing;
       if (sscanf(buffer, "%s%s%s%lf", cmd, texture_filename, mesh_filename, &pixel_spacing) != (unsigned int) 4) {
-        fprintf(stderr, "Error parsing line %d of %s\n", line_number, filename);
+        RNFail("Error parsing line %d of %s\n", line_number, filename);
         return 0;
       }
 
       // Read mesh
       R3Mesh *mesh = new R3Mesh();
       if (!mesh->ReadFile(mesh_filename)) {
-        fprintf(stderr, "Unable to read mesh file %s at line %d of %s\n", mesh_filename, line_number, filename);
+        RNFail("Unable to read mesh file %s at line %d of %s\n", mesh_filename, line_number, filename);
         return 0;
       }
 
@@ -566,13 +629,15 @@ WriteConfigurationFile(const char *filename, int write_every_kth_image) const
   char cmd[4096];
   if (color_directory) { sprintf(cmd, "mkdir -p %s", color_directory); system(cmd); }
   if (depth_directory) { sprintf(cmd, "mkdir -p %s", depth_directory); system(cmd); }
+  if (category_directory) { sprintf(cmd, "mkdir -p %s", category_directory); system(cmd); }
+  if (instance_directory) { sprintf(cmd, "mkdir -p %s", instance_directory); system(cmd); }
   if (texture_directory) { sprintf(cmd, "mkdir -p %s", texture_directory); system(cmd); }
 #endif
   
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open configuration file %s\n", filename);
+    RNFail("Unable to open configuration file %s\n", filename);
     return 0;
   }
 
@@ -582,6 +647,8 @@ WriteConfigurationFile(const char *filename, int write_every_kth_image) const
   if (DatasetFormat()) fprintf(fp, "dataset %s\n", DatasetFormat());
   if (color_directory) fprintf(fp, "color_directory %s\n", color_directory);
   if (depth_directory) fprintf(fp, "depth_directory %s\n", depth_directory);
+  if (category_directory) fprintf(fp, "category_directory %s\n", category_directory);
+  if (instance_directory) fprintf(fp, "instance_directory %s\n", instance_directory);
   if (texture_directory) fprintf(fp, "texture_directory %s\n", texture_directory);
   
   // Write image info
@@ -802,36 +869,6 @@ ReleaseChannels(void)
 
 
 int RGBDConfiguration::
-ReadDepthChannels(void)
-{
-  // Read images
-  for (int i = 0; i < NImages(); i++) {
-    RGBDImage *image = Image(i);
-    image->ReadDepthChannel();
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-int RGBDConfiguration::
-ReleaseDepthChannels(void)
-{
-  // Release images
-  for (int i = 0; i < NImages(); i++) {
-    RGBDImage *image = Image(i);
-    image->ReleaseDepthChannel();
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-int RGBDConfiguration::
 ReadColorChannels(void)
 {
   // Read images
@@ -865,6 +902,96 @@ ReleaseColorChannels(void)
   for (int i = 0; i < NSurfaces(); i++) {
     RGBDSurface *surface = Surface(i);
     surface->ReleaseColorChannels();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadDepthChannels(void)
+{
+  // Read images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReadDepthChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReleaseDepthChannels(void)
+{
+  // Release images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReleaseDepthChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadCategoryChannels(void)
+{
+  // Read images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReadCategoryChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReleaseCategoryChannels(void)
+{
+  // Release images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReleaseCategoryChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadInstanceChannels(void)
+{
+  // Read images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReadInstanceChannel();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReleaseInstanceChannels(void)
+{
+  // Release images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    image->ReleaseInstanceChannel();
   }
 
   // Return success

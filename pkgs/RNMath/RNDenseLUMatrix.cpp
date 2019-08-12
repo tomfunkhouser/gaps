@@ -175,7 +175,7 @@ Decompose(void)
 
     // Check if matrix is singular
     if (RNIsZero(a[j][j])) {
-      fprintf(stderr, "Warning: singular matrix given to LU");
+      RNFail("Singular matrix given to LU");
       break;
     }
 

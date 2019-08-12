@@ -58,11 +58,11 @@ void RNAbort(const char *fmt, ...)
     char outbuf[256];
     outbuf[0] = '\0';
     if (fmt) {
-		char buf[256];
+	char buf[256];
         va_list args;
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
-		strcat(outbuf, buf);
+	strcat(outbuf, buf);
         va_end(args);
         strcat(outbuf, "\n");
     }
@@ -71,7 +71,7 @@ void RNAbort(const char *fmt, ...)
 
     /* Print error message */
     if (RNerror_file) {
-        perror("GAPS FATAL ERROR.  ABORTING:");
+        // perror("GAPS FATAL ERROR.  ABORTING:");
 	if (fmt) {
 	    va_list args;
 	    va_start(args, fmt);
@@ -97,11 +97,11 @@ void RNFail(const char *fmt, ...)
     char outbuf[256];
     outbuf[0] = '\0';
     if (fmt) {
-		char buf[256];
+	char buf[256];
         va_list args;
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
-		strcat(outbuf, buf);
+	strcat(outbuf, buf);
         va_end(args);
         strcat(outbuf, "\n");
     }
@@ -110,7 +110,7 @@ void RNFail(const char *fmt, ...)
 
     /* Print error message */
     if (RNerror_file) {
-        perror("GAPS ERROR");
+        // perror("GAPS ERROR");
         if (fmt) {
 	    va_list args;
 	    va_start(args, fmt);
@@ -133,11 +133,11 @@ void RNWarning(const char *fmt, ...)
     char outbuf[256];
     outbuf[0] = '\0';
     if (fmt) {
-		char buf[256];
+	char buf[256];
         va_list args;
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
-		strcat(outbuf, buf);
+	strcat(outbuf, buf);
         va_end(args);
         strcat(outbuf, "\n");
     }
@@ -146,7 +146,7 @@ void RNWarning(const char *fmt, ...)
     
     /* Print error message */
     if (RNerror_file) {
-        perror("GAPS WARNING");
+        // perror("GAPS WARNING");
         if (fmt) {
 	    va_list args;
 	    va_start(args, fmt);

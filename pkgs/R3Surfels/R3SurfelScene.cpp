@@ -1307,7 +1307,7 @@ ReadFile(const char *filename)
     return ReadBinaryFile(filename);
   }
   else { 
-    fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension); 
+    RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension); 
     return 0; 
   }
 
@@ -1341,7 +1341,7 @@ WriteFile(const char *filename)
     return WriteTianqiangFile(filename);
   }
   else { 
-    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
+    RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
     return 0; 
   }
 
@@ -1360,7 +1360,7 @@ ReadAsciiName(FILE *fp, char *buffer)
 {
   // Read string
   if (fscanf(fp, "%s", buffer) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read name\n");
+    RNFail("Unable to read name\n");
     return 0;
   }
 
@@ -1414,20 +1414,20 @@ ReadAsciiFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read header
   char buffer[1024], version[1024];
   if (fscanf(fp, "%s%s", buffer, version) != (unsigned int) 2) {
-    fprintf(stderr, "Unable to read scene file %s\n", filename);
+    RNFail("Unable to read scene file %s\n", filename);
     return 0;
   }
 
   // Check header
   if (strcmp(buffer, "SSA") || strcmp(version, "1.0")) {
-    fprintf(stderr, "Wrong header line in Scene file %s\n", filename);
+    RNFail("Wrong header line in Scene file %s\n", filename);
     return 0;
   }
 
@@ -1459,7 +1459,7 @@ ReadAsciiFile(const char *filename)
     int parent_index, nparts, nblocks;
     double complexity, resolution;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "N")) { fprintf(stderr, "Error reading node %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "N")) { RNFail("Error reading node %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, node_name); 
     fscanf(fp, "%d%d%d%d%lf%lf", &parent_index, &nparts, &nblocks, &dummy, &complexity, &resolution);
     for (int j = 0; j < 8; j++) fscanf(fp, "%s", buffer);
@@ -1490,7 +1490,7 @@ ReadAsciiFile(const char *filename)
     int identifier, parent_index, nparts, nvalues, nnodes;
     double complexity;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "O")) { fprintf(stderr, "Error reading object %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "O")) { RNFail("Error reading object %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, object_name); 
     fscanf(fp, "%d%d%d%d%d%lf", &identifier, &parent_index, &nparts, &nnodes, &nvalues, &complexity);
     for (int j = 0; j < 8; j++) fscanf(fp, "%s", buffer);
@@ -1528,7 +1528,7 @@ ReadAsciiFile(const char *filename)
     int identifier, assignment_key, parent_index, nparts, dummy;
     double red, green, blue;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "L")) { fprintf(stderr, "Error reading label %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "L")) { RNFail("Error reading label %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, label_name); 
     fscanf(fp, "%d%d%d%d%d%lf%lf%lf", &identifier, &assignment_key, &dummy, &parent_index, &nparts, &red, &green, &blue);
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
@@ -1546,7 +1546,7 @@ ReadAsciiFile(const char *filename)
     double minimum, maximum, weight;
     int type, format;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "F")) { fprintf(stderr, "Error reading feature %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "F")) { RNFail("Error reading feature %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, feature_name); 
     fscanf(fp, "%lf%lf%lf%d%d", &minimum, &maximum, &weight, &type, &format);
     for (int j = 0; j < 1; j++) fscanf(fp, "%s", buffer);
@@ -1574,7 +1574,7 @@ ReadAsciiFile(const char *filename)
     RNArray<R3SurfelObject *> objs;
     RNScalar *operands = NULL;
     fscanf(fp, "%s%d%d%d", buffer, &type, &nobjects, &noperands);
-    if (strcmp(buffer, "OR")) { fprintf(stderr, "Error reading object relationship %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "OR")) { RNFail("Error reading object relationship %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     if (nobjects > 0) {
       for (int i = 0; i < nobjects; i++) {
@@ -1599,7 +1599,7 @@ ReadAsciiFile(const char *filename)
     RNArray<R3SurfelLabel *> objs;
     RNScalar *operands = NULL;
     fscanf(fp, "%s%d%d%d", buffer, &type, &nlabels, &noperands);
-    if (strcmp(buffer, "LR")) { fprintf(stderr, "Error reading label relationship %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "LR")) { RNFail("Error reading label relationship %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     if (nlabels > 0) {
       for (int i = 0; i < nlabels; i++) {
@@ -1624,7 +1624,7 @@ ReadAsciiFile(const char *filename)
     double confidence;
     int originator;
     fscanf(fp, "%s%d%d%lf%d", buffer, &indexA, &indexB, &confidence, &originator);
-    if (strcmp(buffer, "A")) { fprintf(stderr, "Error reading assignment %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "A")) { RNFail("Error reading assignment %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     R3SurfelObject *object = Object(indexA);
     R3SurfelLabel *label = Label(indexB);
@@ -1639,7 +1639,7 @@ ReadAsciiFile(const char *filename)
     int node_index, width, height;
     double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "S")) { fprintf(stderr, "Error reading scan %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "S")) { RNFail("Error reading scan %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, scan_name); 
     fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &node_index, &width, &height, &focal_length, &xcenter, &ycenter, &flags);
     for (int j = 0; j < 2; j++) fscanf(fp, "%s", buffer);
@@ -1669,7 +1669,7 @@ ReadAsciiFile(const char *filename)
     int type, object_index, noperands;
     RNScalar *operands = NULL;
     fscanf(fp, "%s%d%d%d", buffer, &type, &object_index, &noperands);
-    if (strcmp(buffer, "OP")) { fprintf(stderr, "Error reading object property %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "OP")) { RNFail("Error reading object property %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     R3SurfelObject *object = (object_index >= 0) ? Object(object_index) : NULL;
     if (noperands > 0) {
@@ -1687,7 +1687,7 @@ ReadAsciiFile(const char *filename)
     int type, label_index, noperands;
     RNScalar *operands = NULL;
     fscanf(fp, "%s%d%d%d", buffer, &type, &label_index, &noperands);
-    if (strcmp(buffer, "LP")) { fprintf(stderr, "Error reading label property %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "LP")) { RNFail("Error reading label property %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     R3SurfelLabel *label = (label_index >= 0) ? Label(label_index) : NULL;
     if (noperands > 0) {
@@ -1718,7 +1718,7 @@ WriteAsciiFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -1901,7 +1901,7 @@ WriteBinaryName(FILE *fp, const char *name, int size = 256)
   if (name) strncpy(buffer, name, size);
   else strncpy(buffer, "None", 256);
   if (fwrite(buffer, sizeof(char), size, fp) != (unsigned int) size) {
-    fprintf(stderr, "Unable to write name to binary file\n");
+    RNFail("Unable to write name to binary file\n");
     return 0;
   }
 
@@ -1916,7 +1916,7 @@ WriteBinaryInteger(FILE *fp, int value)
 {
   // Write value
   if (fwrite(&value, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to write integer to binary file\n");
+    RNFail("Unable to write integer to binary file\n");
     return 0;
   }
 
@@ -1931,7 +1931,7 @@ WriteBinaryDouble(FILE *fp, double value)
 {
   // Write value
   if (fwrite(&value, sizeof(double), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to write integer to binary file\n");
+    RNFail("Unable to write integer to binary file\n");
     return 0;
   }
 
@@ -1946,7 +1946,7 @@ ReadBinaryName(FILE *fp, char *name, int size = 256)
 {
   // Copy name
   if (fread(name, sizeof(char), size, fp) != (unsigned int) size) {
-    fprintf(stderr, "Unable to read name from binary file\n");
+    RNFail("Unable to read name from binary file\n");
     return 0;
   }
 
@@ -1961,7 +1961,7 @@ ReadBinaryInteger(FILE *fp, int *value)
 {
   // Read value
   if (fread(value, sizeof(int), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read integer from binary file\n");
+    RNFail("Unable to read integer from binary file\n");
     return 0;
   }
 
@@ -1976,7 +1976,7 @@ ReadBinaryDouble(FILE *fp, double *value)
 {
   // Read value
   if (fread(value, sizeof(double), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read integer from binary file\n");
+    RNFail("Unable to read integer from binary file\n");
     return 0;
   }
 
@@ -1992,20 +1992,20 @@ ReadBinaryFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "rb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file header
   char magic[16];
   if (!ReadBinaryName(fp, magic, 16)) {
-    fprintf(stderr, "Unable to read to %s\n", filename);
+    RNFail("Unable to read to %s\n", filename);
     return 0;
   }
 
   // Check file header
   if (strcmp(magic, "SSB 1.0")) {
-    fprintf(stderr, "Invalid header in %s\n", filename);
+    RNFail("Invalid header in %s\n", filename);
     return 0;
   }
 
@@ -2327,13 +2327,13 @@ WriteBinaryFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "wb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Write file header
   if (!WriteBinaryName(fp, "SSB 1.0", 16)) {
-    fprintf(stderr, "Unable to write to %s\n", filename);
+    RNFail("Unable to write to %s\n", filename);
     return 0;
   }
 
@@ -2525,7 +2525,7 @@ WriteARFFFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -2611,7 +2611,7 @@ WriteTianqiangFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
   

@@ -486,7 +486,7 @@ Slice(int dim, int grid_coordinate) const
   // Allocate 2D grid for slice
   R2Grid *slice = new R2Grid(grid_resolution[dim1], grid_resolution[dim2], slice_box);
   if (!slice) {
-    fprintf(stderr, "Unable to allocate slice\n");
+    RNFail("Unable to allocate slice\n");
     return NULL;
   }
 
@@ -3422,7 +3422,7 @@ ReadRawFile(const char *filename)
   } else if (!strcmp(format, "Char8") || !strcmp(format, "char8")) {
     if (!ReadRawValues<RNChar8>(fp, grid_values, grid_size)) return 0;
   } else {
-    fprintf(stderr, "Unrecognized format %s in %s\n", format, size_name);
+    RNFail("Unrecognized format %s in %s\n", format, size_name);
     return 0;
   }
 
@@ -3598,7 +3598,7 @@ WriteRawFile(const char *filename, const char *format) const
   } else if (!strcmp(format, "Char8") || !strcmp(format, "char8")) {
     if (!WriteRawValues<RNChar8>(fp, grid_values, grid_size)) return 0;
   } else {
-    fprintf(stderr, "Unrecognized format %s in %s\n", format, size_name);
+    RNFail("Unrecognized format %s in %s\n", format, size_name);
     return 0;
   }
 
@@ -3829,7 +3829,7 @@ ReadDelphiFile(const char *filename)
   char dummytrailer;
   while (fread(&dummytrailer, sizeof(char), 1, fp) == 1) count++;
   if (count != 0) {
-    fprintf(stderr, "%d bytes of extra data at end of delphi file %s\n", count, filename);
+    RNFail("%d bytes of extra data at end of delphi file %s\n", count, filename);
     return 0;
   }
 
@@ -3879,26 +3879,26 @@ ReadCCP4File(const char *filename)
   // Read header
   R3GridCCP4Header header;
   if (fread(&header, sizeof(R3GridCCP4Header), 1, fp) != 1) {
-    fprintf(stderr, "Unable to read header from CCP4 file: %s", filename);
+    RNFail("Unable to read header from CCP4 file: %s", filename);
     return 0;
   }
 
   // Check dimensions
   if ((header.nc <= 0) || (header.nr <= 0) || (header.ns <= 0)) {
-    fprintf(stderr, "Invalid dimensions (%d %d %d) in CCP4 file: %s", header.nc, header.nr, header.ns, filename);
+    RNFail("Invalid dimensions (%d %d %d) in CCP4 file: %s", header.nc, header.nr, header.ns, filename);
     return 0;
   }
 
 
   // Check mode
   if (header.mode != 2) { // Reals
-    fprintf(stderr, "Invalid mode (%d rather than 2) in CCP4 file: %s", header.mode, filename);
+    RNFail("Invalid mode (%d rather than 2) in CCP4 file: %s", header.mode, filename);
     return 0;
   }
 
   // Check symmetry information
   if (header.nsymbt < 0) {
-    fprintf(stderr, "Invalid number of symmetry bytes (%d) in CCP4 file: %s", header.nsymbt, filename);
+    RNFail("Invalid number of symmetry bytes (%d) in CCP4 file: %s", header.nsymbt, filename);
     return 0;
   }
 
@@ -3907,7 +3907,7 @@ ReadCCP4File(const char *filename)
   for (int i = 0; i < header.nsymbt; i++) {
     char c;
     if (fread(&c, sizeof(char), 1, fp) != 1) {
-      fprintf(stderr, "Unable to read symmetry info from CCP4 file: %s", filename);
+      RNFail("Unable to read symmetry info from CCP4 file: %s", filename);
       return 0;
     }
   }
@@ -3953,7 +3953,7 @@ ReadCCP4File(const char *filename)
         // Read float
         float value;
         if (fread(&value, sizeof(float), 1, fp) != 1) {
-          fprintf(stderr, "Unable to read map from CCP4 file: %s", filename);
+          RNFail("Unable to read map from CCP4 file: %s", filename);
           return 0;
         }
 
@@ -4247,7 +4247,7 @@ ReadInsightFile(const char *filename)
   char dummytrailer;
   while (fread(&dummytrailer, sizeof(char), 1, fp) == 1) count++;
   if (count != 0) {
-    fprintf(stderr, "%d bytes of extra data at end of delphi file %s\n", count, filename);
+    RNFail("%d bytes of extra data at end of delphi file %s\n", count, filename);
     return 0;
   }
 
@@ -4274,7 +4274,7 @@ ReadDXFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
@@ -4282,7 +4282,7 @@ ReadDXFile(const char *filename)
   char buffer[1024];
   do {
     if (!fgets(buffer, 1024, fp)) {
-       fprintf(stderr, "Error reading comments in %s\n", filename);
+       RNFail("Error reading comments in %s\n", filename);
        return 0;
     }
   } while (buffer[0] == '#');
@@ -4290,20 +4290,20 @@ ReadDXFile(const char *filename)
   // Read dimensions
   int res[3];
   if (sscanf(buffer, "object 1 class gridpositions counts %d %d %d", &res[0], &res[1], &res[2]) != 3) {
-    fprintf(stderr, "Unable to read dimensions in %s\n", filename);
+    RNFail("Unable to read dimensions in %s\n", filename);
     return 0;
   }
 
   // Read origin
   if (!fgets(buffer, 1023, fp)) {
-    fprintf(stderr, "Unable to read origin in %s\n", filename);
+    RNFail("Unable to read origin in %s\n", filename);
     return 0;
   }
 
   // Parse origin
   R3Point origin;
   if (sscanf(buffer, "origin %lf %lf %lf", &origin[0], &origin[1], &origin[2]) != 3) {
-    fprintf(stderr, "Unable to parse origin in %s\n", filename);
+    RNFail("Unable to parse origin in %s\n", filename);
     return 0;
   }
 
@@ -4312,26 +4312,26 @@ ReadDXFile(const char *filename)
   for (RNDimension dim = RN_X; dim <= RN_Z; dim++) {
     // Read delta
     if (!fgets(buffer, 1023, fp)) {
-      fprintf(stderr, "Unable to read delta in %s\n", filename);
+      RNFail("Unable to read delta in %s\n", filename);
       return 0;
     }
 
     // Parse delta
     if (sscanf(buffer, "delta %lf %lf %lf", &delta[dim][0], &delta[dim][1], &delta[dim][2]) != 3) {
-      fprintf(stderr, "Unable to parse delta in %s\n", filename);
+      RNFail("Unable to parse delta in %s\n", filename);
       return 0;
     }
   }
 
   // Read object 2 line
   if (!fgets(buffer, 1023, fp)) {
-    fprintf(stderr, "Unable to read object 2 line in %s\n", filename);
+    RNFail("Unable to read object 2 line in %s\n", filename);
     return 0;
   }
 
   // Read object 3 line
   if (!fgets(buffer, 1023, fp)) {
-    fprintf(stderr, "Unable to read object 3 line in %s\n", filename);
+    RNFail("Unable to read object 3 line in %s\n", filename);
     return 0;
   }
 
@@ -4359,7 +4359,7 @@ ReadDXFile(const char *filename)
   RNScalar *grid_valuesp  = grid_values;
   for (int i = 0; i < grid_size; i++) {
     if (fscanf(fp, "%lf", grid_valuesp++) != 1) {
-      fprintf(stderr, "Error reading grid values from %s\n", filename);
+      RNFail("Error reading grid values from %s\n", filename);
       return 0;
     }
   }
@@ -4456,14 +4456,14 @@ ReadASCIIFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read resolutions
   int res[3];
   if (fscanf(fp, "%d%d%d\n", &res[0], &res[1], &res[2]) != (unsigned int) 3) {
-    fprintf(stderr, "Unable to read file %s\n", filename);
+    RNFail("Unable to read file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -4472,7 +4472,7 @@ ReadASCIIFile(const char *filename)
   double m[16];
   for (int i = 0; i < 16; i++) {
     if (fscanf(fp, "%lf", &m[i]) != (unsigned int) 1) {
-      fprintf(stderr, "Invalid format in %s\n", filename);
+      RNFail("Invalid format in %s\n", filename);
       fclose(fp);
       return 0;
     }
@@ -4503,7 +4503,7 @@ ReadASCIIFile(const char *filename)
   RNScalar *grid_valuesp  = grid_values;
   for (int i = 0; i < grid_size; i++) {
     if (fscanf(fp, "%lf", grid_valuesp++) != 1) {
-      fprintf(stderr, "Error reading grid values from %s\n", filename);
+      RNFail("Error reading grid values from %s\n", filename);
       fclose(fp);
       return 0;
     }

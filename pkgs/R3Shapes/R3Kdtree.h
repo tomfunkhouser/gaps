@@ -168,7 +168,7 @@ public:
   const R3Point Position(PtrType point) const { 
     if (position_offset >= 0) return *((R3Point *) ((unsigned char *) point + position_offset)); 
     else if (position_callback) return (*position_callback)(point, position_callback_data);
-    else { fprintf(stderr, "Invalid position callback\n"); abort(); return R3null_point; }
+    else { RNAbort("Invalid position callback\n"); return R3null_point; }
   };
 
 #if 0
@@ -190,6 +190,9 @@ public:
     int (*IsCompatible)(PtrType, PtrType, void *), void *compatible_data, 
     PtrType& furthest_point, RNLength& furthest_distance_squared) const;
 #endif
+
+  // Not implemented
+  R3Kdtree<PtrType>& operator=(const R3Kdtree<PtrType>& tree);
 
 public:
   // Internal data

@@ -1616,6 +1616,23 @@ FindClosest(const R3MeshSearchTree& tree1, const R3MeshSearchTree& tree2,
 
 
 
+R3MeshSearchTree::
+R3MeshSearchTree(const R3MeshSearchTree& tree)
+{
+  RNAbort("Not implemented");
+}
+
+
+
+R3MeshSearchTree& R3MeshSearchTree::
+operator=(const R3MeshSearchTree& tree)
+{
+  RNAbort("Not implemented");
+  return *this;
+}
+
+
+
 #endif
 
 

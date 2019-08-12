@@ -102,7 +102,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
   if (mesh->NFaces() == 0) return;
   RNArea mesh_area = mesh->Area();
   if (RNIsZero(mesh_area)) {
-    fprintf(stderr, "Warning: RGBDSurface mesh has zero area\n");
+    RNFail("Warning: RGBDSurface mesh has zero area\n");
     return;
   }
 
@@ -115,7 +115,7 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
 
   // Check surface_bbox
   if (RNIsZero(surface_bbox.Area())) {
-    // fprintf(stderr, "Warning: RGBDSurface mesh does not have valid texture coordinates\n");
+    // RNFail("Warning: RGBDSurface mesh does not have valid texture coordinates\n");
     surface_bbox.Reset(R2zero_point, R2ones_point);
   }
 
@@ -318,7 +318,7 @@ SetTexelChannelValue(int ix, int iy, int channel_index, RNScalar value)
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD Channel is not resident in memory -- cannot get value\n");
+    RNFail("RGBD Channel is not resident in memory -- cannot get value\n");
     return;
   }
   
@@ -340,7 +340,7 @@ SetChannel(int channel_index, const R2Grid& image)
   // Check if color channels are resident
   if ((channel_index >= RGBD_RED_CHANNEL) && (channel_index <= RGBD_BLUE_CHANNEL)) {
     if (color_resident_count == 0) {
-      fprintf(stderr, "Unable to set channel -- it has not been created\n");
+      RNFail("Unable to set channel -- it has not been created\n");
       return;
     }
   }
@@ -363,7 +363,7 @@ SetColorChannels(const R2Image& image)
 {
   // Check if color channels are resident
   if (color_resident_count == 0) {
-    fprintf(stderr, "Unable to set color channels -- they have not been created\n");
+    RNFail("Unable to set color channels -- they have not been created\n");
     return;
   }
 
@@ -720,7 +720,7 @@ ReadColorChannels(void)
 
     // Check image dimensions
     if ((rgb_image.Width() != width) || (rgb_image.Height() != height)) {
-      fprintf(stderr, "Mismatching image dimensions (%d,%d) vs (%d,%d) in %s\n",
+      RNFail("Mismatching image dimensions (%d,%d) vs (%d,%d) in %s\n",
         rgb_image.Width(), rgb_image.Height(), width, height, texture_filename);
       // return 0;
     }

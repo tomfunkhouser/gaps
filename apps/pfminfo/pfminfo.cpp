@@ -45,18 +45,18 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1; 
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     }
     else {
       if (!input_name) input_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     }
     argv++; argc--;
   }
 
   // Check input filename
   if (!input_name) {
-    fprintf(stderr, "Usage: pfminfo inputfile [options]\n");
+    RNFail("Usage: pfminfo inputfile [options]\n");
     return 0;
   }
 

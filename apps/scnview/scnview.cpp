@@ -195,7 +195,7 @@ DrawLights(R3Scene *scene)
       glEnd();
     }
     else {
-      fprintf(stderr, "Unrecognized light type: %d\n", light->ClassID());
+      RNFail("Unrecognized light type: %d\n", light->ClassID());
       return;
     }
   }
@@ -860,7 +860,7 @@ ReadScene(char *filename)
   // Allocate scene
   R3Scene *scene = new R3Scene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene for %s\n", filename);
+    RNFail("Unable to allocate scene for %s\n", filename);
     return NULL;
   }
 
@@ -909,14 +909,14 @@ ReadCameras(const char *filename)
   // Allocate array of cameras
   RNArray<R3Camera *> *cameras = new RNArray<R3Camera *>();
   if (!cameras) {
-    fprintf(stderr, "Unable to allocate cameras for %s\n", filename);
+    RNFail("Unable to allocate cameras for %s\n", filename);
     return NULL;
   }
 
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open cameras file %s\n", filename);
+    RNFail("Unable to open cameras file %s\n", filename);
     delete cameras;
     return NULL;
   }
@@ -1063,21 +1063,21 @@ ParseArgs(int argc, char **argv)
         initial_camera = TRUE;
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
     }
     else {
       if (!input_scene_name) input_scene_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check scene filename
   if (!input_scene_name) {
-    fprintf(stderr, "Usage: scnview inputscenefile\n");
+    RNFail("Usage: scnview inputscenefile\n");
     return 0;
   }
 

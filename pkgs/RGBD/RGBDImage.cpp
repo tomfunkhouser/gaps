@@ -37,8 +37,12 @@ RGBDImage(void)
     name(NULL),
     color_filename(NULL),
     depth_filename(NULL),
+    category_filename(NULL),
+    instance_filename(NULL),
     color_resident_count(0),
     depth_resident_count(0),
+    category_resident_count(0),
+    instance_resident_count(0),
     data(NULL)
 {
 }
@@ -60,8 +64,12 @@ RGBDImage(const char *color_filename, const char *depth_filename,
     name(NULL),
     color_filename(NULL),
     depth_filename(NULL),
+    category_filename(NULL),
+    instance_filename(NULL),
     color_resident_count(0),
     depth_resident_count(0),
+    category_resident_count(0),
+    instance_resident_count(0),
     data(NULL)
 {
   // Set filenames
@@ -94,6 +102,8 @@ RGBDImage::
   if (name) free(name);
   if (color_filename) free(color_filename);
   if (depth_filename) free(depth_filename);
+  if (category_filename) free(category_filename);
+  if (instance_filename) free(instance_filename);
 }
 
 
@@ -345,11 +355,29 @@ SetPixelDepth(int ix, int iy, RNScalar depth)
 
 
 void RGBDImage::
+SetPixelCategory(int ix, int iy, RNScalar category)
+{
+  // Set pixel depth
+  SetPixelChannelValue(ix, iy, RGBD_CATEGORY_CHANNEL, category);
+}
+
+
+
+void RGBDImage::
+SetPixelInstance(int ix, int iy, RNScalar instance)
+{
+  // Set pixel depth
+  SetPixelChannelValue(ix, iy, RGBD_INSTANCE_CHANNEL, instance);
+}
+
+
+
+void RGBDImage::
 SetPixelChannelValue(int ix, int iy, int channel_index, RNScalar value)
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD channel is not resident in memory -- cannot set value\n");
+    RNFail("RGBD channel is not resident in memory -- cannot set value\n");
     return;
   }
   
@@ -379,7 +407,7 @@ SetChannel(int channel_index, const R2Grid& image)
 {
   // Check channel
   if (!channels[channel_index]) {
-    fprintf(stderr, "RGBD channel is not resident in memory -- cannot set\n");
+    RNFail("RGBD channel is not resident in memory -- cannot set\n");
     return;
   }
   
@@ -400,26 +428,11 @@ SetChannel(int channel_index, const R2Grid& image)
 
 
 void RGBDImage::
-SetDepthChannel(const R2Grid& image)
-{
-  // Check if color channels are resident
-  if (depth_resident_count == 0) {
-    fprintf(stderr, "Unable to set depth channel -- it has not been created\n");
-    return;
-  }
-
-  // Set depth channel
-  SetChannel(RGBD_DEPTH_CHANNEL, image);
-}
-
-
-
-void RGBDImage::
 SetColorChannels(const R2Image& image)
 {
   // Check if color channels are resident
   if (color_resident_count == 0) {
-    fprintf(stderr, "Unable to set color channels -- they have not been created\n");
+    RNFail("Unable to set color channels -- they have not been created\n");
     return;
   }
 
@@ -439,6 +452,51 @@ SetColorChannels(const R2Image& image)
 
   // Invalidate opengl
   InvalidateOpenGL();
+}
+
+
+
+void RGBDImage::
+SetDepthChannel(const R2Grid& image)
+{
+  // Check if color channels are resident
+  if (depth_resident_count == 0) {
+    RNFail("Unable to set depth channel -- it has not been created\n");
+    return;
+  }
+
+  // Set depth channel
+  SetChannel(RGBD_DEPTH_CHANNEL, image);
+}
+
+
+
+void RGBDImage::
+SetCategoryChannel(const R2Grid& image)
+{
+  // Check if color channels are resident
+  if (category_resident_count == 0) {
+    RNFail("Unable to set category channel -- it has not been created\n");
+    return;
+  }
+
+  // Set category channel
+  SetChannel(RGBD_CATEGORY_CHANNEL, image);
+}
+
+
+
+void RGBDImage::
+SetInstanceChannel(const R2Grid& image)
+{
+  // Check if color channels are resident
+  if (instance_resident_count == 0) {
+    RNFail("Unable to set instance channel -- it has not been created\n");
+    return;
+  }
+
+  // Set instance channel
+  SetChannel(RGBD_INSTANCE_CHANNEL, image);
 }
 
 
@@ -1120,6 +1178,24 @@ CreateDepthChannel(const R2Grid& image)
 
 
 int RGBDImage::
+CreateCategoryChannel(const R2Grid& image)
+{
+  // Create category channel
+  return CreateChannel(RGBD_CATEGORY_CHANNEL, image);
+}
+
+
+
+int RGBDImage::
+CreateInstanceChannel(const R2Grid& image)
+{
+  // Create instance channel
+  return CreateChannel(RGBD_INSTANCE_CHANNEL, image);
+}
+
+
+
+int RGBDImage::
 CreateChannel(int channel_index, const R2Grid& image)
 {
   // Create channel
@@ -1149,6 +1225,8 @@ ReadChannels(void)
   // Read all channels
   if (!ReadColorChannels()) return 0;
   if (!ReadDepthChannel()) return 0;
+  if (!ReadCategoryChannel()) return 0;
+  if (!ReadInstanceChannel()) return 0;
   return 1;
 }
 
@@ -1284,11 +1362,73 @@ ReadDepthChannel(void)
 
 
 int RGBDImage::
+ReadCategoryChannel(void)
+{
+  // Check if already resident/update read count
+  if (category_resident_count > 0) {
+    category_resident_count++;
+    return 1;
+  }
+
+  // Initialize image
+  R2Grid category_image(width, height);
+
+  // Check filename
+  if (category_filename) {
+    // Get full filename
+    char full_filename[4096];
+    const char *dirname = (configuration) ? configuration->CategoryDirectory() : NULL;
+    if (dirname) sprintf(full_filename, "%s/%s", dirname, category_filename);
+    else sprintf(full_filename, "%s", category_filename);
+
+    // Read category image
+    if (!category_image.ReadFile(full_filename)) return 0;
+  }
+  
+  // Create category channel
+  return CreateCategoryChannel(category_image);
+}
+
+
+
+int RGBDImage::
+ReadInstanceChannel(void)
+{
+  // Check if already resident/update read count
+  if (instance_resident_count > 0) {
+    instance_resident_count++;
+    return 1;
+  }
+
+  // Initialize image
+  R2Grid instance_image(width, height);
+
+  // Check filename
+  if (instance_filename) {
+    // Get full filename
+    char full_filename[4096];
+    const char *dirname = (configuration) ? configuration->InstanceDirectory() : NULL;
+    if (dirname) sprintf(full_filename, "%s/%s", dirname, instance_filename);
+    else sprintf(full_filename, "%s", instance_filename);
+
+    // Read instance image
+    if (!instance_image.ReadFile(full_filename)) return 0;
+  }
+  
+  // Create instance channel
+  return CreateInstanceChannel(instance_image);
+}
+
+
+
+int RGBDImage::
 WriteChannels(void)
 {
   // Write all channels
   if (!WriteColorChannels()) return 0;
   if (!WriteDepthChannel()) return 0;
+  if (!WriteCategoryChannel()) return 0;
+  if (!WriteInstanceChannel()) return 0;
   return 1;
 }
 
@@ -1362,11 +1502,57 @@ WriteDepthChannel(void)
 
 
 int RGBDImage::
+WriteCategoryChannel(void)
+{
+  // Check filename
+  if (!category_filename) return 0;
+  if (NChannels() <= RGBD_CATEGORY_CHANNEL) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->CategoryDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, category_filename);
+  else sprintf(full_filename, "%s", category_filename);
+  
+  // Write category image  
+  if (!channels[RGBD_CATEGORY_CHANNEL]->WriteFile(category_filename)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
+WriteInstanceChannel(void)
+{
+  // Check filename
+  if (!instance_filename) return 0;
+  if (NChannels() <= RGBD_INSTANCE_CHANNEL) return 0;
+
+  // Get full filename
+  char full_filename[4096];
+  const char *dirname = (configuration) ? configuration->InstanceDirectory() : NULL;
+  if (dirname) sprintf(full_filename, "%s/%s", dirname, instance_filename);
+  else sprintf(full_filename, "%s", instance_filename);
+  
+  // Write instance image  
+  if (!channels[RGBD_INSTANCE_CHANNEL]->WriteFile(instance_filename)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDImage::
 ReleaseChannels(void)
 {
   // Release all channels
   if (!ReleaseColorChannels()) return 0;
   if (!ReleaseDepthChannel()) return 0;
+  if (!ReleaseCategoryChannel()) return 0;
+  if (!ReleaseInstanceChannel()) return 0;
   return 1;
 }
 
@@ -1416,6 +1602,48 @@ ReleaseDepthChannel(void)
 
 
 
+int RGBDImage::
+ReleaseCategoryChannel(void)
+{
+  // Check/update read count
+  if (--category_resident_count > 0) return 1;
+
+  // Write category channel before releasing it ???
+  // if (!WriteCategoryChannels()) return 0;
+
+  // Delete category channel
+  if (NChannels() <= RGBD_CATEGORY_CHANNEL) return 0;
+  if (!channels[RGBD_CATEGORY_CHANNEL]) return 0;
+  delete channels[RGBD_CATEGORY_CHANNEL];
+  channels[RGBD_CATEGORY_CHANNEL] = NULL;
+
+  // Return success;
+  return 1;
+}
+
+
+
+int RGBDImage::
+ReleaseInstanceChannel(void)
+{
+  // Check/update read count
+  if (--instance_resident_count > 0) return 1;
+
+  // Write instance channel before releasing it ???
+  // if (!WriteInstanceChannels()) return 0;
+
+  // Delete instance channel
+  if (NChannels() <= RGBD_INSTANCE_CHANNEL) return 0;
+  if (!channels[RGBD_INSTANCE_CHANNEL]) return 0;
+  delete channels[RGBD_INSTANCE_CHANNEL];
+  channels[RGBD_INSTANCE_CHANNEL] = NULL;
+
+  // Return success;
+  return 1;
+}
+
+
+
 void RGBDImage::
 SetName(const char *name)
 {
@@ -1445,6 +1673,50 @@ SetDepthFilename(const char *filename)
   if (depth_filename) free(depth_filename);
   if (filename && strcmp(filename, "-")) depth_filename = RNStrdup(filename);
   else depth_filename = NULL;
+
+  // Set name
+  if (!name && filename) {
+    char buffer[1024];
+    strncpy(buffer, filename, 1024);
+    char *startp = strrchr(buffer, '/');
+    if (!startp) startp = buffer;
+    char *endp = strrchr(startp, '.');
+    if (endp) *endp = '\0';
+    name = RNStrdup(startp);
+  }
+}
+
+
+
+void RGBDImage::
+SetCategoryFilename(const char *filename)
+{
+  // Set filename
+  if (category_filename) free(category_filename);
+  if (filename && strcmp(filename, "-")) category_filename = RNStrdup(filename);
+  else category_filename = NULL;
+
+  // Set name
+  if (!name && filename) {
+    char buffer[1024];
+    strncpy(buffer, filename, 1024);
+    char *startp = strrchr(buffer, '/');
+    if (!startp) startp = buffer;
+    char *endp = strrchr(startp, '.');
+    if (endp) *endp = '\0';
+    name = RNStrdup(startp);
+  }
+}
+
+
+
+void RGBDImage::
+SetInstanceFilename(const char *filename)
+{
+  // Set filename
+  if (instance_filename) free(instance_filename);
+  if (filename && strcmp(filename, "-")) instance_filename = RNStrdup(filename);
+  else instance_filename = NULL;
 
   // Set name
   if (!name && filename) {

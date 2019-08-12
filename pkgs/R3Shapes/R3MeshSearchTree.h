@@ -112,6 +112,10 @@ public:
   RNScalar DistanceSquared(const R3Point& query, const R3Box& box, RNScalar max_distance_squared) const;
   RNScalar DistanceSquared(const R3Point& query, const R3Point& point) const;
 
+  // Not implemented
+  R3MeshSearchTree(const R3MeshSearchTree& tree);
+  R3MeshSearchTree& operator=(const R3MeshSearchTree& tree);
+  
 public:
   // Internal data
   R3Mesh *mesh;

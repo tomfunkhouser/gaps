@@ -46,7 +46,7 @@ OpenScene(const char *input_scene_name, const char *input_database_name)
   // Allocate surfel scene
   R3SurfelScene *scene = new R3SurfelScene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene\n");
+    RNFail("Unable to allocate scene\n");
     return NULL;
   }
 
@@ -85,7 +85,7 @@ PrintAccuracy(R3SurfelScene *scene, const char *arff_filename)
   // Open file
   FILE *fp = fopen(arff_filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open ARFF file %s\n", arff_filename);
+    RNFail("Unable to open ARFF file %s\n", arff_filename);
     return 0;
   }
 
@@ -189,7 +189,7 @@ PrintAccuracy(R3SurfelScene *scene, const char *arff_filename)
       sprintf(object_name, "%d_%.3f_%.3f_%.3f", label_id, position[0], position[1], position[2]);
       R3SurfelObject *object = scene->FindObjectByName(object_name);
       if (!object) {
-        fprintf(stderr, "Unable to find object %s\n", object_name);
+        RNFail("Unable to find object %s\n", object_name);
         return 0;
       }
 
@@ -613,7 +613,7 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-surfels")) { print_surfels = 1; }
     else if (!strcmp(*argv, "-scans")) { print_scans = 1; }
     else if (!strcmp(*argv, "-accuracy")) { argc--; argv++; accuracy_arff_name = *argv; }
-    else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+    else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     argv++; argc--;
   }
 

@@ -200,7 +200,7 @@ inline int RNSolveLinearSystem(double *A, double *x, double *b, int n, int nrhs)
   // Call LAPACK function
   dgesv_(&n, &nrhs, a, &n, ipiv, X, &n, &info);
   if (info != 0) {
-    fprintf(stderr, "Error solving system of equations: %d\n", info);
+    RNFail("Error solving system of equations: %d\n", info);
   }
 
   // Copy answer into result
@@ -257,7 +257,7 @@ inline int RNSolveLeastSquares(double *A, double *x, double *b, int m, int n, in
   // Call LAPACK function to solve system of equations
   dgels_(&trans, &m, &n, &nrhs, a, &m, X, &m, work, &lwork, &info);
   if (info != 0) {
-    fprintf(stderr, "Error solving system of equations: %d\n", info);
+    RNFail("Error solving system of equations: %d\n", info);
   }
 
   // Copy answer into result
@@ -379,8 +379,8 @@ inline int RNDecomposeEigen(const double *A, double *eigenvalues, double *eigenv
 inline int RNSolveLinearSystem(double *A, double *x, double *b, int n, int rhs)
 {
   // Print error message
-  fprintf(stderr, "Cannot execute RNSolveLinearSystem: LAPACK solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
+  RNFail("Cannot execute RNSolveLinearSystem: LAPACK solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
   return 0;
 }
 
@@ -389,8 +389,8 @@ inline int RNSolveLinearSystem(double *A, double *x, double *b, int n, int rhs)
 inline int RNSolveLeastSquares(double *A, double *x, double *b, int m, int n, int nrhs)
 {
   // Print error message
-  fprintf(stderr, "Cannot execute RNSolveLeastSquares: LAPACK solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
+  RNFail("Cannot execute RNSolveLeastSquares: LAPACK solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
   return 0;
 }
 
@@ -399,8 +399,8 @@ inline int RNSolveLeastSquares(double *A, double *x, double *b, int m, int n, in
 inline int RNDecomposeSVD(const double *a, double *u, double *w, double *vt, int m, int n)
 {
   // Print error message
-  fprintf(stderr, "Cannot execute RNDecomposeSVD: LAPACK solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
+  RNFail("Cannot execute RNDecomposeSVD: LAPACK solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
   return 0;
 }
 
@@ -409,8 +409,8 @@ inline int RNDecomposeSVD(const double *a, double *u, double *w, double *vt, int
 inline int RNDecomposeEigen(const double *a, double *eigenvalues, double *eigenvectors, int n)
 {
   // Print error message
-  fprintf(stderr, "Cannot execute RNDecomposeEigen: LAPACK solver disabled during compile.\n");
-  fprintf(stderr, "Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
+  RNFail("Cannot execute RNDecomposeEigen: LAPACK solver disabled during compile.\n");
+  RNFail("Enable it by adding -DRN_USE_LAPACK and -llapack to compilation and link commands.\n");
   return 0;
 }
 

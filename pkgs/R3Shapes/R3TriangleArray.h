@@ -58,7 +58,8 @@ class R3TriangleArray : public R3Surface {
 	virtual void Transform(const R3Transformation& transformation);
         virtual void Subdivide(RNLength max_edge_length);
 	virtual void MoveVertex(R3TriangleVertex *vertex, const R3Point& position);
-	virtual void Update(void);  
+	virtual void Update(void);
+        virtual R3TriangleArray& operator=(const R3TriangleArray& array);
 
         // Draw functions/operators
         virtual void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;

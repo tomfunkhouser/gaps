@@ -46,7 +46,7 @@ ReadScene(char *filename)
   // Allocate scene
   R3Scene *scene = new R3Scene();
   if (!scene) {
-    fprintf(stderr, "Unable to allocate scene for %s\n", filename);
+    RNFail("Unable to allocate scene for %s\n", filename);
     return NULL;
   }
 
@@ -425,19 +425,19 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1; 
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
       else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_name = *argv; }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!input_scene_name) input_scene_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check scene filename
   if (!input_scene_name) {
-    fprintf(stderr, "Usage: scninfo inputscenefile [options]\n");
+    RNFail("Usage: scninfo inputscenefile [options]\n");
     return 0;
   }
 

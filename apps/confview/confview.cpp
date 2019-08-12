@@ -96,14 +96,14 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
 
   // Read file
   if (!configuration.ReadFile(filename, load_every_kth_image)) {
-    fprintf(stderr, "Unable to read configuration from %s\n", filename);
+    RNFail("Unable to read configuration from %s\n", filename);
     return 0;
   }
 
   // Read all channels ... for now
   if (read_all_channels) {
     if (!configuration.ReadChannels()) {
-      fprintf(stderr, "Unable to read channels for %s\n", filename);
+      RNFail("Unable to read channels for %s\n", filename);
       return 0;
     }
   }
@@ -177,20 +177,20 @@ ReadMesh(RGBDConfiguration& configuration, const char *filename)
   // Allocate mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh for %s\n", filename);
+    RNFail("Unable to allocate mesh for %s\n", filename);
     return 0;
   }
 
   // Read mesh from file
   if (!mesh->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read mesh from %s\n", filename);
+    RNFail("Unable to read mesh from %s\n", filename);
     return 0;
   }
 
   // Create surface for mesh
   RGBDSurface *surface = new RGBDSurface(NULL, mesh, texel_spacing);
   if (!surface) {
-    fprintf(stderr, "Unable to allocate surface for %s\n", filename);
+    RNFail("Unable to allocate surface for %s\n", filename);
     return 0;
   }
 
@@ -223,13 +223,13 @@ ReadOverlapMatrix(RGBDConfiguration& configuration, const char *filename)
   // Allocate matrix
   image_image_overlaps = new R2Grid();
   if (!image_image_overlaps) {
-    fprintf(stderr, "Unable to allocate overlap matrix for %s\n", filename);
+    RNFail("Unable to allocate overlap matrix for %s\n", filename);
     return 0;
   }
 
   // Read matrix from file
   if (!image_image_overlaps->ReadFile(filename)) {
-    fprintf(stderr, "Unable to read overlap matrix from %s\n", filename);
+    RNFail("Unable to read overlap matrix from %s\n", filename);
     return 0;
   }
 
@@ -261,7 +261,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
 
   // Check configuration
   if (configuration.NSurfaces() == 0) {
-    fprintf(stderr, "Must have mesh to read overlaps\n");
+    RNFail("Must have mesh to read overlaps\n");
     return 0;
   }
 
@@ -269,21 +269,21 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
   RGBDSurface *surface = configuration.Surface(0);
   R3Mesh *mesh = surface->mesh;
   if (!mesh || (mesh->NVertices() == 0)) {
-    fprintf(stderr, "Must have mesh to read overlaps\n");
+    RNFail("Must have mesh to read overlaps\n");
     return 0;
   }
 
   // Allocate arrays of vertex image overlaps
   vertex_image_overlaps = new RNArray<RGBDImage *> [ mesh->NVertices() ];
   if (!vertex_image_overlaps) {
-    fprintf(stderr, "Unable to allocate vertex image overlaps for %s\n", filename);
+    RNFail("Unable to allocate vertex image overlaps for %s\n", filename);
     return 0;
   }
 
   // Allocate arrays of image vertex overlaps
   image_vertex_overlaps = new RNArray<R3MeshVertex *> [ configuration.NImages() ];
   if (!image_vertex_overlaps) {
-    fprintf(stderr, "Unable to allocate image vertex overlaps for %s\n", filename);
+    RNFail("Unable to allocate image vertex overlaps for %s\n", filename);
     return 0;
   }
 
@@ -291,7 +291,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
   if (!image_image_overlaps) {
     image_image_overlaps = new R2Grid(configuration.NImages(), configuration.NImages());
     if (!image_image_overlaps) {
-      fprintf(stderr, "Unable to allocate image image overlap matrix\n");
+      RNFail("Unable to allocate image image overlap matrix\n");
       return 0;
     }
   }
@@ -299,7 +299,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open overlap file %s\n", filename);
+    RNFail("Unable to open overlap file %s\n", filename);
     return 0;
   }
   
@@ -311,7 +311,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
       // Read configuration filename
       char configuration_filename[1024];
       if (fscanf(fp, "%s", configuration_filename) != (unsigned int) 1) {
-        fprintf(stderr, "Unable to read configuration filename in %s\n", filename);
+        RNFail("Unable to read configuration filename in %s\n", filename);
         return 0;
       }
     }
@@ -319,7 +319,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
       // Read mesh filename
       char mesh_filename[1024];
       if (fscanf(fp, "%s", mesh_filename) != (unsigned int) 1) {
-        fprintf(stderr, "Unable to read mesh filename in %s\n", filename);
+        RNFail("Unable to read mesh filename in %s\n", filename);
         return 0;
       }
     }
@@ -329,20 +329,20 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
       double px, py, pz, nx, ny, nz;
       if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%d", &vertex_index,
         &px, &py, &pz, &nx, &ny, &nz, &noverlaps) != (unsigned int) 8) {
-        fprintf(stderr, "Unable to read vertex in %s\n", filename);
+        RNFail("Unable to read vertex in %s\n", filename);
         return 0;
       }
         
       // Check vertex index
       if ((vertex_index < 0) || (vertex_index >= mesh->NVertices())) {
-        fprintf(stderr, "Invalid vertex index %d in %s\n", vertex_index, filename);
+        RNFail("Invalid vertex index %d in %s\n", vertex_index, filename);
         return 0;
       }
 
       // Find vertex
       R3MeshVertex *vertex = mesh->Vertex(vertex_index);
       if (R3SquaredDistance(mesh->VertexPosition(vertex), R3Point(px, py, pz)) > RN_EPSILON) {
-        fprintf(stderr, "Mismatching position for vertex index %d in %s\n", vertex_index, filename);
+        RNFail("Mismatching position for vertex index %d in %s\n", vertex_index, filename);
         return 0;
       }
 
@@ -351,20 +351,20 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
         // Read image index
         int image_index;
         if (fscanf(fp, "%d", &image_index) != (unsigned int) 1) {
-          fprintf(stderr, "Unable to read image index in %s\n", filename);
+          RNFail("Unable to read image index in %s\n", filename);
           return 0;
         }
 
         // Check image index
         if ((image_index < 0) || (image_index >= mesh->NVertices())) {
-          fprintf(stderr, "Invalid image index %d in %s\n", image_index, filename);
+          RNFail("Invalid image index %d in %s\n", image_index, filename);
           return 0;
         }
          
         // Find image
         RGBDImage *image = configuration.Image(image_index);
         if (!image) {
-          fprintf(stderr, "This should never happen\n");
+          RNFail("This should never happen\n");
           return 0;
         }
 
@@ -379,20 +379,20 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
       // Read image to vertex overlaps
       int image_index, noverlaps;
       if (fscanf(fp, "%d%d", &image_index, &noverlaps) != (unsigned int) 2) {
-        fprintf(stderr, "Unable to read image in %s\n", filename);
+        RNFail("Unable to read image in %s\n", filename);
         return 0;
       }
         
       // Check image index
       if ((image_index < 0) || (image_index >= configuration.NImages())) {
-        fprintf(stderr, "Invalid image index %d in %s\n", image_index, filename);
+        RNFail("Invalid image index %d in %s\n", image_index, filename);
         return 0;
       }
 
       // Find image
       RGBDImage *image = configuration.Image(image_index);
       if (!image) {
-        fprintf(stderr, "This should never happen\n");
+        RNFail("This should never happen\n");
         return 0;
       }
 
@@ -401,20 +401,20 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
         // Read vertex index
         int vertex_index;
         if (fscanf(fp, "%d", &vertex_index) != (unsigned int) 1) {
-          fprintf(stderr, "Unable to read vertex index in %s\n", filename);
+          RNFail("Unable to read vertex index in %s\n", filename);
           return 0;
         }
 
         // Check vertex index
         if ((vertex_index < 0) || (vertex_index >= mesh->NVertices())) {
-          fprintf(stderr, "Invalid vertex index %d in %s\n", vertex_index, filename);
+          RNFail("Invalid vertex index %d in %s\n", vertex_index, filename);
           return 0;
         }
 
         // Find vertex
         R3MeshVertex *vertex = mesh->Vertex(vertex_index);
         if (!vertex) {
-          fprintf(stderr, "This should never happen\n");
+          RNFail("This should never happen\n");
           return 0;
         }
 
@@ -430,7 +430,7 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
       RNScalar fraction;
       int image_index1, image_index2, noverlaps;
       if (fscanf(fp, "%d%d%d%lf", &image_index1, &image_index2, &noverlaps, &fraction) != (unsigned int) 4) {
-        fprintf(stderr, "Unable to read line in %s\n", filename);
+        RNFail("Unable to read line in %s\n", filename);
         return 0;
       }
 
@@ -1469,7 +1469,7 @@ ParseArgs(int argc, char **argv)
         argv++; argc--; background[2] = atof(*argv);
       }
       else {
-        fprintf(stderr, "Invalid program argument: %s", *argv);
+        RNFail("Invalid program argument: %s", *argv);
         exit(1);
       }
       argv++; argc--;
@@ -1477,14 +1477,14 @@ ParseArgs(int argc, char **argv)
     else {
       if (!input_configuration_filename) input_configuration_filename = *argv;
       else if (!output_configuration_filename) output_configuration_filename = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check filenames
   if (!input_configuration_filename) {
-    fprintf(stderr, "Usage: confview inputconfigurationfile [outputconfigurationfile] [options]\n");
+    RNFail("Usage: confview inputconfigurationfile [outputconfigurationfile] [options]\n");
     return 0;
   }
 

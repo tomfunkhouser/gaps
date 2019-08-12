@@ -120,6 +120,7 @@ class R3Triangle : public R3Surface {
         virtual void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
 
 	// Arithmetic functions/operators
+	R3Triangle& operator=(const R3Triangle& triangle);
 	R3Triangle operator-(void) const;
 	
 	// Standard shape definitions

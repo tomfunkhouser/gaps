@@ -671,7 +671,7 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; image_name = *argv; 
       }
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -679,7 +679,7 @@ ParseArgs(int argc, char **argv)
     else {
       if (!grid_name) grid_name = *argv;
       else { 
-        fprintf(stderr, "Invalid program argument: %s", *argv); 
+        RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
       }
       argv++; argc--;
@@ -688,7 +688,7 @@ ParseArgs(int argc, char **argv)
 
   // Check pdb filename
   if (!grid_name) {
-    fprintf(stderr, "You did not specify a pdb file.\n");
+    RNFail("You did not specify a pdb file.\n");
     return 0;
   }
 

@@ -605,13 +605,13 @@ ReadASCIIFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", filename);
+    RNFail("Unable to open %s\n", filename);
     return 0;
   }
 
   // Read number of rows and columns
   if (fscanf(fp, "%d%d", &nrows, &ncols) != (unsigned int) 2) {
-    fprintf(stderr, "Unable to read header from %s\n", filename);
+    RNFail("Unable to read header from %s\n", filename);
     return 0;
   }
 
@@ -619,7 +619,7 @@ ReadASCIIFile(const char *filename)
   values = new RNScalar [ nrows * ncols ];
   for (int i = 0; i < nrows * ncols; i++) {
     if (fscanf(fp, "%lf", &values[i]) != (unsigned int) 1) {
-      fprintf(stderr, "Unable to read values from %s\n", filename);
+      RNFail("Unable to read values from %s\n", filename);
       return 0;
     }
   }
@@ -639,7 +639,7 @@ WriteASCIIFile(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", filename);
+    RNFail("Unable to open %s\n", filename);
     return 0;
   }
 
@@ -668,7 +668,7 @@ ReadSquareBinaryFile(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", filename);
+    RNFail("Unable to open %s\n", filename);
     return 0;
   }
 
@@ -685,7 +685,7 @@ ReadSquareBinaryFile(const char *filename)
   // Determine number of rows and columns
   nrows = ncols = (int) (sqrt(nvalues) + 0.5);
   if (nrows * ncols != nvalues) {
-    fprintf(stderr, "Unable to read binary matrix that is not square in %s\n", filename);
+    RNFail("Unable to read binary matrix that is not square in %s\n", filename);
     return 0;
   }
 
@@ -694,7 +694,7 @@ ReadSquareBinaryFile(const char *filename)
   for (int i = 0; i < nrows * ncols; i++) {
     float value;
     if (fread(&value, sizeof(float), 1, fp) != (unsigned int) 1) {
-      fprintf(stderr, "Unable to read values from %s\n", filename);
+      RNFail("Unable to read values from %s\n", filename);
       return 0;
     }
     values[i] = value;
@@ -715,7 +715,7 @@ WriteSquareBinaryFile(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
-    fprintf(stderr, "Unable to open %s\n", filename);
+    RNFail("Unable to open %s\n", filename);
     return 0;
   }
 
@@ -723,7 +723,7 @@ WriteSquareBinaryFile(const char *filename) const
   for (int i = 0; i < nrows * ncols; i++) {
     float value = values[i];
     if (fwrite(&value, sizeof(float), 1, fp) != (unsigned int) 1) {
-      fprintf(stderr, "Unable to write values to %s\n", filename);
+      RNFail("Unable to write values to %s\n", filename);
       return 0;
     }
   }

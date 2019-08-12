@@ -1460,6 +1460,40 @@ Reset(R3Mesh *mesh)
 
 
 
+R3MeshProperty& R3MeshProperty::
+operator=(const R3MeshProperty& property)
+{
+  // Reset everything
+  if (values) delete [] values;
+  nvalues = 0;
+  values = NULL;
+  name[0] = '\0';
+
+  // Copy stuff
+  mesh = property.mesh;
+  mean = property.mean;
+  stddev = property.stddev;
+  minimum = property.minimum;
+  maximum = property.maximum;
+  median = property.median;
+  l2norm = property.l2norm;
+
+  // Copy name
+  strcpy(this->name, property.name);
+  
+  // Copy vertex values
+  this->nvalues = mesh->NVertices();
+  this->values = new RNScalar [ this->nvalues ];
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    this->values[i] = property.values[i];
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Arithmetic functions
 ////////////////////////////////////////////////////////////////////////
@@ -1508,7 +1542,7 @@ Read(const char *filename)
   ResetStatistics();
 
   // None of the extensions matched
-  fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
+  RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
   return 0;
 }
 
@@ -1520,7 +1554,7 @@ ReadARFF(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open ARFF file: %s\n", filename);
+    RNFail("Unable to open ARFF file: %s\n", filename);
     return 0;
   }
 
@@ -1528,7 +1562,7 @@ ReadARFF(const char *filename)
   const int max_line_size = 64 * 1024;
   char *buffer = new char [max_line_size];
   if (!buffer) {
-    fprintf(stderr, "Unable to allocate buffer to read %s\n", filename);
+    RNFail("Unable to allocate buffer to read %s\n", filename);
     return 0;
   }
   
@@ -1549,7 +1583,7 @@ ReadARFF(const char *filename)
 
   // Check number of properties
   if (property_count == 0) {
-    fprintf(stderr, "No properties in %s\n", filename);
+    RNFail("No properties in %s\n", filename);
     delete [] buffer;
     return 0;
   }
@@ -1565,17 +1599,17 @@ ReadARFF(const char *filename)
     if (buffer[0] == '\n') continue;
     char *bufferp = strtok(buffer, "\n\t ");
     if (!bufferp) { 
-      fprintf(stderr, "Unable to read property value for vertex %d\n", vertex_index);
+      RNFail("Unable to read property value for vertex %d\n", vertex_index);
       delete [] buffer;
       return 0;
     }
     if (sscanf(bufferp, "%lf", &property_value) != (unsigned int) 1) {
-      fprintf(stderr, "Unable to read property value for vertex %d\n", vertex_index);
+      RNFail("Unable to read property value for vertex %d\n", vertex_index);
       delete [] buffer;
       return 0;
     }
     if (vertex_index >= mesh->NVertices()) {
-      fprintf(stderr, "Too many data lines in %s\n", filename);
+      RNFail("Too many data lines in %s\n", filename);
       delete [] buffer;
       return 0;
     }
@@ -1585,7 +1619,7 @@ ReadARFF(const char *filename)
 
   // Check if read value for every vertex
   // if (vertex_index != mesh->NVertices()) {
-  //   fprintf(stderr, "Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
+  //   RNFail("Mismatching number of data lines (%d) and vertices (%d) in %s\n", vertex_index, mesh->NVertices(), filename);
   //   delete [] buffer;
   //   return 0;
   // }
@@ -1608,7 +1642,7 @@ ReadValues(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open ASCII file: %s\n", filename);
+    RNFail("Unable to open ASCII file: %s\n", filename);
     return 0;
   }
 
@@ -1626,7 +1660,7 @@ ReadValues(const char *filename)
   int vertex_index = 0;
   while (fscanf(fp, "%lf", &value) == (unsigned int) 1) {
     if (vertex_index >= mesh->NVertices()) {
-      fprintf(stderr, "Too many data lines in %s\n", filename);
+      RNFail("Too many data lines in %s\n", filename);
       return 0;
     }
     SetVertexValue(vertex_index, value);
@@ -1648,7 +1682,7 @@ ReadPoints(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "Unable to open ASCII file: %s\n", filename);
+    RNFail("Unable to open ASCII file: %s\n", filename);
     return 0;
   }
 
@@ -1692,7 +1726,7 @@ Write(const char *filename) const
   else if (!strcmp(extension, ".dat")) return WriteValues(filename);
 
   // None of the extensions matched
-  fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
+  RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension);
   return 0;
 }
 
@@ -1704,7 +1738,7 @@ WriteARFF(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open ARFF file: %s\n", filename);
+    RNFail("Unable to open ARFF file: %s\n", filename);
     return 0;
   }
 
@@ -1737,7 +1771,7 @@ WriteValues(const char *filename) const
   // Open file
   FILE *fp = fopen(filename, "w");
   if (!fp) {
-    fprintf(stderr, "Unable to open values file: %s\n", filename);
+    RNFail("Unable to open values file: %s\n", filename);
     return 0;
   }
 

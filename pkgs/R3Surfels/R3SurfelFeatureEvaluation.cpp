@@ -218,13 +218,13 @@ R3SurfelOverheadGridFeature(const char *filename, const char *featurename, RNSca
   // Open file
   fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open overhead grid file %s\n", filename);
+    RNFail("Unable to open overhead grid file %s\n", filename);
     return;
   }
 
   // Read grid resolution from file
   if (fread(&grid_resolution, sizeof(int), 2, fp) != 2) {
-    fprintf(stderr, "Unable to read grid file %s", filename);
+    RNFail("Unable to read grid file %s", filename);
     fclose(fp);
     grid_resolution[0] = 0;
     grid_resolution[1] = 0;
@@ -235,7 +235,7 @@ R3SurfelOverheadGridFeature(const char *filename, const char *featurename, RNSca
   // Read world_to_grid transformation from file
   RNScalar m[9];
   if (fread(m, sizeof(RNScalar), 9, fp) != 9) {
-    fprintf(stderr, "Invalid format for grid file %s", filename);
+    RNFail("Invalid format for grid file %s", filename);
     fclose(fp);
     grid_resolution[0] = 0;
     grid_resolution[1] = 0;
@@ -288,7 +288,7 @@ UpdateFeatureVector(R3SurfelObject *object, R3SurfelFeatureVector& vector) const
 
   // Check if file is open
   if (!fp) {
-    fprintf(stderr, "Can't evaluate overhead grid feature because grid file is not open.\n");
+    RNFail("Can't evaluate overhead grid feature because grid file is not open.\n");
     vector.SetValue(SceneIndex(), 0);
     return 0;
   }
@@ -307,7 +307,7 @@ UpdateFeatureVector(R3SurfelObject *object, R3SurfelFeatureVector& vector) const
   int grid_index = grid_resolution[0] * iy + ix;
   unsigned int file_offset = 2*sizeof(int) + 9*sizeof(RNScalar) + grid_index*sizeof(RNScalar);
   if (fseek(fp, file_offset, SEEK_SET)) {
-    fprintf(stderr, "Unable to seek to offset %d in grid file %s\n", file_offset, filename);
+    RNFail("Unable to seek to offset %d in grid file %s\n", file_offset, filename);
     vector.SetValue(SceneIndex(), 0);
     return 0;
   }
@@ -315,7 +315,7 @@ UpdateFeatureVector(R3SurfelObject *object, R3SurfelFeatureVector& vector) const
   // Read value
   RNScalar value;
   if (fread(&value, sizeof(RNScalar), 1, fp) != (unsigned int) 1) {
-    fprintf(stderr, "Unable to read value from grid file %s\n", filename);
+    RNFail("Unable to read value from grid file %s\n", filename);
     vector.SetValue(SceneIndex(), 0);
     return 0;
   }

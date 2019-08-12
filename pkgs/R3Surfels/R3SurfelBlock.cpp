@@ -418,7 +418,7 @@ SetSurfelPosition(int surfel_index, const R3Point& position)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -443,7 +443,7 @@ SetSurfelNormal(int surfel_index, const R3Vector& normal)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -461,7 +461,7 @@ SetSurfelRadius(int surfel_index, RNLength radius)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -479,7 +479,7 @@ SetSurfelColor(int surfel_index, const RNRgb& color)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -497,7 +497,7 @@ SetSurfelActive(int surfel_index, RNBoolean active)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -515,7 +515,7 @@ SetSurfelAerial(int surfel_index, RNBoolean aerial)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel position for non-resident block\n");
+    RNFail("Unable to set surfel position for non-resident block\n");
     abort();
   }
 
@@ -533,7 +533,7 @@ SetSurfelFlags(int surfel_index, unsigned char flags)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    RNFail("Unable to set surfel property for non-resident block\n");
     abort();
   }
 
@@ -551,7 +551,7 @@ SetSurfelSilhouetteBoundary(int surfel_index, RNBoolean boundary)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    RNFail("Unable to set surfel property for non-resident block\n");
     abort();
   }
 
@@ -569,7 +569,7 @@ SetSurfelShadowBoundary(int surfel_index, RNBoolean boundary)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    RNFail("Unable to set surfel property for non-resident block\n");
     abort();
   }
 
@@ -587,7 +587,7 @@ SetSurfelBorderBoundary(int surfel_index, RNBoolean boundary)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    RNFail("Unable to set surfel property for non-resident block\n");
     abort();
   }
 
@@ -605,7 +605,7 @@ SetSurfelMark(int surfel_index, RNBoolean mark)
 {
   // Check if surfels are resident
   if (!surfels) {
-    fprintf(stderr, "Unable to set surfel property for non-resident block\n");
+    RNFail("Unable to set surfel property for non-resident block\n");
     abort();
   }
 
@@ -1051,7 +1051,7 @@ ReadFile(const char *filename)
     return ReadUPCFile(filename);
   }
   else { 
-    fprintf(stderr, "Unable to read file %s (unrecognized extension: %s)\n", filename, extension); 
+    RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension); 
     return 0; 
   }
 
@@ -1079,7 +1079,7 @@ WriteFile(const char *filename) const
     return WriteBinaryFile(filename);
   }
   else { 
-    fprintf(stderr, "Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
+    RNFail("Unable to write file %s (unrecognized extension: %s)\n", filename, extension); 
     return 0; 
   }
 
@@ -1099,13 +1099,13 @@ ReadOBJFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file
   if (!ReadOBJ(fp)) {
-    fprintf(stderr, "Unable to read OBJ file %s\n", filename);
+    RNFail("Unable to read OBJ file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1157,12 +1157,12 @@ ReadOBJ(FILE *fp)
   origin.Reset(cx, cy, cz);
 
   // Rewind file to original file offset
-  RNFileSeek(fp, file_offset, SEEK_SET);
+  RNFileSeek(fp, file_offset, RN_FILE_SEEK_SET);
 
   // Allocate surfels
   surfels = new R3Surfel [ count ];
   if (!surfels) {
-    fprintf(stderr, "Unable to allocate surfel block\n");
+    RNFail("Unable to allocate surfel block\n");
     return 0;
   }
 
@@ -1178,7 +1178,7 @@ ReadOBJ(FILE *fp)
       char keyword[64];
       float x, y, z;
       if (sscanf(buffer, "%s%f%f%f", keyword, &x, &y, &z) != (unsigned int) 4) {
-        fprintf(stderr, "Unable to read point %d out of %d into surfel block\n", nsurfels, count);
+        RNFail("Unable to read point %d out of %d into surfel block\n", nsurfels, count);
         delete [] surfels;
         surfels = NULL;
         nsurfels = 0;
@@ -1207,13 +1207,13 @@ ReadXYZAsciiFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "r"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file
   if (!ReadXYZAscii(fp)) {
-    fprintf(stderr, "Unable to read XYZ file %s\n", filename);
+    RNFail("Unable to read XYZ file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1233,13 +1233,13 @@ WriteXYZAsciiFile(const char *filename) const
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "w"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Write file
   if (!WriteXYZAscii(fp)) {
-    fprintf(stderr, "Unable to write XYZ file %s\n", filename);
+    RNFail("Unable to write XYZ file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1271,12 +1271,12 @@ ReadXYZAscii(FILE *fp)
   }
 
   // Rewind file to original file offset
-  RNFileSeek(fp, file_offset, SEEK_SET);
+  RNFileSeek(fp, file_offset, RN_FILE_SEEK_SET);
 
   // Allocate surfels
   surfels = new R3Surfel [ count ];
   if (!surfels) {
-    fprintf(stderr, "Unable to allocate surfel block\n");
+    RNFail("Unable to allocate surfel block\n");
     return 0;
   }
 
@@ -1297,7 +1297,7 @@ ReadXYZAscii(FILE *fp)
     if (sscanf(buffer, "%f%f%f%u%u%u", &x, &y, &z, &r, &g, &b) != (unsigned int) 6) {
       r = 255; g = 0; b = 0;
       if (sscanf(buffer, "%f%f%f", &x, &y, &z) != (unsigned int) 3) {
-        fprintf(stderr, "Unable to read point %d out of %d into surfel block\n", nsurfels, count);
+        RNFail("Unable to read point %d out of %d into surfel block\n", nsurfels, count);
         delete [] surfels;
         surfels = NULL;
         nsurfels = 0;
@@ -1346,13 +1346,13 @@ ReadXYZBinaryFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "rb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file
   if (!ReadXYZBinary(fp)) {
-    fprintf(stderr, "Unable to read XYZ binary file %s\n", filename);
+    RNFail("Unable to read XYZ binary file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1371,9 +1371,9 @@ ReadXYZBinary(FILE *fp)
 {
   // Determine the number of surfels
   long int start_file_offset = RNFileTell(fp);
-  RNFileSeek(fp, 0, SEEK_END);
+  RNFileSeek(fp, 0, RN_FILE_SEEK_END);
   long int end_file_offset = RNFileTell(fp);
-  RNFileSeek(fp, start_file_offset, SEEK_SET);
+  RNFileSeek(fp, start_file_offset, RN_FILE_SEEK_SET);
   long int file_size = end_file_offset - start_file_offset;
   nsurfels = file_size / (4*sizeof(RNScalar32));
   if (nsurfels == 0) return 0;
@@ -1381,7 +1381,7 @@ ReadXYZBinary(FILE *fp)
   // Allocate surfels
   surfels = new R3Surfel [ nsurfels ];
   if (!surfels) {
-    fprintf(stderr, "Unable to allocate surfel block\n");
+    RNFail("Unable to allocate surfel block\n");
     return 0;
   }
 
@@ -1391,7 +1391,7 @@ ReadXYZBinary(FILE *fp)
     // Read data
     float xyzr[4];
     if (fread(xyzr, sizeof(RNScalar32), 4, fp) != (size_t) 4) {
-      fprintf(stderr, "Unable to read point %d\n", i);
+      RNFail("Unable to read point %d\n", i);
       delete [] surfels;
       surfels = NULL;
       nsurfels = 0;
@@ -1436,13 +1436,13 @@ ReadBinaryFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "rb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file
   if (!ReadBinary(fp)) {
-    fprintf(stderr, "Unable to read surfel file %s\n", filename);
+    RNFail("Unable to read surfel file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1462,13 +1462,13 @@ WriteBinaryFile(const char *filename) const
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "wb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Write file
   if (!WriteBinary(fp)) {
-    fprintf(stderr, "Unable to write surfel file %s\n", filename);
+    RNFail("Unable to write surfel file %s\n", filename);
     fclose(fp);
     return 0;
   }
@@ -1487,32 +1487,32 @@ ReadBinary(FILE *fp)
 {
   // Read number of surfels
   if (fread(&nsurfels, sizeof(int), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read number of surfels\n");
+    RNFail("Unable to read number of surfels\n");
     return 0;
   }
 
   // Read bounding box
   if (fread(&bbox, sizeof(R3Box), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read bounding box of surfel block\n");
+    RNFail("Unable to read bounding box of surfel block\n");
     return 0;
   }
 
   // Read resolution
   if (fread(&resolution, sizeof(RNLength), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read resolution of surfel block\n");
+    RNFail("Unable to read resolution of surfel block\n");
     return 0;
   }
 
   // Read flags
   if (fread(&flags, sizeof(RNFlags), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read flags of surfel block\n");
+    RNFail("Unable to read flags of surfel block\n");
     return 0;
   }
 
   // Allocate memory for surfels
   surfels = new R3Surfel [ nsurfels ];
   if (!surfels) {
-    fprintf(stderr, "Unable to allocate surfel block\n");
+    RNFail("Unable to allocate surfel block\n");
     return 0;
   }
 
@@ -1521,7 +1521,7 @@ ReadBinary(FILE *fp)
   while (count < nsurfels) {
     int status = fread(&surfels[count], sizeof(R3Surfel), nsurfels - count, fp);
     if (status <= 0) {
-      fprintf(stderr, "Unable to read surfel block\n");
+      RNFail("Unable to read surfel block\n");
       delete [] surfels;
       surfels = NULL;
       nsurfels = 0;
@@ -1542,26 +1542,26 @@ WriteBinary(FILE *fp) const
   // Write number of surfels
   int nsurfels = NSurfels();
   if (fwrite(&nsurfels, sizeof(int), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to write number of surfels\n");
+    RNFail("Unable to write number of surfels\n");
     return 0;
   }
 
   // Write bounding box
   if (fwrite(&bbox, sizeof(R3Box), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to write bounding box of surfel block\n");
+    RNFail("Unable to write bounding box of surfel block\n");
     return 0;
   }
 
   // Write resolution
   if (fwrite(&resolution, sizeof(R3Box), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to write resolution of surfel block\n");
+    RNFail("Unable to write resolution of surfel block\n");
     return 0;
   }
 
   // Write flags
   RNFlags tmp = flags; tmp.Remove(R3_SURFEL_BLOCK_DATABASE_FLAGS);
   if (fwrite(&tmp, sizeof(RNFlags), 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to write flags of surfel block\n");
+    RNFail("Unable to write flags of surfel block\n");
     return 0;
   }
 
@@ -1619,13 +1619,13 @@ ReadUPCFile(const char *filename)
   // Open file
   FILE *fp;
   if (!(fp = fopen(filename, "rb"))) {
-    fprintf(stderr, "Unable to open file %s\n", filename);
+    RNFail("Unable to open file %s\n", filename);
     return 0;
   }
 
   // Read file
   if (!ReadUPC(fp)) {
-    fprintf(stderr, "Unable to read surfel file %s\n", filename);
+    RNFail("Unable to read surfel file %s\n", filename);
     return 0;
   }
 
@@ -1652,7 +1652,7 @@ ReadUPCPreamble(FILE *fp)
   }
    
   // Seek to start of header
-  RNFileSeek(fp, offset, SEEK_SET);
+  RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
 
   // Return success
   return 1;
@@ -1665,43 +1665,43 @@ ReadUPCHeader(FILE *fp, UPCHeader& header)
 {
   // Read preamble
   if (!ReadUPCPreamble(fp)) {
-    fprintf(stderr, "Unable to read signature of UPC file\n");
+    RNFail("Unable to read signature of UPC file\n");
     return 0;
   }
 
   // Read signature
   if (fread(&header.versionMajor, 1, 4, fp) != (size_t) 4) {
-    fprintf(stderr, "Unable to read UPC header signature\n");
+    RNFail("Unable to read UPC header signature\n");
     return 0;
   }
 
   // Read versionMajor
   if (fread(&header.versionMajor, 1, 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read UPC header versionMajor\n");
+    RNFail("Unable to read UPC header versionMajor\n");
     return 0;
   }
 
   // Read versionMinor
   if (fread(&header.versionMinor, 1, 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read UPC header versionMinor\n");
+    RNFail("Unable to read UPC header versionMinor\n");
     return 0;
   }
 
   // Read headerSize
   if (fread(&header.headerSize, 2, 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read UPC header size\n");
+    RNFail("Unable to read UPC header size\n");
     return 0;
   }
 
   // Read number of points
   if (fread(&header.numOfPts, 8, 1, fp) != (size_t) 1) {
-    fprintf(stderr, "Unable to read number of points in header of UPC file\n");
+    RNFail("Unable to read number of points in header of UPC file\n");
     return 0;
   }
 
   // Read scales and offsets
   if (fread(&header.xScale, 8, 6, fp) != (size_t) 6) {
-    fprintf(stderr, "Unable to read scales and offsets in header of UPC file\n");
+    RNFail("Unable to read scales and offsets in header of UPC file\n");
     return 0;
   }
 
@@ -1737,7 +1737,7 @@ ReadUPC(FILE *fp)
   int target_count = (int) header.numOfPts;
   surfels = new R3Surfel [ target_count ];
   if (!surfels) {
-    fprintf(stderr, "Unable to allocate surfel block\n");
+    RNFail("Unable to allocate surfel block\n");
     return 0;
   }
 

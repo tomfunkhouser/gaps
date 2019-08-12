@@ -720,7 +720,7 @@ ReadMesh(char *filename)
   // Allocate mesh
   R3Mesh *mesh = new R3Mesh();
   if (!mesh) {
-    fprintf(stderr, "Unable to allocate mesh for %s\n", filename);
+    RNFail("Unable to allocate mesh for %s\n", filename);
     return NULL;
   }
 
@@ -756,7 +756,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
   // Allocate array of points
   RNArray<Point *> *points = new RNArray<Point *>();
   if (!points) {
-    fprintf(stderr, "Unable to allocate array of points\n");
+    RNFail("Unable to allocate array of points\n");
     return NULL;
   }
 
@@ -772,7 +772,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "rb");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -792,7 +792,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -812,7 +812,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -833,7 +833,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Open points file
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-      fprintf(stderr, "Unable to open points file: %s\n", filename);
+      RNFail("Unable to open points file: %s\n", filename);
       return NULL;
     }
 
@@ -853,7 +853,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     fclose(fp);
   }
   else {
-    fprintf(stderr, "Unrecognized point file extension: %s\n", extension);
+    RNFail("Unrecognized point file extension: %s\n", extension);
     return NULL;
   }
 
@@ -881,7 +881,7 @@ ReadProperties(R3Mesh *mesh, const char *filename)
   // Allocate properties
   R3MeshPropertySet *properties = new R3MeshPropertySet(mesh);
   if (!properties) {
-    fprintf(stderr, "Unable to allocate properties for %s\n", properties_name);
+    RNFail("Unable to allocate properties for %s\n", properties_name);
     return NULL;
   }
 
@@ -942,20 +942,20 @@ int ParseArgs(int argc, char **argv)
         initial_camera_up.Reset(ux, uy, uz);
         initial_camera = TRUE;
       }
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
       if (!mesh_name) mesh_name = *argv;
       else if (!properties_name) properties_name = *argv;
-      else { fprintf(stderr, "Invalid program argument: %s", *argv); exit(1); }
+      else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check mesh filename
   if (!mesh_name || !properties_name) {
-    fprintf(stderr, "Usage: prpview meshfile propertiesfile.\n");
+    RNFail("Usage: prpview meshfile propertiesfile.\n");
     return 0;
   }
 
