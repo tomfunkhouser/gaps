@@ -30,8 +30,10 @@ static int nrows = 32;
 // Type definitions
 
 struct Point {
+  Point(void) : position(0,0,0), normal(0,0,0), value(0) {};
   R3Point position;
   R3Vector normal;
+  RNScalar value;
 };
 
 struct Model {
@@ -73,6 +75,7 @@ static int show_edges = 0;
 static int show_vertices = 0;
 static int show_points = 0;
 static int show_normals = 0;
+static int show_values = 0;
 static int show_matches = 0;
 static int show_backfacing = 0;
 static int show_point_order = 0;
@@ -213,7 +216,8 @@ void GLUTRedraw(void)
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
-        glColor4fv(point_colors[point_color_index]);
+        if (show_values) glColor3d(-point->value, 0, point->value);
+        else glColor4fv(point_colors[point_color_index]);
         R3LoadNormal(point->normal);
         R3LoadPoint(point->position);
       }
@@ -495,6 +499,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_vertices = !show_vertices;
     break;
 
+  case 'Y':
+  case 'y':
+    show_values = !show_values;
+    break;
+
   case 27: // ESCAPE
     exit(0);
     break;
@@ -654,7 +663,6 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     while (fscanf(fp, "%lf%lf%lf", &x, &y, &z) == (unsigned int) 3) {
       Point *point = new Point();
       point->position.Reset(x, y, z);
-      point->normal.Reset(0, 0, 0);
       points->Insert(point);
     }
 
@@ -684,6 +692,27 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Close points file
     fclose(fp);
   }
+  else if (!strcmp(extension, ".sdf")) {
+    // Open points file
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+      RNFail("Unable to open points file: %s\n", filename);
+      return NULL;
+    }
+
+    // Read points
+    float coordinates[6];
+    while (fread(coordinates, sizeof(float), 4, fp) == (unsigned int) 4) {
+      Point *point = new Point();
+      point->position.Reset(coordinates[0], coordinates[1], coordinates[2]);
+      point->value = coordinates[3];
+      points->Insert(point);
+      printf("%g\n", point->value);
+    }
+
+    // Close points file
+    fclose(fp);
+  }
   else if (!strcmp(extension, ".vts")) {
     // Open points file
     FILE *fp = fopen(filename, "r");
@@ -698,7 +727,6 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     while (fscanf(fp, "%d%lf%lf%lf", &vertex_index, &x, &y, &z) == (unsigned int) 4) {
       Point *point = new Point();
       point->position.Reset(x, y, z);
-      point->normal.Reset(0, 0, 0);
       points->Insert(point);
     }
 
@@ -848,7 +876,7 @@ int ParseArgs(int argc, char **argv)
     }
     else {
       char *ext = strrchr(*argv, '.');
-      if (ext && (!strcmp(ext, ".pts") || !strcmp(ext, ".xyz") || !strcmp(ext, ".xyzn") || !strcmp(ext, ".vts") || !strcmp(ext, ".pid"))) point_names.Insert(*argv);
+      if (ext && (!strcmp(ext, ".pts") || !strcmp(ext, ".xyz") || !strcmp(ext, ".xyzn")  || !strcmp(ext, ".sdf") || !strcmp(ext, ".vts") || !strcmp(ext, ".pid"))) point_names.Insert(*argv);
       else if (ext && (!strcmp(ext, ".off") || !strcmp(ext, ".ply") || !strcmp(ext, ".obj"))) mesh_names.Insert(*argv);
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
