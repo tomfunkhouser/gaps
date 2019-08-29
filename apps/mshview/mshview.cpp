@@ -450,7 +450,18 @@ void GLUTSpecial(int key, int x, int y)
   y = GLUTwindow_height - y;
 
   // Process keyboard button event 
-
+  switch(key) {
+  case GLUT_KEY_DOWN:
+    if (current_mesh <= 1) current_mesh = 0;
+    else current_mesh--;
+    break;
+    
+  case GLUT_KEY_UP:
+    if (current_mesh >= meshes.NEntries()-2) current_mesh = meshes.NEntries()-1;
+    else current_mesh++;
+    break;
+  }
+  
   // Remember mouse position 
   GLUTmouse[0] = x;
   GLUTmouse[1] = y;
