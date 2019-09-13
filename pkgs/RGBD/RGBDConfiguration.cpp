@@ -651,14 +651,22 @@ WriteConfigurationFile(const char *filename, int write_every_kth_image) const
   if (instance_directory) fprintf(fp, "instance_directory %s\n", instance_directory);
   if (texture_directory) fprintf(fp, "texture_directory %s\n", texture_directory);
   
-  // Write image info
+  // Write image resolution
+  if (NImages() > 0) {
+    if ((Image(0)->NPixels(RN_X) > 0) && (Image(0)->NPixels(RN_Y) > 0)) {
+      fprintf(fp, "depth_resolution %d %d\n", Image(0)->NPixels(RN_X), Image(0)->NPixels(RN_Y));
+    }
+  }
+
+  // Write image intrinsics
   if (NImages() > 0) {
     R3Matrix m = Image(0)->Intrinsics();
-    fprintf(fp, "depth_resolution %d %d\n", Image(0)->NPixels(RN_X), Image(0)->NPixels(RN_Y));
-    fprintf(fp, "intrinsics_matrix  %g %g %g  %g %g %g  %g %g %g\n",
-      m[0][0], m[0][1], m[0][2],
-      m[1][0], m[1][1], m[1][2],
-      m[2][0], m[2][1], m[2][2]);
+    if (!m.IsZero()) {
+      fprintf(fp, "intrinsics_matrix  %g %g %g  %g %g %g  %g %g %g\n",
+        m[0][0], m[0][1], m[0][2],
+        m[1][0], m[1][1], m[1][2],
+        m[2][0], m[2][1], m[2][2]);
+    }
   }
          
   // Write blank line
