@@ -87,8 +87,8 @@ DeleteUnwantedImages(RGBDConfiguration *configuration)
 
     // Check if should load images within observation bbox
     if (!observation_bbox.IsEmpty()) {
-      RNScalar min_overlap = 0.25;
-      // if (!R3Contains(observation_bbox, image->WorldViewpoint())) {
+      RNScalar min_overlap = 0.1;
+      if (!R3Contains(observation_bbox, image->WorldViewpoint())) {
         // Compute conservative bounding box
         R3Box image_bbox = image->WorldBBox();
         
@@ -135,7 +135,7 @@ DeleteUnwantedImages(RGBDConfiguration *configuration)
             unwanted_images.Insert(image);
             continue;
           }
-        // }
+        }
       }
     }
   }
