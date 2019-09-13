@@ -25,6 +25,7 @@ static const char *output_configuration_filename = NULL;
 static const char *output_depth_directory = NULL;
 static const char *output_color_directory = NULL;
 static const char *output_texture_directory = NULL;
+static R3Box observation_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 static R3Box viewpoint_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 static int load_images_starting_at_index = 0;
 static int load_images_ending_at_index = INT_MAX;
@@ -76,12 +77,34 @@ DeleteUnwantedImages(RGBDConfiguration *configuration)
       }
     }
 
-    // Check if should load images within bbox
+    // Check if should load images within viewpoint bbox
     if (!viewpoint_bbox.IsEmpty()) {
       if (!R3Contains(viewpoint_bbox, image->WorldViewpoint())) {
         unwanted_images.Insert(image);
         continue;
       }
+    }
+
+    // Check if should load images within observation bbox
+    if (!observation_bbox.IsEmpty()) {
+      // First check approximate bounding box (without reading depth image)
+      if (!R3Intersects(observation_bbox, image->WorldBBox())) {
+        unwanted_images.Insert(image);
+        continue;
+      }
+
+#if 0      
+      // Then, check exact bounding box (with reading depth image)
+      // Probably works, but TOO slow
+      image->InvalidateWorldBBox();
+      image->ReadDepthChannel();
+      R3Box image_bbox = image->WorldBBox();
+      image->ReleaseDepthChannel();
+      if (!R3Intersects(observation_bbox, image_bbox)) {
+        unwanted_images.Insert(image);
+        continue;
+      }
+#endif
     }
   }
 
@@ -712,6 +735,14 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; viewpoint_bbox[1][1] = atof(*argv);
         argc--; argv++; viewpoint_bbox[1][2] = atof(*argv);
       }    
+      else if (!strcmp(*argv, "-observation_bbox")) {
+        argc--; argv++; observation_bbox[0][0] = atof(*argv);
+        argc--; argv++; observation_bbox[0][1] = atof(*argv);
+        argc--; argv++; observation_bbox[0][2] = atof(*argv);
+        argc--; argv++; observation_bbox[1][0] = atof(*argv);
+        argc--; argv++; observation_bbox[1][1] = atof(*argv);
+        argc--; argv++; observation_bbox[1][2] = atof(*argv);
+      }    
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -776,6 +807,7 @@ main(int argc, char **argv)
       else if (!strcmp(*argv, "-texture_aggregation_weighting")) { argc--; argv++; }
       else if (!strcmp(*argv, "-texel_spacing")) { argc--; argv++; }
       else if (!strcmp(*argv, "-viewpoint_bbox")) { argc -= 6; argv += 6; }
+      else if (!strcmp(*argv, "-observation_bbox")) { argc -= 6; argv += 6; }
       else if (!strcmp(*argv, "-compute_surface_textures")) {
         if (!ComputeSurfaceTextures(configuration)) exit(-1);
       }

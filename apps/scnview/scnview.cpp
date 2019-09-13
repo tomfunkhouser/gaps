@@ -423,7 +423,7 @@ void GLUTRedraw(void)
     glColor3d(1.0, 0.0, 0.0);
     glLineWidth(3.0);
     selected_node->Draw(R3_EDGES_DRAW_FLAG);
-    glLineWidth(3.0);
+    glLineWidth(1.0);
     transformation.Pop();
   }
 

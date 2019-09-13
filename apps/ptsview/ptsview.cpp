@@ -30,10 +30,11 @@ static int nrows = 32;
 // Type definitions
 
 struct Point {
-  Point(void) : position(0,0,0), normal(0,0,0), value(0) {};
+  Point(void) : position(0,0,0), normal(0,0,0), value(0), weight(0) {};
   R3Point position;
   R3Vector normal;
   RNScalar value;
+  RNScalar weight;
 };
 
 struct Model {
@@ -216,7 +217,7 @@ void GLUTRedraw(void)
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
-        if (show_values) glColor3d(-point->value, 0, point->value);
+        if (show_values) glColor3d(-10*point->value, 0, 10*point->value);
         else glColor4fv(point_colors[point_color_index]);
         R3LoadNormal(point->normal);
         R3LoadPoint(point->position);
@@ -692,6 +693,27 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Close points file
     fclose(fp);
   }
+  else if (!strcmp(extension, ".wsdf")) {
+    // Open points file
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+      RNFail("Unable to open points file: %s\n", filename);
+      return NULL;
+    }
+
+    // Read points
+    float coordinates[6];
+    while (fread(coordinates, sizeof(float), 5, fp) == (unsigned int) 5) {
+      Point *point = new Point();
+      point->position.Reset(coordinates[0], coordinates[1], coordinates[2]);
+      point->value = coordinates[3];
+      point->weight = coordinates[4];
+      points->Insert(point);
+    }
+
+    // Close points file
+    fclose(fp);
+  }
   else if (!strcmp(extension, ".sdf")) {
     // Open points file
     FILE *fp = fopen(filename, "rb");
@@ -707,7 +729,6 @@ ReadPoints(R3Mesh *mesh, const char *filename)
       point->position.Reset(coordinates[0], coordinates[1], coordinates[2]);
       point->value = coordinates[3];
       points->Insert(point);
-      printf("%g\n", point->value);
     }
 
     // Close points file

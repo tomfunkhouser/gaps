@@ -308,15 +308,30 @@ PixelWorldRay(const R2Point& image_position) const
 void RGBDImage::
 SetNPixels(int nx, int ny)
 {
-  // Set width and height of image
+  // Resample color channels
+  for (int i = RGBD_RED_CHANNEL; i <= RGBD_BLUE_CHANNEL; i++) {
+    if (channels.NEntries() <= i) continue;
+    if (channels[i]) channels[i]->Resample(nx, ny);
+  }
+
+  // Resample other channels (without interpolation)
+  for (int i = RGBD_DEPTH_CHANNEL; i < channels.NEntries(); i++) {
+    if (channels.NEntries() <= i) continue;
+    R3Matrix tmp(R3identity_matrix);
+    if (channels[i]) RGBDResampleDepthImage(*(channels[i]), tmp, nx, ny);
+  }
+
+  // Update intrinsics 
+  double xscale = (nx > 0) ? (double) width / (double) nx : 1;
+  double yscale = (ny > 0) ? (double) height / (double) ny : 1;
+  this->intrinsics[0][0] /= xscale;
+  this->intrinsics[0][2] /= xscale;
+  this->intrinsics[1][1] /= yscale;
+  this->intrinsics[1][2] /= yscale;
+
+  // Update width and height of image
   this->width = nx;
   this->height = ny;
-
-  // Resample all channels
-  for (int i = 0; i < channels.NEntries(); i++) {
-    R2Grid *channel = channels.Kth(i);
-    if (channel) channel->Resample(nx, ny);
-  }
 
   // Invalidate opengl
   InvalidateOpenGL();
@@ -629,6 +644,18 @@ TransformWorldToCamera(const R3Point& world_position, R3Point& camera_position) 
   camera_position = world_position;
   camera_position.InverseTransform(CameraToWorld());
   if (RNIsPositiveOrZero(camera_position[2])) return 0;
+  return 1;
+}
+
+
+
+int RGBDImage::
+TransformWorldToImage(const R3Point& world_position, R2Point& image_position) const
+{
+  // Transform from position in world coordinates to image coordinates
+  R3Point camera_position;
+  if (!TransformWorldToCamera(world_position, camera_position)) return 0;
+  if (!TransformCameraToImage(camera_position, image_position)) return 0;
   return 1;
 }
 

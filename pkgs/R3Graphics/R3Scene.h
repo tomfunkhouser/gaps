@@ -110,7 +110,6 @@ public:
   int ReadPlyFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadMeshFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadSUNCGFile(const char *filename, R3SceneNode *parent_node = NULL);
-  int ReadPlanner5DFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadPrincetonFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadParseFile(const char *filename, R3SceneNode *parent_node = NULL);
   int ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node = NULL);

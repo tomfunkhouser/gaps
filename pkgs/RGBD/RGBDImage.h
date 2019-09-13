@@ -98,6 +98,7 @@ public:
   virtual int TransformCameraToImage(const R3Point& camera_position, R2Point& image_position) const;
   virtual int TransformCameraToWorld(const R3Point& camera_position, R3Point& world_position) const;
   virtual int TransformWorldToCamera(const R3Point& world_position, R3Point& camera_position) const;
+  virtual int TransformWorldToImage(const R3Point& world_position, R2Point& image_position) const;
 
   // Draw functions
   virtual void Draw(int color_scheme = RGBD_PHOTO_COLOR_SCHEME) const;
