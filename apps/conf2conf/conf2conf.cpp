@@ -87,24 +87,56 @@ DeleteUnwantedImages(RGBDConfiguration *configuration)
 
     // Check if should load images within observation bbox
     if (!observation_bbox.IsEmpty()) {
-      // First check approximate bounding box (without reading depth image)
-      if (!R3Intersects(observation_bbox, image->WorldBBox())) {
-        unwanted_images.Insert(image);
-        continue;
-      }
+      RNScalar min_overlap = 0.25;
+      // if (!R3Contains(observation_bbox, image->WorldViewpoint())) {
+        // Compute conservative bounding box
+        R3Box image_bbox = image->WorldBBox();
+        
+        // Check conservative bounding box dimensions
+        RNScalar image_volume = image_bbox.Volume();
+        if (image_volume == 0) {
+          unwanted_images.Insert(image);
+          continue;
+        }
+          
+        // Conservative bounding box intersection
+        R3Box overlap_box = observation_bbox;
+        overlap_box.Intersect(image_bbox);
+        if (overlap_box.IsEmpty()) {
+          unwanted_images.Insert(image);
+          continue;
+        }
+        
+        if (TRUE) {
+          // Compute exact bounding box
+          image->InvalidateWorldBBox();
+          image->ReadDepthChannel();
+          R3Box image_bbox = image->WorldBBox();
+          image->ReleaseDepthChannel();
 
-#if 0      
-      // Then, check exact bounding box (with reading depth image)
-      // Probably works, but TOO slow
-      image->InvalidateWorldBBox();
-      image->ReadDepthChannel();
-      R3Box image_bbox = image->WorldBBox();
-      image->ReleaseDepthChannel();
-      if (!R3Intersects(observation_bbox, image_bbox)) {
-        unwanted_images.Insert(image);
-        continue;
+          // Check exact bounding box dimensions
+          RNScalar image_volume = image_bbox.Volume();
+          if (image_volume == 0) {
+            unwanted_images.Insert(image);
+            continue;
+          }
+          
+          // Exact bounding box intersection
+          R3Box overlap_box = observation_bbox;
+          overlap_box.Intersect(image_bbox);
+          if (overlap_box.IsEmpty()) {
+            unwanted_images.Insert(image);
+            continue;
+          }
+        
+          // Check exact bounding box overlap 
+          RNScalar overlap = overlap_box.Volume() / image_volume;
+          if (overlap < min_overlap) {
+            unwanted_images.Insert(image);
+            continue;
+          }
+        // }
       }
-#endif
     }
   }
 

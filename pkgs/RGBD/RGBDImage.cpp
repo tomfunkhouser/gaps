@@ -150,9 +150,10 @@ WorldBBox(void) const
   R3Box b = R3null_box;
   if (DepthChannel()) {
     // Compute world bounding box of points
+    int skip = 1;
     b = R3null_box;
-    for (int iy = 0; iy < height; iy++) {
-      for (int ix = 0; ix < width; ix++) {
+    for (int iy = 0; iy < height; iy += skip) {
+      for (int ix = 0; ix < width; ix += skip) {
         R3Point world_position;
         R2Point image_position(ix+0.5, iy+0.5);
         if (RGBDTransformImageToWorld(image_position, world_position, this)) {
@@ -1369,6 +1370,7 @@ ReadDepthChannel(void)
     // Smooth depth image
     if (!configuration || !configuration->DatasetFormat() ||
         (strcmp(configuration->DatasetFormat(), "processed") &&
+         strcmp(configuration->DatasetFormat(), "matterport") &&         
          strcmp(configuration->DatasetFormat(), "scannet"))) {
       RNScalar d_sigma_fraction = 0.015;
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
