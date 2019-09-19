@@ -607,8 +607,8 @@ WriteValues(const char *filename) const
     char name[1024];
     strncpy(name, filename, 1023);
     if (NProperties() > 1) {
-      char basename[1024];
-      strncpy(basename, name, 1023);
+      char basename[512];
+      strncpy(basename, filename, 511);
       char *extension = strrchr(basename, '.');
       if (extension) { *extension = '\0'; }
       else extension = (char *) ".val";
