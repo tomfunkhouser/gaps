@@ -398,7 +398,7 @@ WriteImages(const char *output_directory)
     const char *filename = image->DepthFilename();
     if (!filename) filename = image->ColorFilename();
     if (!filename) filename = "default";
-    strncpy(image_name_buffer, filename, 4096);
+    strncpy(image_name_buffer, filename, 4095);
     char *image_name = (strrchr(image_name_buffer, '/')) ? strrchr(image_name_buffer, '/')+1 : image_name_buffer;
     char *endp = strrchr(image_name, '.');
     if (endp) *endp = '\0';
@@ -1085,7 +1085,7 @@ Redraw(void)
     const char *filename = image->DepthFilename();
     if (!filename) filename = image->ColorFilename();
     if (!filename) filename = "default";
-    strncpy(image_name_buffer, filename, 4096);
+    strncpy(image_name_buffer, filename, 4095);
     if (strrchr(image_name_buffer, '/')) name = strrchr(image_name_buffer, '/')+1;
     char *endp = strrchr(name, '.');
     if (endp) *endp = '\0';
