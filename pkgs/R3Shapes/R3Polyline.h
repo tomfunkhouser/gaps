@@ -50,7 +50,7 @@ public:
   virtual R3Vector PointDerivative(RNScalar u) const;
   
   // Manipulation functions
-  virtual R3Polyline& operator=(const R3Polyline& polyline);
+  R3Polyline& operator=(const R3Polyline& polyline);
   virtual void Transform(const R3Transformation& transformation);
   virtual void SetVertexPosition(int k, const R3Point& position);
   virtual void SetVertexParameter(int k, RNScalar u);

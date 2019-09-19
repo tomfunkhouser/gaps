@@ -134,11 +134,11 @@ R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resoluti
 
 
 R3Grid::
-R3Grid(const R3Grid& voxels)
+R3Grid(const R3Grid& grid)
   : grid_values(NULL)
 {
   // Copy everything
-  *this = voxels;
+  *this = grid;
 }
 
 
@@ -508,40 +508,40 @@ Slice(int dim, int grid_coordinate) const
 
 
 R3Grid& R3Grid::
-operator=(const R3Grid& voxels) 
+operator=(const R3Grid& grid) 
 {
   // Delete old grid values
   if (grid_values) {
-    if (grid_size != voxels.grid_size) {
+    if (grid_size != grid.grid_size) {
       delete [] grid_values;
       grid_values = NULL;
     }
   }
 
   // Allocate new grid values
-  if (!grid_values && (voxels.grid_size > 0)) {
-    grid_values = new RNScalar [ voxels.grid_size ];
+  if (!grid_values && (grid.grid_size > 0)) {
+    grid_values = new RNScalar [ grid.grid_size ];
     assert(grid_values);
   }
 
   // Copy grid resolution
-  grid_resolution[0] = voxels.grid_resolution[0];
-  grid_resolution[1] = voxels.grid_resolution[1];
-  grid_resolution[2] = voxels.grid_resolution[2];
-  grid_row_size = voxels.grid_row_size;
-  grid_sheet_size = voxels.grid_sheet_size;
-  grid_size = voxels.grid_size;
+  grid_resolution[0] = grid.grid_resolution[0];
+  grid_resolution[1] = grid.grid_resolution[1];
+  grid_resolution[2] = grid.grid_resolution[2];
+  grid_row_size = grid.grid_row_size;
+  grid_sheet_size = grid.grid_sheet_size;
+  grid_size = grid.grid_size;
 
   // Copy grid values
   for (int i = 0; i < grid_size; i++) {
-    grid_values[i] = voxels.grid_values[i];
+    grid_values[i] = grid.grid_values[i];
   }
 
   // Copy transforms
-  grid_to_world_transform = voxels.grid_to_world_transform;
-  world_to_grid_transform = voxels.world_to_grid_transform;
-  world_to_grid_scale_factor = voxels.world_to_grid_scale_factor;
-  grid_to_world_scale_factor = voxels.grid_to_world_scale_factor;
+  grid_to_world_transform = grid.grid_to_world_transform;
+  world_to_grid_transform = grid.world_to_grid_transform;
+  world_to_grid_scale_factor = grid.world_to_grid_scale_factor;
+  grid_to_world_scale_factor = grid.grid_to_world_scale_factor;
 
   // Return this
   return *this;
@@ -1174,16 +1174,16 @@ Add(RNScalar value)
 
 
 void R3Grid::
-Copy(const R3Grid& voxels) 
+Copy(const R3Grid& grid) 
 {
   // Resolutions must be the same (for now)
-  assert(grid_resolution[0] == voxels.grid_resolution[0]);
-  assert(grid_resolution[1] == voxels.grid_resolution[1]);
-  assert(grid_resolution[2] == voxels.grid_resolution[2]);
+  assert(grid_resolution[0] == grid.grid_resolution[0]);
+  assert(grid_resolution[1] == grid.grid_resolution[1]);
+  assert(grid_resolution[2] == grid.grid_resolution[2]);
 
   // Copy passed grid values to corresponding entries of this grid
   for (int i = 0; i < grid_size; i++) 
-    grid_values[i] = voxels.grid_values[i];
+    grid_values[i] = grid.grid_values[i];
 }
 
 

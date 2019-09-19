@@ -265,9 +265,9 @@ RNLength R3Distance(const R3Line& line, const R3Ray& ray)
         }
     }
     
-    // Hmmm ...
-    RNAbort("Should not get here");
-    return 0.0;
+    // Commented out because compiler complains :(
+    // RNAbort("Should not get here");
+    // return 0.0;
 }
 
 
@@ -317,9 +317,9 @@ RNLength R3Distance(const R3Line& line, const R3Span& span)
         }
     }
     
-    // Hmmm ...
-    RNAbort("Should not get here");
-    return 0.0;
+    // Commented out because compiler complains :(
+    // RNAbort("Should not get here");
+    // return 0.0;
 }
 
 

@@ -93,7 +93,7 @@ public:
   void Add(RNScalar value);
   void Copy(const R3Grid& grid);
   void Add(const R3Grid& grid);
-  void Add(const R3Grid& grid, const R3Point& grid_position, const R3Point& filter_origin, RNScalar amplitude = 1);
+  void Add(const R3Grid& filter, const R3Point& grid_position, const R3Point& filter_origin, RNScalar amplitude = 1);
   void Subtract(RNScalar value);
   void Subtract(const R3Grid& grid);
   void Multiply(RNScalar value);

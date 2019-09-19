@@ -371,10 +371,10 @@ GridCentroid(void) const
 
 
 R2Diad R2Grid::
-GridPrincipleAxes(const R2Point *grid_center, RNScalar *variances) const
+GridPrincipleAxes(const R2Point *grid_centroid, RNScalar *variances) const
 {
   // Get centroid
-  R2Point center = (grid_center) ? *grid_center : GridCentroid();
+  R2Point center = (grid_centroid) ? *grid_centroid : GridCentroid();
 
   // Compute covariance matrix
   RNScalar m[4] = { 0, 0, 0, 0 };
@@ -2277,12 +2277,12 @@ RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value, int operation
 
 
 void R2Grid::
-RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScalar valueA, RNScalar valueB, RNScalar valueC, int operation)
+RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScalar value1, RNScalar value2, RNScalar value3, int operation)
 {
   // Resolve values
-  if (valueA == R2_GRID_UNKNOWN_VALUE) return;
-  if (valueB == R2_GRID_UNKNOWN_VALUE) return;
-  if (valueC == R2_GRID_UNKNOWN_VALUE) return;
+  if (value1 == R2_GRID_UNKNOWN_VALUE) return;
+  if (value2 == R2_GRID_UNKNOWN_VALUE) return;
+  if (value3 == R2_GRID_UNKNOWN_VALUE) return;
 
   // Get convenient point variables
   R2Point points[3];
@@ -2295,9 +2295,9 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
 
   // Get convenient value variables
   RNScalar values[3];
-  values[0] = valueA;
-  values[1] = valueB;
-  values[2] = valueC;
+  values[0] = value1;
+  values[1] = value2;
+  values[2] = value3;
 
   // Sort vertex indices by Y coordinate
   int iv0, iv1, iv2;
@@ -2326,14 +2326,14 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
   double x2 = points[iv2].X();
   double x1a = points[iv1].X();
   double x1b = (1-t1)*x0 + t1*x2;
-  double value0 = values[iv0];
-  double value2 = values[iv2];
-  double value1a = values[iv1];
-  double value1b = (1-t1)*value0 + t1*value2;
+  double val0 = values[iv0];
+  double val2 = values[iv2];
+  double val1a = values[iv1];
+  double val1b = (1-t1)*val0 + t1*val2;
   if (x1a > x1b) { 
     double swap;
     swap = x1a; x1a = x1b; x1b = swap; 
-    swap = value1a; value1a = value1b; value1b = swap; 
+    swap = val1a; val1a = val1b; val1b = swap; 
   }
 
   // Rasterize lower half of triangle
@@ -2342,24 +2342,24 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
   int nysteps = (iy1 - iy0) + 1;
   double xa_step = (x1a - x0) / nysteps;
   double xb_step = (x1b - x0) / nysteps;
-  double valuea_step = (value1a  - value0) / nysteps;
-  double valueb_step = (value1b  - value0) / nysteps;
+  double vala_step = (val1a  - val0) / nysteps;
+  double valb_step = (val1b  - val0) / nysteps;
   double xa = x0;
   double xb = x0;
-  double valuea = value0;
-  double valueb = value0;
+  double vala = val0;
+  double valb = val0;
   for (int iy = iy0; iy <= iy1; iy++) {
     int ixa = (int) (xa + 0.5);
     int ixb = (int) (xb + 0.5);
     int nxsteps = (ixb - ixa) + 1;
-    double value_step = (valueb - valuea) / nxsteps;
-    double value = valuea;
+    double val_step = (valb - vala) / nxsteps;
+    double val = vala;
     for (int ix = ixa; ix <= ixb; ix++) {
-      RasterizeGridValue(ix, iy, value, operation);
-      value += value_step;
+      RasterizeGridValue(ix, iy, val, operation);
+      val += val_step;
     }
-    valuea += valuea_step;
-    valueb += valueb_step;
+    vala += vala_step;
+    valb += valb_step;
     xa += xa_step;
     xb += xb_step;
   }
@@ -2369,24 +2369,24 @@ RasterizeGridTriangle(const int p1[2], const int p2[2], const int p3[2], RNScala
   nysteps = (iy2 - iy1) + 1;
   xa_step = (x2 - x1a) / nysteps;
   xb_step = (x2 - x1b) / nysteps;
-  valuea_step = (value2  - value1a) / nysteps;
-  valueb_step = (value2  - value1b) / nysteps;
+  vala_step = (val2  - val1a) / nysteps;
+  valb_step = (val2  - val1b) / nysteps;
   xa = x1a;
   xb = x1b;
-  valuea = value1a;
-  valueb = value1b;
+  vala = val1a;
+  valb = val1b;
   for (int iy = iy1; iy <= iy2; iy++) {
     int ixa = (int) (xa + 0.5);
     int ixb = (int) (xb + 0.5);
     int nxsteps = (ixb - ixa) + 1;
-    double value_step = (valueb - valuea) / nxsteps;
-    double value = valuea;
+    double val_step = (valb - vala) / nxsteps;
+    double val = vala;
     for (int ix = ixa; ix <= ixb; ix++) {
-      RasterizeGridValue(ix, iy, value, operation);
-      value += value_step;
+      RasterizeGridValue(ix, iy, val, operation);
+      val += val_step;
     }
-    valuea += valuea_step;
-    valueb += valueb_step;
+    vala += vala_step;
+    valb += valb_step;
     xa += xa_step;
     xb += xb_step;
   }
@@ -3452,10 +3452,6 @@ ReadFile(const char *filename)
   else if (!strncmp(input_extension, ".png", 4)) return ReadPNGFile(filename);
   else if (!strncmp(input_extension, ".grd", 4)) return ReadGridFile(filename);
   else  return ReadImageFile(filename);
-  
-  // Should never get here
-  RNFail("Unrecognized image file extension\n");
-  return 0;
 }
 
 
@@ -3476,10 +3472,6 @@ WriteFile(const char *filename) const
   else if (!strncmp(input_extension, ".png", 4)) return WritePNGFile(filename);
   else if (!strncmp(input_extension, ".grd", 4)) return WriteGridFile(filename);
   else return WriteImageFile(filename);
-
-  // Should never get here
-  RNFail("Unrecognized image file extension\n");
-  return 0;
 }
 
 
