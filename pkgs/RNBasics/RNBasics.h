@@ -34,12 +34,6 @@
 
 
 
-/* Stream i/o include files */
-
-#include "RNBasics/RNStream.h"
-
-
-
 /* File management include files */
 
 #include "RNBasics/RNFile.h"

@@ -17,7 +17,7 @@ CCSRCS=$(NAME).cpp \
 	RNSvd.cpp RNIntval.cpp RNScalar.cpp \
  	RNType.cpp \
  	RNFlags.cpp \
-        RNStream.cpp RNFile.cpp RNMem.cpp \
+        RNFile.cpp RNMem.cpp \
 	RNError.cpp \
 	RNBase.cpp \
         json.cpp
