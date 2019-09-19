@@ -610,8 +610,8 @@ WriteValues(const char *filename) const
       char *extension = strrchr(name, '.');
       if (extension) { *extension = '\0'; }
       else extension = (char *) ".val";
-      char basename[512];
-      strncpy(basename, name, 511);
+      char basename[1024];
+      strncpy(basename, name, 1023);
       sprintf(name, "%s_%d.%s", basename, i, extension);
     }
 
