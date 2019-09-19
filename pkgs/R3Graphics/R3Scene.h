@@ -76,10 +76,10 @@ public:
   void RemoveTexture(R2Texture *texture);
   void InsertReferencedScene(R3Scene *referenced_scene);
   void RemoveReferencedScene(R3Scene *referenced_scene);
-  void InsertInfo(const char *key, const char *info);
-  void ReplaceInfo(const char *key, const char *info);
+  void InsertInfo(const char *key, const char *value);
+  void ReplaceInfo(const char *key, const char *value);
   void RemoveInfo(const char *key);
-  void SetCamera(const R3Camera& viewer);
+  void SetCamera(const R3Camera& camera);
   void SetViewport(const R2Viewport& viewport);
   void SetViewer(const R3Viewer& viewer);
   void SetAmbient(const RNRgb& ambient);

@@ -3706,7 +3706,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
     // Parse level attributes
     int level_id = index;
     if (GetJsonObjectMember(json_value, json_level, "valid"))
-      if (!json_value->asString().compare(std::string("0")))  continue;
+      if (json_value->asString() == std::string("0"))  continue;
     if (GetJsonObjectMember(json_value, json_level, "id"))
       level_id = atoi(json_value->asString().c_str());
 
@@ -3734,7 +3734,7 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
         int hideCeiling = 0, hideFloor = 0, hideWalls = 0;
         int isMirrored = 0, state = 0;
         if (GetJsonObjectMember(json_value, json_node, "valid"))
-          if (!json_value->asString().compare(std::string("0")))  continue;
+          if (json_value->asString() == std::string("0"))  continue;
         if (GetJsonObjectMember(json_value, json_node, "id"))
           strncpy(node_id, json_value->asString().c_str(), 1023);
         if (GetJsonObjectMember(json_value, json_node, "type")) 
@@ -3742,15 +3742,15 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
         if (GetJsonObjectMember(json_value, json_node, "modelId"))
           strncpy(modelId, json_value->asString().c_str(), 1023);
         if (GetJsonObjectMember(json_value, json_node, "hideCeiling")) 
-          if (!json_value->asString().compare(std::string("1"))) hideCeiling = 1;
+          if (json_value->asString() == std::string("1")) hideCeiling = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideFloor")) 
-          if (!json_value->asString().compare(std::string("1"))) hideFloor = 1;
+          if (json_value->asString() == std::string("1")) hideFloor = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideWalls")) 
-          if (!json_value->asString().compare(std::string("1"))) hideWalls = 1;
+          if (json_value->asString() == std::string("1")) hideWalls = 1;
         if (GetJsonObjectMember(json_value, json_node, "isMirrored")) 
-          if (!json_value->asString().compare(std::string("1"))) isMirrored = 1;
+          if (json_value->asString() == std::string("1")) isMirrored = 1;
         if (GetJsonObjectMember(json_value, json_node, "state")) 
-          if (!json_value->asString().compare(std::string("1"))) state = 1;
+          if (json_value->asString() == std::string("1")) state = 1;
 
         // Parse node transformation
         R3Affine transformation = R3identity_affine;
