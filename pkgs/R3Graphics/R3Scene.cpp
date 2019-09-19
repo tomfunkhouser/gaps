@@ -2999,14 +2999,14 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
   }
 
   // Extract base name
-  char basename[4096] = { '\0' };
+  char basename[1024] = { '\0' };
   const char *startp = strrchr(filename, '/');
   if (!startp) startp = filename;
   else startp++;
   const char *endp = strrchr(filename, '.');
   if (!endp) endp = startp + strlen(startp);
   int basename_length = endp - startp;
-  if (basename_length > 4095) basename_length = 4095;
+  if (basename_length > 1023) basename_length = 1023;
   strncpy(basename, startp, basename_length);
 
   // Read scene
@@ -3183,7 +3183,7 @@ ReadParseFile(const char *filename, R3SceneNode *parent_node)
   int line_number = 0;
   int assignment_index = 0;
   RNArray<R3Shape *> shapes;
-  char mesh_directory[2048] = { '\0' };
+  char mesh_directory[1024] = { '\0' };
   while (fgets(buffer, 2048, fp)) {
     // Check line
     line_number++;
