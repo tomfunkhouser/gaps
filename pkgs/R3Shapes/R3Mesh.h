@@ -1173,7 +1173,7 @@ inline void R3Mesh::
 SetName(const char *name)
 {
   // Copy name
-  strncpy(this->name, name, R3_MESH_NAME_LENGTH);
+  strncpy(this->name, name, R3_MESH_NAME_LENGTH-1);
 }
 
 

@@ -1382,8 +1382,8 @@ WriteAsciiName(FILE *fp, const char *name)
 {
   // Copy name
   char buffer[1024];
-  if (name) strncpy(buffer, name, 1024);
-  else strncpy(buffer, "None", 1024);
+  if (name) strncpy(buffer, name, 1023);
+  else strncpy(buffer, "None", 1023);
 
   // Replace ' ' with '+'
   char *bufferp = buffer;
@@ -2617,7 +2617,7 @@ WriteTianqiangFile(const char *filename)
   
   // Get scene name
   char scene_name_buffer[4096];
-  strncpy(scene_name_buffer, filename, 4096);
+  strncpy(scene_name_buffer, filename, 4095);
   char *scene_name = strrchr(scene_name_buffer, '.');
   if (scene_name) *scene_name = '\0';
   scene_name = strrchr(scene_name_buffer, '/');

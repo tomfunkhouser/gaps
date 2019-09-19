@@ -605,11 +605,13 @@ WriteValues(const char *filename) const
 
     // Determine file name
     char name[1024];
-    strcpy(name, filename);
+    strncpy(name, filename, 1023);
     if (NProperties() > 1) {
       char *extension = strrchr(name, '.');
       if (extension) { *extension = '\0'; }
       else extension = (char *) ".val";
+      char basename[512];
+      strncpy(basename, name, 511);
       sprintf(name, "%s_%d.%s", name, i, extension);
     }
 

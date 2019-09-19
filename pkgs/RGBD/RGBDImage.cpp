@@ -1706,7 +1706,7 @@ SetDepthFilename(const char *filename)
   // Set name
   if (!name && filename) {
     char buffer[1024];
-    strncpy(buffer, filename, 1024);
+    strncpy(buffer, filename, 1023);
     char *startp = strrchr(buffer, '/');
     if (!startp) startp = buffer;
     char *endp = strrchr(startp, '.');
@@ -1728,7 +1728,7 @@ SetCategoryFilename(const char *filename)
   // Set name
   if (!name && filename) {
     char buffer[1024];
-    strncpy(buffer, filename, 1024);
+    strncpy(buffer, filename, 1023);
     char *startp = strrchr(buffer, '/');
     if (!startp) startp = buffer;
     char *endp = strrchr(startp, '.');
@@ -1750,7 +1750,7 @@ SetInstanceFilename(const char *filename)
   // Set name
   if (!name && filename) {
     char buffer[1024];
-    strncpy(buffer, filename, 1024);
+    strncpy(buffer, filename, 1023);
     char *startp = strrchr(buffer, '/');
     if (!startp) startp = buffer;
     char *endp = strrchr(startp, '.');
