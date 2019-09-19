@@ -1046,9 +1046,9 @@ static int
 ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray<R3Material *> *returned_materials)
 {
   // Open file
-  char filename[1024];
+  char filename[2048];
   if (dirname) sprintf(filename, "%s/%s", dirname, mtlname);
-  else strncpy(filename, mtlname, 1023);
+  else strncpy(filename, mtlname, 2047);
   FILE *fp = fopen(filename, "r");
   if (!fp) {
     RNFail("Unable to open file %s", filename);
@@ -1236,9 +1236,9 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
 
       // Set texture
       if (material) {
-        char texture_filename[1024];
+        char texture_filename[2048];
         if (dirname) sprintf(texture_filename, "%s/%s", dirname, texture_name);
-        if (!dirname || !RNFileExists(texture_filename)) strncpy(texture_filename, texture_name, 1023);
+        if (!dirname || !RNFileExists(texture_filename)) strncpy(texture_filename, texture_name, 2047);
         R2Texture *texture = NULL;
         if (!texture_symbol_table.Find(texture_filename, &texture)) {
           R2Image *image = new R2Image();
@@ -1566,9 +1566,9 @@ static int
 WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
 {
   // Open file
-  char filename[1024];
+  char filename[2048];
   if (dirname) sprintf(filename, "%s/%s", dirname, mtlname);
-  else strncpy(filename, mtlname, 1023);
+  else strncpy(filename, mtlname, 2047);
   FILE *fp = fopen(filename, "w");
   if (!fp) {
     RNFail("Unable to open file %s", filename);
@@ -2906,7 +2906,7 @@ ReadSupportHierarchyFile(const char *filename, R3SceneNode *parent_node)
       nodes.Insert(node);
 
       // Read obj file
-      char model_filename[1024];
+      char model_filename[2048];
       sprintf(model_filename, "../models/%s.obj", model_name);
       if (!ReadObj(this, node, model_filename)) return 0;
     }
@@ -3126,7 +3126,7 @@ ReadGrammarHierarchyFile(const char *filename, R3SceneNode *parent_node)
           // R3SceneNode *node = new R3SceneNode(this);
           // node->SetName(node_name);
           // current_node->InsertChild(node);
-          char model_filename[1024];
+          char model_filename[2048];
           sprintf(model_filename, "models/%s/%d.off", basename, model_index);
           R3TriangleArray *shape = ReadMesh(model_filename);
           if (shape) {
@@ -3490,7 +3490,7 @@ ParseSUNCGMaterials(R3Scene *scene,
       // Create output texture
       R2Texture *output_texture = NULL;
       if (*texture_name) {
-        char texture_filename[1024];
+        char texture_filename[2048];
         const char *texture_directory = "../../texture";
         sprintf(texture_filename, "%s/%s.png", texture_directory, texture_name);
         if (!RNFileExists(texture_filename)) sprintf(texture_filename, "%s/%s.jpg", texture_directory, texture_name);
