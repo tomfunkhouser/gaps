@@ -612,7 +612,7 @@ WriteValues(const char *filename) const
       else extension = (char *) ".val";
       char basename[512];
       strncpy(basename, name, 511);
-      sprintf(name, "%s_%d.%s", name, i, extension);
+      sprintf(name, "%s_%d.%s", basename, i, extension);
     }
 
     // Open file
