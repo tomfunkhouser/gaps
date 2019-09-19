@@ -3233,7 +3233,7 @@ ReadBinaryRawSizeFile(const char *filename, int& xres, int& yres, int& zres, cha
   xres = values[0];
   yres = values[1];
   zres = values[2];
-  strncpy(format, "Double64", 2048);
+  strncpy(format, "Double64", 2047);
 
   // Return success
   return 1;
@@ -3268,7 +3268,7 @@ ReadAsciiRawSizeFile(const char *filename, int& xres, int& yres, int& zres, char
   // Parse format
   char *token = strtok(buffer, "(");
   if (!token) { RNFail("Error parsing type name in size file %s", filename); return 0; }
-  strncpy(format, token, 2048);
+  strncpy(format, token, 2047);
 
   // Parse xres
   token = strtok(NULL, ",)");
@@ -3350,17 +3350,17 @@ ReadRawFile(const char *filename)
 {
   // Get size file name
   char size_name[2048];
-  strncpy(size_name, filename, 2048);
+  strncpy(size_name, filename, 2047);
   char *ext = strrchr(size_name, '.');
   if (ext) *ext = '\0';
-  strncat(size_name, ".size", 2048);
+  strncat(size_name, ".size", 2047);
 
   // Get transformation file name
   char transformation_name[2048];
-  strncpy(transformation_name, filename, 2048);
+  strncpy(transformation_name, filename, 2047);
   ext = strrchr(transformation_name, '.');
   if (ext) *ext = '\0';
-  strncat(transformation_name, ".xf", 2048);
+  strncat(transformation_name, ".xf", 2047);
 
   // Read size file
   char format[2048];
@@ -3549,17 +3549,17 @@ WriteRawFile(const char *filename, const char *format) const
 {
   // Get size file name
   char size_name[2048];
-  strncpy(size_name, filename, 2048);
+  strncpy(size_name, filename, 2047);
   char *ext = strrchr(size_name, '.');
   if (ext) *ext = '\0';
-  strncat(size_name, ".size", 2048);
+  strncat(size_name, ".size", 2047);
 
   // Get transformation file name
   char transformation_name[2048];
-  strncpy(transformation_name, filename, 2048);
+  strncpy(transformation_name, filename, 2047);
   ext = strrchr(transformation_name, '.');
   if (ext) *ext = '\0';
-  strncat(transformation_name, ".xf", 2048);
+  strncat(transformation_name, ".xf", 2047);
 
   // Write size file
   if (!WriteRawSizeFile(size_name, grid_resolution[0], grid_resolution[1], grid_resolution[2], format)) return 0;

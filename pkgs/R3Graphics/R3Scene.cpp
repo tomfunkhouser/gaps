@@ -1048,7 +1048,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
   // Open file
   char filename[1024];
   if (dirname) sprintf(filename, "%s/%s", dirname, mtlname);
-  else strncpy(filename, mtlname, 1024);
+  else strncpy(filename, mtlname, 1023);
   FILE *fp = fopen(filename, "r");
   if (!fp) {
     RNFail("Unable to open file %s", filename);
@@ -1238,7 +1238,7 @@ ReadObjMtlFile(R3Scene *scene, const char *dirname, const char *mtlname, RNArray
       if (material) {
         char texture_filename[1024];
         if (dirname) sprintf(texture_filename, "%s/%s", dirname, texture_name);
-        if (!dirname || !RNFileExists(texture_filename)) strncpy(texture_filename, texture_name, 1024);
+        if (!dirname || !RNFileExists(texture_filename)) strncpy(texture_filename, texture_name, 1023);
         R2Texture *texture = NULL;
         if (!texture_symbol_table.Find(texture_filename, &texture)) {
           R2Image *image = new R2Image();
@@ -1525,7 +1525,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *filename, RNArray<R3Mater
   // Determine directory name (for texture image files)
   char *dirname = NULL;
   char buffer[1024];
-  strncpy(buffer, filename, 1024);
+  strncpy(buffer, filename, 1023);
   char *endp = strrchr(buffer, '/');
   if (!endp) endp = strrchr(buffer, '\\');
   if (endp) { *endp = '\0'; dirname = buffer; }
@@ -1568,7 +1568,7 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
   // Open file
   char filename[1024];
   if (dirname) sprintf(filename, "%s/%s", dirname, mtlname);
-  else strncpy(filename, mtlname, 1024);
+  else strncpy(filename, mtlname, 1023);
   FILE *fp = fopen(filename, "w");
   if (!fp) {
     RNFail("Unable to open file %s", filename);
@@ -1760,7 +1760,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   // Determine directory name (for texture image files)
   char *dirname = NULL;
   char buffer[1024];
-  strncpy(buffer, filename, 1024);
+  strncpy(buffer, filename, 1023);
   char *endp = strrchr(buffer, '/');
   if (!endp) endp = strrchr(buffer, '\\');
   if (!endp) strcpy(buffer, ".");
@@ -1770,7 +1770,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   char mtl_filename[1024];
   const char *startp = strrchr(filename, '/');
   startp = (startp) ? startp+1 : filename;
-  strncpy(mtl_filename, startp, 1024);
+  strncpy(mtl_filename, startp, 1023);
   int slen = strlen(mtl_filename);
   if (slen > 4) mtl_filename[slen-4] = '\0';
   strncat(mtl_filename, ".mtl", 1024-strlen(mtl_filename));
@@ -3460,11 +3460,11 @@ ParseSUNCGMaterials(R3Scene *scene,
     if (!GetJsonArrayEntry(json_material, json_materials, index)) continue; 
     if (json_material->type() != Json::objectValue) continue;
     if (GetJsonObjectMember(json_value, json_material, "name"))
-      strncpy(material_name, json_value->asString().c_str(), 1024);
+      strncpy(material_name, json_value->asString().c_str(), 1023);
     if (GetJsonObjectMember(json_value, json_material, "texture")) 
-      strncpy(texture_name, json_value->asString().c_str(), 1024);
+      strncpy(texture_name, json_value->asString().c_str(), 1023);
     if (GetJsonObjectMember(json_value, json_material, "diffuse")) 
-      strncpy(diffuse_string, json_value->asString().c_str(), 1024);
+      strncpy(diffuse_string, json_value->asString().c_str(), 1023);
 
     // Get input material
     R3Material *input_material = (input_materials.NEntries() > (int) index) ? input_materials.Kth(index) : NULL;
@@ -3636,9 +3636,9 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
 
   // Get/check version
   char version[1024];
-  strncpy(version, "suncg@1.0.0", 1024);
+  strncpy(version, "suncg@1.0.0", 1023);
   if (GetJsonObjectMember(json_value, &json_root, "version", Json::stringValue)) {
-    strncpy(version, json_value->asString().c_str(), 1024);
+    strncpy(version, json_value->asString().c_str(), 1023);
     if (strncmp(version, "suncg", 5)) {
       RNFail("Unrecognized version %s in SUNCG file %s\n", version, filename);
       return 0;
@@ -3647,9 +3647,9 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
   
   // Get scene id
   char scene_id[1024];
-  strncpy(scene_id, "NoName", 1024);
+  strncpy(scene_id, "NoName", 1023);
   if (GetJsonObjectMember(json_value, &json_root, "id", Json::stringValue)) {
-    strncpy(scene_id, json_value->asString().c_str(), 1024);
+    strncpy(scene_id, json_value->asString().c_str(), 1023);
   }
   
   // Get scene up direction
@@ -3736,11 +3736,11 @@ ReadSUNCGFile(const char *filename, R3SceneNode *parent_node)
         if (GetJsonObjectMember(json_value, json_node, "valid"))
           if (!json_value->asString().compare(std::string("0")))  continue;
         if (GetJsonObjectMember(json_value, json_node, "id"))
-          strncpy(node_id, json_value->asString().c_str(), 1024);
+          strncpy(node_id, json_value->asString().c_str(), 1023);
         if (GetJsonObjectMember(json_value, json_node, "type")) 
-          strncpy(node_type, json_value->asString().c_str(), 1024);
+          strncpy(node_type, json_value->asString().c_str(), 1023);
         if (GetJsonObjectMember(json_value, json_node, "modelId"))
-          strncpy(modelId, json_value->asString().c_str(), 1024);
+          strncpy(modelId, json_value->asString().c_str(), 1023);
         if (GetJsonObjectMember(json_value, json_node, "hideCeiling")) 
           if (!json_value->asString().compare(std::string("1"))) hideCeiling = 1;
         if (GetJsonObjectMember(json_value, json_node, "hideFloor")) 
@@ -4001,14 +4001,14 @@ WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
   else if (!strncmp(node->Name(), "Ground#", 7) || !strncmp(node->Name(), "Room#", 5)) {
     // Get id and type
     char nodetype[4096];
-    strncpy(nodetype, node->Name(), 4096);
+    strncpy(nodetype, node->Name(), 4095);
     char *id = strchr(nodetype, '#');
     if (!id) return 0;
     else *(id++) = '\0';
 
     // Get modelId
     char modelId[4096], buffer[4096];
-    strncpy(buffer, id, 4096);
+    strncpy(buffer, id, 4095);
     char *level = strtok(buffer, "_\n");
     if (!level) return 0;
     char *idx = strtok(NULL, "\n");
@@ -4054,7 +4054,7 @@ WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
   else if (!strncmp(node->Name(), "Object#", 7)) {
     // Get id and type
     char nodetype[4096];
-    strncpy(nodetype, node->Name(), 4096);
+    strncpy(nodetype, node->Name(), 4095);
     char *id = strchr(nodetype, '#');
     if (!id) return 0;
     else *(id++) = '\0';
@@ -4066,7 +4066,7 @@ WriteSUNCGNode(const R3Scene *scene, const R3SceneNode *node, FILE *fp)
     R3Scene *referenced_scene = reference->ReferencedScene();
     if (!referenced_scene->Name()) return 0;
     if (strncmp(referenced_scene->Root()->Name(), "Model#", 6)) return 0;
-    strncpy(modelId, &(referenced_scene->Root()->Name()[6]), 4096);
+    strncpy(modelId, &(referenced_scene->Root()->Name()[6]), 4095);
 
     // Write json
     const R3Box& b = node->WorldBBox();
@@ -4396,7 +4396,7 @@ ReadSUNCGModelFile(const char *filename)
       // Determine if node name matches model_id
       if (node->Name()) {
         char node_name[1024];
-        strncpy(node_name, node->Name(), 1024);
+        strncpy(node_name, node->Name(), 1023);
         char *model_name = strchr(node_name, '#');
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
@@ -4412,7 +4412,7 @@ ReadSUNCGModelFile(const char *filename)
         R3SceneNode *root = referenced_scene->Root();
         if (!root->Name()) continue;
         char node_name[1024];
-        strncpy(node_name, root->Name(), 1024);
+        strncpy(node_name, root->Name(), 1023);
         char *model_name = strchr(node_name, '#');
         if (model_name) { *model_name = '\0'; model_name++; }
         else model_name = node_name;
