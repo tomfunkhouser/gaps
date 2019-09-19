@@ -710,7 +710,7 @@ int RGBDResampleColorImage(R2Image& image, R3Matrix& intrinsics_matrix, int xres
   // Compute scale factors
   double xscale = (double) image.Width() / (double) xres;
   double yscale = (double) image.Height() / (double) yres;
-  if (RNIsNotEqual(xscale, yscale, 0.01)) {
+  if (RNIsNotEqual(yscale/xscale, 1.0, 0.05)) {
     RNFail("Warning: anisotropic scaling of color image by factor %g\n", yscale/xscale);
   }
   
