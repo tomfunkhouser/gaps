@@ -426,7 +426,10 @@ CaptureInteger(R2Grid& image)
   // Allocate pixel buffer
   unsigned char *pixels = new unsigned char [ 3 * width * height ];
 
-  // Read pixels
+  // Set packing parameters for glReadPixels
+  if ((width % 4) != 0) glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+  // Run main loop  -- never returns   // Read pixels
   glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
   // Fill image
@@ -468,6 +471,9 @@ CaptureScalar(R2Grid& image, RNScalar max_value = 65535)
 {
   // Allocate pixel buffer
   float *pixels = new float [ width * height ];
+
+  // Set packing parameters for glReadPixels
+  if ((width % 4) != 0) glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
   // Read blue channel
   glReadPixels(0, 0, width, height, GL_BLUE, GL_FLOAT, pixels);
@@ -792,7 +798,7 @@ void Redraw(void)
   }
 
   // Get camera, name, and node for next image
-  char name[1024];
+  char name[64];
   sprintf(name, "%06d", next_image_index); 
   R3Camera *camera = cameras.Kth(next_image_index);
   next_image_index++;

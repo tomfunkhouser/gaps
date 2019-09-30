@@ -416,6 +416,9 @@ Capture(void)
   assert(height >= viewport[3]);
   assert(pixels);
 
+  // Set packing parameters for glReadPixels
+  if ((ncomponents != 4) && ((width % 4) != 0)) glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
   // Read pixels from frame buffer 
   switch (ncomponents) {
   case 1: glReadPixels(0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels); break;
@@ -423,6 +426,9 @@ Capture(void)
   case 3: glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels); break;
   case 4: glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels); break;
   }
+
+  // Reset packing parameters for glReadPixels
+  if ((ncomponents != 4) && ((width % 4) != 0)) glPixelStorei(GL_PACK_ALIGNMENT, 4);
 }
 
 

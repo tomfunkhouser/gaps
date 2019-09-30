@@ -487,6 +487,9 @@ WriteCameras(void)
 static int
 CaptureColor(R2Image& image)
 {
+  // Set packing parameters for glReadPixels
+  if ((width % 4) != 0) glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
   // Capture image 
   image.Capture();
 
@@ -500,6 +503,9 @@ CaptureColor(R2Image& image)
 static int
 CaptureScalar(R2Grid& scalar_image)
 {
+  // Set packing parameters for glReadPixels
+  if ((width % 4) != 0) glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
   // Capture rgb pixels
   unsigned char *pixels = new unsigned char [ 3 * width * height ];
   glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
