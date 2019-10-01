@@ -651,24 +651,6 @@ WriteConfigurationFile(const char *filename, int write_every_kth_image) const
   if (instance_directory) fprintf(fp, "instance_directory %s\n", instance_directory);
   if (texture_directory) fprintf(fp, "texture_directory %s\n", texture_directory);
   
-  // Write image resolution
-  if (NImages() > 0) {
-    if ((Image(0)->NPixels(RN_X) > 0) && (Image(0)->NPixels(RN_Y) > 0)) {
-      fprintf(fp, "depth_resolution %d %d\n", Image(0)->NPixels(RN_X), Image(0)->NPixels(RN_Y));
-    }
-  }
-
-  // Write image intrinsics
-  if (NImages() > 0) {
-    R3Matrix m = Image(0)->Intrinsics();
-    if (!m.IsZero()) {
-      fprintf(fp, "intrinsics_matrix  %g %g %g  %g %g %g  %g %g %g\n",
-        m[0][0], m[0][1], m[0][2],
-        m[1][0], m[1][1], m[1][2],
-        m[2][0], m[2][1], m[2][2]);
-    }
-  }
-         
   // Write blank line
   fprintf(fp, "\n");
 
@@ -700,10 +682,37 @@ WriteConfigurationFile(const char *filename, int write_every_kth_image) const
   fprintf(fp, "\n");
 
   // Write images
+  int image_width = 0;
+  int image_height = 0;
+  R3Matrix intrinsics_matrix = R3identity_matrix;
   for (int i = 0; i < NImages(); i++) {
     RGBDImage *image = Image(i);
     if ((write_every_kth_image > 1) && ((i % write_every_kth_image) != 0)) continue;
+
+    // Write image dimensions
+    if ((image->NPixels(RN_X) > 0) && (image->NPixels(RN_Y) > 0)) {
+      if ((image->NPixels(RN_X) != image_width) || (image->NPixels(RN_Y) != image_height)) {
+        fprintf(fp, "depth_resolution %d %d\n", image->NPixels(RN_X), image->NPixels(RN_Y));
+        image_width = image->NPixels(RN_X);
+        image_height = image->NPixels(RN_Y);
+      }
+    }
+
+    // Write intrinsics matrix
+    if (!image->Intrinsics().IsZero()) {
+      if (image->Intrinsics() != intrinsics_matrix) {
+        intrinsics_matrix = image->Intrinsics();
+        fprintf(fp, "intrinsics_matrix  %g %g %g  %g %g %g  %g %g %g\n",
+          intrinsics_matrix[0][0], intrinsics_matrix[0][1], intrinsics_matrix[0][2],
+          intrinsics_matrix[1][0], intrinsics_matrix[1][1], intrinsics_matrix[1][2],
+          intrinsics_matrix[2][0], intrinsics_matrix[2][1], intrinsics_matrix[2][2]);
+      }
+    }
+
+    // Write images
     // if (!image->WriteChannels()) return 0;
+
+    // Write image with extrinsics
     R4Matrix m = image->CameraToWorld().Matrix();
     const char *depth_filename = (image->DepthFilename()) ? image->DepthFilename() : "-";
     const char *color_filename = (image->ColorFilename()) ? image->ColorFilename() : "-";
