@@ -4353,8 +4353,27 @@ CreateBox(const R3Box& box)
 void R3Mesh::
 CreateOrientedBox(const R3OrientedBox& box)
 {
-  // Create mesh elements for an oriented box and add to mesh
-  RNAbort("Not implemented");
+  // Create oriented box 
+  R3MeshVertex *v1 = CreateVertex(box.Corner(RN_NNP_OCTANT));
+  R3MeshVertex *v2 = CreateVertex(box.Corner(RN_PNP_OCTANT));
+  R3MeshVertex *v3 = CreateVertex(box.Corner(RN_NPP_OCTANT));
+  R3MeshVertex *v4 = CreateVertex(box.Corner(RN_PPP_OCTANT));
+  R3MeshVertex *v5 = CreateVertex(box.Corner(RN_NPN_OCTANT));
+  R3MeshVertex *v6 = CreateVertex(box.Corner(RN_PPN_OCTANT));
+  R3MeshVertex *v7 = CreateVertex(box.Corner(RN_NNN_OCTANT));
+  R3MeshVertex *v8 = CreateVertex(box.Corner(RN_PNN_OCTANT));
+  CreateFace(v1, v2, v4);
+  CreateFace(v1, v4, v3);
+  CreateFace(v3, v4, v6);
+  CreateFace(v3, v6, v5);
+  CreateFace(v5, v6, v8);
+  CreateFace(v5, v8, v7);
+  CreateFace(v7, v8, v2);
+  CreateFace(v7, v2, v1);
+  CreateFace(v2, v8, v6);
+  CreateFace(v2, v6, v4);
+  CreateFace(v7, v1, v3);
+  CreateFace(v7, v3, v5);
 }
 
 
