@@ -491,7 +491,9 @@ Reset(const R3Point& center,
     radius[1] = radius1;
     radius[2] = radius2;
 
+#if 0
     // Sort axes
+    // This works, but is not always desirable
     R3Vector swap_axis;
     RNScalar swap_radius;
     if (radius[1] > radius[0]) {
@@ -509,10 +511,11 @@ Reset(const R3Point& center,
       axis[1] = axis[2]; radius[1] = radius[2];
       axis[2] = swap_axis; radius[2] = swap_radius;
     }
-
+    
     // Ensure right-handed coordinate system
     axis[2] = axis[0] % axis[1];
     axis[2].Normalize();
+#endif
 
     // Set coordinate system
     cs.Reset(center, R3Triad(axis[0], axis[1], axis[2]));
