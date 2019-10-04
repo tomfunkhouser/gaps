@@ -4438,6 +4438,8 @@ CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing)
   // Create mesh elements for a sphere and add to mesh
   R3Point c = sphere.Centroid();
   RNLength r = sphere.Radius();
+  if (vertex_spacing == 0) vertex_spacing = r/5.0;
+  if (RNIsZero(vertex_spacing)) return;
   
   // Start with an icosahedron
   R3Mesh tmp;
@@ -4486,7 +4488,6 @@ CreateEllipsoid(const R3Ellipsoid& ellipsoid, RNLength vertex_spacing)
   // Create mesh elements for a sphere of suitable radius
   R3Sphere sphere(R3zero_point, max_radius);
   CreateSphere(sphere, vertex_spacing);
-  printf("E %d\n", NVertices() - saved_nvertices);
 
   // Map vertices from unit sphere to ellipsoid
   for (int i = saved_nvertices; i < NVertices(); i++) {
