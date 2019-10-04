@@ -4381,6 +4381,11 @@ CreateOrientedBox(const R3OrientedBox& box)
 void R3Mesh::
 CreateIcosahedron(const R3Sphere& sphere)
 {
+  // Create mesh elements for a sphere and add to mesh
+  int saved_nvertices = NVertices();
+  R3Point c = sphere.Centroid();
+  RNLength r = sphere.Radius();
+  
   // Create mesh elements for a icosahedron and add to mesh
   R3MeshVertex *v0 = CreateVertex(R3Point(0, -0.5257311, 0.8506508));
   R3MeshVertex *v1 = CreateVertex(R3Point(0, 0.5257311, 0.8506508));
@@ -4415,11 +4420,14 @@ CreateIcosahedron(const R3Sphere& sphere)
   CreateFace(v9, v2, v5);
   CreateFace(v7, v2, v11);
 
-  // Transform mesh
-  R3Affine xform = R3identity_affine;
-  if (sphere.Center() != R3zero_point) xform.Translate(sphere.Center().Vector());
-  if (sphere.Radius() != 1) xform.Scale(sphere.Radius());
-  Transform(xform);
+  // Map vertices to sphere
+  for (int i = saved_nvertices; i < NVertices(); i++) {
+    R3MeshVertex *v = Vertex(i);
+    R3Point p = VertexPosition(v);
+    RNLength d = p.Vector().Length();
+    if (RNIsPositive(d)) p = c+(r/d)*p;
+    SetVertexPosition(v, p);
+  }
 }
     
 
@@ -4428,30 +4436,39 @@ void R3Mesh::
 CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing)
 {
   // Create mesh elements for a sphere and add to mesh
-
+  R3Point c = sphere.Centroid();
+  RNLength r = sphere.Radius();
+  
   // Start with an icosahedron
-  CreateIcosahedron(R3unit_sphere);
+  R3Mesh tmp;
+  tmp.CreateIcosahedron(R3unit_sphere);
 
   // Iteratively refine until reach vertex spacing
-  while (AverageEdgeLength() > vertex_spacing) {
+  while (tmp.AverageEdgeLength() > vertex_spacing) {
     // Subdivide
-    SubdivideFaces();
+    tmp.SubdivideFaces();
 
-    // Push vertices to sphere
-    for (int i = 0; i < NVertices(); i++) {
-      R3MeshVertex *v = Vertex(i);
-      R3Point p = VertexPosition(v);
+    // Push vertices to unit sphere
+    for (int i = 0; i < tmp.NVertices(); i++) {
+      R3MeshVertex *v = tmp.Vertex(i);
+      R3Point p = tmp.VertexPosition(v);
       RNLength d = p.Vector().Length();
       if (RNIsPositive(d)) p /= d;
-      SetVertexPosition(v, p);
+      tmp.SetVertexPosition(v, p);
     }
   }
 
-  // Transform mesh
-  R3Affine xform = R3identity_affine;
-  if (sphere.Center() != R3zero_point) xform.Translate(sphere.Center().Vector());
-  if (sphere.Radius() != 1) xform.Scale(sphere.Radius());
-  Transform(xform);
+  // Map vertices from unit sphere to specified sphere
+  for (int i = 0; i < tmp.NVertices(); i++) {
+    R3MeshVertex *v = tmp.Vertex(i);
+    R3Point p = tmp.VertexPosition(v);
+    RNLength d = p.Vector().Length();
+    if (RNIsPositive(d)) p = c+(r/d)*p;
+    tmp.SetVertexPosition(v, p);
+  }
+
+  // Copy into this mesh
+  CreateCopy(tmp);
 }
 
 
@@ -4459,8 +4476,28 @@ CreateSphere(const R3Sphere& sphere, RNLength vertex_spacing)
 void R3Mesh::
 CreateEllipsoid(const R3Ellipsoid& ellipsoid, RNLength vertex_spacing)
 {
-  // Create mesh elements for a ellipsoid and add to mesh
-  RNAbort("Not implemented");
+  // Get info
+  R3Vector radii = ellipsoid.Radii();
+  RNLength max_radius = radii[radii.MaxDimension()];
+  if (RNIsZero(max_radius)) return ;
+  R3Triad axes = ellipsoid.CoordSystem().Axes();
+  int saved_nvertices = NVertices();
+  
+  // Create mesh elements for a sphere of suitable radius
+  R3Sphere sphere(R3zero_point, max_radius);
+  CreateSphere(sphere, vertex_spacing);
+  printf("E %d\n", NVertices() - saved_nvertices);
+
+  // Map vertices from unit sphere to ellipsoid
+  for (int i = saved_nvertices; i < NVertices(); i++) {
+    R3MeshVertex *v = Vertex(i);
+    R3Vector p = VertexPosition(v).Vector();
+    R3Point position = ellipsoid.Center();
+    position += p[0]*(radii[0]/max_radius)*axes[0];
+    position += p[1]*(radii[1]/max_radius)*axes[1];
+    position += p[2]*(radii[2]/max_radius)*axes[2];
+    SetVertexPosition(v, position);
+  }
 }
 
 
