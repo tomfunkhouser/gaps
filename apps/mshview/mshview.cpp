@@ -213,7 +213,7 @@ void GLUTRedraw(void)
       glDisable(GL_LIGHTING);
       glColor3f(0.2, 0.2, 0.2);
       glBegin(GL_LINES);
-      RNScalar radius = 0.02 * mesh->BBox().DiagonalLength();
+      RNScalar radius = 0.01 * mesh->BBox().DiagonalLength();
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         R3Point position = mesh->FaceCentroid(face);
@@ -229,7 +229,7 @@ void GLUTRedraw(void)
       glDisable(GL_LIGHTING);
       glColor3d(0.5, 0.5, 0.5);
       glBegin(GL_LINES);
-      RNScalar radius = 0.005 * mesh->BBox().DiagonalLength();
+      RNScalar radius = 0.0025 * mesh->BBox().DiagonalLength();
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3Point position = mesh->VertexPosition(vertex);

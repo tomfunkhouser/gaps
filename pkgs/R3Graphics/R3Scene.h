@@ -131,6 +131,11 @@ public:
   int ReadSUNCGLightsFile(const char *filename);
   int ReadSUNCGModelFile(const char *filename);
 
+  // OBJ utility functions
+  int WriteObjMtlFile(const char *dirname, const char *mtlname) const;
+  int WriteObj(R3SceneNode *node, const R3Affine& transformation, int &ngroups, int& nvertices, int& nnormals, int& ntexture_coords, FILE *fp) const;
+  int WriteObj(R3SceneNode *node, const char *filename) const;
+
 private:
   R3SceneNode *root;
   RNArray<R3SceneNode *> nodes;

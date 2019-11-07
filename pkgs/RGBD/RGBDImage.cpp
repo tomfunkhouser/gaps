@@ -1367,6 +1367,7 @@ ReadDepthChannel(void)
       }
     }
 
+#if 0
     // Smooth depth image
     if (!configuration || !configuration->DatasetFormat() ||
         (strcmp(configuration->DatasetFormat(), "processed") &&
@@ -1376,7 +1377,8 @@ ReadDepthChannel(void)
       RNScalar xy_sigma = 3 * depth_image.XResolution() / 640.0;
       depth_image.BilateralFilter(xy_sigma, d_sigma_fraction, TRUE);
     }
-
+#endif
+    
     // Resize depth image if necessary
     if ((width > 0) && (height > 0) && ((width != depth_image.XResolution()) || (height != depth_image.YResolution()))) {
       R3Matrix tmp(R3identity_matrix);

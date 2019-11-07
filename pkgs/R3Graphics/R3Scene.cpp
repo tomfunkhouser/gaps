@@ -1562,8 +1562,8 @@ ReadObjFile(const char *filename, R3SceneNode *parent_node)
 
 
 
-static int
-WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
+int R3Scene::
+WriteObjMtlFile(const char *dirname, const char *mtlname) const
 {
   // Open file
   char filename[2048];
@@ -1581,8 +1581,8 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
   fprintf(fp, "\n");
 
   // Write materials
-  for (int i = 0; i < scene->NMaterials(); i++) {
-    R3Material *material = scene->Material(i);  
+  for (int i = 0; i < this->NMaterials(); i++) {
+    R3Material *material = this->Material(i);  
 
     // ??? CHANGE NAME OF MATERIAL SO THAT IT IS UNIQUE ???
     char matname[1024];
@@ -1646,8 +1646,8 @@ WriteObjMtlFile(const R3Scene *scene, const char *dirname, const char *mtlname)
 
 
 
-static int
-WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation, int &ngroups, int& nvertices, int& nnormals, int& ntexture_coords, FILE *fp)
+int R3Scene::
+WriteObj(R3SceneNode *node, const R3Affine& transformation, int &ngroups, int& nvertices, int& nnormals, int& ntexture_coords, FILE *fp) const
 {
   // Write group name
   if (node->Name()) fprintf(fp, "g %s\n", node->Name());
@@ -1745,7 +1745,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
     child_transformation.Transform(child->Transformation());
 
     // Write child
-    if (!WriteObj(scene, child, child_transformation, ngroups, nvertices, nnormals, ntexture_coords, fp)) return 0;
+    if (!WriteObj(child, child_transformation, ngroups, nvertices, nnormals, ntexture_coords, fp)) return 0;
   }
 
   // Return success
@@ -1754,8 +1754,8 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const R3Affine& transformation
 
 
 
-static int 
-WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename) 
+int R3Scene::
+WriteObj(R3SceneNode *node, const char *filename) const
 {
   // Determine directory name (for texture image files)
   char *dirname = NULL;
@@ -1791,7 +1791,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
 
   // Write material file
   fprintf(fp, "mtllib %s\n", mtl_filename);
-  if (!WriteObjMtlFile(scene, dirname, mtl_filename)) {
+  if (!WriteObjMtlFile(dirname, mtl_filename)) {
     RNFail("Unable to write OBJ material file %s\n", mtl_filename);
     fclose(fp);
     return 0;
@@ -1802,7 +1802,7 @@ WriteObj(const R3Scene *scene, R3SceneNode *node, const char *filename)
   int nvertices = 0;
   int nnormals = 0;
   int ntexture_coords = 0;
-  if (!WriteObj(scene, node, node->Transformation(), ngroups, nvertices, nnormals, ntexture_coords, fp)) {
+  if (!WriteObj(node, node->Transformation(), ngroups, nvertices, nnormals, ntexture_coords, fp)) {
     RNFail("Unable to write OBJ file %s\n", filename);
     fclose(fp);
     return 0;
@@ -1824,7 +1824,7 @@ WriteObjFile(const char *filename) const
   ((R3Scene *) this)->RemoveReferences();
 
   // Write obj file
-  return WriteObj(this, root, filename);
+  return WriteObj(root, filename);
 }
 
 

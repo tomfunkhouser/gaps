@@ -1078,8 +1078,12 @@ SelectPoints(R3Mesh *mesh, int selection_method)
   }
 
   // Check if too many points
-  if ((max_points > 0) && (points->NEntries() > max_points)) {
-    points->Truncate(max_points);
+  if (max_points > 0) {
+    while (points->NEntries() > max_points) {
+      int k = RNRandomScalar() * points->NEntries();
+      points->Swap(k, points->NEntries()-1);
+      points->RemoveTail();
+    }
   }
 
   // Print message

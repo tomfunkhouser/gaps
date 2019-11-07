@@ -603,7 +603,7 @@ Normalize(void)
 
 
 void R2Grid::
-FillHoles(void) 
+FillHoles(void)
 {
   // Build Gaussian filter
   RNScalar sigma = 1.5;
@@ -615,42 +615,55 @@ FillHoles(void)
     }
   }
 
-  // Seed queue with border unknown values 
-  RNQueue<RNScalar *> queue;
-  const RNScalar on_queue_value = -46573822;
-  for (int x = 0; x < grid_resolution[0]; x++) {
-    for (int y = 0; y < grid_resolution[1]; y++) {
-      if (GridValue(x, y) == R2_GRID_UNKNOWN_VALUE) continue;
-      if (GridValue(x, y) == on_queue_value) continue;
+  // Initialize image with heap state
+  int width = XResolution();
+  int height = YResolution();
+  R2Grid heap_image(width, height);
+  RNScalar *heap_values = (RNScalar *) heap_image.GridValues();
 
+  // Seed heap with border unknown values
+  RNHeap<RNScalar *> heap(0, -1, FALSE);
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      if (GridValue(x, y) == R2_GRID_UNKNOWN_VALUE) continue;
+     
       // Push neighbors with unknown values onto queue
       if ((x > 0) && (GridValue(x-1, y) == R2_GRID_UNKNOWN_VALUE)) {
-        queue.Push(&grid_values[y*grid_row_size+(x-1)]);
-        SetGridValue(x-1, y, on_queue_value);
+        RNScalar *heap_value = &heap_values[y*width+(x-1)];
+        *heap_value += 1;
+        if (*heap_value < 1.5) heap.Push(heap_value);
+        else heap.Update(heap_value);
       }
       if ((y > 0) && (GridValue(x, y-1) == R2_GRID_UNKNOWN_VALUE)) {
-        queue.Push(&grid_values[(y-1)*grid_row_size+x]);
-        SetGridValue(x, y-1, on_queue_value);
+        RNScalar *heap_value = &heap_values[(y-1)*width+x];
+        *heap_value += 1;
+        if (*heap_value < 1.5) heap.Push(heap_value);
+        else heap.Update(heap_value);
       }
-      if ((x < grid_resolution[0]-1) && (GridValue(x+1, y) == R2_GRID_UNKNOWN_VALUE)) {
-        queue.Push(&grid_values[y*grid_row_size+(x+1)]);
-        SetGridValue(x+1, y, on_queue_value);
+      if ((x < width-1) && (GridValue(x+1, y) == R2_GRID_UNKNOWN_VALUE)) {
+        RNScalar *heap_value = &heap_values[y*width+(x+1)];
+        *heap_value += 1;
+        if (*heap_value < 1.5) heap.Push(heap_value);
+        else heap.Update(heap_value);
       }
-      if ((y < grid_resolution[1]-1) && (GridValue(x, y+1) == R2_GRID_UNKNOWN_VALUE)) {
-        queue.Push(&grid_values[(y+1)*grid_row_size+x]);
-        SetGridValue(x, y+1, on_queue_value);
+      if ((y < height-1) && (GridValue(x, y+1) == R2_GRID_UNKNOWN_VALUE)) {
+        RNScalar *heap_value = &heap_values[(y+1)*width+x];
+        *heap_value += 1;
+        if (*heap_value < 1.5) heap.Push(heap_value);
+        else heap.Update(heap_value);
       }
     }
   }
 
   // Iteratively update border unknown values with blur of immediate neighbors
-  while (!queue.IsEmpty()) {
-    // Pop grid cell from queue
-    RNScalar *valuep = queue.Pop();
-    assert(*valuep == on_queue_value);
-    int index = valuep - grid_values;
-    assert((index >= 0) && (index < grid_size));
-    int x, y; IndexToIndices(index, x, y);
+  while (!heap.IsEmpty()) {
+    // Pop grid cell from heap
+    RNScalar *heap_value = heap.Pop();
+    assert(*heap_value > 0);
+    int index = heap_value - heap_values;
+    assert((index >= 0) && (index < heap_image.NEntries()));
+    int x, y; heap_image.IndexToIndices(index, x, y);
+    assert(GridValue(index) == R2_GRID_UNKNOWN_VALUE);
 
     // Update value
     RNScalar sum = 0;
@@ -659,11 +672,10 @@ FillHoles(void)
       for (int j = -2; j <= 2; j++) {
         int nx = x + i;
         int ny = y + j;
-        if ((nx < 0) || (nx >= grid_resolution[0])) continue;
-        if ((ny < 0) || (ny >= grid_resolution[1])) continue;
+        if ((nx < 0) || (nx >= width)) continue;
+        if ((ny < 0) || (ny >= height)) continue;
         RNScalar value = GridValue(nx, ny);
         if (value == R2_GRID_UNKNOWN_VALUE) continue;
-        if (value == on_queue_value) continue;
         RNScalar w = filter[i+2][j+2];
         sum += w * value;
         weight += w;
@@ -671,25 +683,33 @@ FillHoles(void)
     }
 
     // Divide by total weight
-    if (weight > 0) *valuep = sum / weight;
-    else RNFail("Zero weight in fill holes\n"); 
+    if (weight > 0) SetGridValue(x, y, sum / weight);
+    else RNFail("Zero weight in fill holes\n");
 
-    // Push neighbors with unknown values onto queue
+    // Push neighbors with unknown values onto heap
     if ((x > 0) && (GridValue(x-1, y) == R2_GRID_UNKNOWN_VALUE)) {
-      queue.Push(&grid_values[y*grid_row_size+(x-1)]);
-      SetGridValue(x-1, y, on_queue_value);
+      RNScalar *heap_value = &heap_values[y*width+(x-1)];
+      *heap_value += 1;
+      if (*heap_value < 1.5) heap.Push(heap_value);
+      else heap.Update(heap_value);
     }
     if ((y > 0) && (GridValue(x, y-1) == R2_GRID_UNKNOWN_VALUE)) {
-      queue.Push(&grid_values[(y-1)*grid_row_size+x]);
-      SetGridValue(x, y-1, on_queue_value);
+      RNScalar *heap_value = &heap_values[(y-1)*width+x];
+      *heap_value += 1;
+      if (*heap_value < 1.5) heap.Push(heap_value);
+      else heap.Update(heap_value);
     }
-    if ((x < grid_resolution[0]-1) && (GridValue(x+1, y) == R2_GRID_UNKNOWN_VALUE)) {
-      queue.Push(&grid_values[y*grid_row_size+(x+1)]);
-      SetGridValue(x+1, y, on_queue_value);
+    if ((x < width-1) && (GridValue(x+1, y) == R2_GRID_UNKNOWN_VALUE)) {
+      RNScalar *heap_value = &heap_values[y*width+(x+1)];
+      *heap_value += 1;
+      if (*heap_value < 1.5) heap.Push(heap_value);
+      else heap.Update(heap_value);
     }
-    if ((y < grid_resolution[1]-1) && (GridValue(x, y+1) == R2_GRID_UNKNOWN_VALUE)) {
-      queue.Push(&grid_values[(y+1)*grid_row_size+x]);
-      SetGridValue(x, y+1, on_queue_value);
+    if ((y < height-1) && (GridValue(x, y+1) == R2_GRID_UNKNOWN_VALUE)) {
+      RNScalar *heap_value = &heap_values[(y+1)*width+x];
+      *heap_value += 1;
+      if (*heap_value < 1.5) heap.Push(heap_value);
+      else heap.Update(heap_value);
     }
   }
 }
