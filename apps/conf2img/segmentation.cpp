@@ -1,168 +1,47 @@
 //////////////////////////////////////////////////////////////////////
+// Spirce file for code that does segmentation of points
+////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////
+// Include files
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {};
+using namespace gaps;
+#include "R3Shapes/R3Shapes.h"
+#include "segmentation.h"
+
+
+
+//////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////
 
-static int min_clusters = 0;
-static int max_clusters = 0;
-static int min_cluster_points = 0;
-static double min_cluster_area = 0;
-static double min_cluster_coverage = 0;
-static double max_cluster_diameter = 16;
-static double max_cluster_primitive_distance = 0.01;
-static double max_cluster_normal_angle = RN_PI / 4.0;
-static double max_cluster_color_difference = 0.5;
-static double max_pair_centroid_distance = 16;
-static double max_pair_primitive_distance = 0.01;
-static double max_pair_normal_angle = RN_PI / 4.0;
-static double max_pair_color_difference = 0.5;
-static double min_pair_affinity = RN_EPSILON;
-static int max_refinement_iterations = 3;  
-static int max_reassignment_iterations = 1;  
-static RNBoolean equalize_cluster_sizes = TRUE;
-static RNBoolean balance_cluster_sizes = TRUE;
-static RNBoolean favor_convex_clusters = FALSE;
-static RNBoolean initialize_hierarchically = TRUE;
-static RNBoolean allow_outlier_points = FALSE;
-static RNBoolean refine_boundaries = TRUE;
-static int print_progress = FALSE;
-
-
-
-
-///////////////////////////////////////////////////////////////////////
-// Shape types
-////////////////////////////////////////////////////////////////////////
-
-enum {
-  NULL_PRIMITIVE_TYPE,
-  POINT_PRIMITIVE_TYPE,
-  LINE_PRIMITIVE_TYPE,
-  PLANE_PRIMITIVE_TYPE,
-  PLANAR_GRID_PRIMITIVE_TYPE,
-  NUM_PRIMITIVE_TYPES
-};
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Type definitions
-////////////////////////////////////////////////////////////////////////
-
-struct Point {
-public:
-  Point(void);
-public:
-  RNScalar depth;
-  R3Point position;
-  R3Vector normal;
-  RNLength radius;
-  RNArea area;
-  RNRgb color;
-  unsigned int boundary;
-  RNArray<Point *> neighbors;
-  struct Cluster *cluster;
-  RNScalar cluster_affinity;
-  int cluster_index;
-  int data_index;
-  int mark;
-};
-
-struct Primitive {
-  Primitive(int primitive_type = 0);
-  Primitive(const Primitive& primitive);
-  Primitive(Point *seed_point, const RNArray<Point *> *points = NULL);
-  RNLength Distance(const R3Point& position) const;
-  void Update(const R3Point& point);
-  void Update(const R3Line& line);
-  void Update(const R3Plane& plane);
-  void Update(Point *seed_point = NULL, const RNArray<Point *> *points = NULL);
-  void Update(Primitive primitive1, Primitive primitive2, RNScalar weight1 = 1.0, RNScalar weight2 = 1.0);
-public:
-  int primitive_type;
-  R3Box bbox;
-  R3Point centroid;
-  R3Line line;
-  R3Plane plane;
-};
-
-struct Cluster {
-public:
-  Cluster(Point *seed_point = NULL, int primitive_type = 0);
-  Cluster(Point *seed_point, const Primitive& primitive);
-  Cluster(Cluster *child1, Cluster *child2);
-  ~Cluster(void);
-  RNScalar Coverage(void);
-  R3Triad PrincipleAxes(R3Point *returned_centroid = NULL, RNScalar *returned_variances = NULL) const;
-  void EmptyPoints(void);
-  void InsertPoint(Point *point, RNScalar affinity = 1.0);
-  void RemovePoint(Point *point);
-  void InsertChild(Cluster *child);
-  void RemoveChild(Cluster *child);
-  int UpdatePoints(const R3Kdtree<Point *> *kdtree);
-  int UpdatePrimitive(void);
-  int UpdateColor(void);
-  int UpdateArea(void);
-  RNScalar Affinity(Point *point) const;
-  RNScalar Affinity(Cluster *cluster) const;
-public:
-  Point *seed_point;
-  RNArray<Point *> points;
-  Cluster *parent;
-  RNArray<Cluster *> children;
-  RNArray<struct Pair *> pairs;
-  Primitive primitive;
-  RNArea area;
-  RNRgb color;
-  RNScalar possible_affinity; 
-  RNScalar total_affinity;
-  struct Segmentation *segmentation;
-  int segmentation_index;
-};
-
-struct Pair {
-public:
-  Pair(Cluster *cluster1 = NULL, Cluster *cluster2 = NULL, RNScalar affinity = 0);
-  ~Pair(void);
-public:
-  Cluster *clusters[2];
-  int cluster_index[2];
-  RNScalar affinity; 
-  Pair **heapentry;
-};
-
-struct Segmentation {
-public:
-  Segmentation(void);
-  ~Segmentation(void);
-  RNScalar Affinity(void) const;
-  int NUnclusteredPoints(void) const;
-public:
-  int CreateNeighbors(int max_neighbor_count = 16,
-    double max_neighbor_distance = 0,
-    double max_neighbor_primitive_distance = 0.01,
-    double max_neighbor_normal_angle = RN_PI / 4.0,
-    double max_neighbor_color_difference = 0,
-    double max_neighbor_distance_factor = 10);
-public:
-  int AssignPoints(void);  
-  int CreateClusters(int primitive_type);
-  int CreateSingletonClusters(int primitive_type);
-  int CreateRegionGrowingClusters(int primitive_type);
-  int RefineClusters(void);  
-  int ReassignClusters(void);  
-  int DeleteClusters(void);  
-  int MergeClusters(void);  
-  int MergeSmallClusters(void);  
-  int SplitClusters(void);
-  int RefineBoundaries(void);
-  int WriteFile(const char *filename) const;
-public:
-  RNArray<Point *> points;
-  R3Kdtree<Point *> *kdtree;
-  RNArray<Cluster *> clusters;
-  Point *point_buffer;
-};
-
+int min_clusters = 0;
+int max_clusters = 0;
+int min_cluster_points = 0;
+double min_cluster_area = 0;
+double min_cluster_coverage = 0;
+double max_cluster_diameter = 16;
+double max_cluster_primitive_distance = 0.01;
+double max_cluster_normal_angle = RN_PI / 4.0;
+double max_cluster_color_difference = 0.5;
+double max_pair_centroid_distance = 16;
+double max_pair_primitive_distance = 0.01;
+double max_pair_normal_angle = RN_PI / 4.0;
+double max_pair_color_difference = 0.5;
+double min_pair_affinity = RN_EPSILON;
+int max_refinement_iterations = 3;
+int max_reassignment_iterations = 1;
+RNBoolean equalize_cluster_sizes = TRUE;
+RNBoolean balance_cluster_sizes = TRUE;
+RNBoolean favor_convex_clusters = FALSE;
+RNBoolean initialize_hierarchically = TRUE;
+RNBoolean allow_outlier_points = FALSE;
+RNBoolean refine_boundaries = TRUE;
+int print_progress = FALSE;
 
 
 

@@ -3,7 +3,7 @@
 #
 
 NAME=mshsegment
-CCSRCS=$(NAME).cpp 
+CCSRCS=$(NAME).cpp segmentation.cpp
 
 
 

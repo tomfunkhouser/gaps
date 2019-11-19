@@ -3,7 +3,7 @@
 #
 
 NAME=conf2img
-CCSRCS=$(NAME).cpp
+CCSRCS=$(NAME).cpp RGBDSegmentation.cpp segmentation.cpp
 
 
 

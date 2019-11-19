@@ -10,7 +10,8 @@
 
 namespace gaps {}
 using namespace gaps;
-#include "segmentation.cpp"
+#include "RGBD/RGBD.h"
+#include "segmentation.h"
 
 
 
@@ -18,10 +19,10 @@ using namespace gaps;
 // Parameters
 ////////////////////////////////////////////////////////////////////////
 
-static double max_depth = 0;
-static double max_neighbor_distance_factor = 16;
-static double max_neighbor_normal_angle = 0;
-static double max_neighbor_color_difference = 0;
+double max_depth = 0;
+double max_neighbor_distance_factor = 16;
+double max_neighbor_normal_angle = 0;
+double max_neighbor_color_difference = 0;
 
 
 
@@ -227,7 +228,7 @@ RGBDWriteSegmentation(Segmentation *segmentation, const char *filename)
 
 
 
-static int
+int
 RGBDCreateSegmentationChannel(const R2Grid& depth_image, 
   const R2Grid& px_image, const R2Grid& py_image, const R2Grid& pz_image, const R2Grid& boundary_image, 
   const R2Grid& nx_image, const R2Grid& ny_image, const R2Grid& nz_image, const R2Grid& radius_image, 

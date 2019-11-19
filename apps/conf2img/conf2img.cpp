@@ -10,7 +10,7 @@ namespace gaps {}
 using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "RGBD/RGBD.h"
-#include "RGBDSegmentation.cpp"
+#include "RGBDSegmentation.h"
 #ifdef USE_MESA
 #  include "GL/osmesa.h"
 #else
