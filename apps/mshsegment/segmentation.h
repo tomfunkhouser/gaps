@@ -98,7 +98,7 @@ public:
   Cluster(Cluster *child1, Cluster *child2);
   ~Cluster(void);
   RNScalar Coverage(void);
-  R3Triad PrincipleAxes(R3Point *returned_centroid = NULL, RNScalar *returned_variances = NULL) const;
+  R3Triad PrincipleAxes(R3Point *returned_center = NULL, RNScalar *returned_variances = NULL) const;
   void EmptyPoints(void);
   void InsertPoint(Point *point, RNScalar affinity = 1.0);
   void RemovePoint(Point *point);
