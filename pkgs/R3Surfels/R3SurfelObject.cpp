@@ -628,6 +628,18 @@ Draw(RNFlags flags) const
 
 
 void R3SurfelObject::
+DrawResidentDescendents(RNFlags flags) const
+{
+  // Draw all nodes
+  for (int i = 0; i < NNodes(); i++) {
+    R3SurfelNode *node = Node(i);
+    node->DrawResidentDescendents(flags);
+  }
+}
+
+
+
+void R3SurfelObject::
 Print(FILE *fp, const char *prefix, const char *suffix) const
 {
   // Check fp
