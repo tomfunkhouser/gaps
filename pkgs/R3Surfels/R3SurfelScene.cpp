@@ -1847,7 +1847,7 @@ WriteAsciiFile(const char *filename)
     fprintf(fp, " %g %g %g", viewpoint.X(), viewpoint.Y(), viewpoint.Z());
     fprintf(fp, " %g %g %g", towards.X(), towards.Y(), towards.Z());
     fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
-    fprintf(fp, " %g %d", scan->Timestamp(), (scan->Node()) ? scan->Node()->TreeIndex() : -1);
+    fprintf(fp, " %.6f %d", scan->Timestamp(), (scan->Node()) ? scan->Node()->TreeIndex() : -1);
     fprintf(fp, " %d %d ", scan->ImageWidth(), scan->ImageHeight());
     fprintf(fp, " %g %g %g %u ", scan->FocalLength(), scan->ImageCenter().X(), scan->ImageCenter().Y(), (unsigned int) scan->Flags());
     for (int j = 0; j < 2; j++) fprintf(fp, " 0");

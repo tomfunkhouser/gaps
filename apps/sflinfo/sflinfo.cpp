@@ -558,7 +558,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Image dimensions = %d %d\n", scan->ImageWidth(), scan->ImageHeight());
       printf("  Image center = %g %g\n", scan->ImageCenter().X(), scan->ImageCenter().Y());
       printf("  Focal length = %g\n", scan->FocalLength());
-      printf("  Timestamp = %g\n", scan->Timestamp());
+      printf("  Timestamp = %.6f\n", scan->Timestamp());
       printf("  Node = %d\n", (scan->Node()) ? scan->Node()->TreeIndex() : -1);
       printf("\n");
     }
