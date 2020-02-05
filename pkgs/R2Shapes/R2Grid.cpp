@@ -2216,6 +2216,24 @@ RasterizeGridPoint(RNScalar x, RNScalar y, RNScalar value, int operation)
 
 
 void R2Grid::
+RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation)
+{
+  // Splat value everywhere along span
+  R2Vector vector = p2 - p1;
+  RNLength length = vector.Length();
+  int nsteps = length + 1;
+  R2Vector dp = vector / nsteps;
+  RNLength dv = (value2 - value1) / nsteps;
+  for (int i = 0; i <= nsteps; i++) {
+    RNScalar v = value1 + i*dv;
+    gaps::R2Point p = p1 + i*dp;
+    RasterizeGridPoint(p, v);
+  }
+}
+
+
+
+void R2Grid::
 RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar value2, int operation)
 {
   // Resolve values

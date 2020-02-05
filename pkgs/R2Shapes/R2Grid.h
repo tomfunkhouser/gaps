@@ -695,17 +695,6 @@ RasterizeWorldPoint(const R2Point& world_point, RNScalar value, int operation)
 
 
 inline void R2Grid::
-RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation)
-{
-  // Splat value everywhere inside grid triangle
-  int i1[2] = { (int) (p1[0] + 0.5), (int) (p1[1] + 0.5) };
-  int i2[2] = { (int) (p2[0] + 0.5), (int) (p2[1] + 0.5) };
-  RasterizeGridSpan(i1, i2, value1, value2, operation);
-}
-
-
-
-inline void R2Grid::
 RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value, int operation)
 {
   // Splat value everywhere inside grid triangle
