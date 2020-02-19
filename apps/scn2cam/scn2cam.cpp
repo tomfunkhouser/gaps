@@ -39,12 +39,13 @@ static char *output_nodes_filename = NULL;
 static int create_object_cameras = 0;
 static int create_room_cameras = 0;
 static int create_interior_cameras = 0;
+static int create_surface_cameras = 0;
 static int create_world_in_hand_cameras = 0;
 static int create_path_in_room_cameras = 0;
 static int interpolate_camera_trajectory = 0;
 static int create_orbit_cameras = 0;
-static int create_random_orbit_cameras = 0;
 static int create_dodeca_cameras = 0;
+
 
 // Camera parameter variables
 
@@ -57,9 +58,13 @@ static double eye_height_radius = 0.05;
 
 // Camera sampling variables
 
+static int gravity_dimension = RN_Y;
 static double position_sampling = 0.25;
 static double angle_sampling = RN_PI / 3.0;
 static double interpolation_step = 0.1;
+static double min_surface_distance = 2;
+static double max_surface_distance = 8;
+static double max_surface_normal_angle = 0.5;
 
 
 // Camera scoring variables
@@ -710,27 +715,21 @@ RenderImage(R2Grid& image, const R3Camera& camera, R3Scene *scene, R3SceneNode *
 
 
 ////////////////////////////////////////////////////////////////////////
-// Camera scoring function
+// Semantic classification functions
 ////////////////////////////////////////////////////////////////////////
 
 static RNBoolean
-IsObject(R3SceneNode *node)
+IsRoom(R3SceneNode *node)
 {
-  // Check name
-  if (!node->Name()) return 0;
-  if (strncmp(node->Name(), "Model#", 6)) return 0;
-
-  // Get category identifier
-  R3SceneNode *ancestor = node;
-  const char *category_identifier = NULL;
-  while (!category_identifier && ancestor) {
-    category_identifier = node->Info("empty_struct_obj");
-    ancestor = ancestor->Parent();
+  // Check if labeled
+  if (input_categories_filename) {
+    // Check if node is labeled as a room
+    if (!node->Name()) return 0;
+    if (strncmp(node->Name(), "Room#", 5)) return 0;
   }
-
-  // Check category identifier
-  if (category_identifier) {
-    if (strcmp(category_identifier, "2")) return 0;
+  else {
+    // If no "rooms", then include only root node
+    if (node->Parent()) return 0;
   }
 
   // Passed all tests
@@ -738,6 +737,41 @@ IsObject(R3SceneNode *node)
 }
 
 
+
+static RNBoolean
+IsObject(R3SceneNode *node)
+{
+  // Check name
+  if (!node->Name()) return 0;
+
+  // Check category identifier
+  if (input_categories_filename) {
+    // Check if object with category
+    if (strncmp(node->Name(), "Model#", 6)) return 0;
+    
+    // Get category identifier
+    R3SceneNode *ancestor = node;
+    const char *category_identifier = NULL;
+    while (!category_identifier && ancestor) {
+      category_identifier = node->Info("empty_struct_obj");
+      ancestor = ancestor->Parent();
+    }
+
+    // Check category identifier
+    if (category_identifier) {
+      if (strcmp(category_identifier, "2")) return 0;
+    }
+  }
+
+  // Passed all tests
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Camera scoring function
+////////////////////////////////////////////////////////////////////////
 
 static RNScalar
 ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = NULL)
@@ -966,8 +1000,8 @@ ComputeViewpointMask(R3SceneNode *room_node, R2Grid& mask)
   // Initialize object mask
   R2Grid object_mask = R2Grid(res1, res2, grid_bbox);
   R3Box object_bbox = room_bbox;
-  object_bbox[RN_LO][RN_Y] = floor_bbox[RN_HI][RN_Y] + RN_EPSILON;
-  object_bbox[RN_HI][RN_Y] = ceiling_bbox[RN_LO][RN_Y] - RN_EPSILON;
+  object_bbox[RN_LO][gravity_dimension] = floor_bbox[RN_HI][gravity_dimension] + RN_EPSILON;
+  object_bbox[RN_HI][gravity_dimension] = ceiling_bbox[RN_LO][gravity_dimension] - RN_EPSILON;
 
   // Rasterize objects associated with this room into object mask
   for (int i = 0; i < room_node->NChildren(); i++) {
@@ -1103,9 +1137,8 @@ FindIndexOfFurthestPointAlongPath(const R2Grid& grid, int start_index,
 // Camera creation functions
 ////////////////////////////////////////////////////////////////////////
 
-
 static void
-CreateRandomOrbitCameras(void)
+CreateOrbitCameras(void)
 {
   RNTime start_time;
   start_time.Read();
@@ -1145,7 +1178,7 @@ CreateRandomOrbitCameras(void)
     // Compute camera parameters
     R3Vector towards = centroid - viewpoint;
     towards.Normalize();
-    R3Vector right = towards % R3posy_vector;
+    R3Vector right = towards % R3xyz_triad[gravity_dimension];
     right.Normalize();
     R3Vector up = right % towards;
     up.Normalize();
@@ -1157,6 +1190,7 @@ CreateRandomOrbitCameras(void)
     cameras.Insert(insertable_camera);
     camera_count++;
   }
+
   // Print statistics
   if (print_verbose) {
     printf("Created random orbit cameras ...\n");
@@ -1165,6 +1199,7 @@ CreateRandomOrbitCameras(void)
     fflush(stdout);
   }
 }
+
 
 
 static void
@@ -1194,14 +1229,13 @@ CreateObjectCameras(void)
     RNScalar radius = node->BBox().DiagonalRadius();
 
     // Check lots of directions
-    int nangles = (int) (RN_TWO_PI / angle_sampling + 0.5);
-    RNScalar angle_spacing = (nangles > 1) ? RN_TWO_PI / nangles : RN_TWO_PI;
+    int nangles = (int) (RN_PI * RN_TWO_PI / angle_sampling + 0.5);
     for (int j = 0; j < nangles; j++) {
       // Determine view direction
-      R3Vector view_direction(-1, 0, 0); 
-      view_direction.YRotate((j+RNRandomScalar()) * (angle_spacing/3));
+      R3Vector view_direction = R3RandomDirection();
+      // view_direction[gravity_dimension] = -0.2;
       view_direction.Normalize();
-
+            
       // Determine camera viewpoint
       RNScalar min_distance = radius;
       RNScalar max_distance = 1.5 * radius/tan(xfov);
@@ -1209,7 +1243,7 @@ CreateObjectCameras(void)
       if (max_distance < min_distance_from_obstacle) max_distance = min_distance_from_obstacle;
       R3Point viewpoint = centroid - max_distance * view_direction;
 
-      // Project camera viewpoint onto eye height plane (special for planner5d)
+      // Project camera viewpoint onto eye height plane (special for SUNCG)
       if (node->Parent() && node->Parent()->Parent()) {
         if (node->Parent()->Parent()->Name()) {
           if (strstr(node->Parent()->Parent()->Name(), "Room") || strstr(node->Parent()->Parent()->Name(), "Level")) {
@@ -1233,7 +1267,7 @@ CreateObjectCameras(void)
       // Compute camera
       R3Vector towards = centroid - viewpoint;
       towards.Normalize();
-      R3Vector right = towards % R3posy_vector;
+      R3Vector right = towards % R3xyz_triad[gravity_dimension];
       right.Normalize();
       R3Vector up = right % towards;
       up.Normalize();
@@ -1287,16 +1321,23 @@ CreateRoomCameras(void)
   RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
   RNScalar aspect = (RNScalar) height / (RNScalar) width;
   RNAngle yfov = atan(aspect * tan(xfov));
+  int dim0 = (gravity_dimension + 1) % 3;
+  int dim1 = (gravity_dimension + 2) % 3;
+  int dim2 = gravity_dimension;
 
   // Create one camera per direction per room 
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *room_node = scene->Node(i);
-    if (!room_node->Name()) continue;
-    if (strncmp(room_node->Name(), "Room#", 5)) continue;
+    if (!IsRoom(room_node)) continue;
+    R3Box room_bbox = room_node->BBox();
+    if (room_bbox.IsEmpty()) continue;
+    if (RNIsZero(room_bbox.Volume())) continue;
 
     // Compute viewpoint mask
     R2Grid viewpoint_mask;
-    if (!ComputeViewpointMask(room_node, viewpoint_mask)) continue;
+    if (room_node->Name() && !strncmp(room_node->Name(), "Room#", 5)) {
+      if (!ComputeViewpointMask(room_node, viewpoint_mask)) continue;
+    }
 
     // Sample directions
     int nangles = (int) (RN_TWO_PI / angle_sampling + 0.5);
@@ -1305,22 +1346,29 @@ CreateRoomCameras(void)
       // Choose one camera for each direction in each room
       R3Camera best_camera;
 
-      // Sample positions 
-      R3Box room_bbox = room_node->BBox();
-      for (RNScalar z = room_bbox.ZMin(); z < room_bbox.ZMax(); z += position_sampling) {
-        for (RNScalar x = room_bbox.XMin(); x < room_bbox.XMax(); x += position_sampling) {
+      // Sample positions
+      for (RNScalar x = room_bbox.Min()[dim0]; x < room_bbox.Max()[dim0]; x += position_sampling) {
+        for (RNScalar y = room_bbox.Min()[dim1]; y < room_bbox.Max()[dim1]; y += position_sampling) {
           // Compute position
-          R2Point position(x + position_sampling*RNRandomScalar(), z + position_sampling*RNRandomScalar());
+          R2Point position;
+          position[0] = x + position_sampling*RNRandomScalar();
+          position[1] = y + position_sampling*RNRandomScalar();
 
           // Check viewpoint mask
-          R2Point viewpoint_mask_position(position[1], position[0]); // ZX          
-          RNScalar viewpoint_mask_value = viewpoint_mask.WorldValue(viewpoint_mask_position);
-          if (viewpoint_mask_value < 0.5) continue;
+          if (viewpoint_mask.NEntries() > 0) {
+            // R2Point viewpoint_mask_position(position[1], position[0]); // ZX          
+            // RNScalar viewpoint_mask_value = viewpoint_mask.WorldValue(viewpoint_mask_position);
+            RNScalar viewpoint_mask_value = viewpoint_mask.WorldValue(position);
+            if (viewpoint_mask_value < 0.5) continue;
+          }
 
-          // Compute height
-          RNScalar y = room_bbox.YMin() + eye_height;
-          y += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
-          if (y > room_bbox.YMax()) continue;
+          // Compute viewpoint
+          R3Point viewpoint;
+          RNScalar h = eye_height + 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
+          viewpoint[dim0] = position[0];
+          viewpoint[dim1] = position[1];
+          viewpoint[dim2] = room_bbox.Min()[gravity_dimension] + h;
+          if (!R3Contains(room_bbox, viewpoint)) continue;
 
           // Compute direction
           RNScalar angle = (j+RNRandomScalar()) * angle_spacing;
@@ -1329,10 +1377,12 @@ CreateRoomCameras(void)
           direction.Normalize();
 
           // Compute camera
-          R3Point viewpoint(position[0], y, position[1]);
-          R3Vector towards(direction.X(), -0.2, direction.Y());
+          R3Vector towards;
+          towards[dim0] = direction[0];
+          towards[dim1] = direction[1];
+          towards[dim2] = -0.2;
           towards.Normalize();
-          R3Vector right = towards % R3posy_vector;
+          R3Vector right = towards % R3xyz_triad[gravity_dimension];
           right.Normalize();
           R3Vector up = right % towards;
           up.Normalize();
@@ -1390,8 +1440,7 @@ CreatePathInRoomCameras(void)
   // Create one camera trajectory per door
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *room_node = scene->Node(i);
-    if (!room_node->Name()) continue;
-    if (strncmp(room_node->Name(), "Room#", 5)) continue;
+    if (!IsRoom(room_node)) continue;
     R3Box room_bbox = room_node->BBox();
 
     // Compute viewpoint mask
@@ -1447,7 +1496,7 @@ CreatePathInRoomCameras(void)
       if (R3Contains(viewpoint, lookat_position)) continue;
       R3Vector towards = lookat_position - viewpoint;
       towards.Normalize();
-      R3Vector right = towards % R3posy_vector;
+      R3Vector right = towards % R3xyz_triad[gravity_dimension];
       right.Normalize();
       R3Vector up = right % towards;
       up.Normalize();
@@ -1490,25 +1539,38 @@ CreateInteriorCameras(void)
   RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
   RNScalar aspect = (RNScalar) height / (RNScalar) width;
   RNAngle yfov = atan(aspect * tan(xfov));
+  int dim0 = (gravity_dimension + 1) % 3;
+  int dim1 = (gravity_dimension + 2) % 3;
+  int dim2 = gravity_dimension;
   R3Box bbox = scene->BBox();
 
   // Sample directions
   int nangles = (int) (RN_TWO_PI / angle_sampling + 0.5);
   RNScalar angle_spacing = (nangles > 1) ? RN_TWO_PI / nangles : RN_TWO_PI;
-  for (int j = 0; j < nangles; j++) {
-    // Choose one camera for each direction 
-    R3Camera best_camera;
 
-    // Sample positions 
-    for (RNScalar y = bbox.YMin(); y < bbox.YMax(); y += position_sampling) {
-      for (RNScalar x = bbox.XMin(); x < bbox.XMax(); x += position_sampling) {
-        // Compute position
+  // Sample positions
+  int nx = (int) (bbox.AxisLength(dim0) / position_sampling) + 1;
+  int ny = (int) (bbox.AxisLength(dim1) / position_sampling) + 1;
+  RNScalar dx = bbox.AxisLength(dim0) / nx;
+  RNScalar dy = bbox.AxisLength(dim1) / ny;
+  for (int ix = 0; ix < nx; ix++) {
+    for (int iy = 0; iy < ny; iy++) {
+      // Choose one camera for each grid position
+      R3Camera best_camera;
+
+      // Get coordinates
+      RNScalar x = bbox.Min()[dim0] + ix * dx;
+      RNScalar y = bbox.Min()[dim1] + iy * dy;
+      
+      // For each angle
+      for (int j = 0; j < nangles; j++) {
+        // Compute jittered position
         R2Point position(x + position_sampling*RNRandomScalar(), y + position_sampling*RNRandomScalar());
 
         // Compute height
-        RNScalar z = bbox.ZMin() + eye_height;
+        RNScalar z = bbox.Min()[dim2] + eye_height;
         z += 2.0*(RNRandomScalar()-0.5) * eye_height_radius;
-        if (z > bbox.ZMax()) continue;
+        if (z > bbox.Max()[dim2]) continue;
 
         // Compute direction
         RNScalar angle = (j+RNRandomScalar()) * angle_spacing;
@@ -1517,10 +1579,16 @@ CreateInteriorCameras(void)
         direction.Normalize();
 
         // Compute camera
-        R3Point viewpoint(position[0], position[1], z);
-        R3Vector towards(direction.X(), direction.Y(), -0.2);
+        R3Point viewpoint;
+        viewpoint[dim0] = position[0];
+        viewpoint[dim1] = position[1];
+        viewpoint[dim2] = z;
+        R3Vector towards;
+        towards[dim0] = direction[0];
+        towards[dim1] = direction[1];
+        towards[dim2] = -0.2;
         towards.Normalize();
-        R3Vector right = towards % R3posz_vector;
+        R3Vector right = towards % R3xyz_triad[dim2];
         right.Normalize();
         R3Vector up = right % towards;
         up.Normalize();
@@ -1536,22 +1604,113 @@ CreateInteriorCameras(void)
           best_camera = camera;
         }
       }
-    }
 
-    // Insert best camera for direction
-    if (best_camera.Value() > 0) {
-      if (print_debug) printf("INTERIOR %d : %g\n", j, best_camera.Value());
-      char name[1024];
-      sprintf(name, "C_%d", j);
-      Camera *camera = new Camera(best_camera, name);
-      cameras.Insert(camera);
-      camera_count++;
+      // Insert best camera for direction
+      if (best_camera.Value() > 0) {
+        if (print_debug) printf("INTERIOR %d %d : %g\n", ix, iy, best_camera.Value());
+        char name[1024];
+        sprintf(name, "C_%d_%d", ix, iy);
+        Camera *camera = new Camera(best_camera, name);
+        cameras.Insert(camera);
+        camera_count++;
+      }
     }
   }
         
   // Print statistics
   if (print_verbose) {
     printf("Created interior cameras ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Cameras = %d\n", camera_count++);
+    fflush(stdout);
+  }
+}
+
+
+
+static void
+CreateSurfaceCameras(void)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int triangle_count = 0;
+  int camera_count = 0;
+
+  // Get useful variables
+  RNScalar neardist = 0.01 * scene->BBox().DiagonalRadius();
+  RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
+  RNScalar aspect = (RNScalar) height / (RNScalar) width;
+  RNAngle yfov = atan(aspect * tan(xfov));
+  R3Box bbox = scene->BBox();
+  RNScalar dd = position_sampling * position_sampling;
+  if (RNIsZero(dd)) dd = 0.1;
+
+  // Sample positions on surface
+  for (int i = 0; i < scene->NNodes(); i++) {
+    R3SceneNode *node = scene->Node(i);
+    if (node->NChildren() > 0) continue;
+    for (int j = 0; j < node->NElements(); j++) {
+      R3SceneElement *element = node->Element(j);
+      for (int k = 0; k < element->NShapes(); k++) {
+        R3Shape *shape = element->Shape(k);
+        if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+          R3TriangleArray *triangles = (R3TriangleArray *) shape;
+          for (int t = 0; t < triangles->NTriangles(); t++) {
+            R3Triangle *triangle = triangles->Triangle(t);
+            RNScalar real_nsamples = triangle->Area() / dd;
+            int nsamples = (int) real_nsamples;
+            if (RNRandomScalar() < (real_nsamples - nsamples)) nsamples++;
+            for (int s = 0; s < nsamples; s++) {
+              R3Point position = triangle->RandomPoint();
+              R3Vector normal = triangle->Normal();
+              triangle_count++;
+
+              // Get randomized towards direction
+              R3Vector towards = -normal;
+              towards.XRotate(RNRandomScalar() * max_surface_normal_angle);
+              towards.YRotate(RNRandomScalar() * max_surface_normal_angle);
+              towards.ZRotate(RNRandomScalar() * max_surface_normal_angle);
+              towards.Normalize();
+
+              // Compute view distance
+              R3Ray ray(position, -towards);
+              RNScalar hit_t = FLT_MAX;
+              RNLength surface_distance = min_surface_distance + RNRandomScalar() * (max_surface_distance - min_surface_distance);
+              if (scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, RN_EPSILON, surface_distance)) {
+                if (0.9*hit_t < surface_distance) surface_distance = 0.9*hit_t;
+                if (surface_distance < min_surface_distance) continue;
+              }
+
+              // Compute camera
+              R3Point viewpoint = position - surface_distance * towards;
+              R3Vector right = towards % R3xyz_triad[gravity_dimension];
+              right.Normalize();
+              R3Vector up = right % towards;
+              up.Normalize();
+              R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+              // Compute score for camera
+              camera.SetValue(SceneCoverageScore(camera, scene));
+              if (camera.Value() <= 0) continue;
+              if (camera.Value() < min_score) continue;
+
+              // Insert camera 
+              if (print_debug) printf("SURFACE %d : %g\n", triangle_count, camera.Value());
+              char name[1024];
+              sprintf(name, "C_%d", triangle_count);
+              cameras.Insert(new Camera(camera, name));
+              camera_count++;
+            }
+          }
+        }
+      }
+    }
+  }
+        
+  // Print statistics
+  if (print_verbose) {
+    printf("Created surface cameras ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Cameras = %d\n", camera_count++);
     fflush(stdout);
@@ -1599,7 +1758,7 @@ CreateWorldInHandCameras(void)
     // Compute view directions
     R3Vector towards = R3RandomDirection();
     towards.Normalize();
-    R3Vector right = towards % R3posy_vector;
+    R3Vector right = towards % R3xyz_triad[gravity_dimension];
     if (RNIsZero(right.Length())) continue;
     right.Normalize();
     R3Vector up = right % towards;
@@ -1743,8 +1902,9 @@ CreateAndWriteCameras(void)
   // Create cameras
   if (create_object_cameras) CreateObjectCameras();
   if (create_interior_cameras) CreateInteriorCameras();
+  if (create_surface_cameras) CreateSurfaceCameras();
   if (create_world_in_hand_cameras) CreateWorldInHandCameras();
-  if (create_random_orbit_cameras) CreateRandomOrbitCameras();
+  if (create_orbit_cameras) CreateOrbitCameras();
 
   // Create specialized cameras (for SUNCG)
   if (create_room_cameras) CreateRoomCameras();
@@ -1862,6 +2022,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-glut")) { mesa = 0; glut = 1; }
       else if (!strcmp(*argv, "-mesa")) { mesa = 1; glut = 0; }
       else if (!strcmp(*argv, "-raycast")) { mesa = 0; glut = 0; }
+      else if (!strcmp(*argv, "-yup")) { gravity_dimension = RN_Y; }
+      else if (!strcmp(*argv, "-zup")) { gravity_dimension = RN_Z; }
       else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_filename = *argv; }
       else if (!strcmp(*argv, "-input_cameras")) { argc--; argv++; input_cameras_filename = *argv; }
       else if (!strcmp(*argv, "-output_camera_extrinsics")) { argc--; argv++; output_camera_extrinsics_filename = *argv; output = 1; }
@@ -1875,8 +2037,12 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-eye_height")) { argc--; argv++; eye_height = atof(*argv); }
       else if (!strcmp(*argv, "-eye_height_radius")) { argc--; argv++; eye_height_radius = atof(*argv); }
       else if (!strcmp(*argv, "-min_distance_from_obstacle")) { argc--; argv++; min_distance_from_obstacle = atof(*argv); }
+      else if (!strcmp(*argv, "-max_surface_normal_angle")) { argc--; argv++; max_surface_normal_angle = atof(*argv); }
+      else if (!strcmp(*argv, "-min_surface_distance")) { argc--; argv++; min_surface_distance = atof(*argv); }
+      else if (!strcmp(*argv, "-max_surface_distance")) { argc--; argv++; max_surface_distance = atof(*argv); }
       else if (!strcmp(*argv, "-min_visible_objects")) { argc--; argv++; min_visible_objects = atoi(*argv); }
       else if (!strcmp(*argv, "-min_score")) { argc--; argv++; min_score = atof(*argv); }
+      else if (!strcmp(*argv, "-gravity_dimension")) { argc--; argv++; gravity_dimension = atoi(*argv); }
       else if (!strcmp(*argv, "-scene_scoring_method")) { argc--; argv++; scene_scoring_method = atoi(*argv); }
       else if (!strcmp(*argv, "-object_scoring_method")) { argc--; argv++; object_scoring_method = atoi(*argv); }
       else if (!strcmp(*argv, "-position_sampling")) { argc--; argv++; position_sampling = atof(*argv); }
@@ -1888,10 +2054,9 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-create_orbit_cameras")) {
         create_cameras = create_orbit_cameras = 1;
-        angle_sampling = RN_PI / 6.0;
       }
       else if (!strcmp(*argv, "-create_random_orbit_cameras")) {
-        create_cameras = create_random_orbit_cameras = 1;
+        create_cameras = create_orbit_cameras = 1;
       }
       else if (!strcmp(*argv, "-create_dodeca_cameras")) {
         create_cameras = create_dodeca_cameras = 1;
@@ -1899,6 +2064,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-create_interior_cameras")) {
         create_cameras = create_interior_cameras = 1;
         angle_sampling = RN_PI / 2.0;
+      }
+      else if (!strcmp(*argv, "-create_surface_cameras")) {
+        create_cameras = create_surface_cameras = 1;
       }
       else if (!strcmp(*argv, "-create_room_cameras")) {
         create_cameras = create_room_cameras = 1;
