@@ -398,7 +398,7 @@ WriteImages(const char *output_directory)
     const char *filename = image->DepthFilename();
     if (!filename) filename = image->ColorFilename();
     if (!filename) filename = "default";
-    strncpy(image_name_buffer, filename, 4095);
+    strncpy(image_name_buffer, filename, 2047);
     char *image_name = (strrchr(image_name_buffer, '/')) ? strrchr(image_name_buffer, '/')+1 : image_name_buffer;
     char *endp = strrchr(image_name, '.');
     if (endp) *endp = '\0';
@@ -1063,7 +1063,7 @@ Redraw(void)
   // Statistics variables
   static RNTime start_time;
   if (current_image_index == -1) start_time.Read(); 
-  char output_image_filename[1024];
+  char output_image_filename[4096];
 
   // Get camera and name for next image
   R3Point target_viewpoint;
@@ -1085,7 +1085,7 @@ Redraw(void)
     const char *filename = image->DepthFilename();
     if (!filename) filename = image->ColorFilename();
     if (!filename) filename = "default";
-    strncpy(image_name_buffer, filename, 4095);
+    strncpy(image_name_buffer, filename, 2047);
     if (strrchr(image_name_buffer, '/')) name = strrchr(image_name_buffer, '/')+1;
     char *endp = strrchr(name, '.');
     if (endp) *endp = '\0';
