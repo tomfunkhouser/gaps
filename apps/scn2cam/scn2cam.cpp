@@ -107,6 +107,33 @@ public:
 
 
 
+static R3Point
+CameraPosition(Camera *camera, void *data)
+{
+  return camera->Origin();
+}
+
+
+
+static int
+IsDifferentCameraOrientation(Camera *camera1, Camera *camera2, void *data)
+{
+  // Check towards angle
+  R3Vector towards1 = camera1->Towards();  
+  R3Vector towards2 = camera2->Towards();
+  if (R3InteriorAngle(towards1, towards2) > angle_sampling) return 1;
+
+  // Check up angle
+  R3Vector up1 = camera1->Up();  
+  R3Vector up2 = camera2->Up();
+  if (R3InteriorAngle(up1, up2) > angle_sampling) return 1;
+
+  // Cameras overlap
+  return 0;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Internal variables
 ////////////////////////////////////////////////////////////////////////
@@ -1642,10 +1669,13 @@ CreateSurfaceCameras(void)
   RNScalar fardist = 100 * scene->BBox().DiagonalRadius();
   RNScalar aspect = (RNScalar) height / (RNScalar) width;
   RNAngle yfov = atan(aspect * tan(xfov));
-  R3Box bbox = scene->BBox();
   RNScalar dd = position_sampling * position_sampling;
   if (RNIsZero(dd)) dd = 0.1;
 
+  // Create kdtree for storing cameras
+  R3Box bbox = scene->BBox();  bbox.Inflate(2.0);
+  R3Kdtree<Camera *> kdtree(bbox, CameraPosition);
+  
   // Sample positions on surface
   for (int i = 0; i < scene->NNodes(); i++) {
     R3SceneNode *node = scene->Node(i);
@@ -1688,18 +1718,29 @@ CreateSurfaceCameras(void)
               right.Normalize();
               R3Vector up = right % towards;
               up.Normalize();
-              R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
-
+              R3Camera c(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+              
               // Compute score for camera
-              camera.SetValue(SceneCoverageScore(camera, scene));
-              if (camera.Value() <= 0) continue;
-              if (camera.Value() < min_score) continue;
+              c.SetValue(SceneCoverageScore(c, scene));
+              if (c.Value() <= 0) continue;
+              if (c.Value() < min_score) continue;
 
-              // Insert camera 
-              if (print_debug) printf("SURFACE %d : %g\n", triangle_count, camera.Value());
+              // Create new camera
               char name[1024];
               sprintf(name, "C_%d", triangle_count);
-              cameras.Insert(new Camera(camera, name));
+              Camera *camera = new Camera(c, name);
+              if (!camera) continue;
+
+              // Check if overlapping with any previous camera
+              if (kdtree.FindAny(camera, 0.0, position_sampling, IsDifferentCameraOrientation, NULL)) {
+                delete camera;
+                continue;
+              }
+              
+              // Insert camera 
+              if (print_debug) printf("SURFACE %d : %g\n", triangle_count, c.Value());
+              kdtree.InsertPoint(camera);
+              cameras.Insert(camera);
               camera_count++;
             }
           }
