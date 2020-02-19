@@ -394,7 +394,7 @@ WriteImages(const char *output_directory)
     RGBDImage *image = configuration.Image(i);
 
     // Get image name
-    char image_name_buffer[4096];
+    char image_name_buffer[2048];
     const char *filename = image->DepthFilename();
     if (!filename) filename = image->ColorFilename();
     if (!filename) filename = "default";
@@ -1078,7 +1078,7 @@ Redraw(void)
   }
 
   // Get image name
-  char image_name_buffer[4096];
+  char image_name_buffer[2048];
   char *name = image_name_buffer;
   if (configuration.NImages() > 0) {
     RGBDImage *image = configuration.Image(current_image_index);

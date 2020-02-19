@@ -1777,7 +1777,7 @@ WriteObj(R3SceneNode *node, const char *filename) const
 
   // Create directory
   if (dirname) {
-    char mkdir_cmd[1024];
+    char mkdir_cmd[1064];
     sprintf(mkdir_cmd, "mkdir -p %s", dirname);
     system(mkdir_cmd);
   }

@@ -2616,8 +2616,8 @@ WriteTianqiangFile(const char *filename)
   }
   
   // Get scene name
-  char scene_name_buffer[4096];
-  strncpy(scene_name_buffer, filename, 4095);
+  char scene_name_buffer[2048];
+  strncpy(scene_name_buffer, filename, 2047);
   char *scene_name = strrchr(scene_name_buffer, '.');
   if (scene_name) *scene_name = '\0';
   scene_name = strrchr(scene_name_buffer, '/');
