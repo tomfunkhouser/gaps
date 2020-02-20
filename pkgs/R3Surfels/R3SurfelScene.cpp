@@ -288,64 +288,64 @@ InsertObject(R3SurfelObject *object, R3SurfelObject *parent)
 
 
 void R3SurfelScene::
-MergeObject(R3SurfelObject *object1, R3SurfelObject *object2)
+MergeObject(R3SurfelObject *dst_object, R3SurfelObject *src_object)
 {
   // Just checking
-  assert(object1 && object2);
-  assert(object1->scene == this);
-  assert(object1->scene_index >= 0);
-  assert(object2->scene == this);
-  assert(object2->scene_index >= 0);
+  assert(dst_object && src_object);
+  assert(dst_object->scene == this);
+  assert(dst_object->scene_index >= 0);
+  assert(src_object->scene == this);
+  assert(src_object->scene_index >= 0);
 
-  // Move all nodes from object2 into object1
-  while (object2->NNodes() > 0) {
-    R3SurfelNode *node = object2->Node(object2->NNodes()-1);
-    object2->RemoveNode(node);
-    object1->InsertNode(node);
+  // Move all nodes from src_object into dst_object
+  while (src_object->NNodes() > 0) {
+    R3SurfelNode *node = src_object->Node(src_object->NNodes()-1);
+    src_object->RemoveNode(node);
+    dst_object->InsertNode(node);
   }
 
-  // Move all parts from object2 into object1
-  while (object2->NParts() > 0) {
-    R3SurfelObject *part = object2->Part(object2->NParts()-1);
+  // Move all parts from src_object into dst_object
+  while (src_object->NParts() > 0) {
+    R3SurfelObject *part = src_object->Part(src_object->NParts()-1);
     RemoveObject(part);
-    InsertObject(part, object1);
+    InsertObject(part, dst_object);
   }
 
-  // Move all object properties from object2 into object1
-  while (object2->NObjectProperties() > 0) {
-    R3SurfelObjectProperty *property = object2->ObjectProperty(object2->NObjectProperties()-1);
-    object2->UpdateBeforeRemoveObjectProperty(property);
-    property->object = object1;
-    object1->UpdateAfterInsertObjectProperty(property);
+  // Move all object properties from src_object into dst_object
+  while (src_object->NObjectProperties() > 0) {
+    R3SurfelObjectProperty *property = src_object->ObjectProperty(src_object->NObjectProperties()-1);
+    src_object->UpdateBeforeRemoveObjectProperty(property);
+    property->object = dst_object;
+    dst_object->UpdateAfterInsertObjectProperty(property);
   }
 
-  // Move all object relationships from object2 into object1
-  while (object2->NObjectRelationships() > 0) {
-    R3SurfelObjectRelationship *relationship = object2->ObjectRelationship(object2->NObjectRelationships()-1);
-    object2->UpdateBeforeRemoveObjectRelationship(relationship);
+  // Move all object relationships from src_object into dst_object
+  while (src_object->NObjectRelationships() > 0) {
+    R3SurfelObjectRelationship *relationship = src_object->ObjectRelationship(src_object->NObjectRelationships()-1);
+    src_object->UpdateBeforeRemoveObjectRelationship(relationship);
     for (int i = 0; i < relationship->objects.NEntries(); i++) {
-      if (relationship->objects.Kth(i) == object2) {
+      if (relationship->objects.Kth(i) == src_object) {
         RNArrayEntry *entry = relationship->objects.KthEntry(i);
-        relationship->objects.EntryContents(entry) = object1;
+        relationship->objects.EntryContents(entry) = dst_object;
         break;
       }
     }
-    object1->UpdateAfterInsertObjectRelationship(relationship);
+    dst_object->UpdateAfterInsertObjectRelationship(relationship);
   }
 
-  // Move all label assignments from object2 into object1
-  while (object2->NLabelAssignments() > 0) {
-    R3SurfelLabelAssignment *assignment = object2->LabelAssignment(object2->NLabelAssignments()-1);
-    object2->UpdateBeforeRemoveLabelAssignment(assignment);
-    assignment->object = object1;
-    object1->UpdateAfterInsertLabelAssignment(assignment);
+  // Move all label assignments from src_object into dst_object
+  while (src_object->NLabelAssignments() > 0) {
+    R3SurfelLabelAssignment *assignment = src_object->LabelAssignment(src_object->NLabelAssignments()-1);
+    src_object->UpdateBeforeRemoveLabelAssignment(assignment);
+    assignment->object = dst_object;
+    dst_object->UpdateAfterInsertLabelAssignment(assignment);
   }
 
-  // Remove object2
-  RemoveObject(object2);
+  // Remove src_object
+  RemoveObject(src_object);
 
-  // Delete object2
-  delete object2;
+  // Delete src_object
+  delete src_object;
 
   // Mark scene as dirty
   flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
