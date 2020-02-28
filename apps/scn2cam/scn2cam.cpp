@@ -62,8 +62,8 @@ static int gravity_dimension = RN_Y;
 static double position_sampling = 0.25;
 static double angle_sampling = RN_PI / 3.0;
 static double interpolation_step = 0.1;
-static double min_surface_distance = 2;
-static double max_surface_distance = 8;
+static double min_surface_distance = 3.5;
+static double max_surface_distance = 4.5;
 static double max_surface_normal_angle = 0.5;
 
 
@@ -1707,7 +1707,7 @@ CreateSurfaceCameras(void)
               R3Ray ray(position, -towards);
               RNScalar hit_t = FLT_MAX;
               RNLength surface_distance = min_surface_distance + RNRandomScalar() * (max_surface_distance - min_surface_distance);
-              if (scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, RN_EPSILON, surface_distance)) {
+              if (0 || scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, RN_EPSILON, surface_distance)) {
                 if (0.9*hit_t < surface_distance) surface_distance = 0.9*hit_t;
                 if (surface_distance < min_surface_distance) continue;
               }
