@@ -63,7 +63,8 @@ static int GLUTmodifiers = 0;
 
 // Display variables
 
-static int show_faces = 0;
+static int show_faces = 1;
+static int show_vertices = 0;
 static int show_points = 0;
 static int show_values = 1;
 static int show_isocontours = 0;
@@ -213,15 +214,73 @@ void GLUTRedraw(void)
 
   // Draw faces
   if (show_faces) {
-    glEnable(GL_LIGHTING);
-    static GLfloat ambient_material[] = { 0.1, 0.1, 0.1, 1.0 };
-    static GLfloat diffuse_material[] = { 0.8, 0.8, 0.8, 1.0 };
-    // static GLfloat specular_material[] = { 0.2, 0.2, 0.2, 1.0};
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material); 
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
-    // glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
-    mesh->DrawFaces();
+    if (show_values) {
+      glDisable(GL_LIGHTING);
+      glEnable(GL_POLYGON_OFFSET_FILL);
+      glPolygonOffset(2, 1);
+      glBegin(GL_TRIANGLES);
+      for (int i = 0; i < mesh->NFaces(); i++) {
+        R3MeshFace *face = mesh->Face(i);
+        for (int j = 0; j < 3; j++) {
+          R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
+          RNLoadRgb(NormalizedColor(vertex));
+          R3LoadPoint(mesh->VertexPosition(vertex));
+        }
+      }
+      glEnd();
+      glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+    else {
+      glEnable(GL_LIGHTING);
+      static GLfloat ambient_material[] = { 0.1, 0.1, 0.1, 1.0 };
+      static GLfloat diffuse_material[] = { 0.8, 0.8, 0.8, 1.0 };
+      static GLfloat specular_material[] = { 0.2, 0.2, 0.2, 1.0};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material); 
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
+      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
+      glBegin(GL_TRIANGLES);
+      for (int i = 0; i < mesh->NFaces(); i++) {
+        R3MeshFace *face = mesh->Face(i);
+        R3LoadNormal(mesh->FaceNormal(face));
+        for (int j = 0; j < 3; j++) {
+          R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
+          R3LoadPoint(mesh->VertexPosition(vertex));
+        }
+      }
+      glEnd();
+    }
+  }
+
+  // Draw vertices
+  if (show_vertices) {
+    if (show_values) {
+      glDisable(GL_LIGHTING);
+      glBegin(GL_POINTS);
+      for (int i = 0; i < mesh->NVertices(); i++) {
+        R3MeshVertex *vertex = mesh->Vertex(i);
+        RNLoadRgb(NormalizedColor(vertex));
+        R3LoadPoint(mesh->VertexPosition(vertex));
+      }
+      glEnd();
+    }
+    else {
+      glEnable(GL_LIGHTING);
+      static GLfloat ambient_material[] = { 0.1, 0.1, 0.1, 1.0 };
+      static GLfloat diffuse_material[] = { 0.8, 0.8, 0.8, 1.0 };
+      // static GLfloat specular_material[] = { 0.2, 0.2, 0.2, 1.0};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material); 
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
+      // glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
+      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
+      glBegin(GL_POINTS);
+      for (int i = 0; i < mesh->NVertices(); i++) {
+        R3MeshVertex *vertex = mesh->Vertex(i);
+        R3LoadNormal(mesh->VertexNormal(vertex));
+        R3LoadPoint(mesh->VertexPosition(vertex));
+      }
+      glEnd();
+    }
   }
 
   // Draw points
@@ -237,30 +296,6 @@ void GLUTRedraw(void)
       Point *point = points->Kth(i);
       R3Sphere(point->position, radius).Draw();
     }
-  }
-
-  // Draw values
-  if (show_values) {
-    glEnable(GL_LIGHTING);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(2, 1);
-    for (int i = 0; i < mesh->NFaces(); i++) {
-      R3MeshFace *face = mesh->Face(i);
-      glBegin(GL_POLYGON);
-      for (int j = 0; j < 3; j++) {
-        R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
-        static GLfloat material[4] = { 0.8, 0.8, 0.8, 1 };
-        RNRgb color = NormalizedColor(vertex);
-        material[0] = color[0];
-        material[1] = color[1];
-        material[2] = color[2];
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, material);
-        R3LoadNormal(mesh->VertexNormal(vertex));
-        R3LoadPoint(mesh->VertexPosition(vertex));
-      }
-      glEnd();
-    }
-    glDisable(GL_POLYGON_OFFSET_FILL);
   }
 
   // Draw isocontours
@@ -308,7 +343,7 @@ void GLUTRedraw(void)
     glLineWidth(1);
   }
 
-  // Draw vertices
+  // Draw extrema
   if (show_global_maxima || show_global_minima || show_local_maxima || show_local_minima) {
     glEnable(GL_LIGHTING);
     for (int i = 0; i < mesh->NVertices(); i++) {
@@ -344,24 +379,6 @@ void GLUTRedraw(void)
         R3Sphere(position, radius).Draw();
       }
     }
-  }
-
-  // Draw values
-  if (show_values) {
-    glDisable(GL_LIGHTING);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(2, 1);
-    for (int i = 0; i < mesh->NFaces(); i++) {
-      R3MeshFace *face = mesh->Face(i);
-      glBegin(GL_POLYGON);
-      for (int j = 0; j < 3; j++) {
-        R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
-        RNLoadRgb(NormalizedColor(vertex));
-        R3LoadPoint(mesh->VertexPosition(vertex));
-      }
-      glEnd();
-    }
-    glDisable(GL_POLYGON_OFFSET_FILL);
   }
 
   // Draw text
@@ -568,6 +585,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_local_minima = !show_local_minima;
     break;
 
+  case 'N':
+  case 'n':
+    show_values = !show_values;
+    break;
+
   case 'P':
   case 'p':
     show_points = !show_points;
@@ -585,7 +607,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'V':
   case 'v':
-    show_values = !show_values;
+    show_vertices = !show_vertices;
     break;
 
   case 27: // ESCAPE
