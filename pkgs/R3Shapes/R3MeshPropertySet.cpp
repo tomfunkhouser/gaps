@@ -357,7 +357,7 @@ ReadToronto(const char *filename)
 {
   // Get base property name
   char *name = NULL;
-  char buffer[1024];
+  char buffer[512];
   strcpy(buffer, filename);
   name = strrchr(buffer, '/');
   if (name) name++; 

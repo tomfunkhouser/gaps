@@ -39,7 +39,7 @@ R3MeshProperty(R3Mesh *mesh, const char *name, const RNScalar *vertex_values)
     values(NULL)
 {
   // Assign property name
-  if (name) strncpy(this->name, name, 1024); 
+  if (name) strncpy(this->name, name, 1023); 
   else sprintf(this->name, "Property%d", next_property_name++);
   this->name[1023] = '\0';
   
