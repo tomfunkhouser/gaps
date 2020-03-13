@@ -57,6 +57,7 @@ public:
   RNScalar GridValue(int i, int j) const;
   RNScalar GridValue(RNCoord x, RNCoord y) const;
   RNScalar GridValue(const R2Point& grid_point) const;
+  RNScalar GridValue(RNCoord x, RNCoord y, RNLength sigma) const;
   RNScalar WorldValue(RNCoord x, RNCoord y) const;
   RNScalar WorldValue(const R2Point& world_point) const;
   RNScalar& operator()(int i, int j);
@@ -184,7 +185,7 @@ public:
   R2Point WorldPosition(RNCoord x, RNCoord y) const;
   R2Point GridPosition(RNCoord x, RNCoord y) const;
 
-  // Reading/writing
+  // File reading/writing
   int ReadFile(const char *filename);
   int ReadPFMFile(const char *filename);
   int ReadPNMFile(const char *filename);
@@ -198,10 +199,24 @@ public:
   int WriteGridFile(const char *filename) const;
   int WritePNGFile(const char *filename) const;
   int WriteImageFile(const char *filename) const;
-  int ReadGrid(FILE *fp = NULL);
-  int WriteGrid(FILE *fp = NULL) const;
-  int Print(FILE *fp = NULL) const;
+
+  // Buffer reading/writing
+  int ReadGridBuffer(char *buffer, size_t buffer_length);
+  int ReadPNGBuffer(char *buffer, size_t buffer_length);
+  int WriteGridBuffer(char **buffer, size_t *buffer_length) const;
+  int WritePNGBuffer(char **buffer, size_t *buffer_length) const;
+
+  // Stream reading/writing
+  int ReadGridStream(FILE *fp = NULL);
+  int ReadPNGStream(FILE *fp = NULL);
+  int WriteGridStream(FILE *fp = NULL) const;
+  int WritePNGStream(FILE *fp = NULL) const;
+
+  // Frame buffer capture functions
   void Capture(void);
+
+  // Print in ascii format
+  int Print(FILE *fp = NULL) const;
 
   // Draw functions
   void Draw(void) const;
@@ -209,7 +224,6 @@ public:
   void DrawImage(int x = 0, int y = 0) const;
 
   // Utility functions
-  RNScalar GridValue(RNCoord x, RNCoord y, RNLength sigma) const;
   void ConnectedComponentLabelFilter(RNScalar isolevel);
   void ConnectedComponentSizeFilter(RNScalar isolevel);
   void ConnectedComponentCentroidFilter(RNScalar isolevel);
@@ -218,14 +232,19 @@ public:
   int ConnectedComponents(RNScalar isolevel = 0, int max_components = 0, int *seeds = NULL, int *sizes = NULL, int *grid_components = NULL);
   int GenerateIsoContour(RNScalar isolevel, R2Point *points, int max_points) const;
 
-  // Debugging functions
-  const RNScalar *GridValues(void) const;
+  // Indexing functions
   void IndicesToIndex(int i, int j, int& index) const;
   void IndexToIndices(int index, int& i, int& j) const;
+
+public:
+  // Temporary (do not use)
+  const RNScalar *GridValues(void) const;
 
   // Temporary (for backwards compatibility)
   int Read(const char *filename) { return ReadFile(filename); };
   int Write(const char *filename) const { return WriteFile(filename); };
+  int ReadGrid(FILE *fp = NULL) { return ReadGridStream(fp); };
+  int WriteGrid(FILE *fp = NULL) const { return WriteGrid(fp); }
 
 private:
   R2Affine grid_to_world_transform;

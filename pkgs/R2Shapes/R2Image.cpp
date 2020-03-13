@@ -87,7 +87,7 @@ R2Image(const char *filename)
     pixels(NULL)
 {
   // Read image
-  Read(filename);
+  ReadFile(filename);
 }
 
 
@@ -519,7 +519,7 @@ R2ImageFileFormat(const char *filename)
 
 
 int R2Image::
-Read(const char *filename)
+ReadFile(const char *filename)
 {
   // Initialize everything
   if (pixels) { delete [] pixels; pixels = NULL; }
@@ -544,22 +544,22 @@ Read(const char *filename)
   extension[len] = '\0';
 
   // Read file of appropriate type
-  if (format == R2_IMAGE_JPEG_FORMAT) return ReadJPEG(filename);
-  else if (format == R2_IMAGE_PNG_FORMAT) return ReadPNG(filename);
-  else if (format == R2_IMAGE_TIFF_FORMAT) return ReadTIFF(filename);
-  else if (format == R2_IMAGE_BMP_FORMAT) return ReadBMP(filename);
-  else if (format == R2_IMAGE_RAW_FORMAT) return ReadRAW(filename);
-  else if (!strncmp(extension, ".bmp", 4)) return ReadBMP(filename);
-  else if (!strncmp(extension, ".ppm", 4)) return ReadPPM(filename);
-  else if (!strncmp(extension, ".pgm", 4)) return ReadPPM(filename);
-  else if (!strncmp(extension, ".pfm", 4)) return ReadPFM(filename);
-  else if (!strncmp(extension, ".jpg", 4)) return ReadJPEG(filename);
-  else if (!strncmp(extension, ".jpeg", 5)) return ReadJPEG(filename);
-  else if (!strncmp(extension, ".tif", 4)) return ReadTIFF(filename);
-  else if (!strncmp(extension, ".tiff", 5)) return ReadTIFF(filename);
-  else if (!strncmp(extension, ".png", 4)) return ReadPNG(filename);
-  else if (!strncmp(extension, ".raw", 4)) return ReadRAW(filename);
-  else if (!strncmp(extension, ".grd", 4)) return ReadGRD(filename);
+  if (format == R2_IMAGE_JPEG_FORMAT) return ReadJPEGFile(filename);
+  else if (format == R2_IMAGE_PNG_FORMAT) return ReadPNGFile(filename);
+  else if (format == R2_IMAGE_TIFF_FORMAT) return ReadTIFFFile(filename);
+  else if (format == R2_IMAGE_BMP_FORMAT) return ReadBMPFile(filename);
+  else if (format == R2_IMAGE_RAW_FORMAT) return ReadRAWFile(filename);
+  else if (!strncmp(extension, ".bmp", 4)) return ReadBMPFile(filename);
+  else if (!strncmp(extension, ".ppm", 4)) return ReadPPMFile(filename);
+  else if (!strncmp(extension, ".pgm", 4)) return ReadPPMFile(filename);
+  else if (!strncmp(extension, ".pfm", 4)) return ReadPFMFile(filename);
+  else if (!strncmp(extension, ".jpg", 4)) return ReadJPEGFile(filename);
+  else if (!strncmp(extension, ".jpeg", 5)) return ReadJPEGFile(filename);
+  else if (!strncmp(extension, ".tif", 4)) return ReadTIFFFile(filename);
+  else if (!strncmp(extension, ".tiff", 5)) return ReadTIFFFile(filename);
+  else if (!strncmp(extension, ".png", 4)) return ReadPNGFile(filename);
+  else if (!strncmp(extension, ".raw", 4)) return ReadRAWFile(filename);
+  else if (!strncmp(extension, ".grd", 4)) return ReadGRDFile(filename);
   
   // Should never get here
   RNFail("Unrecognized image file extension");
@@ -569,7 +569,7 @@ Read(const char *filename)
 
 
 int R2Image::
-Write(const char *filename) const
+WriteFile(const char *filename) const
 {
   // Parse input filename extension
   const char *input_extension;
@@ -587,15 +587,15 @@ Write(const char *filename) const
   extension[len] = '\0';
 
   // Write file of appropriate type
-  if (!strncmp(extension, ".bmp", 4)) return WriteBMP(filename);
-  else if (!strncmp(extension, ".pgm", 4)) return WritePPM(filename, 0);
-  else if (!strncmp(extension, ".ppm", 4)) return WritePPM(filename, 0);
-  else if (!strncmp(extension, ".jpg", 4)) return WriteJPEG(filename);
-  else if (!strncmp(extension, ".jpeg", 5)) return WriteJPEG(filename);
-  else if (!strncmp(extension, ".tif", 4)) return WriteTIFF(filename);
-  else if (!strncmp(extension, ".tiff", 5)) return WriteTIFF(filename);
-  else if (!strncmp(extension, ".png", 4)) return WritePNG(filename);
-  else if (!strncmp(extension, ".raw", 4)) return WriteRAW(filename);
+  if (!strncmp(extension, ".bmp", 4)) return WriteBMPFile(filename);
+  else if (!strncmp(extension, ".pgm", 4)) return WritePPMFile(filename, 0);
+  else if (!strncmp(extension, ".ppm", 4)) return WritePPMFile(filename, 0);
+  else if (!strncmp(extension, ".jpg", 4)) return WriteJPEGFile(filename);
+  else if (!strncmp(extension, ".jpeg", 5)) return WriteJPEGFile(filename);
+  else if (!strncmp(extension, ".tif", 4)) return WriteTIFFFile(filename);
+  else if (!strncmp(extension, ".tiff", 5)) return WriteTIFFFile(filename);
+  else if (!strncmp(extension, ".png", 4)) return WritePNGFile(filename);
+  else if (!strncmp(extension, ".raw", 4)) return WriteRAWFile(filename);
 
   // Should never get here
   RNFail("Unrecognized image file extension");
@@ -709,7 +709,7 @@ static void LongWriteLE(int x, FILE *fp)
 
 
 int R2Image::
-ReadBMP(const char *filename)
+ReadBMPFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");
@@ -834,7 +834,7 @@ ReadBMP(const char *filename)
 
 
 int R2Image::
-WriteBMP(const char *filename) const
+WriteBMPFile(const char *filename) const
 {
   // Check ncomponents
   assert(ncomponents == 3);
@@ -921,7 +921,7 @@ WriteBMP(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadPPM(const char *filename)
+ReadPPMFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");
@@ -1067,7 +1067,7 @@ ReadPPM(const char *filename)
 
 
 int R2Image::
-WritePPM(const char *filename, int ascii) const
+WritePPMFile(const char *filename, int ascii) const
 {
   // Check ncomponents
   assert(ncomponents == 3);
@@ -1147,7 +1147,7 @@ WritePPM(const char *filename, int ascii) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadPFM(const char *filename)
+ReadPFMFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");
@@ -1311,7 +1311,7 @@ ReadPFM(const char *filename)
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadJPEG(const char *filename)
+ReadJPEGFile(const char *filename)
 {
 #ifdef RN_USE_JPEG
   // Open file
@@ -1373,7 +1373,7 @@ ReadJPEG(const char *filename)
 	
 
 int R2Image::
-WriteJPEG(const char *filename) const
+WriteJPEGFile(const char *filename) const
 {
 #ifdef RN_USE_JPEG
   // Open file
@@ -1432,7 +1432,7 @@ WriteJPEG(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadTIFF(const char *filename)
+ReadTIFFFile(const char *filename)
 {
 #ifdef RN_USE_TIFF
   // Open file
@@ -1503,7 +1503,7 @@ ReadTIFF(const char *filename)
 	
 
 int R2Image::
-WriteTIFF(const char *filename) const
+WriteTIFFFile(const char *filename) const
 {
 #ifdef RN_USE_TIFF
   // Open TIFF file
@@ -1562,16 +1562,9 @@ WriteTIFF(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadPNG(const char *filename)
+ReadPNGStream(FILE *fp)
 {
 #ifdef RN_USE_PNG
-  // Open file
-  FILE *fp = fopen(filename, "rb");
-  if (!fp) {
-    RNFail("Unable to open PNG file %s\n", filename);
-    return 0;
-   }
-
   // Create and initialize the png_struct 
   png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (png_ptr == NULL) {
@@ -1629,9 +1622,6 @@ ReadPNG(const char *filename)
   // Clean up after the read, and free any memory allocated  
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
-  // Close the file 
-  fclose(fp);
-
   // Return success 
   return 1;
 #else
@@ -1643,16 +1633,9 @@ ReadPNG(const char *filename)
 
 
 int R2Image::
-WritePNG(const char *filename) const
+WritePNGStream(FILE *fp) const
 {
 #ifdef RN_USE_PNG
-  // Open the file 
-  FILE *fp = fopen(filename, "wb");
-  if (fp == NULL) {
-    RNFail("Unable to open PNG file %s\n", filename);
-    return 0;
-  }
-  
   // Create and initialize the png_struct 
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (png_ptr == NULL) {
@@ -1674,7 +1657,7 @@ WritePNG(const char *filename) const
   else if (ncomponents == 2) color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
   else if (ncomponents == 3) color_type = PNG_COLOR_TYPE_RGB;
   else if (ncomponents == 4) color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-  else { RNFail("Invalid number of components for %s\n", filename); return 0; }
+  else { RNFail("Invalid number of components in PNG file\n"); return 0; }
 
   // Fill in the image data 
   png_set_IHDR(png_ptr, info_ptr, width, height,
@@ -1703,9 +1686,6 @@ WritePNG(const char *filename) const
   // Clean up after the write, and free any memory allocated 
   png_destroy_write_struct(&png_ptr, &info_ptr);
 
-  // Close the file 
-  fclose(fp);
-
   // Return success
   return 1;
 #else
@@ -1716,12 +1696,112 @@ WritePNG(const char *filename) const
 
 
 
+int R2Image::
+ReadPNGFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open PNG file %s\n", filename);
+    return 0;
+   }
+
+  // Read file
+  if (!ReadPNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Image::
+WritePNGFile(const char *filename) const
+{
+  // Open the file 
+  FILE *fp = fopen(filename, "wb");
+  if (fp == NULL) {
+    RNFail("Unable to open PNG file %s\n", filename);
+    return 0;
+  }
+  
+  // Write the file
+  if (!WritePNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R2Image::
+ReadPNGBuffer(char *buffer, size_t buffer_length)
+{
+  // Open stream
+  FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
+  if (!fp) {
+    RNFail("Unable to open PNG stream\n");
+    return 0;
+   }
+
+  // Read file
+  if (!ReadPNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Image::
+WritePNGBuffer(char **buffer, size_t *buffer_length) const
+{
+  // Open the file 
+  FILE *fp = open_memstream(buffer, buffer_length);
+  if (fp == NULL) {
+    RNFail("Unable to open PNG stream\n");
+    return 0;
+  }
+  
+  // Write the file
+  if (!WritePNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // RAW I/O
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadRAW(const char *filename)
+ReadRAWFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");
@@ -1799,7 +1879,7 @@ ReadRAW(const char *filename)
 
 
 int R2Image::
-WriteRAW(const char *filename) const
+WriteRAWFile(const char *filename) const
 {
   // Open file
   FILE *fp = fopen(filename, "wb");
@@ -1859,7 +1939,7 @@ WriteRAW(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadGRD(const char *filename)
+ReadGRDFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");

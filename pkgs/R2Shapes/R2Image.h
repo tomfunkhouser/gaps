@@ -43,29 +43,62 @@ class R2Image {
   void SetPixel(int row, int column, const unsigned char *pixel);
   void SetPixelRGB(int row, int column, const RNRgb& rgb);
 
-  // Reading/writing
-  int Read(const char *filename);
-  int ReadBMP(const char *filename);
-  int ReadPPM(const char *filename);
-  int ReadPFM(const char *filename);
-  int ReadJPEG(const char *filename);
-  int ReadTIFF(const char *filename);
-  int ReadPNG(const char *filename);
-  int ReadRAW(const char *filename);
-  int ReadGRD(const char *filename);
-  int Write(const char *filename) const;
-  int WriteBMP(const char *filename) const;
-  int WritePPM(const char *filename, int ascii = 0) const;
-  int WriteRAW(const char *filename) const;
-  int WriteJPEG(const char *filename) const;
-  int WriteTIFF(const char *filename) const;
-  int WritePNG(const char *filename) const;
+  // File reading/writing
+  int ReadFile(const char *filename);
+  int ReadBMPFile(const char *filename);
+  int ReadPPMFile(const char *filename);
+  int ReadPFMFile(const char *filename);
+  int ReadJPEGFile(const char *filename);
+  int ReadTIFFFile(const char *filename);
+  int ReadPNGFile(const char *filename);
+  int ReadRAWFile(const char *filename);
+  int ReadGRDFile(const char *filename);
+  int WriteFile(const char *filename) const;
+  int WriteBMPFile(const char *filename) const;
+  int WritePPMFile(const char *filename, int ascii = 0) const;
+  int WriteRAWFile(const char *filename) const;
+  int WriteJPEGFile(const char *filename) const;
+  int WriteTIFFFile(const char *filename) const;
+  int WritePNGFile(const char *filename) const;
+
+  // Buffer reading/writing
+  int ReadBuffer(char *buffer, size_t buffer_length);
+  int ReadPNGBuffer(char *buffer, size_t buffer_length);
+  int WriteBuffer(char **buffer, size_t *buffer_length) const;
+  int WritePNGBuffer(char **buffer, size_t *buffer_length) const;
+  
+  // Stream reading/writing
+  int ReadStream(FILE *fp);
+  int ReadPNGStream(FILE *fp);
+  int WriteStream(FILE *fp) const;
+  int WritePNGStream(FILE *fp) const;
+  
+  // Capture functions
   void Capture(void);
 
   // Draw functions
   void Draw(int x = 0, int y = 0) const;
 
- private:
+public:
+  // For backward compatibility
+  int Read(const char *filename) { return ReadFile(filename); };
+  int ReadBMP(const char *filename) { return ReadBMPFile(filename); };
+  int ReadPPM(const char *filename) { return ReadPPMFile(filename); };
+  int ReadPFM(const char *filename) { return ReadPFMFile(filename); };
+  int ReadJPEG(const char *filename) { return ReadJPEGFile(filename); };
+  int ReadTIFF(const char *filename) { return ReadTIFFFile(filename); };
+  int ReadPNG(const char *filename) { return ReadPNGFile(filename); };
+  int ReadRAW(const char *filename) { return ReadRAWFile(filename); };
+  int ReadGRD(const char *filename) { return ReadGRDFile(filename); };
+  int Write(const char *filename) const { return WriteFile(filename); };
+  int WriteBMP(const char *filename) const { return WriteBMPFile(filename); };
+  int WritePPM(const char *filename, int ascii = 0) const { return WritePPMFile(filename, ascii); };
+  int WriteRAW(const char *filename) const { return WriteRAWFile(filename); };
+  int WriteJPEG(const char *filename) const { return WriteJPEGFile(filename); };
+  int WriteTIFF(const char *filename) const { return WriteTIFFFile(filename); };
+  int WritePNG(const char *filename) const { return WritePNGFile(filename); };
+
+private:
   int width;
   int height;
   int ncomponents;
@@ -157,7 +190,43 @@ Pixel(int x, int y) const
 }
 
 
+  
+inline int R2Image::
+ReadBuffer(char *buffer, size_t buffer_length)
+{
+  // Read from PNG buffer
+  return ReadPNGBuffer(buffer, buffer_length);
+}
 
+
+  
+inline int R2Image::
+WriteBuffer(char **buffer, size_t *buffer_length) const
+{
+  // Write to PNG buffer
+  return WritePNGBuffer(buffer, buffer_length);
+}
+
+
+
+inline int R2Image::
+ReadStream(FILE *fp)
+{
+  // Read from PNG stream
+  return ReadPNGStream(fp);
+}
+
+  
+inline int R2Image::
+WriteStream(FILE *fp) const
+{
+  // Write to PNG stream
+  return WritePNGStream(fp);
+}
+
+  
+
+  
 // End namespace
 }
 

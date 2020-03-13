@@ -3937,59 +3937,7 @@ WritePFMFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2Grid::
-ReadGridFile(const char *filename)
-{
-  // Open file
-  FILE *fp = stdin;
-  if (filename) {
-    fp = fopen(filename, "rb");
-    if (!fp) {
-      RNFail("Unable to open file %s", filename);
-      return 0;
-    }
-  }
-
-  // Read file
-  int status = ReadGrid(fp);
-  if (!status) return 0;
-
-  // Close file
-  fclose(fp);
-
-  // Return number of grid values read
-  return status;
-}
-
-
-
-int R2Grid::
-WriteGridFile(const char *filename) const
-{
-  // Open file
-  FILE *fp = stdout;
-  if (filename) {
-    fp = fopen(filename, "wb");
-    if (!fp) {
-      RNFail("Unable to open file %s", filename);
-      return 0;
-    }
-  }
-
-  // Write file
-  int status = WriteGrid(fp);
-  if (!status) return 0;
-
-  // Close file
-  fclose(fp);
-
-  // Return number of grid values written
-  return status;
-}
-
-
-
-int R2Grid::
-ReadGrid(FILE *fp)
+ReadGridStream(FILE *fp)
 {
   // Read grid resolution from file
   if (fread(&grid_resolution, sizeof(int), 2, fp) != 2) {
@@ -4041,7 +3989,7 @@ ReadGrid(FILE *fp)
 
 
 int R2Grid::
-WriteGrid(FILE *fp) const
+WriteGridStream(FILE *fp) const
 {
   // Write grid resolution from file
   if (fwrite(&grid_resolution, sizeof(int), 2, fp) != 2) {
@@ -4071,21 +4019,116 @@ WriteGrid(FILE *fp) const
 
 
 
+int R2Grid::
+ReadGridFile(const char *filename)
+{
+  // Open file
+  FILE *fp = stdin;
+  if (filename) {
+    fp = fopen(filename, "rb");
+    if (!fp) {
+      RNFail("Unable to open file %s", filename);
+      return 0;
+    }
+  }
+
+  // Read file
+  int status = ReadGridStream(fp);
+  if (!status) return 0;
+
+  // Close file
+  fclose(fp);
+
+  // Return number of grid values read
+  return status;
+}
+
+
+
+int R2Grid::
+WriteGridFile(const char *filename) const
+{
+  // Open file
+  FILE *fp = stdout;
+  if (filename) {
+    fp = fopen(filename, "wb");
+    if (!fp) {
+      RNFail("Unable to open file %s", filename);
+      return 0;
+    }
+  }
+
+  // Write file
+  int status = WriteGridStream(fp);
+  if (!status) return 0;
+
+  // Close file
+  fclose(fp);
+
+  // Return number of grid values written
+  return status;
+}
+
+
+
+int R2Grid::
+ReadGridBuffer(char *buffer, size_t buffer_length)
+{
+  // Open stream
+  FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
+  if (!fp) {
+    RNFail("Unable to open Grid stream\n");
+    return 0;
+   }
+
+  // Read file
+  if (!ReadGridStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Grid::
+WriteGridBuffer(char **buffer, size_t *buffer_length) const
+{
+  // Open the file 
+  FILE *fp = open_memstream(buffer, buffer_length);
+  if (fp == NULL) {
+    RNFail("Unable to open Grid stream\n");
+    return 0;
+  }
+  
+  // Write the file
+  if (!WriteGridStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // PNG READ/WRITE
 ////////////////////////////////////////////////////////////////////////
 
 int R2Grid::
-ReadPNGFile(const char *filename)
+ReadPNGStream(FILE *fp)
 {
 #ifdef RN_USE_PNG
-  // Open file
-  FILE *fp = fopen(filename, "rb");
-  if (!fp) {
-    RNFail("Unable to open PNG file %s\n", filename);
-    return 0;
-   }
-
   // Create and initialize the png_struct 
   png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (png_ptr == NULL) {
@@ -4180,9 +4223,6 @@ ReadPNGFile(const char *filename)
   // Clean up after the read, and free any memory allocated  
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
-  // Close the file 
-  fclose(fp);
-
   // Return success 
   return 1;
 #else
@@ -4194,16 +4234,9 @@ ReadPNGFile(const char *filename)
 
 
 int R2Grid::
-WritePNGFile(const char *filename) const
+WritePNGStream(FILE *fp) const
 {
 #ifdef RN_USE_PNG
-  // Open the file 
-  FILE *fp = fopen(filename, "wb");
-  if (fp == NULL) {
-    RNFail("Unable to open PNG file %s\n", filename);
-    return 0;
-  }
-  
   // Create and initialize the png_struct 
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (png_ptr == NULL) {
@@ -4268,15 +4301,112 @@ WritePNGFile(const char *filename) const
   // Delete copy of data
   delete [] data;
 
-  // Close the file 
-  fclose(fp);
-
   // Return success
   return 1;
 #else
   RNFail("PNG not supported");
   return 0;
 #endif
+}
+
+
+
+int R2Grid::
+ReadPNGFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open PNG file %s\n", filename);
+    return 0;
+   }
+
+  // Read file
+  if (!ReadPNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Grid::
+WritePNGFile(const char *filename) const
+{
+  // Open the file 
+  FILE *fp = fopen(filename, "wb");
+  if (fp == NULL) {
+    RNFail("Unable to open PNG file %s\n", filename);
+    return 0;
+  }
+  
+  // Write the file
+  if (!WritePNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R2Grid::
+ReadPNGBuffer(char *buffer, size_t buffer_length)
+{
+  // Open stream
+  FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
+  if (!fp) {
+    RNFail("Unable to open PNG stream\n");
+    return 0;
+   }
+
+  // Read file
+  if (!ReadPNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Grid::
+WritePNGBuffer(char **buffer, size_t *buffer_length) const
+{
+  // Open the file 
+  FILE *fp = open_memstream(buffer, buffer_length);
+  if (fp == NULL) {
+    RNFail("Unable to open PNG stream\n");
+    return 0;
+  }
+  
+  // Write the file
+  if (!WritePNGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
 }
 
 
