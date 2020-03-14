@@ -28,6 +28,7 @@ R3SurfelBlock(void)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -48,6 +49,7 @@ R3SurfelBlock(const R3SurfelBlock& block)
     bbox(block.bbox),
     resolution(block.resolution),
     flags(block.flags & R3_SURFEL_BLOCK_PROPERTY_FLAGS),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -73,6 +75,7 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     bbox(set->BBox()),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -109,6 +112,7 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
     bbox(set->BBox()),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -145,6 +149,7 @@ R3SurfelBlock(const R3Surfel *surfels, int nsurfels, const R3Point& origin)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -170,6 +175,7 @@ R3SurfelBlock(const RNArray<const R3Surfel *>& array, const R3Point& origin)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -195,6 +201,7 @@ R3SurfelBlock(const R3Point *points, int npoints)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -236,6 +243,7 @@ R3SurfelBlock(const RNArray<R3Point *>& points)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
+    data(NULL),
     database(NULL),
     database_index(-1),
     file_surfels_offset(0),
@@ -421,6 +429,15 @@ SetDirty(RNBoolean dirty)
 
 
 
+void R3SurfelBlock::
+SetData(void *data) 
+{
+  // Set user data
+  this->data = data;
+}
+
+
+  
 ////////////////////////////////////////////////////////////////////////
 // PROPERTY UPDATE FUNCTIONS
 ////////////////////////////////////////////////////////////////////////

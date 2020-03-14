@@ -72,7 +72,10 @@ public:
   RNBoolean HasAerial(void) const;
   RNBoolean HasTerrestrial(void) const;
 
+  // User data property functions
+  void *Data(void) const;
 
+  
   ///////////////////////////////////
   //// SURFEL PROPERTY FUNCTIONS ////
   ///////////////////////////////////
@@ -105,6 +108,9 @@ public:
 
   // Surfel mark manipulation functions
   void SetMarks(RNBoolean mark = TRUE);
+
+  // User data manipulation functions
+  void SetData(void *data);
 
 
   ///////////////////////////////////////
@@ -211,6 +217,7 @@ private:
   R3Box bbox;
   RNScalar resolution;
   RNFlags flags;
+  void *data;
 
   // Database data
   friend class R3SurfelDatabase;
@@ -346,6 +353,15 @@ AverageRadius(void) const
   RNScalar res = Resolution();
   if (res == 0) return 0;
   return sqrt(1.0 / (res * RN_PI));
+}
+
+
+
+inline void *R3SurfelBlock::
+Data(void) const
+{
+  // Return user data
+  return data;
 }
 
 
