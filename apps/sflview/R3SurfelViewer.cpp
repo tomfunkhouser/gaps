@@ -26,8 +26,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewer(),
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     center_point(0,0,0),
-    current_scan_index(-1),
-    current_scan_texture(),
+    current_image_index(-1),
+    current_image_texture(),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -41,7 +41,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     node_bbox_visibility(0),
     block_bbox_visibility(0),
     scan_viewpoint_visibility(0),
-    scan_image_visibility(0),
+    image_viewpoint_visibility(0),
+    image_pixels_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
@@ -52,6 +53,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     node_bbox_color(0,0,1),
     block_bbox_color(0,1,0),
     scan_viewpoint_color(0,1,1),
+    image_viewpoint_color(0,1,1),
     center_point_color(1,0,0),
     adapt_working_set_automatically(0),
     target_resolution(30),
@@ -416,7 +418,7 @@ Redraw(void)
             double z = block_origin.Z() + surfel->Z();
             double value = 0.1 * (z - center_point.Z());
             LoadColor(value);
-            glVertex3fv(surfel->Coords());
+            glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
           glPopMatrix();
@@ -439,7 +441,7 @@ Redraw(void)
             float g = 0.5F + 0.5F * surfel->NY();
             float b = 0.5F + 0.5F * surfel->NZ();
             glColor3f(r, g, b);
-            glVertex3fv(surfel->Coords());
+            glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
           glPopMatrix();
@@ -460,7 +462,7 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
             glNormal3f(surfel->NX(), surfel->NY(), surfel->NZ());
-            glVertex3fv(surfel->Coords());
+            glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
           glPopMatrix();
@@ -508,7 +510,7 @@ Redraw(void)
             glColor4ub(surfel->R(), surfel->G(), surfel->B(), alpha);
 
             // Draw surfel
-            glVertex3fv(surfel->Coords());
+            glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
           glPopMatrix();
@@ -542,7 +544,7 @@ Redraw(void)
             glColor3ubv(surfel->Color());
 
             // Draw surfel
-            glVertex3fv(surfel->Coords());
+            glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
           glPopMatrix();
@@ -694,20 +696,30 @@ Redraw(void)
     glEnd();
   }
 
-  // Draw scan image
-  if ((scan_image_visibility) && (current_scan_texture.Image()) &&
-      (current_scan_index >= 0) && (current_scan_index < scene->NScans())) {
+  // Draw image viewpoints
+  if (image_viewpoint_visibility) {
+    glDisable(GL_LIGHTING);
+    RNLoadRgb(image_viewpoint_color);
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      image->Draw();
+    }
+  }
+
+  // Draw image pixels
+  if ((image_pixels_visibility) && (current_image_texture.Image()) &&
+      (current_image_index >= 0) && (current_image_index < scene->NImages())) {
     RNLength depth = 10;
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
-    R3SurfelScan *scan = scene->Scan(current_scan_index);
-    if ((scan->ImageWidth() > 0) && (scan->ImageHeight() > 0)) {
-      R3Point c = scan->Viewpoint() + depth * scan->Towards();
-      c -= ((scan->ImageCenter().X() - 0.5*scan->ImageWidth()) / (0.5*scan->ImageWidth())) * scan->Right() * depth;
-      c -= ((scan->ImageCenter().Y() - 0.5*scan->ImageHeight()) / (0.5*scan->ImageHeight())) * scan->Up() * depth;
-      R3Vector dx = depth * tan(scan->XFOV()) * scan->Right();
-      R3Vector dy = depth * tan(scan->YFOV()) * scan->Up();
-      current_scan_texture.Draw();
+    R3SurfelImage *image = scene->Image(current_image_index);
+    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      R3Point c = image->Viewpoint() + depth * image->Towards();
+      c -= ((image->ImageCenter().X() - 0.5*image->ImageWidth()) / (0.5*image->ImageWidth())) * image->Right() * depth;
+      c -= ((image->ImageCenter().Y() - 0.5*image->ImageHeight()) / (0.5*image->ImageHeight())) * image->Up() * depth;
+      R3Vector dx = depth * tan(image->XFOV()) * image->Right();
+      R3Vector dy = depth * tan(image->YFOV()) * image->Up();
+      current_image_texture.Draw();
       glBegin(GL_QUADS);
       R3LoadTextureCoords(0.0, 0.0);
       R3LoadPoint(c - dx - dy);
@@ -999,7 +1011,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'I':
     case 'i':
-      SetScanImageVisibility(-1);
+      SetImagePixelsVisibility(-1);
       break;
       
     case 'L':
@@ -1036,11 +1048,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case 'v':
-      JumpToNextScanViewpoint(1);
+      JumpToNextImageViewpoint(1);
       break;
       
     case 'V':
-      JumpToNextScanViewpoint(-1);
+      JumpToNextImageViewpoint(-1);
       break;
       
     case 'W':
@@ -1064,6 +1076,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'Y':
     case 'y':
       SetScanViewpointVisibility(-1);
+      break;
+      
+    case 'Z':
+    case 'z':
+      SetImageViewpointVisibility(-1);
       break;
       
     case 'Q': 
@@ -1222,25 +1239,26 @@ ZoomCamera(RNScalar scale)
 
 
 void R3SurfelViewer::
-JumpToNextScanViewpoint(int delta)
+JumpToNextImageViewpoint(int delta)
 {
-  // Check number of scans
-  if (scene->NScans() == 0) return;
+  // Check number of images
+  if (scene->NImages() == 0) return;
 
-  // Update current scan index
-  if (current_scan_index < 0) current_scan_index = 0;
-  else current_scan_index += delta;
-  if (current_scan_index < 0) current_scan_index = 0;
-  if (current_scan_index >= scene->NScans()) current_scan_index = scene->NScans() - 1;
+  // Update current image index
+  if (current_image_index < 0) current_image_index = 0;
+  else current_image_index += delta;
+  if (current_image_index < 0) current_image_index = 0;
+  if (current_image_index >= scene->NImages()) current_image_index = scene->NImages() - 1;
 
   // Set camera
-  R3SurfelScan *scan = scene->Scan(current_scan_index);
-  R3Camera camera(scan->Viewpoint(), scan->Towards(), scan->Up(),
-    scan->XFOV(), scan->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
+  R3SurfelImage *image = scene->Image(current_image_index);
+  R3Camera camera(image->Viewpoint(), image->Towards(), image->Up(),
+    image->XFOV(), image->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
   viewer.SetCamera(camera);
 
   // Update working set
-  R3SurfelNode *node = scan->Node();
+  R3SurfelScan *scan = image->Scan();
+  R3SurfelNode *node = (scan) ? scan->Node() : NULL;
   if (!node) {
     SetCenterPoint(scan->Viewpoint() + 2.0 * scan->Towards());
   }
@@ -1250,16 +1268,16 @@ JumpToNextScanViewpoint(int delta)
     InsertIntoWorkingSet(node, TRUE);
   }
 
-  // Update scan texture
-  if (scan_image_visibility) {
-    if ((current_scan_index >= 0) && (current_scan_index < scene->NScans())) {
+  // Update image texture
+  if (image_pixels_visibility) {
+    if ((current_image_index >= 0) && (current_image_index < scene->NImages())) {
       RNBoolean found = FALSE;      
       char image_filename[4096];
-      sprintf(image_filename, "%s.jpg", scan->Name());
+      sprintf(image_filename, "%s.jpg", image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
       if (!found) {
         const char *image_directory = "undistorted_color_images";
-        sprintf(image_filename, "%s/%s.jpg", image_directory, scan->Name());
+        sprintf(image_filename, "%s/%s.jpg", image_directory, image->Name());
         char *s = strstr(image_filename, "_d");
         if (s) *(s+1) = 'i';
         if (RNFileExists(image_filename)) found = TRUE;
@@ -1267,7 +1285,7 @@ JumpToNextScanViewpoint(int delta)
       if (found) {
         static R2Image image;
         if (image.Read(image_filename)) { 
-          current_scan_texture.SetImage(&image);
+          current_image_texture.SetImage(&image);
           printf("Read %s\n", image_filename);
         }
       }
@@ -1700,7 +1718,7 @@ PickNode(int x, int y, R3Point *picked_position,
           R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
           if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
         }
-        glVertex3fv(surfel->Coords());
+        glVertex3fv(surfel->PositionPtr());
       }
       glEnd();
       glPopMatrix();
@@ -1878,7 +1896,7 @@ PickNode(int x, int y, R3Point *picked_position,
         const R3Surfel *surfel = block->Surfel(k);
         if (!aerial_visibility && surfel->IsAerial()) continue;
         if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-        glVertex3fv(surfel->Coords());
+        glVertex3fv(surfel->PositionPtr());
       }
       glEnd();
       glPopMatrix();

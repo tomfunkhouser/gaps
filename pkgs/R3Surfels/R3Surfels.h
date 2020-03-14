@@ -42,6 +42,7 @@ class R3SurfelNode;
 class R3SurfelNodeSet;
 class R3SurfelTree;
 class R3SurfelScan;
+class R3SurfelImage;
 class R3SurfelFeature;
 class R3SurfelFeatureSet;
 class R3SurfelFeatureVector;
@@ -73,6 +74,7 @@ class R3SurfelScene;
 #include "R3SurfelNodeSet.h"
 #include "R3SurfelTree.h"
 #include "R3SurfelScan.h"
+#include "R3SurfelImage.h"
 #include "R3SurfelFeature.h"
 #include "R3SurfelFeatureSet.h"
 #include "R3SurfelFeatureVector.h"

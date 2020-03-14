@@ -21,18 +21,25 @@ public:
   ~R3SurfelPoint(void);
 
   // Position property functions
-  RNCoord X(void) const;
-  RNCoord Y(void) const;
-  RNCoord Z(void) const;
-  RNCoord Coord(int dimension) const;
+  RNCoord PX(void) const;
+  RNCoord PY(void) const;
+  RNCoord PZ(void) const;
+  RNCoord PositionCoord(int dimension) const;
   R3Point Position(void) const;
 
-  // Position property functions
+  // Normal property functions
   RNCoord NX(void) const;
   RNCoord NY(void) const;
   RNCoord NZ(void) const;
   RNCoord NormalCoord(int dimension) const;
   R3Vector Normal(void) const;
+
+  // Tangent property functions
+  RNCoord TX(void) const;
+  RNCoord TY(void) const;
+  RNCoord TZ(void) const;
+  RNCoord TangentCoord(int dimension) const;
+  R3Vector Tangent(void) const;
 
   // Color property functions
   unsigned char R(void) const;
@@ -43,17 +50,21 @@ public:
 
   // Radius property functions
   float Radius(void) const;
+  float Radius(int axis) const;
 
   // Other property functions
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
   RNBoolean IsAerial(void) const;
   RNBoolean IsTerrestrial(void) const;
+  RNBoolean IsOriented(void) const;
+  RNBoolean IsIsotropic(void) const;
   RNBoolean IsOnSilhouetteBoundary(void) const;
   RNBoolean IsOnShadowBoundary(void) const;
   RNBoolean IsOnBorderBoundary(void) const;
   RNBoolean IsOnBoundary(void) const;
   RNBoolean HasNormal(void) const;
+  RNBoolean HasTangent(void) const;
   unsigned char Flags(void) const;
 
   // Access functions
@@ -69,7 +80,9 @@ public:
   // Manipulation functions
   void SetPosition(const R3Point& position);
   void SetNormal(const R3Vector& normal);
+  void SetTangent(const R3Vector& tangent);
   void SetRadius(float radius);
+  void SetRadius(int axis, float radius);
   void SetColor(const RNRgb& color);
   void SetActive(RNBoolean active = TRUE);
   void SetAerial(RNBoolean aerial = TRUE);
@@ -77,6 +90,14 @@ public:
 
   // Draw functions
   void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+
+public:
+  // Do not use these - for backwards compatibility
+  // Position property functions
+  RNCoord X(void) const;
+  RNCoord Y(void) const;
+  RNCoord Z(void) const;
+  RNCoord Coord(int dimension) const;
 
 private:
   R3SurfelBlock *block;
@@ -94,41 +115,41 @@ extern R3Point SurfelPointPosition(R3SurfelPoint *point, void *);
 /* Inline functions */
 
 inline RNCoord R3SurfelPoint::
-X(void) const
+PX(void) const
 {
   // Return X coordinate of surfel point in global coordinate system
   assert(block && surfel);
- return surfel->X() + block->Origin().X();
+ return surfel->PX() + block->Origin().X();
 }
 
 
 
 inline RNCoord R3SurfelPoint::
-Y(void) const
+PY(void) const
 {
   // Return Y coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->Y() + block->Origin().Y();
+  return surfel->PY() + block->Origin().Y();
 }
 
 
 
 inline RNCoord R3SurfelPoint::
-Z(void) const
+PZ(void) const
 {
   // Return Z coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->Z() + block->Origin().Z();
+  return surfel->PZ() + block->Origin().Z();
 }
 
 
 
 inline RNCoord R3SurfelPoint::
-Coord(int dimension) const
+PositionCoord(int dimension) const
 {
   // Return coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->Coord(dimension) + block->Origin().Coord(dimension);
+  return surfel->PositionCoord(dimension) + block->Origin().Coord(dimension);
 }
 
 
@@ -137,7 +158,7 @@ inline R3Point R3SurfelPoint::
 Position(void) const
 {
   // Return position of surfel point in global coordinate system
-  return R3Point(X(), Y(), Z());
+  return R3Point(PX(), PY(), PZ());
 }
 
 
@@ -191,11 +212,69 @@ Normal(void) const
 
 
 
+inline RNCoord R3SurfelPoint::
+TX(void) const
+{
+  // Return X tangent of surfel 
+  assert(block && surfel);
+ return surfel->NX();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+TY(void) const
+{
+  // Return Y tangent of surfel 
+  assert(block && surfel);
+  return surfel->NY();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+TZ(void) const
+{
+  // Return Z tangent of surfel 
+  assert(block && surfel);
+  return surfel->NZ();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+TangentCoord(int dimension) const
+{
+  // Return tangent coordinate of surfel point 
+  assert(block && surfel);
+  return surfel->TangentCoord(dimension);
+}
+
+
+
+inline R3Vector R3SurfelPoint::
+Tangent(void) const
+{
+  // Return position of surfel point in global coordinate system
+  return R3Vector(TX(), TY(), TZ());
+}
+
+
+
 inline float R3SurfelPoint::
 Radius(void) const
 {
   // Return radius of surfel
   return surfel->Radius();
+}
+
+
+
+inline float R3SurfelPoint::
+Radius(int axis) const
+{
+  // Return radius of surfel
+  return surfel->Radius(axis);
 }
 
 
@@ -281,6 +360,24 @@ IsTerrestrial(void) const
 
 
 inline RNBoolean R3SurfelPoint::
+IsOriented(void) const
+{
+  // Return whether point is oriented (has a normal and tangent)
+  return surfel->IsOriented();
+}
+
+
+
+inline RNBoolean R3SurfelPoint::
+IsIsotropic(void) const
+{
+  // Return whether point is isotropic (radius0 == radius1)
+  return surfel->IsTerrestrial();
+}
+
+
+
+inline RNBoolean R3SurfelPoint::
 IsOnSilhouetteBoundary(void) const
 {
   // Return whether point is on silhouette boundary
@@ -325,6 +422,15 @@ HasNormal(void) const
 
 
 
+inline RNBoolean R3SurfelPoint::
+HasTangent(void) const
+{
+  // Return whether point has tangent
+  return surfel->HasTangent();
+}
+
+
+
 inline unsigned char R3SurfelPoint::
 Flags(void) const
 {
@@ -357,6 +463,46 @@ Surfel(void) const
 {
   // Return surfel 
   return surfel;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Do not use these -- for backward compatibility
+////////////////////////////////////////////////////////////////////////
+
+inline RNCoord R3SurfelPoint::
+X(void) const
+{
+  // Return X coordinate of surfel point in global coordinate system
+  return PX();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+Y(void) const
+{
+  // Return Y coordinate of surfel point in global coordinate system
+  return PY();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+Z(void) const
+{
+  // Return Z coordinate of surfel point in global coordinate system
+  return PZ();
+}
+
+
+
+inline RNCoord R3SurfelPoint::
+Coord(int dimension) const
+{
+  // Return coordinate of surfel point in global coordinate system
+  return PositionCoord(dimension);
 }
 
 

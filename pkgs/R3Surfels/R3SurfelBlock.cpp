@@ -87,11 +87,14 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     const R3SurfelPoint *point = set->Point(i);
     R3Point position = point->Position() - origin.Vector();
     R3Vector normal = point->Normal();
+    R3Vector tangent = point->Tangent();
     R3Surfel *surfel = &surfels[i];
-    surfel->SetCoords(position[0], position[1], position[2]);
+    surfel->SetPosition(position[0], position[1], position[2]);
     surfel->SetNormal(normal[0], normal[1], normal[2]);
+    surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
     surfel->SetColor(point->Color());
-    surfel->SetRadius(point->Radius());
+    surfel->SetRadius(0, point->Radius(0));
+    surfel->SetRadius(1, point->Radius(1));
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
 }
@@ -120,11 +123,14 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
     const R3SurfelPoint *point = set->Point(i);
     R3Point position = point->Position() - origin.Vector();
     R3Vector normal = point->Normal();
+    R3Vector tangent = point->Tangent();
     R3Surfel *surfel = &surfels[i];
-    surfel->SetCoords(position[0], position[1], position[2]);
+    surfel->SetPosition(position[0], position[1], position[2]);
     surfel->SetNormal(normal[0], normal[1], normal[2]);
+    surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
+    surfel->SetRadius(0, point->Radius(0));
+    surfel->SetRadius(1, point->Radius(1));
     surfel->SetColor(point->Color());
-    surfel->SetRadius(point->Radius());
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
 }
@@ -214,7 +220,7 @@ R3SurfelBlock(const R3Point *points, int npoints)
     R3Point point = points[i];
     point -= origin.Vector();
     R3Surfel& surfel = this->surfels[i];
-    surfel.SetCoords(point.X(), point.Y(), point.Z());
+    surfel.SetPosition(point.X(), point.Y(), point.Z());
     surfel.SetRadius(bbox.DiagonalLength() / npoints);
     surfel.SetColor(128, 128, 128);
   }
@@ -255,7 +261,7 @@ R3SurfelBlock(const RNArray<R3Point *>& points)
     R3Point point = *(points[i]);
     point -= origin.Vector();
     R3Surfel& surfel = this->surfels[i];
-    surfel.SetCoords(point.X(), point.Y(), point.Z());
+    surfel.SetPosition(point.X(), point.Y(), point.Z());
     surfel.SetRadius(bbox.DiagonalLength() / points.NEntries());
     surfel.SetColor(128, 128, 128);
   }
@@ -352,6 +358,21 @@ HasNormals(void) const
 
 
 RNBoolean R3SurfelBlock::
+HasTangents(void) const
+{
+  // Update tangents flags
+  if (!flags[R3_SURFEL_BLOCK_FLAGS_UPTODATE_FLAG]) {
+    R3SurfelBlock *block = (R3SurfelBlock *) this;
+    block->UpdateFlags();
+  }
+
+   // Return whether block has tangents 
+  return flags[R3_SURFEL_BLOCK_HAS_TANGENTS_FLAG];
+}
+
+
+
+RNBoolean R3SurfelBlock::
 HasAerial(void) const
 {
   // Update aerial/terrestrial flags
@@ -426,7 +447,7 @@ SetSurfelPosition(int surfel_index, const R3Point& position)
   float x = position[0] - origin[0];
   float y = position[1] - origin[1];
   float z = position[2] - origin[2];
-  surfels[surfel_index].SetCoords(x, y, z);
+  surfels[surfel_index].SetPosition(x, y, z);
 
   // Mark properties out of date
   flags.Remove(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG);
@@ -457,6 +478,24 @@ SetSurfelNormal(int surfel_index, const R3Vector& normal)
 
 
 void R3SurfelBlock::
+SetSurfelTangent(int surfel_index, const R3Vector& tangent)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel tangent
+  surfels[surfel_index].SetTangent(tangent.X(), tangent.Y(), tangent.Z());
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
 SetSurfelRadius(int surfel_index, RNLength radius)
 {
   // Check if surfels are resident
@@ -467,6 +506,24 @@ SetSurfelRadius(int surfel_index, RNLength radius)
 
   // Set surfel normal
   surfels[surfel_index].SetRadius(radius);
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
+SetSurfelRadius(int surfel_index, int axis, RNLength radius)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel normal
+  surfels[surfel_index].SetRadius(axis, radius);
 
   // Remember that block is dirty
   SetDirty();
@@ -656,11 +713,15 @@ Transform(const R3Affine& transformation)
     R3Surfel *surfel = &surfels[i];
     R3Point position(surfel->X() + old_origin[0], surfel->Y() + old_origin[1], surfel->Z() + old_origin[2]);
     R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
+    R3Vector tangent(surfel->TX(), surfel->TY(), surfel->TZ());
     position.Transform(transformation);
     normal.Transform(transformation);
-    surfel->SetCoords(position.X() - origin.X(), position.Y() - origin.Y(), position.Z() - origin.Z());
+    tangent.Transform(transformation);
+    surfel->SetPosition(position.X() - origin.X(), position.Y() - origin.Y(), position.Z() - origin.Z());
     surfel->SetNormal(normal.X(), normal.Y(), normal.Z());
-    surfel->SetRadius(scale * surfel->Radius());
+    surfel->SetTangent(tangent.X(), tangent.Y(), tangent.Z());
+    surfel->SetRadius(0, scale * surfel->Radius(0));
+    surfel->SetRadius(1, scale * surfel->Radius(1));
     bbox.Union(position);
   }
 
@@ -713,7 +774,7 @@ UpdateBBox(void)
   // Update bounding box
   bbox = R3null_box;
   for (int i = 0; i < nsurfels; i++) {
-    const float *p = surfels[i].Coords();
+    const float *p = surfels[i].PositionPtr();
     bbox.Union(R3Point(p[0], p[1], p[2]));
   }
 
@@ -793,6 +854,7 @@ UpdateFlags(void)
   for (int i = 0; i < nsurfels; i++) {
     if (surfels[i].IsActive()) flags.Add(R3_SURFEL_BLOCK_HAS_ACTIVE_FLAG);
     if (surfels[i].HasNormal()) flags.Add(R3_SURFEL_BLOCK_HAS_NORMALS_FLAG);
+    if (surfels[i].HasTangent()) flags.Add(R3_SURFEL_BLOCK_HAS_TANGENTS_FLAG);
     if (surfels[i].IsAerial()) flags.Add(R3_SURFEL_BLOCK_HAS_AERIAL_FLAG);
     else flags.Add(R3_SURFEL_BLOCK_HAS_TERRESTRIAL_FLAG);
   }
@@ -858,7 +920,7 @@ Draw(RNFlags flags) const
         glBegin(GL_POINTS);
         for (int i = 0; i < NSurfels(); i++) {
           const R3Surfel& surfel = surfels[i];
-          glVertex3fv(surfel.Coords());
+          glVertex3fv(surfel.PositionPtr());
         }
         glEnd();
 #     endif
@@ -870,7 +932,7 @@ Draw(RNFlags flags) const
           glEnableClientState(GL_VERTEX_ARRAY);
           glEnableClientState(GL_COLOR_ARRAY);
           glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels);
-          glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].Color());
+          glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
           glDrawArrays(GL_POINTS, 0, NSurfels());
           glDisableClientState(GL_VERTEX_ARRAY);
           glDisableClientState(GL_COLOR_ARRAY);
@@ -879,8 +941,8 @@ Draw(RNFlags flags) const
           glBegin(GL_POINTS);
           for (int i = 0; i < NSurfels(); i++) {
             const R3Surfel& surfel = surfels[i];
-            glColor3ubv(surfel.Color());
-            glVertex3fv(surfel.Coords());
+            glColor3ubv(surfel.ColorPtr());
+            glVertex3fv(surfel.PositionPtr());
           }
           glEnd();
 #       endif
@@ -907,8 +969,8 @@ Draw(RNFlags flags) const
       glBegin(GL_POINTS);
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
-        glColor3ubv(surfel.Color());
-        glVertex3fv(surfel.Coords());
+        glColor3ubv(surfel.ColorPtr());
+        glVertex3fv(surfel.PositionPtr());
       }
       glEnd();
     }
@@ -917,7 +979,7 @@ Draw(RNFlags flags) const
       glBegin(GL_POINTS);
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
-        glVertex3fv(surfel.Coords());
+        glVertex3fv(surfel.PositionPtr());
       }
       glEnd();
     }
@@ -958,7 +1020,7 @@ Draw(RNFlags flags) const
   else {
     // Draw surfels using client-side arrays
     glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels);
-    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].Color());
+    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   }
   glDrawArrays(GL_POINTS, 0, NSurfels());
   glDisableClientState(GL_VERTEX_ARRAY);
@@ -970,7 +1032,7 @@ Draw(RNFlags flags) const
   glEnableClientState(GL_VERTEX_ARRAY);
   if (c) glEnableClientState(GL_COLOR_ARRAY);
   glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels);
-  if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].Color());
+  if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   glDrawArrays(GL_POINTS, 0, NSurfels());
   glDisableClientState(GL_VERTEX_ARRAY);
   if (c) glDisableClientState(GL_COLOR_ARRAY);
@@ -983,8 +1045,8 @@ Draw(RNFlags flags) const
     glBegin(GL_POINTS);
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
-      glColor3ubv(surfel.Color());
-      glVertex3fv(surfel.Coords());
+      glColor3ubv(surfel.ColorPtr());
+      glVertex3fv(surfel.PositionPtr());
     }
     glEnd();
   }
@@ -993,7 +1055,7 @@ Draw(RNFlags flags) const
     glBegin(GL_POINTS);
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
-      glVertex3fv(surfel.Coords());
+      glVertex3fv(surfel.PositionPtr());
     }
     glEnd();
   }
@@ -1186,7 +1248,7 @@ ReadOBJ(FILE *fp)
       }
 
       // Assign surfel
-      surfels[nsurfels].SetCoords(x - cx, y - cy, z - cz);
+      surfels[nsurfels].SetPosition(x - cx, y - cy, z - cz);
       nsurfels++;
     }
   }
@@ -1306,7 +1368,7 @@ ReadXYZAscii(FILE *fp)
     }
 
     // Assign surfel
-    surfels[nsurfels].SetCoords(x, y, z);
+    surfels[nsurfels].SetPosition(x, y, z);
     surfels[nsurfels].SetColor(r, g, b);
     nsurfels++;
   }
@@ -1323,8 +1385,8 @@ WriteXYZAscii(FILE *fp) const
   // Write surfels
   for (int i = 0; i < NSurfels(); i++) {
     const R3Surfel *surfel = Surfel(i);
-    const float *position = surfel->Coords();
-    const unsigned char *color = surfel->Color();
+    const float *position = surfel->PositionPtr();
+    const unsigned char *color = surfel->ColorPtr();
     fprintf(fp, "%g %g %g ", position[0], position[1], position[2]);
     fprintf(fp, "%u %u %u ", color[0], color[1], color[2]);
     fprintf(fp, "0 0\n");
@@ -1402,7 +1464,7 @@ ReadXYZBinary(FILE *fp)
     float c = 255 * xyzr[3];
 
     // Assign surfel position
-    surfels[i].SetCoords(xyzr);
+    surfels[i].SetPosition(xyzr);
     surfels[i].SetColor(c, c, c);
 
     // Update origin
@@ -1416,8 +1478,8 @@ ReadXYZBinary(FILE *fp)
 
   // Update surfels to be relative to origin
   for (int i = 0; i < nsurfels; i++) {
-    const float *xyz = surfels[i].Coords();
-    surfels[i].SetCoords(xyz[0] - origin[0], xyz[1] - origin[1], xyz[2] - origin[2]);
+    const float *xyz = surfels[i].PositionPtr();
+    surfels[i].SetPosition(xyz[0] - origin[0], xyz[1] - origin[1], xyz[2] - origin[2]);
   }  
   
   // Return success
@@ -1766,7 +1828,7 @@ ReadUPC(FILE *fp)
     if (r > 255) r = 255;
     if (g > 255) g = 255;
     if (b > 255) b = 255;
-    surfels[nsurfels].SetCoords(x, y, z);
+    surfels[nsurfels].SetPosition(x, y, z);
     surfels[nsurfels].SetColor(r, g, b);
     surfels[nsurfels].SetAerial(upc_point[9] == '0');
     nsurfels++;

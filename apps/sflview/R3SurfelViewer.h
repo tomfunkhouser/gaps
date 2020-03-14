@@ -68,7 +68,8 @@ public:
   int NodeBBoxVisibility(void) const;
   int BlockBBoxVisibility(void) const;
   int ScanViewpointVisibility(void) const;
-  int ScanImageVisibility(void) const;
+  int ImageViewpointVisibility(void) const;
+  int ImagePixelsVisibility(void) const;
   int CenterPointVisibility(void) const;
   int AxesVisibility(void) const;
 
@@ -81,6 +82,7 @@ public:
   const RNRgb& NodeBBoxColor(void) const;
   const RNRgb& BlockBBoxColor(void) const;
   const RNRgb& ScanViewpointColor(void) const;
+  const RNRgb& ImageViewpointColor(void) const;
   const RNRgb& CenterPointColor(void) const;
 
   // Viewing parameters
@@ -104,7 +106,7 @@ public:
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
   void SetSurfelSize(RNScalar npixels);
-  void JumpToNextScanViewpoint(int delta);
+  void JumpToNextImageViewpoint(int delta);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
   void SetSurfelVisibility(int visibility);
@@ -119,7 +121,8 @@ public:
   void SetNodeBBoxVisibility(int visibility);
   void SetBlockBBoxVisibility(int visibility);
   void SetScanViewpointVisibility(int visibility);
-  void SetScanImageVisibility(int visibility);
+  void SetImageViewpointVisibility(int visibility);
+  void SetImagePixelsVisibility(int visibility);
   void SetCenterPointVisibility(int visibility);
   void SetAxesVisibility(int visibility);
 
@@ -132,6 +135,7 @@ public:
   void SetNodeBBoxColor(const RNRgb& color);
   void SetBlockBBoxColor(const RNRgb& color);
   void SetScanViewpointColor(const RNRgb& color);
+  void SetImageViewpointColor(const RNRgb& color);
   void SetCenterPointColor(const RNRgb& color);
 
   // Working set parameters
@@ -191,8 +195,8 @@ protected:
   R3Viewer viewer;
   R3Box viewing_extent;
   R3Point center_point;
-  int current_scan_index;
-  R2Texture current_scan_texture;
+  int current_image_index;
+  R2Texture current_image_texture;
   RNScalar surfel_size;
 
   // Visibility properties
@@ -208,7 +212,8 @@ protected:
   int node_bbox_visibility;
   int block_bbox_visibility;
   int scan_viewpoint_visibility;
-  int scan_image_visibility;
+  int image_viewpoint_visibility;
+  int image_pixels_visibility;
   int center_point_visibility;
   int axes_visibility;
 
@@ -221,6 +226,7 @@ protected:
   RNRgb node_bbox_color;
   RNRgb block_bbox_color;
   RNRgb scan_viewpoint_color;
+  RNRgb image_viewpoint_color;
   RNRgb center_point_color;
 
   // Working set parameters
@@ -462,10 +468,19 @@ ScanViewpointVisibility(void) const
 
 
 inline int R3SurfelViewer::
-ScanImageVisibility(void) const
+ImageViewpointVisibility(void) const
 {
-  // Return scan image visibililty
-  return scan_image_visibility;
+  // Return image viewpoint visibililty
+  return image_viewpoint_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ImagePixelsVisibility(void) const
+{
+  // Return image pixels visibililty
+  return image_pixels_visibility;
 }
 
 
@@ -556,6 +571,15 @@ ScanViewpointColor(void) const
 {
   // Return scan viewpoint color
   return scan_viewpoint_color;
+}
+
+
+
+inline const RNRgb& R3SurfelViewer::
+ImageViewpointColor(void) const
+{
+  // Return image viewpoint color
+  return image_viewpoint_color;
 }
 
 
@@ -805,12 +829,23 @@ SetScanViewpointVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
-SetScanImageVisibility(int visibility)
+SetImageViewpointVisibility(int visibility)
 {
-  // Set scan image visibililty
-  if (visibility == -1) scan_image_visibility = 1 - scan_image_visibility;
-  else if (visibility == 0) scan_image_visibility = 0;
-  else scan_image_visibility = 1;
+  // Set image viewpoint visibililty
+  if (visibility == -1) image_viewpoint_visibility = 1 - image_viewpoint_visibility;
+  else if (visibility == 0) image_viewpoint_visibility = 0;
+  else image_viewpoint_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetImagePixelsVisibility(int visibility)
+{
+  // Set image pixels visibililty
+  if (visibility == -1) image_pixels_visibility = 1 - image_pixels_visibility;
+  else if (visibility == 0) image_pixels_visibility = 0;
+  else image_pixels_visibility = 1;
 }
 
 
@@ -905,6 +940,15 @@ SetScanViewpointColor(const RNRgb& color)
 {
   // Set scan viewpoint color
   scan_viewpoint_color = color;
+}
+
+
+
+inline void R3SurfelViewer::
+SetImageViewpointColor(const RNRgb& color)
+{
+  // Set image viewpoint color
+  image_viewpoint_color = color;
 }
 
 

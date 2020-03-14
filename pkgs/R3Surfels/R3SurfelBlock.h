@@ -68,6 +68,7 @@ public:
   // Aggregate surfel property functions
   RNBoolean HasActive(void) const;
   RNBoolean HasNormals(void) const;
+  RNBoolean HasTangents(void) const;
   RNBoolean HasAerial(void) const;
   RNBoolean HasTerrestrial(void) const;
 
@@ -79,12 +80,16 @@ public:
   // Surfel property functions
   R3Point SurfelPosition(int surfel_index) const;
   R3Vector SurfelNormal(int surfel_index) const;
+  R3Vector SurfelTangent(int surfel_index) const;
   RNLength SurfelRadius(int surfel_index) const;
+  RNLength SurfelRadius(int surfel_index, int axis) const;
   RNRgb SurfelColor(int surfel_index) const;
   RNBoolean IsSurfelActive(int surfel_index) const;
   RNBoolean IsSurfelMarked(int surfel_index) const;
   RNBoolean IsSurfelAerial(int surfel_index) const;
   RNBoolean IsSurfelTerrestrial(int surfel_index) const;
+  RNBoolean IsSurfelOriented(int surfel_index) const;
+  RNBoolean IsSurfelIsotropic(int surfel_index) const;
   RNBoolean IsSurfelOnSilhouetteBoundary(int surfel_index) const;
   RNBoolean IsSurfelOnShadowBoundary(int surfel_index) const;
   RNBoolean IsSurfelOnBorderBoundary(int surfel_index) const;
@@ -109,7 +114,9 @@ public:
   // Surfel manipulation functions
   void SetSurfelPosition(int surfel_index, const R3Point& position);
   void SetSurfelNormal(int surfel_index, const R3Vector& normal);
+  void SetSurfelTangent(int surfel_index, const R3Vector& tangent);
   void SetSurfelRadius(int surfel_index, RNLength radius);
+  void SetSurfelRadius(int surfel_index, int axis, RNLength radius);
   void SetSurfelColor(int surfel_index, const RNRgb& color);
   void SetSurfelFlags(int surfel_index, unsigned char flags);
   void SetSurfelActive(int surfel_index, RNBoolean active = TRUE);
@@ -237,6 +244,7 @@ private:
 #define R3_SURFEL_BLOCK_HAS_TERRESTRIAL_FLAG           0x0020
 #define R3_SURFEL_BLOCK_HAS_ACTIVE_FLAG                0x0040
 #define R3_SURFEL_BLOCK_HAS_NORMALS_FLAG               0x0080
+#define R3_SURFEL_BLOCK_HAS_TANGENTS_FLAG              0x0008
 
 #define R3_SURFEL_BLOCK_DATABASE_FLAGS                 0xFF00
 #define R3_SURFEL_BLOCK_DIRTY_FLAG                     0x0100
@@ -359,7 +367,7 @@ SurfelPosition(int surfel_index) const
 {
   // Return position of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
-  return R3Point(origin.X() + surfel.X(), origin.Y() + surfel.Y(), origin.Z() + surfel.Z());
+  return R3Point(origin.X() + surfel.PX(), origin.Y() + surfel.PY(), origin.Z() + surfel.PZ());
 }
 
 
@@ -374,12 +382,32 @@ SurfelNormal(int surfel_index) const
 
 
 
+inline R3Vector R3SurfelBlock::
+SurfelTangent(int surfel_index) const
+{
+  // Return tangent of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return R3Vector(surfel.TX(), surfel.TY(), surfel.TZ());
+}
+
+
+
 inline RNLength R3SurfelBlock::
 SurfelRadius(int surfel_index) const
 {
   // Return radius of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
   return surfel.Radius();
+}
+
+
+
+inline RNLength R3SurfelBlock::
+SurfelRadius(int surfel_index, int axis) const
+{
+  // Return radius of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return surfel.Radius(axis);
 }
 
 
@@ -412,9 +440,27 @@ IsSurfelMarked(int surfel_index) const
 
 
 inline RNBoolean R3SurfelBlock::
+IsSurfelOriented(int surfel_index) const
+{
+  // Return whether kth surfel is oriented 
+  return surfels[surfel_index].IsOriented();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
+IsSurfelIsotropic(int surfel_index) const
+{
+  // Return whether kth surfel is isotropic
+  return surfels[surfel_index].IsIsotropic();
+}
+
+
+
+inline RNBoolean R3SurfelBlock::
 IsSurfelAerial(int surfel_index) const
 {
-  // Return whether kth surfel is aerial
+  // Return whether kth surfel is isotropic
   return surfels[surfel_index].IsAerial();
 }
 

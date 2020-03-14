@@ -20,6 +20,7 @@ static char *input_scene_name = NULL;
 static char *input_database_name = NULL;
 static int print_features = 0;
 static int print_scans = 0;
+static int print_images = 0;
 static int print_objects = 0;
 static int print_labels = 0;
 static int print_object_properties = 0;
@@ -261,6 +262,7 @@ PrintInfo(R3SurfelScene *scene)
   printf("  # Labels = %d\n", scene->NLabels());
   printf("  # Features = %d\n", scene->NFeatures());
   printf("  # Scans = %d\n", scene->NScans());
+  printf("  # Images = %d\n", scene->NImages());
   printf("  # Object Properties = %d\n", scene->NObjectProperties());
   printf("  # Label Properties = %d\n", scene->NLabelProperties());
   printf("  # Object Relationships = %d\n", scene->NObjectRelationships());
@@ -268,7 +270,7 @@ PrintInfo(R3SurfelScene *scene)
   printf("  # Label Assignments = %d\n", scene->NLabelAssignments());
   printf("  # Nodes = %d\n", tree->NNodes());
   printf("  # Blocks = %d\n", database->NBlocks());
-  printf("  # Surfels = %d\n", database->NSurfels());
+  printf("  # Surfels = %lld\n", database->NSurfels());
  
   // Print label info
   if (print_labels) {
@@ -481,7 +483,7 @@ PrintInfo(R3SurfelScene *scene)
     const R3Point& centroid = database->Centroid();
     printf("Database:\n");
     printf("  # Blocks = %d\n", database->NBlocks());
-    printf("  # Surfels = %d\n", database->NSurfels());
+    printf("  # Surfels = %lld\n", database->NSurfels());
     printf("  Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
     printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
     printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
@@ -554,12 +556,29 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Viewpoint = %g %g %g\n", scan->Viewpoint().X(), scan->Viewpoint().Y(), scan->Viewpoint().Z());
       printf("  Towards = %g %g %g\n", scan->Towards().X(), scan->Towards().Y(), scan->Towards().Z());
       printf("  Up = %g %g %g\n", scan->Up().X(), scan->Up().Y(), scan->Up().Z());
-      printf("  FOV = %g %g\n", scan->XFOV(), scan->YFOV());
-      printf("  Image dimensions = %d %d\n", scan->ImageWidth(), scan->ImageHeight());
-      printf("  Image center = %g %g\n", scan->ImageCenter().X(), scan->ImageCenter().Y());
-      printf("  Focal length = %g\n", scan->FocalLength());
       printf("  Timestamp = %.6f\n", scan->Timestamp());
       printf("  Node = %d\n", (scan->Node()) ? scan->Node()->TreeIndex() : -1);
+      printf("  Image = %d\n", (scan->Image()) ? scan->Image()->SceneIndex() : -1);
+      printf("\n");
+    }
+    printf("\n");
+  }
+
+  // Print image info
+  if (print_images) {
+    printf("Images:\n");
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      printf("  Name = %s\n", (image->Name()) ? image->Name() : "None");
+      printf("  Viewpoint = %g %g %g\n", image->Viewpoint().X(), image->Viewpoint().Y(), image->Viewpoint().Z());
+      printf("  Towards = %g %g %g\n", image->Towards().X(), image->Towards().Y(), image->Towards().Z());
+      printf("  Up = %g %g %g\n", image->Up().X(), image->Up().Y(), image->Up().Z());
+      printf("  FOV = %g %g\n", image->XFOV(), image->YFOV());
+      printf("  Image dimensions = %d %d\n", image->ImageWidth(), image->ImageHeight());
+      printf("  Image center = %g %g\n", image->ImageCenter().X(), image->ImageCenter().Y());
+      printf("  Focal length = %g\n", image->FocalLength());
+      printf("  Timestamp = %.6f\n", image->Timestamp());
+      printf("  Scan = %d\n", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
       printf("\n");
     }
     printf("\n");
@@ -612,6 +631,7 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-blocks")) { print_blocks = 1; }
     else if (!strcmp(*argv, "-surfels")) { print_surfels = 1; }
     else if (!strcmp(*argv, "-scans")) { print_scans = 1; }
+    else if (!strcmp(*argv, "-images")) { print_images = 1; }
     else if (!strcmp(*argv, "-accuracy")) { argc--; argv++; accuracy_arff_name = *argv; }
     else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     argv++; argc--;

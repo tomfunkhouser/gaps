@@ -41,6 +41,7 @@ R3SurfelScene(const char *name)
     label_relationships(),
     assignments(),
     scans(),
+    images(),
     features(),
     filename(NULL),
     rwaccess(NULL),
@@ -213,6 +214,23 @@ FindScanByName(const char *scan_name) const
     if (!scan->Name()) continue;
     if (strcmp(scan->Name(), scan_name)) continue;
     return scan;
+  }
+
+  // Not found
+  return NULL;
+}
+
+
+
+R3SurfelImage *R3SurfelScene::
+FindImageByName(const char *image_name) const
+{
+  // Search for image
+  for (int i = 0; i < NImages(); i++) {
+    R3SurfelImage *image = Image(i);
+    if (!image->Name()) continue;
+    if (strcmp(image->Name(), image_name)) continue;
+    return image;
   }
 
   // Not found
@@ -839,6 +857,44 @@ RemoveScan(R3SurfelScan *scan)
 
 
 void R3SurfelScene::
+InsertImage(R3SurfelImage *image)
+{
+  // Just checking
+  assert(image);
+
+  // Insert label 
+  image->scene = this;
+  image->scene_index = images.NEntries();
+  images.Insert(image);
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+}
+
+
+
+void R3SurfelScene::
+RemoveImage(R3SurfelImage *image)
+{
+  // Just checking
+  assert(image);
+
+  // Remove image from scene
+  RNArrayEntry *entry = images.KthEntry(image->scene_index);
+  R3SurfelImage *tail = images.Tail();
+  tail->scene_index = image->scene_index;
+  images.EntryContents(entry) = tail;
+  images.RemoveTail();
+  image->scene_index = -1;
+  image->scene = NULL;
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+}
+
+
+
+void R3SurfelScene::
 InsertFeature(R3SurfelFeature *feature)
 {
   // Just checking
@@ -1132,6 +1188,7 @@ InsertScene(const R3SurfelScene& scene2,
   // COPY SCANS
 
   // Copy scans from scene2
+  RNArray<R3SurfelScan *> scans1;
   for (int i = 0; i < scene2.NScans(); i++) {
     R3SurfelScan *scan2 = scene2.Scan(i);
     R3SurfelScan *scan1 = new R3SurfelScan(scan2->Name());
@@ -1145,6 +1202,25 @@ InsertScene(const R3SurfelScene& scene2,
     R3SurfelNode *node1 = nodes1.Kth(node2->TreeIndex());
     scan1->SetNode(node1);
     scene1.InsertScan(scan1);
+    scans1.Insert(scan1);
+  }
+
+  // COPY IMAGES
+  
+  // Copy images from scene2
+  for (int i = 0; i < scene2.NImages(); i++) {
+    R3SurfelImage *image2 = scene2.Image(i);
+    R3SurfelImage *image1 = new R3SurfelImage(image2->Name());
+    image1->SetPose(image2->Pose());
+    image1->SetTimestamp(image2->Timestamp());
+    image1->SetFocalLength(image2->FocalLength());
+    image1->SetImageDimensions(image2->ImageWidth(), image2->ImageHeight());
+    image1->SetImageCenter(image2->ImageCenter());
+    image1->SetFlags(image2->Flags());
+    R3SurfelScan *scan2 = image2->Scan();
+    R3SurfelScan *scan1 = scans1.Kth(scan2->SceneIndex());
+    image1->SetScan(scan1);
+    scene1.InsertImage(image1);
   }
 }
 
@@ -1436,13 +1512,13 @@ ReadAsciiFile(const char *filename)
   int nobjects, nlabels; 
   int nobject_properties, nlabel_properties;
   int nobject_relationships, nlabel_relationships;
-  int nassignments, nfeatures, nscans, dummy;
+  int nassignments, nfeatures, nscans, nimages, dummy;
   ReadAsciiName(fp, buffer);
   if (strcmp(buffer, "None")) SetName(buffer);
-  fscanf(fp, "%d%d%d%d%d%d%d%d%d%d", &nnodes, &nobjects, &nlabels, &nfeatures, 
+  fscanf(fp, "%d%d%d%d%d%d%d%d%d%d%d", &nnodes, &nobjects, &nlabels, &nfeatures, 
     &nobject_relationships, &nlabel_relationships, &nassignments, &nscans, 
-    &nobject_properties, &nlabel_properties);
-  for (int j = 0; j < 5; j++) fscanf(fp, "%s", buffer);
+    &nobject_properties, &nlabel_properties, &nimages);
+  for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
 
   // Create nodes
   RNArray<R3SurfelNode *> read_nodes;
@@ -1633,6 +1709,7 @@ ReadAsciiFile(const char *filename)
   }
 
   // Read scans
+  RNArray<R3SurfelScan *> read_scans;
   for (int i = 0; i < nscans; i++) {
     char scan_name[1024];
     unsigned int flags;
@@ -1662,6 +1739,39 @@ ReadAsciiFile(const char *filename)
     scan->scene = this;
     scan->scene_index = scans.NEntries();
     scans.Insert(scan);
+    read_scans.Insert(scan);
+  }
+
+  // Read images
+  for (int i = 0; i < nimages; i++) {
+    char image_name[1024];
+    unsigned int flags;
+    int scan_index, width, height;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    fscanf(fp, "%s", buffer);
+    if (strcmp(buffer, "S")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
+    ReadAsciiName(fp, image_name); 
+    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &focal_length, &xcenter, &ycenter, &flags);
+    for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
+    if (xcenter == 0) xcenter = width/2.0;
+    if (ycenter == 0) ycenter = height/2.0;
+    R3Point viewpoint(px, py, pz);
+    R3Vector towards(tx, ty, tz);
+    R3Vector up(ux, uy, uz);
+    R3CoordSystem pose(viewpoint, R3Triad(towards, up));
+    R3SurfelImage *image = new R3SurfelImage();
+    image->SetPose(pose);
+    image->SetFocalLength(focal_length);
+    image->SetTimestamp(timestamp);
+    image->SetImageDimensions(width, height);
+    image->SetImageCenter(R2Point(xcenter, ycenter));
+    image->SetFlags(flags);
+    if (strcmp(image_name, "None")) image->SetName(image_name);
+    R3SurfelScan *scan = (scan_index >= 0)? read_scans.Kth(scan_index) : NULL;
+    image->SetScan(scan);
+    image->scene = this;
+    image->scene_index = images.NEntries();
+    images.Insert(image);
   }
 
   // Read object properties
@@ -1727,12 +1837,12 @@ WriteAsciiFile(const char *filename)
 
   // Write scene header
   WriteAsciiName(fp, name);
-  fprintf(fp, " %d %d %d %d %d %d %d %d %d %d", 
+  fprintf(fp, " %d %d %d %d %d %d %d %d %d %d %d", 
     tree->NNodes(), NObjects(), NLabels(), NFeatures(),
     NObjectRelationships(), NLabelRelationships(), 
-    NLabelAssignments(), NScans(),
-    NObjectProperties(), NLabelProperties());
-  for (int j = 0; j < 5; j++) fprintf(fp, " 0");
+    NLabelAssignments(), NScans(), 
+    NObjectProperties(), NLabelProperties(), NImages());
+  for (int j = 0; j < 4; j++) fprintf(fp, " 0");
   fprintf(fp, "\n");
 
   // Write nodes
@@ -1849,8 +1959,29 @@ WriteAsciiFile(const char *filename)
     fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
     fprintf(fp, " %.6f %d", scan->Timestamp(), (scan->Node()) ? scan->Node()->TreeIndex() : -1);
     fprintf(fp, " %d %d ", scan->ImageWidth(), scan->ImageHeight());
-    fprintf(fp, " %g %g %g %u ", scan->FocalLength(), scan->ImageCenter().X(), scan->ImageCenter().Y(), (unsigned int) scan->Flags());
+    fprintf(fp, " %g %g %g ", scan->FocalLength(), scan->ImageCenter().X(), scan->ImageCenter().Y());
+    fprintf(fp, " %u ", (unsigned int) scan->Flags());
     for (int j = 0; j < 2; j++) fprintf(fp, " 0");
+    fprintf(fp, "\n");
+  }
+
+  // Write images
+  for (int i = 0; i < NImages(); i++) {
+    R3SurfelImage *image = Image(i);
+    R3Point viewpoint = image->Viewpoint();
+    R3Vector towards = image->Towards();
+    R3Vector up = image->Up();
+    fprintf(fp, "S ");
+    WriteAsciiName(fp, image->Name());
+    fprintf(fp, " %g %g %g", viewpoint.X(), viewpoint.Y(), viewpoint.Z());
+    fprintf(fp, " %g %g %g", towards.X(), towards.Y(), towards.Z());
+    fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
+    fprintf(fp, " %.6f", image->Timestamp());
+    fprintf(fp, " %d ", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
+    fprintf(fp, " %d %d ", image->ImageWidth(), image->ImageHeight());
+    fprintf(fp, " %g %g %g ", image->FocalLength(), image->ImageCenter().X(), image->ImageCenter().Y());
+    fprintf(fp, " %u ", (unsigned int) image->Flags());
+    for (int j = 0; j < 4; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
   }
 
@@ -2015,7 +2146,7 @@ ReadBinaryFile(const char *filename)
   int nobjects, nlabels, nfeatures;
   int nobject_properties, nlabel_properties;
   int nobject_relationships, nlabel_relationships;
-  int nassignments, nscans, dummy;
+  int nassignments, nscans, nimages, dummy;
   ReadBinaryName(fp, name);
   ReadBinaryInteger(fp, &nnodes);
   ReadBinaryInteger(fp, &nobjects);
@@ -2027,7 +2158,8 @@ ReadBinaryFile(const char *filename)
   ReadBinaryInteger(fp, &nscans);
   ReadBinaryInteger(fp, &nobject_properties);
   ReadBinaryInteger(fp, &nlabel_properties);
-  for (int j = 0; j < 5; j++) ReadBinaryInteger(fp, &dummy);
+  ReadBinaryInteger(fp, &nimages);
+  for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
 
   // Create nodes
   RNArray<R3SurfelNode *> read_nodes;
@@ -2231,6 +2363,7 @@ ReadBinaryFile(const char *filename)
   }
 
   // Read scans
+  RNArray<R3SurfelScan *> read_scans;
   for (int i = 0; i < nscans; i++) {
     char scan_name[1024];
     int node_index, width, height, flags;
@@ -2268,6 +2401,47 @@ ReadBinaryFile(const char *filename)
     R3SurfelNode *node = (node_index >= 0) ? read_nodes.Kth(node_index) : NULL;
     scan->SetNode(node);
     InsertScan(scan);
+    read_scans.Insert(scan);
+  }
+
+  // Read images
+  for (int i = 0; i < nimages; i++) {
+    char image_name[1024];
+    int scan_index, width, height, flags;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    ReadBinaryName(fp, image_name); 
+    ReadBinaryDouble(fp, &px);
+    ReadBinaryDouble(fp, &py);
+    ReadBinaryDouble(fp, &pz);
+    ReadBinaryDouble(fp, &tx);
+    ReadBinaryDouble(fp, &ty);
+    ReadBinaryDouble(fp, &tz);
+    ReadBinaryDouble(fp, &ux);
+    ReadBinaryDouble(fp, &uy);
+    ReadBinaryDouble(fp, &uz);
+    ReadBinaryDouble(fp, &timestamp);
+    ReadBinaryInteger(fp, &width);
+    ReadBinaryInteger(fp, &scan_index);
+    ReadBinaryInteger(fp, &height);
+    ReadBinaryDouble(fp, &focal_length);
+    ReadBinaryDouble(fp, &xcenter);
+    ReadBinaryDouble(fp, &ycenter);
+    ReadBinaryInteger(fp, &flags);
+    for (int j = 0; j < 5; j++) ReadBinaryInteger(fp, &dummy);
+    R3SurfelImage *image = new R3SurfelImage();
+    if (strcmp(image_name, "None")) image->SetName(image_name);
+    if (xcenter == 0) xcenter = width/2.0;
+    if (ycenter == 0) ycenter = height/2.0;
+    image->SetViewpoint(R3Point(px, py, pz));
+    image->SetOrientation(R3Vector(tx, ty, tz), R3Vector(ux, uy, uz));
+    image->SetTimestamp(timestamp);
+    image->SetFocalLength(focal_length);
+    image->SetImageDimensions(width, height);
+    image->SetImageCenter(R2Point(xcenter, ycenter));
+    image->SetFlags(flags);
+    R3SurfelScan *scan = (scan_index >= 0) ? read_scans.Kth(scan_index) : NULL;
+    image->SetScan(scan);
+    InsertImage(image);
   }
 
   // Read object properties
@@ -2349,7 +2523,8 @@ WriteBinaryFile(const char *filename)
   WriteBinaryInteger(fp, NScans());
   WriteBinaryInteger(fp, NObjectProperties());
   WriteBinaryInteger(fp, NLabelProperties());
-  for (int j = 0; j < 5; j++) WriteBinaryInteger(fp, 0);
+  WriteBinaryInteger(fp, NImages());
+  for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
 
   // Write nodes
   for (int i = 0; i < tree->NNodes(); i++) {
@@ -2472,6 +2647,7 @@ WriteBinaryFile(const char *filename)
     WriteBinaryDouble(fp, scan->Up().Y());
     WriteBinaryDouble(fp, scan->Up().Z());
     WriteBinaryDouble(fp, scan->Timestamp());
+    WriteBinaryInteger(fp, (scan->Node()) ? scan->Node()->TreeIndex() : -1);
     WriteBinaryInteger(fp, scan->ImageWidth());
     WriteBinaryInteger(fp, scan->ImageHeight());
     WriteBinaryDouble(fp, scan->FocalLength());
@@ -2479,6 +2655,30 @@ WriteBinaryFile(const char *filename)
     WriteBinaryDouble(fp, scan->ImageCenter().Y());
     WriteBinaryInteger(fp, scan->Flags());
     for (int j = 0; j < 6; j++) WriteBinaryInteger(fp, 0);
+  }
+
+  // Write images
+  for (int i = 0; i < NImages(); i++) {
+    R3SurfelImage *image = Image(i);
+    WriteBinaryName(fp, image->Name());
+    WriteBinaryDouble(fp, image->Viewpoint().X());
+    WriteBinaryDouble(fp, image->Viewpoint().Y());
+    WriteBinaryDouble(fp, image->Viewpoint().Z());
+    WriteBinaryDouble(fp, image->Towards().X());
+    WriteBinaryDouble(fp, image->Towards().Y());
+    WriteBinaryDouble(fp, image->Towards().Z());
+    WriteBinaryDouble(fp, image->Up().X());
+    WriteBinaryDouble(fp, image->Up().Y());
+    WriteBinaryDouble(fp, image->Up().Z());
+    WriteBinaryDouble(fp, image->Timestamp());
+    WriteBinaryInteger(fp, (image->scan) ? image->scan->SceneIndex() : -1);
+    WriteBinaryInteger(fp, image->ImageWidth());
+    WriteBinaryInteger(fp, image->ImageHeight());
+    WriteBinaryDouble(fp, image->FocalLength());
+    WriteBinaryDouble(fp, image->ImageCenter().X());
+    WriteBinaryDouble(fp, image->ImageCenter().Y());
+    WriteBinaryInteger(fp, image->Flags());
+    for (int j = 0; j < 5; j++) WriteBinaryInteger(fp, 0);
   }
 
   // Write object properties

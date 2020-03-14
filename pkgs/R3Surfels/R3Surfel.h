@@ -23,15 +23,20 @@ public:
     float radius = 0, 
     unsigned char r = 0, unsigned char g = 0, unsigned char b = 0, 
     unsigned char flags = 0);
+  R3Surfel(float px, float py, float pz, 
+    float nx, float ny, float nz, 
+    float tx, float ty, float tz, 
+    float radius0 = 0, float radius1 = 0,
+    unsigned char r = 0, unsigned char g = 0, unsigned char b = 0, 
+    unsigned char flags = 0);
 
   // Position property functions
   // NOTE THAT THESE COORDINATES ARE RELATIVE TO THE BLOCK ORIGIN
   // TO GET THE WORLD COORDINATES, YOU MUST ADD THE BLOCK ORIGIN
-  float X(void) const;
-  float Y(void) const;
-  float Z(void) const;
-  float Coord(int dimension) const;
-  const float *Coords(void) const;
+  float PX(void) const;
+  float PY(void) const;
+  float PZ(void) const;
+  float PositionCoord(int dimension) const;
 
   // Normal property functions
   float NX(void) const;
@@ -39,34 +44,47 @@ public:
   float NZ(void) const;
   float NormalCoord(int dimension) const;
 
+  // Tangent property functions
+  float TX(void) const;
+  float TY(void) const;
+  float TZ(void) const;
+  float TangentCoord(int dimension) const;
+
   // Color property functions
   unsigned char R(void) const;
   unsigned char G(void) const;
   unsigned char B(void) const;
-  const unsigned char *Color(void) const;
   RNRgb Rgb(void) const;
 
   // Radius property functions
   float Radius(void) const;
-
+  float Radius(int axis) const;
+  float AspectRatio(void) const;
+  
   // Other property functions
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
   RNBoolean IsAerial(void) const;
   RNBoolean IsTerrestrial(void) const;
+  RNBoolean IsOriented(void) const;
+  RNBoolean IsIsotropic(void) const;
   RNBoolean IsOnSilhouetteBoundary(void) const;
   RNBoolean IsOnShadowBoundary(void) const;
   RNBoolean IsOnBorderBoundary(void) const;
   RNBoolean IsOnBoundary(void) const;
   RNBoolean HasNormal(void) const;
+  RNBoolean HasTangent(void) const;
   unsigned char Flags(void) const;
 
   // Manipulation functions
-  void SetCoords(float x, float y, float z);
-  void SetCoords(const float *xyz);
+  void SetPosition(float x, float y, float z);
+  void SetPosition(const float *xyz);
   void SetNormal(float x, float y, float z);
   void SetNormal(const float *xyz);
+  void SetTangent(float x, float y, float z);
+  void SetTangent(const float *xyz);
   void SetRadius(float radius);
+  void SetRadius(int dimension, float radius);
   void SetColor(unsigned char r, unsigned char g, unsigned char b);
   void SetColor(const unsigned char *rgb);
   void SetColor(const RNRgb& rgb);
@@ -86,18 +104,40 @@ public:
 // INTERNAL STUFF BELOW HERE
 ////////////////////////////////////////////////////////////////////////
 
-  // Do not use these
-  float *PositionPtr(void);
-  RNInt16 *NormalPtr(void);
-  RNUInt16 *RadiusPtr(void);
+  // For backward compatibility
+  float X(void) const;
+  float Y(void) const;
+  float Z(void) const;
+
+  // For backward compatibility
+  const float *Coords(void) const;
+  float Coord(int dimension) const;
+
+  // For backward compatibility
+  void SetCoords(float x, float y, float z);
+  void SetCoords(const float *xyz);
+
+  // For backward compatibility
+  const unsigned char *Color(void) const;
+
+  // Do not use these 
+  const float *PositionPtr(void) const;
+  const RNInt16 *NormalPtr(void) const;
+  const RNInt16 *TangentPtr(void) const;
+  const RNUInt16 *RadiusPtr(void) const;
+  const unsigned char *ColorPtr(void) const;
 
 private:
   // Internal data
   RNScalar32 position[3];
   RNInt16 normal[3]; // x 2^15-1 (32767)
-  RNUInt16 radius; // x 2^13 (8192)
+  RNInt16 tangent[3]; // x 2^15-1 (32767)
+  RNUInt16 radius[2]; // x 2^13 (8192)
   RNUChar8 color[3];
   RNUChar8 flags;
+
+  // Friend database so that it can swap endian when reading
+  friend R3SurfelDatabase;
 };
 
 
@@ -108,6 +148,7 @@ private:
 
 #define R3_SURFEL_ACTIVE_FLAG               0x04
 #define R3_SURFEL_AERIAL_FLAG               0x02
+#define R3_SURFEL_TANGENT_FLAG              0x01
 #define R3_SURFEL_MARKED_FLAG               0x80
 #define R3_SURFEL_NORMAL_FLAG               0x40
 #define R3_SURFEL_SHADOW_BOUNDARY_FLAG      0x20
@@ -122,7 +163,7 @@ private:
 ////////////////////////////////////////////////////////////////////////
 
 inline float R3Surfel::
-X(void) const
+PX(void) const
 {
   // Return X coordinate
   return position[0];
@@ -131,7 +172,7 @@ X(void) const
 
 
 inline float R3Surfel::
-Y(void) const
+PY(void) const
 {
   // Return Y coordinate
   return position[1];
@@ -140,7 +181,7 @@ Y(void) const
 
 
 inline float R3Surfel::
-Z(void) const
+PZ(void) const
 {
   // Return Z coordinate
   return position[2];
@@ -149,19 +190,10 @@ Z(void) const
 
 
 inline float R3Surfel::
-Coord(int dimension) const
+PositionCoord(int dimension) const
 {
   // Return coordinate
   return position[dimension];
-}
-
-
-
-inline const float *R3Surfel::
-Coords(void) const
-{
-  // Return pointer to position
-  return position;
 }
 
 
@@ -203,10 +235,66 @@ NormalCoord(int dimension) const
 
 
 inline float R3Surfel::
+TX(void) const
+{
+  // Return X tangent coordinate
+  return tangent[0] / 32767.0;
+}
+
+
+
+inline float R3Surfel::
+TY(void) const
+{
+  // Return Y tangent coordinate
+  return tangent[1] / 32767.0;
+}
+
+
+
+inline float R3Surfel::
+TZ(void) const
+{
+  // Return Z tangent coordinate
+  return tangent[2] / 32767.0;
+}
+
+
+
+inline float R3Surfel::
+TangentCoord(int dimension) const
+{
+  // Return tangent coordinate
+  return tangent[dimension] / 32767.0;
+}
+
+
+
+inline float R3Surfel::
 Radius(void) const
 {
-  // Return radius
-  return radius / 8192.0;
+  // Return longer radius
+  return radius[0] / 8192.0;
+}
+
+
+
+inline float R3Surfel::
+Radius(int axis) const
+{
+  // Return radius along axis
+  assert((axis >= 0) && (axis < 1));
+  return radius[axis] / 8192.0;
+}
+
+
+
+inline float R3Surfel::
+AspectRatio(void) const
+{
+  // Return radius[0] / radius[1]
+  if (radius[1] == 0) return 1.0F;
+  return (float) radius[0] / (float) radius[1];
 }
 
 
@@ -284,6 +372,25 @@ IsTerrestrial(void) const
 
 
 inline RNBoolean R3Surfel::
+IsOriented(void) const
+{
+  // Return whether point is oriented
+  return (HasNormal() & HasTangent());
+}
+
+
+
+inline RNBoolean R3Surfel::
+IsIsotropic(void) const
+{
+  // Return whether point is isotropic
+  if ((radius[1] == 0) || (radius[0] == radius[1])) return TRUE;
+  else return FALSE;
+}
+
+
+
+inline RNBoolean R3Surfel::
 IsOnSilhouetteBoundary(void) const
 {
   // Return whether point is on a silhouette boundary
@@ -337,6 +444,15 @@ HasNormal(void) const
 
 
 
+inline RNBoolean R3Surfel::
+HasTangent(void) const
+{
+  // Return whether surfel has tangent
+  return flags & R3_SURFEL_TANGENT_FLAG;
+}
+
+
+
 inline unsigned char R3Surfel::
 Flags(void) const
 {
@@ -347,7 +463,7 @@ Flags(void) const
 
 
 inline void R3Surfel::
-SetCoords(float x, float y, float z)
+SetPosition(float x, float y, float z)
 {
   // Set position
   position[0] = x;
@@ -358,7 +474,7 @@ SetCoords(float x, float y, float z)
 
 
 inline void R3Surfel::
-SetCoords(const float *xyz)
+SetPosition(const float *xyz)
 {
   // Set position
   position[0] = xyz[0];
@@ -397,10 +513,49 @@ SetNormal(const float *xyz)
 
 
 inline void R3Surfel::
+SetTangent(float x, float y, float z)
+{
+  // Set tangent
+  tangent[0] = (RNInt16) (32767.0 * x + 0.5);
+  tangent[1] = (RNInt16) (32767.0 * y + 0.5);
+  tangent[2] = (RNInt16) (32767.0 * z + 0.5);
+
+  // Update flags
+  flags |= R3_SURFEL_TANGENT_FLAG;
+}
+
+
+
+inline void R3Surfel::
+SetTangent(const float *xyz)
+{
+  // Set tangent
+  tangent[0] = (RNInt16) (32767.0 * xyz[0] + 0.5);
+  tangent[1] = (RNInt16) (32767.0 * xyz[1] + 0.5);
+  tangent[2] = (RNInt16) (32767.0 * xyz[2] + 0.5);
+
+  // Update flags
+  flags |= R3_SURFEL_TANGENT_FLAG;
+}
+
+
+
+inline void R3Surfel::
 SetRadius(float radius)
 {
   // Set radius
-  this->radius = (RNUInt16) (8192.0 * radius + 0.5);
+  this->radius[0] = (RNUInt16) (8192.0 * radius + 0.5);
+  this->radius[1] = this->radius[0];
+}
+
+
+
+inline void R3Surfel::
+SetRadius(int axis, float radius)
+{
+  // Set radius
+  assert((axis >= 0) && (axis <= 1));
+  this->radius[axis] = (RNUInt16) (8192.0 * radius + 0.5);
 }
 
 
@@ -523,8 +678,8 @@ Draw(RNFlags flags) const
 // Internal -- do not use
 ////////////////////////////////////////////////////////////////////////
 
-inline float *R3Surfel::
-PositionPtr(void)
+inline const float *R3Surfel::
+PositionPtr(void) const
 {
   // Return pointer to position
   return position;
@@ -532,8 +687,8 @@ PositionPtr(void)
 
 
 
-inline RNInt16 *R3Surfel::
-NormalPtr(void)
+inline const RNInt16 *R3Surfel::
+NormalPtr(void) const
 {
   // Return pointer to normal
   return normal;
@@ -541,11 +696,96 @@ NormalPtr(void)
 
 
 
-inline RNUInt16 *R3Surfel::
-RadiusPtr(void)
+inline const RNInt16 *R3Surfel::
+TangentPtr(void) const
+{
+  // Return pointer to tangent
+  return tangent;
+}
+
+
+
+inline const RNUInt16 *R3Surfel::
+RadiusPtr(void) const
 {
   // Return pointer to radius
-  return &radius;
+  return radius;
+}
+
+
+
+inline const unsigned char *R3Surfel::
+ColorPtr(void) const
+{
+  // Return pointer to color
+  return color;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// For backwards compatibility -- do not use
+////////////////////////////////////////////////////////////////////////
+
+inline float R3Surfel::
+X(void) const
+{
+  // Return X coordinate
+  return PX();
+}
+
+
+
+inline float R3Surfel::
+Y(void) const
+{
+  // Return Y coordinate
+  return PY();
+}
+
+
+
+inline float R3Surfel::
+Z(void) const
+{
+  // Return Z coordinate
+  return PZ();
+}
+
+
+
+inline float R3Surfel::
+Coord(int dimension) const
+{
+  // Return coordinate
+  return PositionCoord(dimension);
+}
+
+
+
+inline const float *R3Surfel::
+Coords(void) const
+{
+  // Return pointer to position
+  return position;
+}
+
+
+
+inline void R3Surfel::
+SetCoords(float x, float y, float z)
+{
+  // Set position
+  SetPosition(x, y, z);
+}
+
+
+
+inline void R3Surfel::
+SetCoords(const float *xyz)
+{
+  // Set position
+  SetPosition(xyz);
 }
 
 

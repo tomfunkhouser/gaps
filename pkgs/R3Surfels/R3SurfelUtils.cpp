@@ -2291,7 +2291,7 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
       RNCoord x = surfel->X() + block->Origin().X() - origin.X();
       RNCoord y = surfel->Y() + block->Origin().Y() - origin.Y();
       RNCoord z = surfel->Z() + block->Origin().Z() - origin.Z();
-      surfels[j].SetCoords(x, y, z);
+      surfels[j].SetPosition(x, y, z);
       surfels[j].SetColor(surfel->Color());
       surfels[j].SetAerial(surfel->IsAerial());
     }

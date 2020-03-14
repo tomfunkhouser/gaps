@@ -57,9 +57,11 @@ OpenScene(const char *scene_name, const char *database_name)
     printf("  # Labels = %d\n", scene->NLabels());
     printf("  # Assignments = %d\n", scene->NLabelAssignments());
     printf("  # Features = %d\n", scene->NFeatures());
+    printf("  # Scans = %d\n", scene->NScans());
+    printf("  # Images = %d\n", scene->NImages());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
@@ -87,9 +89,11 @@ CloseScene(R3SurfelScene *scene)
     printf("  # Labels = %d\n", scene->NLabels());
     printf("  # Assignments = %d\n", scene->NLabelAssignments());
     printf("  # Features = %d\n", scene->NFeatures());
+    printf("  # Scans = %d\n", scene->NScans());
+    printf("  # Images = %d\n", scene->NImages());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
@@ -1411,7 +1415,7 @@ LoadScene(R3SurfelScene *scene1,
     printf("  # Assignments = %d\n", scene2->NLabelAssignments());
     printf("  # Nodes = %d\n", scene2->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene2->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene2->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene2->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
@@ -1455,6 +1459,14 @@ Transform(R3SurfelScene *scene, const R3Affine& transformation)
     R3CoordSystem pose = scan->Pose();
     pose.Transform(transformation);
     scan->SetPose(pose);
+  }
+      
+  // Transform all image poses
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    R3CoordSystem pose = image->Pose();
+    pose.Transform(transformation);
+    image->SetPose(pose);
   }
       
   // Return success
@@ -1717,7 +1729,7 @@ TransferLabels(R3SurfelScene *scene1,
     printf("  # Assignments = %d\n", scene2->NLabelAssignments());
     printf("  # Nodes = %d\n", scene2->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene2->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene2->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene2->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 

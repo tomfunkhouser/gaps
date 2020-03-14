@@ -90,6 +90,11 @@ public:
   R3SurfelScan *Scan(int k) const;
   R3SurfelScan *FindScanByName(const char *scan_name) const;
 
+  // Image access functions
+  int NImages(void) const;
+  R3SurfelImage *Image(int k) const;
+  R3SurfelImage *FindImageByName(const char *image_name) const;
+
   // Feature access functions
   int NFeatures(void) const;
   R3SurfelFeature *Feature(int k) const;
@@ -140,6 +145,10 @@ public:
   // Scan manipulation functions
   virtual void InsertScan(R3SurfelScan *scan);
   virtual void RemoveScan(R3SurfelScan *scan);
+
+  // Image manipulation functions
+  virtual void InsertImage(R3SurfelImage *image);
+  virtual void RemoveImage(R3SurfelImage *image);
 
   // Feature manipulation functions
   virtual void InsertFeature(R3SurfelFeature *feature);
@@ -203,6 +212,7 @@ protected:
   RNArray<R3SurfelLabelRelationship *> label_relationships;
   RNArray<R3SurfelLabelAssignment *> assignments;
   RNArray<R3SurfelScan *> scans;
+  RNArray<R3SurfelImage *> images;
   RNArray<R3SurfelFeature *> features;
 
   // File stuff
@@ -412,6 +422,24 @@ Scan(int k) const
 {
   // Return kth scan
   return scans.Kth(k);
+}
+
+
+
+inline int R3SurfelScene::
+NImages(void) const
+{
+  // Return number of images
+  return images.NEntries();
+}
+
+
+
+inline R3SurfelImage *R3SurfelScene::
+Image(int k) const
+{
+  // Return kth image
+  return images.Kth(k);
 }
 
 

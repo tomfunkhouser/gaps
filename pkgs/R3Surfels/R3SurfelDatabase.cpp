@@ -30,7 +30,7 @@ namespace gaps {
 // Versioning variables
 ////////////////////////////////////////////////////////////////////////
 
-static unsigned int current_major_version = 3;
+static unsigned int current_major_version = 4;
 static unsigned int current_minor_version = 1;
 
 
@@ -188,6 +188,7 @@ RemoveBlock(R3SurfelBlock *block)
     
   // Update resident surfels
   if (block->surfels) resident_surfels -= block->NSurfels();
+  assert(resident_surfels >= 0);
     
   // Update block
   block->UpdateBeforeRemove(this);
@@ -210,6 +211,7 @@ RemoveBlock(R3SurfelBlock *block)
     
   // Update number of surfels
   nsurfels -= block->NSurfels();
+  assert(nsurfels >= 0);
 
   // Does not update bounding box
   // XXX
@@ -638,6 +640,24 @@ ReadDouble(FILE *fp, double *ptr, int count, int swap_endian)
 
 
 static int
+ReadLongLong(FILE *fp, long long *ptr, int count, int swap_endian)
+{
+  // Read the values
+  if (fread(ptr, sizeof(long long), count, fp) != (size_t) count) {
+    RNFail("Unable to read long long from database file\n");
+    return 0;
+  }
+
+  // Swap endian
+  if (swap_endian) swap8(ptr, count);
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 ReadUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endian)
 {
   // Read the values
@@ -655,9 +675,9 @@ ReadUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endi
 
 
 
-static int
+int R3SurfelDatabase::
 ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
-  unsigned int major_version, unsigned int minor_version)
+  unsigned int major_version, unsigned int minor_version) const
 {
   // Check database version
   if ((major_version == current_major_version) && (minor_version == current_minor_version)) {
@@ -671,13 +691,22 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   }
   else {
     // Read surfels one by one and element by element
-    if (major_version < 2) {
+    if (major_version == 3) {
+      for (int i = 0; i < count; i++) {
+        fread(ptr[i].position, sizeof(float), 3, fp);
+        fread(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fread(ptr[i].radius, sizeof(RNInt16), 1, fp);
+        fread(ptr[i].color, sizeof(unsigned char), 3, fp);
+        fread(&ptr[i].flags, sizeof(unsigned char), 1, fp);
+      }
+    }
+    else if (major_version < 2) {
       for (int i = 0; i < count; i++) {
         float position[3];
         unsigned char color_and_flags[4];
         fread(position, sizeof(float), 3, fp);
         fread(color_and_flags, sizeof(unsigned char), 4, fp);
-        ptr[i].SetCoords(position);
+        ptr[i].SetPosition(position);
         ptr[i].SetColor(color_and_flags);
         ptr[i].SetFlags(color_and_flags[3]);
       }
@@ -687,9 +716,10 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   // Swap endian
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      float *coords = ptr[i].PositionPtr(); swap4(coords, 3);
-      RNInt16 *normals = ptr[i].NormalPtr(); swap2(normals, 3);
-      RNUInt16 *radius = ptr[i].RadiusPtr(); swap2(radius, 1);
+      swap4(ptr[i].position, 3);
+      swap2(ptr[i].normal, 3);
+      swap2(ptr[i].tangent, 3);
+      swap2(ptr[i].radius, 2);
     }
   }
 
@@ -847,6 +877,27 @@ WriteDouble(FILE *fp, double *ptr, int count, int swap_endian)
 
 
 static int
+WriteLongLong(FILE *fp, long long *ptr, int count, int swap_endian)
+{
+  // Swap endian
+  if (swap_endian) swap8(ptr, count);
+
+  // Write the values
+  if (fwrite(ptr, sizeof(long long), count, fp) != (size_t) count) {
+    RNFail("Unable to write long long to database file\n");
+    return 0;
+  }
+
+  // Swap endian back
+  if (swap_endian) swap8(ptr, count);
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 WriteUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endian)
 {
   // Swap endian
@@ -867,16 +918,17 @@ WriteUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_end
 
 
 
-static int
+int R3SurfelDatabase::
 WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
-  unsigned int major_version, unsigned int minor_version)
+  unsigned int major_version, unsigned int minor_version) const
 {
   // Swap endian
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      float *coords = ptr[i].PositionPtr(); swap4(coords, 3);
-      RNInt16 *normals = ptr[i].NormalPtr(); swap2(normals, 3);
-      RNUInt16 *radius = ptr[i].RadiusPtr(); swap2(radius, 1);
+      swap4(ptr[i].position, 3);
+      swap2(ptr[i].normal, 3);
+      swap2(ptr[i].tangent, 3);
+      swap2(ptr[i].radius, 2);
     }
   }
 
@@ -894,9 +946,10 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   // Swap endian back
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      float *coords = ptr[i].PositionPtr(); swap4(coords, 3);
-      RNInt16 *normals = ptr[i].NormalPtr(); swap2(normals, 3);
-      RNUInt16 *radius = ptr[i].RadiusPtr(); swap2(radius, 1);
+      swap4(ptr[i].position, 3);
+      swap2(ptr[i].normal, 3);
+      swap2(ptr[i].tangent, 3);
+      swap2(ptr[i].radius, 2);
     }
   }
 
@@ -984,6 +1037,7 @@ InternalReleaseBlock(R3SurfelBlock *block)
       
   // Update resident surfels
   resident_surfels -= block->NSurfels();
+  assert(resident_surfels >= 0);
 
 #ifdef PRINT_DEBUG
   // Print debug message
@@ -1074,10 +1128,10 @@ WriteHeader(FILE *fp, int swap_endian)
   if (!WriteUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
   if (!WriteUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
   if (!WriteUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
-  if (!WriteInt(fp, &nsurfels, 1, swap_endian)) return 0;
+  if (!WriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
   if (!WriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
   if (!WriteChar(fp, buffer, 1024, swap_endian)) return 0;
-
+  
   // Return success
   return 1;
 }
@@ -1132,18 +1186,33 @@ OpenFile(const char *filename, const char *rwaccess)
     // Read version
     if (!ReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
     if (!ReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
-    if ((major_version < 1) || (major_version > 3)) {
+    if ((major_version < 2) || (major_version > 4)) {
       RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
       return 0;
     }
   
-    // Read rest of header
+    // Read block info
     unsigned int nblocks;
     if (!ReadUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
     if (!ReadUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
     if (!ReadUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
-    if (!ReadInt(fp, &nsurfels, 1, swap_endian)) return 0;
+
+    // Read number of surfels
+    if (major_version < 4) {
+      // nsurfels used to be an int
+      int nsurfels32;
+      if (!ReadInt(fp, &nsurfels32, 1, swap_endian)) return 0;
+      nsurfels = nsurfels32;
+    }
+    else {
+      // nsurfels now is an RNInt64
+      if (!ReadLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+    }
+
+    // Read bounding box
     if (!ReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
+
+    // Read extra at end of header
     if (!ReadChar(fp, buffer, 1024, swap_endian)) return 0;
 
     // Read blocks
@@ -1239,50 +1308,6 @@ CloseFile(void)
   // Return success
   return 1;
 }
-
-
-
-////////////////////////////////////////////////////////////////////////
-// LP2 I/O FUNCTIONS
-////////////////////////////////////////////////////////////////////////
-
-#if 0
-
-struct LPPointID {
-  int originalTileID;
-  int withinTileIndex;
-};
-
-struct LPLidarPoint {
-  LPPointID id;
-  float pos[3];
-  unsigned char color[4];
-  int intensity;
-  unsigned char scanner;
-  double time;
-};
-
-struct LPTileHeader {
-  R3Point offset;
-  R2Box bbox;
-  int numPoints;
-  char futureUse[516];
-};
-
-
-struct LPSuperTileHeader : public LPTileHeader {
-  int numSubtiles;
-};
-
-struct LPFileHeader {
-  char signature[16];
-  unsigned int version;
-  unsigned int numTiles;
-  char futureUse[512];
-};
-
-
-#endif
 
 
 

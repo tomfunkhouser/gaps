@@ -34,21 +34,12 @@ public:
   //// PROPERTY FUNCTIONS ////
   ////////////////////////////
 
-  // Image property functions
-  int ImageWidth(void) const;
-  int ImageHeight(void) const;
-  const R2Point& ImageCenter(void) const;
-  RNFlags Flags(void) const;
-  
-  // Camera property functions
+  // Sensor pose functions
   const R3CoordSystem& Pose(void) const;
   const R3Point& Viewpoint(void) const;
   R3Vector Towards(void) const;
   const R3Vector& Up(void) const;
   const R3Vector& Right(void) const;
-  RNAngle FocalLength(void) const;
-  RNAngle XFOV(void) const;
-  RNAngle YFOV(void) const;
 
   // Geometric property functions
   const R3Box& BBox(void) const;
@@ -60,7 +51,16 @@ public:
   // Name property functions
   const char *Name(void) const;
 
+  // Image property functions (optional, only if sensor is a depth camera)
+  int ImageWidth(void) const;
+  int ImageHeight(void) const;
+  const R2Point& ImageCenter(void) const;
+  RNAngle FocalLength(void) const;
+  RNAngle XFOV(void) const;
+  RNAngle YFOV(void) const;
+  
   // User data property functions
+  RNFlags Flags(void) const;
   void *Data(void) const;
 
 
@@ -75,6 +75,9 @@ public:
   // Node access functions
   R3SurfelNode *Node(void) const;
 
+  // Image access functions
+  R3SurfelImage *Image(void) const;
+
   // Point access functions
   R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE) const;
 
@@ -86,12 +89,6 @@ public:
   // Projection from world into image
   R2Point ImagePosition(const R3Point& world_position) const;
 
-  // Projection of all points into image
-  int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
-    R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
-    R2Grid *label_image = NULL, R2Grid *object_image = NULL,
-    R2Grid *node_image = NULL, R2Grid *block_image = NULL) const;
-
   
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
@@ -101,7 +98,6 @@ public:
   virtual void SetPose(const R3CoordSystem& pose);
   virtual void SetViewpoint(const R3Point& viewpoint);
   virtual void SetOrientation(const R3Vector& towards, const R3Vector& up);
-  virtual void SetFocalLength(RNLength focal_length);
 
   // Timestamp manipulation functions
   virtual void SetTimestamp(RNScalar timestamp);
@@ -112,6 +108,7 @@ public:
   // Image metadata manipulation functions
   virtual void SetImageDimensions(int width, int height);
   virtual void SetImageCenter(const R2Point& center);
+  virtual void SetFocalLength(RNLength focal_length);
 
   // User data manipulation functions
   virtual void SetFlags(RNFlags flags);
@@ -124,6 +121,9 @@ public:
 
   // Node manipulation functions
   virtual void SetNode(R3SurfelNode *node);
+
+  // Image manipulation functions
+  virtual void SetImage(R3SurfelImage *image);
 
 
   /////////////////////////////////////
@@ -151,17 +151,25 @@ public:
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
 
+  // For backward compatibility
+  int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
+    R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
+    R2Grid *label_image = NULL, R2Grid *object_image = NULL,
+    R2Grid *node_image = NULL, R2Grid *block_image = NULL) const;
+
 protected:
   // Internal data
   friend class R3SurfelScene;
+  friend class R3SurfelImage;
   R3SurfelScene *scene;
   int scene_index;
   R3SurfelNode *node;
+  R3SurfelImage *image;
   R3CoordSystem pose;
-  RNLength focal_length;
   RNScalar timestamp;
   int image_width, image_height;
   R2Point image_center;
+  RNLength focal_length;
   char *name;
   RNFlags flags;
   void *data;
@@ -247,6 +255,33 @@ Timestamp(void) const
 
 
 
+inline int R3SurfelScan::
+ImageWidth(void) const
+{
+  // Return image width
+  return image_width;
+}
+
+
+
+inline int R3SurfelScan::
+ImageHeight(void) const
+{
+  // Return image height
+  return image_height;
+}
+
+
+
+inline const R2Point& R3SurfelScan::
+ImageCenter(void) const
+{
+  // Return image center
+  return image_center;
+}
+
+
+
 inline RNLength R3SurfelScan::
 FocalLength(void) const
 {
@@ -272,33 +307,6 @@ YFOV(void) const
   // Return half-angle for vertical field of view
   if (focal_length <= 0) return 0.0;
   return atan(0.5*image_height/focal_length);
-}
-
-
-
-inline int R3SurfelScan::
-ImageWidth(void) const
-{
-  // Return image width
-  return image_width;
-}
-
-
-
-inline int R3SurfelScan::
-ImageHeight(void) const
-{
-  // Return image height
-  return image_height;
-}
-
-
-
-inline const R2Point& R3SurfelScan::
-ImageCenter(void) const
-{
-  // Return image center
-  return image_center;
 }
 
 
@@ -353,6 +361,15 @@ Node(void) const
 {
   // Return node
   return node;
+}
+
+
+
+inline R3SurfelImage *R3SurfelScan::
+Image(void) const
+{
+  // Return image
+  return image;
 }
 
 

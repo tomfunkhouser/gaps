@@ -167,7 +167,7 @@ ParseArgs(int argc, char **argv)
   }
 
   // Rectify arguments
-  if (!strstr(input_database_name, ".ssb")) {
+  if (input_database_name && !strstr(input_database_name, ".ssb")) {
     output_database_name = output_scene_name;
     output_scene_name = input_database_name;
     input_database_name = NULL;

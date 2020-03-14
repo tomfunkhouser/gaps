@@ -22,6 +22,7 @@ CCSRCS=$(NAME).cpp \
   R3SurfelNodeSet.cpp \
   R3SurfelTree.cpp \
   R3SurfelScan.cpp \
+  R3SurfelImage.cpp \
   R3SurfelFeature.cpp \
   R3SurfelFeatureSet.cpp \
   R3SurfelFeatureVector.cpp \

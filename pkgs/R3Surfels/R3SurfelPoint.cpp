@@ -119,11 +119,31 @@ SetNormal(const R3Vector& normal)
 
 
 void R3SurfelPoint::
+SetTangent(const R3Vector& tangent)
+{
+  // Set position
+  assert(block && surfel);
+  block->SetSurfelTangent(block->SurfelIndex(surfel), tangent);
+}
+
+
+
+void R3SurfelPoint::
 SetRadius(float radius)
 {
   // Set position
   assert(block && surfel);
   block->SetSurfelRadius(block->SurfelIndex(surfel), radius);
+}
+
+
+
+void R3SurfelPoint::
+SetRadius(int axis, float radius)
+{
+  // Set position
+  assert(block && surfel);
+  block->SetSurfelRadius(block->SurfelIndex(surfel), axis, radius);
 }
 
 

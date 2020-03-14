@@ -35,7 +35,7 @@ public:
   ////////////////////////////
 
   // Property functions
-  int NSurfels(void) const;
+  long long NSurfels(void) const;
   const char *Name(void) const;
 
   // Geometric property functions
@@ -129,12 +129,18 @@ public:
   ////////////////////////////////////////////////////////////////////////
 
 protected:
-  // Block I/O functions
+  // Internal block I/O functions
   virtual int InternalReadBlock(R3SurfelBlock *block);
   virtual int InternalReleaseBlock(R3SurfelBlock *block);
   virtual int InternalSyncBlock(R3SurfelBlock *block);
 
-  // Internal functions
+  // Internal surfel I/O functions
+  virtual int ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
+    unsigned int major_version, unsigned int minor_version) const;
+  virtual int WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
+    unsigned int major_version, unsigned int minor_version) const;
+
+  // Internal header I/O functions
   virtual int WriteHeader(FILE *fp, int swap_endian);
 
 protected:
@@ -147,7 +153,7 @@ protected:
   unsigned long long file_blocks_offset;
   unsigned int file_blocks_count;
   RNArray<R3SurfelBlock *> blocks;
-  int nsurfels;
+  long long nsurfels;
   R3Box bbox;
   char *name;
   friend class R3SurfelTree;
@@ -161,7 +167,7 @@ protected:
 // INLINE FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
 
-inline int R3SurfelDatabase::
+inline long long R3SurfelDatabase::
 NSurfels(void) const
 {
   // Return total number of surfels in all blocks
