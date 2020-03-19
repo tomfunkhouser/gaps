@@ -73,6 +73,7 @@ static int show_surfels = 0;
 static int show_quads = 0;
 static int show_faces = 0;
 static int show_edges = 0;
+static int show_vertices = 0;
 static int show_textures = 0;
 static int show_overlaps = 0;
 static int show_axes = 0;
@@ -572,6 +573,19 @@ DrawEdges(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
 
 
 static void
+DrawVertices(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
+{
+  // Draw surfaces
+  for (int i = 0; i < configuration.NSurfaces(); i++) {
+    RGBDSurface *surface = configuration.Surface(i);
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) surface->DrawVertices(RGBD_HIGHLIGHT_COLOR_SCHEME);
+    else surface->DrawVertices(color_scheme);
+  }
+}
+
+
+
+static void
 DrawTextures(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
 {
   // Draw surfaces
@@ -1040,6 +1054,7 @@ void GLUTRedraw(void)
   if (show_images) DrawImages(color_scheme);
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
+  if (show_vertices) DrawVertices(color_scheme);
   if (show_points) DrawPoints(color_scheme);
   if (show_surfels) DrawSurfels(color_scheme);
   if (show_quads) DrawQuads(color_scheme);
@@ -1345,6 +1360,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'V':
   case 'v':
+    show_vertices = !show_vertices;
+    break;
+      
+  case 'W':
+  case 'w':
     if (snap_image_index >= 0) {
       RGBDImage *snap_image = configuration.Image(snap_image_index);
       viewer.RepositionCamera(snap_image->WorldViewpoint());
