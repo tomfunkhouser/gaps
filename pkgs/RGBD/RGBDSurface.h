@@ -80,6 +80,7 @@ public:
   virtual void Draw(int color_scheme = RGBD_PHOTO_COLOR_SCHEME) const;
   virtual void DrawFaces(int color_scheme = RGBD_INDEX_COLOR_SCHEME) const;
   virtual void DrawEdges(int color_scheme = RGBD_INDEX_COLOR_SCHEME) const;
+  virtual void DrawVertices(int color_scheme = RGBD_INDEX_COLOR_SCHEME) const;
   virtual void DrawTexture(int color_scheme = RGBD_PHOTO_COLOR_SCHEME) const;
   virtual void LoadColor(int color_scheme = RGBD_PHOTO_COLOR_SCHEME) const;
   

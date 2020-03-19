@@ -604,6 +604,36 @@ DrawEdges(int color_scheme) const
 
 
 void RGBDSurface::
+DrawVertices(int color_scheme) const
+{
+  // Load color
+  if (color_scheme == RGBD_NO_COLOR_SCHEME) LoadColor(color_scheme);
+  else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) LoadColor(color_scheme);
+  else LoadColor(RGBD_INDEX_COLOR_SCHEME);
+
+  // Draw vertices
+  if (rectangle) {
+    glBegin(GL_POINTS);
+    for (int i = 0; i < 4; i++) {
+      R3Point position = rectangle->Corner(i);
+      R3LoadPoint(position);
+    }
+    glEnd();
+  }
+  else if (mesh) {
+    glBegin(GL_POINTS);
+    for (int i = 0; i < mesh->NVertices(); i++) {
+      R3MeshVertex *vertex = mesh->Vertex(i);
+      const R3Point& position = mesh->VertexPosition(vertex);
+      R3LoadPoint(position);
+    }
+    glEnd();
+  }
+}
+
+
+
+void RGBDSurface::
 DrawTexture(int color_scheme) const
 {
   // Check channels

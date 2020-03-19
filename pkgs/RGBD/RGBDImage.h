@@ -25,7 +25,7 @@ public:
   RGBDImage(void);
   RGBDImage(const char *color_filename, const char *depth_filename,
     const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix,
-    int width = 0, int height = 0);
+    int width = 0, int height = 0, RNScalar timestamp = 0);
   virtual ~RGBDImage(void);
 
   // Configuration access functions
@@ -68,6 +68,7 @@ public:
   R3Vector WorldRight(void) const;
   R3Vector WorldUp(void) const;
   R3Box WorldBBox(void) const;
+  RNScalar Timestamp(void) const;
   RNAngle XFov(void) const;
   RNAngle YFov(void) const;
   
@@ -91,6 +92,7 @@ public:
   virtual void SetCameraToWorld(const R3Affine& transformation);
   virtual void SetExtrinsics(const R4Matrix& matrix);
   virtual void SetIntrinsics(const R3Matrix& matrix);
+  virtual void SetTimestamp(RNScalar timestamp);
   virtual void Transform(const R3Transformation& transformation);
 
   // Transformation functions
@@ -174,6 +176,7 @@ private:
   R3Affine camera_to_world;
   R3Matrix intrinsics;
   R3Box world_bbox;
+  RNScalar timestamp;
   int opengl_texture_id;
   char *name;
   char *color_filename;
@@ -413,6 +416,15 @@ WorldUp(void) const
 {
   // Return up vector of camera
   return camera_to_world.Matrix() * R3posy_vector;
+}
+
+
+
+inline RNScalar RGBDImage::
+Timestamp(void) const
+{
+  // Return timestamp
+  return timestamp;
 }
 
 

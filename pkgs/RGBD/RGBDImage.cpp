@@ -33,6 +33,7 @@ RGBDImage(void)
     camera_to_world(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0),
     intrinsics(1,0,0, 0,1,0, 0,0,1),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    timestamp(0),
     opengl_texture_id(-1),
     name(NULL),
     color_filename(NULL),
@@ -52,7 +53,7 @@ RGBDImage(void)
 RGBDImage::
 RGBDImage(const char *color_filename, const char *depth_filename,
   const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix,
-  int width, int height)
+  int width, int height, RNScalar timestamp)
   : configuration(NULL),
     configuration_index(-1),
     channels(),
@@ -60,6 +61,7 @@ RGBDImage(const char *color_filename, const char *depth_filename,
     camera_to_world(camera_to_world_matrix, 0),
     intrinsics(intrinsics_matrix),
     world_bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    timestamp(timestamp),
     opengl_texture_id(-1),
     name(NULL),
     color_filename(NULL),
@@ -549,6 +551,15 @@ SetIntrinsics(const R3Matrix& matrix)
 
   // Invalidate bounding box
   InvalidateWorldBBox();
+}
+
+
+
+void RGBDImage::
+SetTimestamp(RNScalar timestamp)
+{
+  // Set timestamp
+  this->timestamp = timestamp;
 }
 
 
