@@ -50,7 +50,7 @@ public:
     int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *) = NULL, 
     void *compatible_data = NULL);
 
-  // Find all mesh features with distance from a query point and normal
+  // Find all mesh features with distance from a query point (and with a compatible normal)
   void FindAll(const R3Point& query, const R3Vector& normal, RNArray<R3MeshIntersection *>& hits,
     RNScalar min_distance = 0, RNScalar max_distance = RN_INFINITY,
     int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *) = NULL, 
@@ -61,6 +61,9 @@ public:
     RNScalar min_t = 0, RNScalar max_t = RN_INFINITY,
     int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *) = NULL, 
     void *compatible_data = NULL);
+
+  // Find all mesh faces intersecting shape
+  void FindAll(const R3Shape& shape, RNArray<R3MeshIntersection *>& hits);
 
   // Visualization/debugging functions
   int NNodes(void) const;
@@ -103,6 +106,10 @@ public:
     RNScalar min_t, RNScalar& max_t, 
     int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *), void *compatible_data,
     R3MeshFace *face) const;
+
+  // Internal shape intersection functions
+  void FindAll(const R3Shape& shape, RNArray<R3MeshIntersection *>& hits,
+    R3MeshSearchTreeNode *node, const R3Box& node_box) const;
 
   // Internal visualization and debugging functions
   void Outline(R3MeshSearchTreeNode *node, const R3Box& node_box) const;

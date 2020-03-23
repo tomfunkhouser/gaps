@@ -60,13 +60,17 @@ public:
   virtual void SetTextureDirectory(const char *directory);
   virtual void SetDatasetFormat(const char *format);
 
-  // Input/output
+  // File input/output
   virtual int ReadFile(const char *filename, int read_every_kth_image = 1);
   virtual int ReadConfigurationFile(const char *filename, int read_every_kth_image = 1);
   virtual int WriteFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteConfigurationFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteObjFile(const char *filename) const;
-  
+
+  // Stream input/output
+  virtual int ReadConfigurationStream(FILE *fp, int read_every_kth_image = 1);
+  virtual int WriteConfigurationStream(FILE *fp, int write_every_kth_image = 1) const;
+
 public:
   // Allocation functions
   virtual RGBDImage *AllocateImage(void) const;

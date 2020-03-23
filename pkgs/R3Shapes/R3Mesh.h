@@ -659,6 +659,12 @@ class R3Mesh {
     virtual int WriteSTLFile(const char *filename) const;
      // Writes a STL (.stl) file, returns number of faces written (0 is error)
 
+    // Reading/writing streams
+    virtual int ReadPlyStream(FILE *fp);
+      // Loads data structure from ply stream, returns 0 if error
+    virtual int WritePlyStream(FILE *fp, RNBoolean binary = TRUE) const;
+     // Writes a PLY stream, returns number of faces written (0 is error)
+
     // DEBUG FUNCTIONS
     virtual RNBoolean IsValid(void) const;
       // Returns whether data structure is valid

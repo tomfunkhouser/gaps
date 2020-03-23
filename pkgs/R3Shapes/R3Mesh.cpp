@@ -5174,7 +5174,28 @@ CreatePlyRangeGridFace(R3Mesh *mesh,
 int R3Mesh::
 ReadPlyFile(const char *filename)
 {
-  FILE *fp;
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open file: %s", filename);
+    return 0;
+  }
+
+  // Read file
+  if (!ReadPlyStream(fp)) return 0;
+  
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3Mesh::
+ReadPlyStream(FILE *fp)
+{
   int i,j;
   PlyFile *ply;
   int nelems;
@@ -5237,17 +5258,10 @@ ReadPlyFile(const char *filename)
     {(char *) "vertex_indices", PLY_INT, PLY_INT, offsetof(PlyFace,verts), 1, PLY_UCHAR, PLY_UCHAR, offsetof(PlyFace,nverts)},
   };
 
-  // Open file 
-  fp = fopen(filename, "rb");
-  if (!fp) {
-    RNFail("Unable to open file: %s", filename);
-    return 0;
-  }
-
   // Read PLY header
   ply = ply_read (fp, &nelems, &elist);
   if (!ply) {
-    RNFail("Unable to read ply file: %s", filename);
+    RNFail("Unable to read ply file header");
     fclose(fp);
     return 0;
   }
@@ -5512,8 +5526,8 @@ ReadPlyFile(const char *filename)
     }
   }
 
-  // Close the file 
-  ply_close (ply);
+  // Free the memory
+  free(ply);
 
   // Return success
   return 1;
@@ -6215,6 +6229,28 @@ WriteRayFile(const char *filename) const
 int R3Mesh::
 WritePlyFile(const char *filename, RNBoolean binary)  const
 {
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open file: %s", filename);
+    return 0;
+  }
+
+  // Write file
+  if (!WritePlyStream(fp, binary)) return 0;
+  
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3Mesh::
+WritePlyStream(FILE *fp, RNBoolean binary)  const
+{
   typedef struct PlyVertex {
     float x, y, z;
     float nx, ny, nz;
@@ -6279,10 +6315,9 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
   };
 
   // Open ply file
-  float version;
   int file_type = (binary) ? PLY_BINARY_NATIVE : PLY_ASCII;
-  PlyFile *ply = ply_open_for_writing((char *) filename, 2, elem_names, file_type, &version);
-  if (!ply) return -1;
+  PlyFile *ply = ply_write (fp, 2, elem_names, file_type);
+  if (!ply) return 0;
 
   // Describe vertex properties
   ply_element_count(ply, (char *) "vertex", NVertices());
@@ -6359,10 +6394,10 @@ WritePlyFile(const char *filename, RNBoolean binary)  const
     ply_put_element(ply, (void *) &ply_face);
   }
 
-  // Close the file 
-  ply_close(ply);
+  // Free the memory
+  free(ply);
 
-  // Return number of faces written
+  // Return success
   return 1;
 }
 

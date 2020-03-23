@@ -1008,9 +1008,103 @@ FindAll(const R3Point& query_position, RNArray<R3MeshIntersection *>& hits,
   RNScalar min_distance, RNScalar max_distance,
   int (*IsCompatible)(const R3Point&, const R3Vector&, R3Mesh *, R3MeshFace *, void *), void *compatible_data)
 {
-  // Find closest point, ignoring normal
+  // Find all points within distance range, ignoring normal
   FindAll(query_position, R3zero_vector, hits, min_distance, max_distance, IsCompatible, compatible_data);
 }
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Polytope search functions
+////////////////////////////////////////////////////////////////////////
+
+void R3MeshSearchTree::
+FindAll(const R3Shape& shape, RNArray<R3MeshIntersection *>& hits, 
+  R3MeshSearchTreeNode *node, const R3Box& node_box) const
+{
+  // Check if shape intersect node box
+  if (!R3Intersects(shape, node_box)) return;
+  
+  // Check each big face
+  for (int i = 0; i < node->big_faces.NEntries(); i++) {
+    // Get face container and check mark
+    R3MeshSearchTreeFace *face_container = node->big_faces[i];
+    if (face_container->mark == mark) continue;
+    face_container->mark = mark;
+  
+    // Check face bbox
+    if (!R3Intersects(shape, mesh->FaceBBox(face_container->face))) continue;
+
+    // Check face intersection precisely 
+    // Not implemented yet ???
+
+    // Add hit to result
+    R3MeshIntersection *hit = new R3MeshIntersection();
+    hit->type = R3_MESH_FACE_TYPE;
+    hit->vertex = NULL;
+    hit->edge = NULL;
+    hit->face = face_container->face;
+    hit->point = mesh->FaceCentroid(face_container->face);
+    hit->t = 0;
+    hits.Insert(hit);    
+  }
+
+  // Check if node is interior
+  if (node->children[0]) {
+    assert(node->children[1]);
+    assert(node->small_faces.IsEmpty());
+
+    // Search children
+    R3Box child_box;
+    child_box = node_box;
+    child_box[RN_HI][node->split_dimension] = node->split_coordinate;
+    FindAll(shape, hits, node->children[0], child_box);
+    child_box = node_box;
+    child_box[RN_LO][node->split_dimension] = node->split_coordinate;
+    FindAll(shape, hits, node->children[1], child_box);
+  }
+  else {
+    // Check each small face
+    for (int i = 0; i < node->small_faces.NEntries(); i++) {
+      // Get face container and check mark
+      R3MeshSearchTreeFace *face_container = node->small_faces[i];
+      if (face_container->mark == mark) continue;
+      face_container->mark = mark;
+
+      // Check face bbox
+      if (!R3Intersects(shape, mesh->FaceBBox(face_container->face))) continue;
+
+      // Check face intersection precisely 
+      // Not implemented yet ???
+
+      // Add hit to result
+      R3MeshIntersection *hit = new R3MeshIntersection();
+      hit->type = R3_MESH_FACE_TYPE;
+      hit->vertex = NULL;
+      hit->edge = NULL;
+      hit->face = face_container->face;
+      hit->point = mesh->FaceCentroid(face_container->face);
+      hit->t = 0;
+      hits.Insert(hit);    
+    }
+  }
+}
+
+
+
+void R3MeshSearchTree::
+FindAll(const R3Shape& shape, RNArray<R3MeshIntersection *>& hits)
+{
+  // Check root
+  if (!root) return;
+
+  // Update mark (used to avoid checking same face twice)
+  mark++;
+
+  // Search nodes recursively
+  FindAll(shape, hits, root, BBox());
+}
+
 
 
 
