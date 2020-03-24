@@ -244,7 +244,7 @@ public:
   int Read(const char *filename) { return ReadFile(filename); };
   int Write(const char *filename) const { return WriteFile(filename); };
   int ReadGrid(FILE *fp = NULL) { return ReadGridStream(fp); };
-  int WriteGrid(FILE *fp = NULL) const { return WriteGrid(fp); }
+  int WriteGrid(FILE *fp = NULL) const { return WriteGridStream(fp); }
 
 private:
   R2Affine grid_to_world_transform;
