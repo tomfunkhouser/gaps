@@ -84,7 +84,7 @@ public:
   void SetTangent(float x, float y, float z);
   void SetTangent(const float *xyz);
   void SetRadius(float radius);
-  void SetRadius(int dimension, float radius);
+  void SetRadius(int axis, float radius);
   void SetColor(unsigned char r, unsigned char g, unsigned char b);
   void SetColor(const unsigned char *rgb);
   void SetColor(const RNRgb& rgb);
