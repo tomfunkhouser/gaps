@@ -824,9 +824,8 @@ SetVertexPosition(R3MeshVertex *v, const R3Point& position)
   // Set vertex position
   v->position = position;
 
-  // Mark vertex in need of update to normal and curvature
+  // Mark vertex in need of update to normal 
   v->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
-  v->flags.Remove(R3_MESH_VERTEX_CURVATURE_UPTODATE);
 
   // Mark edges/faces in need of update
   for (int i = 0; i < v->edges.NEntries(); i++) {
@@ -834,7 +833,6 @@ SetVertexPosition(R3MeshVertex *v, const R3Point& position)
     e->flags.Remove(R3_MESH_EDGE_LENGTH_UPTODATE);
     R3MeshVertex *neighbor = VertexAcrossEdge(e, v);
     neighbor->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
-    neighbor->flags.Remove(R3_MESH_VERTEX_CURVATURE_UPTODATE);
     R3MeshFace *f0 = e->face[0];
     if (f0) f0->flags.Remove(R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
     R3MeshFace *f1 = e->face[1];
@@ -6801,18 +6799,6 @@ UpdateVertexNormal(R3MeshVertex *v) const
 
 
 void R3Mesh::
-UpdateVertexCurvature(R3MeshVertex *v) const
-{
-  // Compute and remember Gauss curvature
-  v->curvature = VertexGaussCurvature(v);
-
-  // Update flags
-  v->flags.Add(R3_MESH_VERTEX_CURVATURE_UPTODATE);
-}
-
-
-
-void R3Mesh::
 UpdateEdgeLength(R3MeshEdge *e) const
 {
   // Reset length
@@ -6893,9 +6879,9 @@ UpdateFaceRefs(R3MeshFace *f,
   f->flags.Remove(R3_MESH_FACE_AREA_UPTODATE | R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
 
   // Invalidate vertex properties
-  v1->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE | R3_MESH_VERTEX_CURVATURE_UPTODATE);
-  v2->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE | R3_MESH_VERTEX_CURVATURE_UPTODATE);
-  v3->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE | R3_MESH_VERTEX_CURVATURE_UPTODATE);
+  v1->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
+  v2->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
+  v3->flags.Remove(R3_MESH_VERTEX_NORMAL_UPTODATE);
 }
  
    
@@ -7028,7 +7014,6 @@ R3MeshVertex(void)
     normal(0.0, 0.0, 0.0),
     texcoords(0.0, 0.0),
     color(0.0, 0.0, 0.0),
-    curvature(0),
     id(-1),
     flags(0),
     value(0.0),

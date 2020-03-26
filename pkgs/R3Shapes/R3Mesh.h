@@ -41,7 +41,6 @@ class R3MeshVertex {
     R3Vector normal;
     R2Point texcoords;
     RNRgb color;
-    RNScalar curvature;
     int id;
     RNFlags flags;
     RNScalar value;
@@ -685,7 +684,6 @@ class R3Mesh {
 
     // INTERNAL UPDATE FUNCTIONS
     virtual void UpdateVertexNormal(R3MeshVertex *v) const;  
-    virtual void UpdateVertexCurvature(R3MeshVertex *v) const;  
     virtual void UpdateEdgeLength(R3MeshEdge *e) const;  
     virtual void UpdateFaceArea(R3MeshFace *f) const;
     virtual void UpdateFacePlane(R3MeshFace *f) const;  
@@ -719,7 +717,6 @@ class R3Mesh {
 #define R3_MESH_BBOX_UPTODATE             1
 #define R3_MESH_VERTEX_ALLOCATED          1
 #define R3_MESH_VERTEX_NORMAL_UPTODATE    2
-#define R3_MESH_VERTEX_CURVATURE_UPTODATE 4
 #define R3_MESH_VERTEX_USER_FLAG          8
 #define R3_MESH_EDGE_ALLOCATED            1
 #define R3_MESH_EDGE_LENGTH_UPTODATE      2
@@ -885,12 +882,8 @@ VertexTangentPlane(const R3MeshVertex *v) const
 inline RNScalar R3Mesh::
 VertexCurvature(const R3MeshVertex *v) const
 {
-  // Update the vertex curvature
-  if (!(v->flags[R3_MESH_VERTEX_CURVATURE_UPTODATE]))
-    UpdateVertexCurvature((R3MeshVertex *) v);
-
-  // Return the curvature at the vertex
-  return v->curvature;
+  // Return Gauss curvature
+  return VertexGaussCurvature(v);
 }
 
 
