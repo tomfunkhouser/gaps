@@ -162,7 +162,7 @@ Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
 {
   // Return whether block intersects timestamp range
   int surfel_index = block->SurfelIndex(surfel);
-  assert((surfel_index >= 0) && (surfel_index < block->NSurfels()))
+  assert((surfel_index >= 0) && (surfel_index < block->NSurfels()));
   if (timestamp_range.IsEmpty()) return R3_SURFEL_CONSTRAINT_PASS;
   if (timestamp_range.Contains(block->SurfelTimestamp(surfel_index))) return R3_SURFEL_CONSTRAINT_PASS;
   return R3_SURFEL_CONSTRAINT_FAIL;
