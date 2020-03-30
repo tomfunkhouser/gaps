@@ -26,7 +26,8 @@ R3SurfelNodeSet::
 R3SurfelNodeSet(void)
   : nodes(),
     complexity(0),
-    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX)
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX)
 {
 }
 
@@ -36,7 +37,8 @@ R3SurfelNodeSet::
 R3SurfelNodeSet(const R3SurfelNodeSet& set)
   : nodes(set.nodes),
     complexity(set.complexity),
-    bbox(set.bbox)
+    bbox(set.bbox),
+    timestamp_range(set.timestamp_range)
 {
 }
 
@@ -182,6 +184,9 @@ InsertNode(R3SurfelNode *node)
 
   // Update bounding box
   bbox.Union(node->BBox());
+
+  // Update timestamp range
+  timestamp_range.Union(node->TimestampRange());
 }
 
 
@@ -211,6 +216,9 @@ RemoveNode(int k)
 
   // Update bounding box
   // XXX
+
+  // Update timestamp range
+  // XXX
 }
 
 
@@ -226,6 +234,9 @@ Empty(void)
 
   // Update bounding box
   bbox = R3null_box;
+
+  // Update timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
 }
 
 

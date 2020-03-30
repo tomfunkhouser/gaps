@@ -42,6 +42,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+
 
   //////////////////////////
   //// ACCESS FUNCTIONS ////
@@ -155,6 +158,7 @@ protected:
   RNArray<R3SurfelBlock *> blocks;
   long long nsurfels;
   R3Box bbox;
+  RNInterval timestamp_range;
   char *name;
   friend class R3SurfelTree;
   R3SurfelTree *tree;
@@ -190,6 +194,15 @@ Centroid(void) const
 {
   // Return centroid of database
   return BBox().Centroid();
+}
+
+
+
+inline const RNInterval& R3SurfelDatabase::
+TimestampRange(void) const
+{
+  // Return timestamp range of database
+  return timestamp_range;
 }
 
 

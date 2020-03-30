@@ -78,6 +78,24 @@ enum {
 // EXAMPLE DERIVED CLASSES
 ////////////////////////////////////////////////////////////////////////
 
+class R3SurfelTimestampConstraint : public R3SurfelConstraint {
+public:
+  // Constructor functions
+  R3SurfelTimestampConstraint(const RNInterval& timestamp_range);
+  R3SurfelTimestampConstraint(double min_timestamp, double max_timestamp);
+
+  // Surfel check functions
+  virtual int Check(const R3SurfelObject *object) const;
+  virtual int Check(const R3SurfelNode *node) const;
+  virtual int Check(const R3SurfelBlock *block) const;
+  virtual int Check(const R3SurfelBlock *block, const R3Surfel *surfel) const;
+
+private:
+  RNInterval timestamp_range;
+};
+
+
+
 class R3SurfelCoordinateConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions

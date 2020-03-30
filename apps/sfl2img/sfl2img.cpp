@@ -300,7 +300,7 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
       // Prcoess blocks
       for (int i = 0; i < node->NBlocks(); i++) {
         R3SurfelBlock *block = node->Block(i);
-        const R3Point& origin = block->Origin();
+        const R3Point& origin = block->PositionOrigin();
 
         // Read block
         database->ReadBlock(block);
@@ -451,7 +451,7 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
       // Prcoess blocks
       for (int i = 0; i < node->NBlocks(); i++) {
         R3SurfelBlock *block = node->Block(i);
-        const R3Point& origin = block->Origin();
+        const R3Point& origin = block->PositionOrigin();
 
         // Read block
         database->ReadBlock(block);
@@ -580,7 +580,7 @@ WriteSliceGrids(R3SurfelScene *scene, const char *directory_name)
       // Prcoess blocks
       for (int i = 0; i < node->NBlocks(); i++) {
         R3SurfelBlock *block = node->Block(i);
-        const R3Point& origin = block->Origin();
+        const R3Point& origin = block->PositionOrigin();
 
         // Read block
         database->ReadBlock(block);

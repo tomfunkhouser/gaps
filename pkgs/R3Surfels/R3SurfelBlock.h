@@ -24,11 +24,15 @@ public:
 
   // Constructor functions
   R3SurfelBlock(void);
+  R3SurfelBlock(int nsurfels);
   R3SurfelBlock(const R3SurfelBlock& block);
   R3SurfelBlock(const R3SurfelPointSet *set);
-  R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin);
-  R3SurfelBlock(const R3Surfel *surfels, int nsurfels, const R3Point& origin = R3zero_point);
-  R3SurfelBlock(const RNArray<const R3Surfel *>& surfels, const R3Point& origin = R3zero_point);
+  R3SurfelBlock(const R3SurfelPointSet *set,
+    const R3Point& position_origin, RNScalar timestamp_origin = 0);
+  R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
+    const R3Point& position_origin = R3zero_point, RNScalar timestamp_origin = 0);
+  R3SurfelBlock(const RNArray<const R3Surfel *>& surfels,
+    const R3Point& position_origin = R3zero_point, RNScalar timestamp_origin = 0);
   R3SurfelBlock(const R3Point *points, int npoints);
   R3SurfelBlock(const RNArray<R3Point *>& points);
 
@@ -59,12 +63,16 @@ public:
   //////////////////////////////////
 
   // Geometric property functions
-  const R3Point& Origin(void) const;
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
   RNScalar Resolution(void) const;
   RNLength AverageRadius(void) const;
+  const R3Point& PositionOrigin(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+  RNScalar TimestampOrigin(void) const;
+  
   // Aggregate surfel property functions
   RNBoolean HasActive(void) const;
   RNBoolean HasNormals(void) const;
@@ -87,6 +95,8 @@ public:
   RNLength SurfelRadius(int surfel_index) const;
   RNLength SurfelRadius(int surfel_index, int axis) const;
   RNRgb SurfelColor(int surfel_index) const;
+  RNScalar SurfelTimestamp(int surfel_index) const;
+  RNScalar SurfelValue(int surfel_index) const;
   RNBoolean IsSurfelActive(int surfel_index) const;
   RNBoolean IsSurfelMarked(int surfel_index) const;
   RNBoolean IsSurfelAerial(int surfel_index) const;
@@ -104,7 +114,10 @@ public:
   //////////////////////////////////////////
 
   // Property manipulation functions
-  void SetOrigin(const R3Point& position);
+  void SetPositionOrigin(const R3Point& position);
+
+  // Timestamp manipulation functions
+  void SetTimestampOrigin(RNScalar timestamp);
 
   // Surfel mark manipulation functions
   void SetMarks(RNBoolean mark = TRUE);
@@ -124,6 +137,8 @@ public:
   void SetSurfelRadius(int surfel_index, RNLength radius);
   void SetSurfelRadius(int surfel_index, int axis, RNLength radius);
   void SetSurfelColor(int surfel_index, const RNRgb& color);
+  void SetSurfelTimestamp(int surfel_index, RNLength timestamp);
+  void SetSurfelValue(int surfel_index, RNLength value);
   void SetSurfelFlags(int surfel_index, unsigned char flags);
   void SetSurfelActive(int surfel_index, RNBoolean active = TRUE);
   void SetSurfelAerial(int surfel_index, RNBoolean aerial = TRUE);
@@ -172,6 +187,10 @@ public:
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
 
+  // For backward compatibility
+  const R3Point& Origin(void) const;
+  void SetOrigin(const R3Point& position);
+
   // Surfel index querying
   int SurfelIndex(const R3Surfel *surfel) const;
 
@@ -201,6 +220,7 @@ private:
 
   // Block update functions
   void UpdateBBox(void);
+  void UpdateTimestampRange(void);
   void UpdateResolution(void);
   void UpdateFlags(void);
 
@@ -213,8 +233,10 @@ private:
   int nsurfels;
 
   // Property data
-  R3Point origin;
+  R3Point position_origin;
   R3Box bbox;
+  RNScalar timestamp_origin;
+  RNInterval timestamp_range;
   RNScalar resolution;
   RNFlags flags;
   void *data;
@@ -264,11 +286,21 @@ private:
 ////////////////////////////////////////////////////////////////////////
 
 inline const R3Point& R3SurfelBlock::
-Origin(void) const
+PositionOrigin(void) const
 {
   // Return position of origin
   // Surfels coordinates are relative to this position
-  return origin;
+  return position_origin;
+}
+
+
+
+inline RNScalar R3SurfelBlock::
+TimestampOrigin(void) const
+{
+  // Return timestamp origin
+  // Surfel timestamps are relative to this time
+  return timestamp_origin;
 }
 
 
@@ -383,7 +415,9 @@ SurfelPosition(int surfel_index) const
 {
   // Return position of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
-  return R3Point(origin.X() + surfel.PX(), origin.Y() + surfel.PY(), origin.Z() + surfel.PZ());
+  return R3Point(position_origin.X() + surfel.PX(),
+                 position_origin.Y() + surfel.PY(),
+                 position_origin.Z() + surfel.PZ());
 }
 
 
@@ -433,6 +467,26 @@ SurfelColor(int surfel_index) const
 {
   // Return color of kth surfel
   return surfels[surfel_index].Rgb();
+}
+
+
+
+inline RNScalar R3SurfelBlock::
+SurfelTimestamp(int surfel_index) const
+{
+  // Return timestamp of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return timestamp_origin + surfel.Timestamp();
+}
+
+
+
+inline RNScalar R3SurfelBlock::
+SurfelValue(int surfel_index) const
+{
+  // Return value of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return surfel.Value();
 }
 
 
@@ -523,6 +577,26 @@ IsSurfelOnBoundary(int surfel_index) const
 {
   // Return whether kth surfel is on  boundary
   return surfels[surfel_index].IsOnBoundary();
+}
+
+
+
+inline const R3Point& R3SurfelBlock::
+Origin(void) const
+{
+  // Return position of position origin
+  // DO NOT USE -- here only for backward compatibility
+  return PositionOrigin();
+}
+
+
+
+inline void R3SurfelBlock::
+SetOrigin(const R3Point& origin)
+{
+  // Set position origin
+  // DO NOT USE -- here only for backward compatibility
+  SetPositionOrigin(origin);
 }
 
 

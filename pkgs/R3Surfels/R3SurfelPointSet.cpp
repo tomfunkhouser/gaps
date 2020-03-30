@@ -27,7 +27,8 @@ R3SurfelPointSet(void)
   : points(NULL),
     npoints(0),
     nallocated(0),
-    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX)
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX)
 {
 }
 
@@ -38,7 +39,8 @@ R3SurfelPointSet(const R3SurfelPointSet& set)
   : points(NULL),
     npoints(0),
     nallocated(0),
-    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX)
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX)
 {
   // Insert surfels from set
   InsertPoints(&set);
@@ -51,7 +53,8 @@ R3SurfelPointSet(R3SurfelBlock *block)
   : points(NULL),
     npoints(0),
     nallocated(0),
-    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX)
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX)
 {
   // Insert surfels from block
   InsertPoints(block);
@@ -200,6 +203,9 @@ InsertPoints(R3SurfelBlock *block)
   // Update bounding box
   bbox.Union(block->BBox());
 
+  // Update timestamp range
+  timestamp_range.Union(block->TimestampRange());
+
   // Allocate space for points
   AllocatePoints(npoints + block->NSurfels());
 
@@ -232,8 +238,11 @@ InsertPoints(R3SurfelBlock *block, const R2Box& constraint_box)
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
 
+  // Update timestamp range (conservatively)
+  timestamp_range.Union(block->TimestampRange());
+
   // Translate constraint by block origin (and store in floats)
-  const R3Point& origin = block->Origin();
+  const R3Point& origin = block->PositionOrigin();
   float xmin = constraint_box[0][0] - origin[0];
   float ymin = constraint_box[0][1] - origin[1];
   float xmax = constraint_box[1][0] - origin[0];
@@ -275,8 +284,11 @@ InsertPoints(R3SurfelBlock *block, const R3Box& constraint_box)
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
 
+  // Update timestamp range (conservatively)
+  timestamp_range.Union(block->TimestampRange());
+
   // Translate constraint to block coordinate system (and store in floats)
-  const R3Point& origin = block->Origin();
+  const R3Point& origin = block->PositionOrigin();
   float xmin = constraint_box[0][0] - origin[0];
   float ymin = constraint_box[0][1] - origin[1];
   float zmin = constraint_box[0][2] - origin[2];
@@ -323,8 +335,11 @@ InsertPoints(R3SurfelBlock *block, const R3Point& center, RNLength radius, RNCoo
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
 
+  // Update timestamp range (conservatively)
+  timestamp_range.Union(block->TimestampRange());
+
   // Translate constraint to block coordinate system (and store in floats)
-  const R3Point& origin = block->Origin();
+  const R3Point& origin = block->PositionOrigin();
   float xc = center[0] - origin[0];
   float yc = center[1] - origin[1];
   float zlo = zmin - origin[2];
@@ -376,6 +391,7 @@ InsertPoints(R3SurfelBlock *block, const R3SurfelConstraint& constraint)
     if (!constraint.Check(block, surfel)) continue;
     points[npoints].Reset(block, surfel);
     bbox.Union(points[npoints].Position());
+    timestamp_range.Union(points[npoints].Timestamp());
     npoints++;
   }
 
@@ -394,6 +410,9 @@ InsertPoints(const R3SurfelPointSet *set)
 
   // Check and update bounding box (conservatively)
   bbox.Union(set->BBox());
+
+  // Check and update timestamp range (conservatively)
+  timestamp_range.Union(set->TimestampRange());
 
   // Allocate space for points
   AllocatePoints(npoints + set->NPoints());
@@ -418,6 +437,9 @@ InsertPoints(const R3SurfelPointSet *set, const R2Box& constraint_box)
   intersection_box.Intersect(set->BBox());
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
+
+  // Check and update timestamp range (conservatively)
+  timestamp_range.Union(set->TimestampRange());
 
   // Allocate space for points
   AllocatePoints(npoints + set->NPoints());
@@ -446,6 +468,9 @@ InsertPoints(const R3SurfelPointSet *set, const R3Box& constraint_box)
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
 
+  // Check and update timestamp range (conservatively)
+  timestamp_range.Union(set->TimestampRange());
+
   // Allocate space for points
   AllocatePoints(npoints + set->NPoints());
 
@@ -472,6 +497,9 @@ InsertPoints(const R3SurfelPointSet *set, const R3Point& center, RNLength radius
   intersection_box.Intersect(set->BBox());
   if (intersection_box.IsEmpty()) return;
   bbox.Union(intersection_box);
+
+  // Check and update timestamp range (conservatively)
+  timestamp_range.Union(set->TimestampRange());
 
   // Allocate space for points
   AllocatePoints(npoints + set->NPoints());
@@ -509,6 +537,7 @@ InsertPoints(const R3SurfelPointSet *set, const R3SurfelConstraint& constraint)
     const R3SurfelPoint *point = set->Point(i);
     if (!constraint.Check(point->Position())) continue;
     bbox.Union(point->Position());
+    timestamp_range.Union(point->Timestamp());
     points[npoints] = *point;
     npoints++;
   }
@@ -530,6 +559,9 @@ InsertPoint(const R3SurfelPoint& point)
 
   // Update bounding box
   bbox.Union(point.Position());
+
+  // Update timestamp range
+  timestamp_range.Union(point.Timestamp());
 }
 
 
@@ -587,6 +619,7 @@ Empty(void)
   npoints = 0;
   points = NULL;
   bbox = R3null_box;
+  timestamp_range = RNnull_interval;
 }
 
 
@@ -677,6 +710,9 @@ Union(const R3SurfelPointSet *set)
 
   // Update bounding box (conservatively)
   bbox.Union(set->BBox());
+
+  // Update timestamp range (conservatively)
+  timestamp_range.Union(set->TimestampRange());
 }
 
 

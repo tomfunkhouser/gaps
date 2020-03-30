@@ -30,9 +30,10 @@ public:
   R3SurfelPoint *operator[](int k) const;
   int PointIndex(const R3SurfelPoint *point) const;
 
-  // Shape property functions
+  // Set property functions
   R3Point Centroid(void) const;
   const R3Box& BBox(void) const;
+  const RNInterval& TimestampRange(void) const;
   R3Triad PrincipleAxes(const R3Point *centroid = NULL, RNScalar *variances = NULL) const;
 
   // Membership manipulation functions
@@ -87,6 +88,7 @@ private:
   int npoints;
   int nallocated;
   R3Box bbox;
+  RNInterval timestamp_range;
 };
 
 
@@ -149,6 +151,15 @@ BBox(void) const
 {
   // Return bounding box of set
   return bbox;
+}
+
+
+
+inline const RNInterval& R3SurfelPointSet::
+TimestampRange(void) const
+{
+  // Return timestamp range
+  return timestamp_range;
 }
 
 

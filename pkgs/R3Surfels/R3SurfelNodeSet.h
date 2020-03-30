@@ -41,6 +41,9 @@ public:
   R3Point Centroid(void) const;
   const R3Box& BBox(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+
 
   //////////////////////////
   //// ACCESS FUNCTIONS ////
@@ -110,6 +113,7 @@ private:
   RNArray<R3SurfelNode *> nodes;
   RNScalar complexity;
   R3Box bbox;
+  RNInterval timestamp_range;
 };
 
 
@@ -141,6 +145,15 @@ BBox(void) const
 {
   // Return bounding box of set
   return bbox;
+}
+
+
+
+inline const RNInterval& R3SurfelNodeSet::
+TimestampRange(void) const
+{
+  // Return timestamp range of set
+  return timestamp_range;
 }
 
 

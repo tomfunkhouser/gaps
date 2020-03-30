@@ -19,6 +19,48 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
+// Surfel query (call callback for each surfel satisfying constraint)
+////////////////////////////////////////////////////////////////////////
+
+void
+VisitResidentSurfels(R3SurfelScene *scene,
+  void (*callback_function)(const R3SurfelBlock *block, const R3Surfel *surfel, void *callback_data),
+  R3SurfelNode *source_node,
+  const R3SurfelConstraint *constraint,
+  void *callback_data)
+{
+  // Check node
+  if (constraint && !constraint->Check(source_node)) return;
+
+  // Check if leaf node
+  if (source_node->NParts() == 0) {
+    // Visit blocks
+    for (int i = 0; i < source_node->NBlocks(); i++) {
+      R3SurfelBlock *block = source_node->Block(i);
+      if (block->NSurfels() == 0) continue;
+      if (!constraint->Check(block->BBox())) continue;
+      if (block->Database() && !block->Database()->IsBlockResident(block)) continue;
+
+      // Visit surfels
+      for (int i = 0; i < block->NSurfels(); i++) {
+        const R3Surfel *surfel = block->Surfel(i);
+        if (!constraint->Check(block, surfel)) continue;
+        (*callback_function)(block, surfel, callback_data);
+      }
+    }
+  }
+  else {
+    // Consider parts
+    for (int i = 0; i < source_node->NParts(); i++) {
+      R3SurfelNode *part = source_node->Part(i);
+      VisitResidentSurfels(scene, callback_function, part, constraint, callback_data);
+    }
+  }
+}
+
+  
+
+////////////////////////////////////////////////////////////////////////
 // Point set creation
 ////////////////////////////////////////////////////////////////////////
 
@@ -1209,7 +1251,7 @@ CreateGrid(R3SurfelScene *scene, const R3Box& bbox,
     for (int j = 0; j < node->NBlocks(); j++) {
       R3SurfelBlock *block = node->Block(j);
       if (!R3Intersects(bbox, block->BBox())) continue;
-      const R3Point& origin = block->Origin();
+      const R3Point& origin = block->PositionOrigin();
       database->ReadBlock(block);
       for (int k = 0; k < block->NSurfels(); k++) {
         const R3Surfel *surfel = block->Surfel(k);
@@ -1265,7 +1307,7 @@ CreateGrid(R3SurfelScene *scene,
     if (node->NParts() > 0) continue;
     for (int j = 0; j < node->NBlocks(); j++) {
       R3SurfelBlock *block = node->Block(j);
-      const R3Point& origin = block->Origin();
+      const R3Point& origin = block->PositionOrigin();
       database->ReadBlock(block);
       for (int k = 0; k < block->NSurfels(); k++) {
         const R3Surfel *surfel = block->Surfel(k);
@@ -2288,9 +2330,9 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
       R3SurfelPoint *point = cluster->points.Kth(j);
       R3SurfelBlock *block = point->Block();
       const R3Surfel *surfel = point->Surfel();
-      RNCoord x = surfel->X() + block->Origin().X() - origin.X();
-      RNCoord y = surfel->Y() + block->Origin().Y() - origin.Y();
-      RNCoord z = surfel->Z() + block->Origin().Z() - origin.Z();
+      RNCoord x = surfel->X() + block->PositionOrigin().X() - origin.X();
+      RNCoord y = surfel->Y() + block->PositionOrigin().Y() - origin.Y();
+      RNCoord z = surfel->Z() + block->PositionOrigin().Z() - origin.Z();
       surfels[j].SetPosition(x, y, z);
       surfels[j].SetColor(surfel->Color());
       surfels[j].SetAerial(surfel->IsAerial());

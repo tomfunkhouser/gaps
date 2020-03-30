@@ -47,6 +47,7 @@ R3SurfelNode(const char *name)
     complexity(-1),
     resolution(-1),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
@@ -67,6 +68,7 @@ R3SurfelNode(const R3SurfelNode& node)
     complexity(node.complexity),
     resolution(node.resolution),
     bbox(node.bbox),
+    timestamp_range(node.timestamp_range),
     name((node.name) ? RNStrdup(node.name) : NULL),
     flags(0),
     data(NULL)
@@ -143,6 +145,17 @@ BBox(void) const
   if (bbox[0][0] == FLT_MAX) 
     ((R3SurfelNode *) this)->UpdateBBox();
   return bbox;
+}
+
+
+
+const RNInterval& R3SurfelNode::
+TimestampRange(void) const
+{
+  // Return timestamp interval of node
+  if (timestamp_range.Min() == FLT_MAX) 
+    ((R3SurfelNode *) this)->UpdateTimestampRange();
+  return timestamp_range;
 }
 
 
@@ -343,6 +356,7 @@ SetParent(R3SurfelNode *parent)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -352,6 +366,7 @@ SetParent(R3SurfelNode *parent)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -386,6 +401,7 @@ InsertBlock(R3SurfelBlock *block)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -429,6 +445,7 @@ RemoveBlock(R3SurfelBlock *block)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -459,6 +476,7 @@ Transform(const R3Affine& transformation)
   R3SurfelNode *ancestor = this;
   while (ancestor) {
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -695,6 +713,7 @@ UpdateAfterInsert(R3SurfelTree *tree)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     // while (ancestor->NBlocks()) { 
     //   R3SurfelBlock *block = ancestor->Block(0);
     //   ancestor->RemoveBlock(block);
@@ -716,6 +735,7 @@ UpdateBeforeRemove(R3SurfelTree *tree)
     if (ancestor->complexity == -1) break;
     ancestor->complexity = -1;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor->timestamp_range[0] = FLT_MAX;
     // while (ancestor->NBlocks()) { 
     //   R3SurfelBlock *block = ancestor->Block(0);
     //   ancestor->RemoveBlock(block);
@@ -743,6 +763,7 @@ UpdateProperties(void)
   dummy += Complexity();
   dummy += Resolution();
   dummy += BBox().Min().X();
+  dummy += TimestampRange().Min();
   if (dummy == 927612.21242) {
     printf("Amazing!\n");
   }
@@ -769,6 +790,30 @@ UpdateBBox(void)
   for (int i = 0; i < NParts(); i++) {
     R3SurfelNode *part = Part(i);
     bbox.Union(part->BBox());
+  }
+}
+
+
+
+void R3SurfelNode::
+UpdateTimestampRange(void)
+{
+  // Check if bounding box is uptodate
+  if (timestamp_range[0] != FLT_MAX) return;
+
+  // Initialize timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
+
+  // Union timestamp ranges of blocks
+  for (int i = 0; i < NBlocks(); i++) {
+    R3SurfelBlock *block = Block(i);
+    timestamp_range.Union(block->TimestampRange());
+  }
+
+  // Union timestamp ranges of parts
+  for (int i = 0; i < NParts(); i++) {
+    R3SurfelNode *part = Part(i);
+    timestamp_range.Union(part->TimestampRange());
   }
 }
 

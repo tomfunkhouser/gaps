@@ -52,6 +52,7 @@ R3SurfelDatabase(void)
     blocks(),
     nsurfels(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     name(NULL),
     tree(NULL),
     resident_surfels(0)
@@ -73,6 +74,7 @@ R3SurfelDatabase(const R3SurfelDatabase& database)
     blocks(),
     nsurfels(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     name(RNStrdup(database.name)),
     tree(NULL),
     resident_surfels(0)
@@ -157,6 +159,9 @@ InsertBlock(R3SurfelBlock *block)
 
   // Update bounding box
   bbox.Union(block->BBox());
+
+  // Update timestamp range
+  timestamp_range.Union(block->TimestampRange());
 
   // Update number of surfels
   nsurfels += block->NSurfels();
@@ -268,8 +273,8 @@ InsertSubsetBlocks(R3SurfelBlock *block,
   }
 
   // Create new blocks
-  R3SurfelBlock *block1 = new R3SurfelBlock(subset1, block->Origin());
-  R3SurfelBlock *block2 = new R3SurfelBlock(subset2, block->Origin());
+  R3SurfelBlock *block1 = new R3SurfelBlock(subset1, block->PositionOrigin(), block->TimestampOrigin());
+  R3SurfelBlock *block2 = new R3SurfelBlock(subset2, block->PositionOrigin(), block->TimestampOrigin());
     
   // Insert new blocks 
   InsertBlock(block1);
@@ -1130,7 +1135,8 @@ WriteHeader(FILE *fp, int swap_endian)
   if (!WriteUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
   if (!WriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
   if (!WriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
-  if (!WriteChar(fp, buffer, 1024, swap_endian)) return 0;
+  if (!WriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
+  if (!WriteChar(fp, buffer, 1008, swap_endian)) return 0;
   
   // Return success
   return 1;
@@ -1212,8 +1218,11 @@ OpenFile(const char *filename, const char *rwaccess)
     // Read bounding box
     if (!ReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
 
+    // Read timestamp range
+    if (!ReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
+
     // Read extra at end of header
-    if (!ReadChar(fp, buffer, 1024, swap_endian)) return 0;
+    if (!ReadChar(fp, buffer, 1008, swap_endian)) return 0;
 
     // Read blocks
     RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
@@ -1223,11 +1232,13 @@ OpenFile(const char *filename, const char *rwaccess)
       if (!ReadUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
       if (!ReadUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
       if (!ReadInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->origin[0], 3, swap_endian)) return 0;
+      if (!ReadDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
       if (!ReadDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
       if (!ReadDouble(fp, &block->resolution, 1, swap_endian)) return 0;
       if (!ReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-      if (!ReadChar(fp, buffer, 64, swap_endian)) return 0;
+      if (!ReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+      if (!ReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+      if (!ReadChar(fp, buffer, 40, swap_endian)) return 0;
       block->flags = block_flags;
       block->SetDirty(FALSE);
       block->database = this;
@@ -1271,11 +1282,13 @@ SyncFile(void)
     if (!WriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
     if (!WriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
     if (!WriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->origin[0], 3, swap_endian)) return 0;
+    if (!WriteDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
     if (!WriteDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
     if (!WriteDouble(fp, &block->resolution, 1, swap_endian)) return 0;
     if (!WriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-    if (!WriteChar(fp, buffer, 64, swap_endian)) return 0;
+    if (!WriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+    if (!WriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+    if (!WriteChar(fp, buffer, 40, swap_endian)) return 0;
   }
 
   // Write header again (now that the offset values have been filled in)

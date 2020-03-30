@@ -229,6 +229,9 @@ protected:
   RNRgb image_viewpoint_color;
   RNRgb center_point_color;
 
+  // Shape primitive properties
+  RNFlags shape_draw_flags;
+  
   // Working set parameters
   RNBoolean adapt_working_set_automatically;
   RNScalar target_resolution;

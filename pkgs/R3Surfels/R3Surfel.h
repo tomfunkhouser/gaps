@@ -26,8 +26,9 @@ public:
   R3Surfel(float px, float py, float pz, 
     float nx, float ny, float nz, 
     float tx, float ty, float tz, 
-    float radius0 = 0, float radius1 = 0,
-    unsigned char r = 0, unsigned char g = 0, unsigned char b = 0, 
+    float radius0, float radius1,
+    unsigned char r, unsigned char g, unsigned char b, 
+    float timestamp, float value,
     unsigned char flags = 0);
 
   // Position property functions
@@ -60,7 +61,13 @@ public:
   float Radius(void) const;
   float Radius(int axis) const;
   float AspectRatio(void) const;
+
+  // Timestamp property functions
+  float Timestamp(void) const;
   
+  // Value property functions (can be used for anything)
+  float Value(void) const;
+
   // Other property functions
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
@@ -74,6 +81,7 @@ public:
   RNBoolean IsOnBoundary(void) const;
   RNBoolean HasNormal(void) const;
   RNBoolean HasTangent(void) const;
+  RNBoolean HasRadius(void) const;
   unsigned char Flags(void) const;
 
   // Manipulation functions
@@ -88,6 +96,8 @@ public:
   void SetColor(unsigned char r, unsigned char g, unsigned char b);
   void SetColor(const unsigned char *rgb);
   void SetColor(const RNRgb& rgb);
+  void SetTimestamp(float timestamp);
+  void SetValue(float value);
   void SetAerial(RNBoolean aerial = TRUE);
   void SetSilhouetteBoundary(RNBoolean boundary = TRUE);
   void SetShadowBoundary(RNBoolean boundary = TRUE);
@@ -130,9 +140,11 @@ public:
 private:
   // Internal data
   RNScalar32 position[3];
+  RNScalar32 timestamp;
   RNInt16 normal[3]; // x 2^15-1 (32767)
   RNInt16 tangent[3]; // x 2^15-1 (32767)
   RNUInt16 radius[2]; // x 2^13 (8192)
+  RNScalar32 value;
   RNUChar8 color[3];
   RNUChar8 flags;
 
@@ -202,7 +214,7 @@ inline float R3Surfel::
 NX(void) const
 {
   // Return X normal coordinate
-  return normal[0] / 32767.0;
+  return (1.0F/32767.0F) * normal[0];
 }
 
 
@@ -211,7 +223,7 @@ inline float R3Surfel::
 NY(void) const
 {
   // Return Y normal coordinate
-  return normal[1] / 32767.0;
+  return (1.0F/32767.0F) * normal[1];
 }
 
 
@@ -220,7 +232,7 @@ inline float R3Surfel::
 NZ(void) const
 {
   // Return Z normal coordinate
-  return normal[2] / 32767.0;
+  return (1.0F/32767.0F) * normal[2];
 }
 
 
@@ -229,7 +241,7 @@ inline float R3Surfel::
 NormalCoord(int dimension) const
 {
   // Return normal coordinate
-  return normal[dimension] / 32767.0;
+  return (1.0F/32767.0F) * normal[dimension];
 }
 
 
@@ -238,7 +250,7 @@ inline float R3Surfel::
 TX(void) const
 {
   // Return X tangent coordinate
-  return tangent[0] / 32767.0;
+  return (1.0F/32767.0F) * tangent[0];
 }
 
 
@@ -247,7 +259,7 @@ inline float R3Surfel::
 TY(void) const
 {
   // Return Y tangent coordinate
-  return tangent[1] / 32767.0;
+  return (1.0F/32767.0F) * tangent[1];
 }
 
 
@@ -256,7 +268,7 @@ inline float R3Surfel::
 TZ(void) const
 {
   // Return Z tangent coordinate
-  return tangent[2] / 32767.0;
+  return (1.0F/32767.0F) * tangent[2];
 }
 
 
@@ -265,7 +277,7 @@ inline float R3Surfel::
 TangentCoord(int dimension) const
 {
   // Return tangent coordinate
-  return tangent[dimension] / 32767.0;
+  return (1.0F/32767.0F) * tangent[dimension];
 }
 
 
@@ -274,7 +286,7 @@ inline float R3Surfel::
 Radius(void) const
 {
   // Return longer radius
-  return radius[0] / 8192.0;
+  return (1.0F/8192.0F) * radius[0];
 }
 
 
@@ -283,8 +295,8 @@ inline float R3Surfel::
 Radius(int axis) const
 {
   // Return radius along axis
-  assert((axis >= 0) && (axis < 1));
-  return radius[axis] / 8192.0;
+  assert((axis >= 0) && (axis <= 1));
+  return (1.0F/8192.0F) * radius[axis];
 }
 
 
@@ -339,7 +351,26 @@ inline RNRgb R3Surfel::
 Rgb(void) const
 {
   // Return RGB
-  return RNRgb(color[0]/255.0, color[1]/255.0, color[2]/255.0);
+  const double scale = 1.0 / 255.0;
+  return RNRgb(scale*color[0], scale*color[1], scale*color[2]);
+}
+
+
+
+inline float R3Surfel::
+Timestamp(void) const
+{
+  // Return timestamp
+  return timestamp;
+}
+
+
+
+inline float R3Surfel::
+Value(void) const
+{
+  // Return value
+  return value;
 }
 
 
@@ -449,6 +480,15 @@ HasTangent(void) const
 {
   // Return whether surfel has tangent
   return flags & R3_SURFEL_TANGENT_FLAG;
+}
+
+
+
+inline RNBoolean R3Surfel::
+HasRadius(void) const
+{
+  // Return whether surfel has non-zero radius
+  return (radius[0] > 0) ? 1 : 0;
 }
 
 
@@ -589,6 +629,24 @@ SetColor(const RNRgb& rgb)
   color[0] = (unsigned char) (255.0 * rgb.R());
   color[1] = (unsigned char) (255.0 * rgb.G());
   color[2] = (unsigned char) (255.0 * rgb.B());
+}
+
+
+
+inline void R3Surfel::
+SetTimestamp(float timestamp)
+{
+  // Set timestamp
+  this->timestamp = timestamp;
+}
+
+
+
+inline void R3Surfel::
+SetValue(float value)
+{
+  // Set value
+  this->value = value;
 }
 
 

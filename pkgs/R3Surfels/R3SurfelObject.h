@@ -45,6 +45,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+
   // Feature vector functions
   const R3SurfelFeatureVector& FeatureVector(void) const;
 
@@ -192,6 +195,7 @@ protected:
 
   // Property update functions
   void UpdateBBox();
+  void UpdateTimestampRange();
 
 protected:
   // Internal instance data
@@ -209,6 +213,7 @@ protected:
   int identifier;
   RNScalar complexity;
   R3Box bbox;
+  RNInterval timestamp_range;
   void *data;
 };
 

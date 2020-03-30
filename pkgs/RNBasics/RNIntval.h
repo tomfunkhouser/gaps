@@ -110,6 +110,9 @@ class RNInterval {
 	void operator /=(const RNInterval& iv);
 	void operator /=(RNScalar a);
 
+        // Undocumented functions/operators
+  	RNScalar& operator[](RNDirection dir);
+
     private:
 	RNScalar lo;
 	RNScalar hi;
@@ -537,6 +540,15 @@ operator /=(RNScalar a)
         lo /= a;
         hi /= a;
     }
+}
+
+
+
+inline RNScalar& RNInterval::
+operator[] (RNDirection dir) 
+{
+    assert((dir == 0) || (dir == 1));
+    return (dir == 0) ? lo : hi;
 }
 
 

@@ -38,6 +38,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+  
   // Name property functions
   const char *Name(void) const;
 
@@ -242,6 +245,15 @@ Centroid(void) const
 {
   // Return centroid of scene
   return BBox().Centroid();
+}
+
+
+
+inline const RNInterval& R3SurfelScene::
+TimestampRange(void) const
+{
+  // Return timestamp range of scene
+  return tree->TimestampRange();
 }
 
 

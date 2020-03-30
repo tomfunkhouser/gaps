@@ -320,6 +320,7 @@ PrintInfo(R3SurfelScene *scene)
       for (int i = 0; i < level; i++) strncat(prefix, " ", 16536);
       R3Box bbox = object->BBox();
       R3Point centroid = object->Centroid();
+      RNInterval timestamp_range = object->TimestampRange();
       R3SurfelLabel *predicted_label = object->PredictedLabel();
       R3SurfelLabel *ground_truth_label = object->GroundTruthLabel();
       const R3SurfelFeatureVector& vector = object->FeatureVector();
@@ -330,6 +331,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s Part hierarchy level = %d\n", prefix, object->PartHierarchyLevel());
       printf("%s Centroid = ( %g %g %g )\n", prefix, centroid[0], centroid[1], centroid[2]);
       printf("%s Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+      printf("%s Timestamp Range = %g %g\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("%s # Nodes = %d\n", prefix, object->NNodes());
       printf("%s # Parts = %d\n", prefix, object->NParts());
       printf("%s # Object Properties = %d\n", prefix, object->NObjectProperties());
@@ -438,11 +440,13 @@ PrintInfo(R3SurfelScene *scene)
   if (print_tree) {
     const R3Box& bbox = tree->BBox();
     const R3Point& centroid = tree->Centroid();
+    RNInterval timestamp_range = tree->TimestampRange();
     printf("Tree:\n");
     printf("  # Nodes = %d\n", tree->NNodes());
     printf("  Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
     printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
     printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
+    printf("  Timestamp Range = %g %g\n", timestamp_range.Min(), timestamp_range.Max());
     printf("\n");
   }
 
@@ -462,6 +466,7 @@ PrintInfo(R3SurfelScene *scene)
       for (int i = 0; i < level; i++) strncat(prefix, " ", 16536);
       R3Box bbox = node->BBox();
       R3Point centroid = node->Centroid();
+      RNInterval timestamp_range = node->TimestampRange();
       printf("%s  Node %s\n", prefix, node->Name());
       printf("%s    # Parts = %d\n", prefix, node->NParts());
       printf("%s    # Blocks = %d\n", prefix, node->NBlocks());
@@ -472,6 +477,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s    Average Radius = %g\n", prefix, node->AverageRadius());
       printf("%s    Centroid = ( %g %g %g )\n", prefix, centroid[0], centroid[1], centroid[2]);
       printf("%s    Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+      printf("%s    Timestamp Range = %g %g\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("\n");
     }
     printf("\n");
@@ -495,7 +501,8 @@ PrintInfo(R3SurfelScene *scene)
     printf("Blocks:\n");
     for (int i = 0; i < database->NBlocks(); i++) {
       R3SurfelBlock *block = database->Block(i);
-      R3Point origin = block->Origin();
+      R3Point position_origin = block->PositionOrigin();
+      RNInterval timestamp_range = block->TimestampRange();
       R3Box bbox = block->BBox();
       R3Point centroid = block->Centroid();
       printf("  Block %d\n", i);
@@ -503,9 +510,11 @@ PrintInfo(R3SurfelScene *scene)
       printf("    Node = %d\n", (block->Node()) ? block->Node()->TreeIndex() : -1);
       printf("    Resolution = %g\n", block->Resolution());
       printf("    Average Radius = %g\n", block->AverageRadius());
-      printf("    Origin = ( %g %g %g )\n", origin[0], origin[1], origin[2]);
+      printf("    Position Origin = ( %g %g %g )\n", position_origin[0], position_origin[1], position_origin[2]);
       printf("    Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
       printf("    Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+      printf("    Timestamp Origin = %g\n", block->TimestampOrigin());
+      printf("    Timestamp Range = %g %g\n", timestamp_range.Min(), timestamp_range.Max());
       printf("\n");
     }
     printf("\n");
@@ -526,6 +535,8 @@ PrintInfo(R3SurfelScene *scene)
         printf("      Normal = %f %f %f\n", surfel->NX(), surfel->NY(), surfel->NZ());
         printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
         printf("      Radius = %f\n", surfel->Radius());
+        printf("      Timestamp = %f\n", surfel->Timestamp());
+        printf("      Value = %f\n", surfel->Value());
         printf("      Flags = %d\n", surfel->Flags());
       }
       printf("\n");

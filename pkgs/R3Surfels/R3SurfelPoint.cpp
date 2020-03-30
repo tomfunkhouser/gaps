@@ -159,6 +159,26 @@ SetColor(const RNRgb& color)
 
 
 void R3SurfelPoint::
+SetTimestamp(RNScalar timestamp)
+{
+  // Set timestamp
+  assert(block && surfel);
+  block->SetSurfelTimestamp(block->SurfelIndex(surfel), timestamp);
+}
+
+
+
+void R3SurfelPoint::
+SetValue(RNScalar value)
+{
+  // Set value
+  assert(block && surfel);
+  block->SetSurfelValue(block->SurfelIndex(surfel), value);
+}
+
+
+
+void R3SurfelPoint::
 SetActive(RNBoolean active)
 {
   // Set position

@@ -38,7 +38,10 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
 
+  
   //////////////////////////
   //// ACCESS FUNCTIONS ////
   //////////////////////////
@@ -177,7 +180,7 @@ Database(void) const
 inline const R3Box& R3SurfelTree::
 BBox(void) const
 {
-  // Return total number of surfels
+  // Return bounding box of surfels
   R3SurfelNode *root = RootNode();
   if (!root) return R3null_box;
   return root->BBox();
@@ -188,8 +191,19 @@ BBox(void) const
 inline R3Point R3SurfelTree::
 Centroid(void) const
 {
-  // Return centroid of scebe
+  // Return centroid of surfels
   return BBox().Centroid();
+}
+
+
+
+inline const RNInterval& R3SurfelTree::
+TimestampRange(void) const
+{
+  // Return timestamp range
+  R3SurfelNode *root = RootNode();
+  if (!root) return RNnull_interval;
+  return root->TimestampRange();
 }
 
 

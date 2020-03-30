@@ -25,7 +25,8 @@ namespace gaps {
 R3SurfelObjectSet::
 R3SurfelObjectSet(void)
   : objects(),
-    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX)
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX)
 {
 }
 
@@ -34,7 +35,8 @@ R3SurfelObjectSet(void)
 R3SurfelObjectSet::
 R3SurfelObjectSet(const R3SurfelObjectSet& set)
   : objects(set.objects),
-    bbox(set.bbox)
+    bbox(set.bbox),
+    timestamp_range(set.timestamp_range)
 {
 }
 
@@ -70,6 +72,25 @@ BBox(void) const
 
 
 
+const RNInterval& R3SurfelObjectSet::
+TimestampRange(void) const
+{
+  // Update timestamp range
+  if (timestamp_range.Min() == FLT_MAX) {
+    R3SurfelObjectSet *objectset = (R3SurfelObjectSet *) this;
+    objectset->timestamp_range.Reset(FLT_MAX,-FLT_MAX);
+    for (int i = 0; i < NObjects(); i++) {
+      R3SurfelObject *object = Object(i);
+      objectset->timestamp_range.Union(object->TimestampRange());
+    }
+  }
+
+  // Return timestamp range
+  return timestamp_range;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // SET MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -82,6 +103,9 @@ InsertObject(R3SurfelObject *object)
 
   // Update bounding box
   bbox[0][0] = FLT_MAX;
+
+  // Update timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
 }
 
 
@@ -108,6 +132,9 @@ RemoveObject(int k)
 
   // Update bounding box
   bbox[0][0] = FLT_MAX;
+
+  // Update timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
 }
 
 
@@ -120,6 +147,9 @@ Empty(void)
 
   // Update bounding box
   bbox = R3Box(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+  // Update timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
 }
 
 

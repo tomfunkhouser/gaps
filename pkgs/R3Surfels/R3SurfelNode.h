@@ -43,6 +43,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Timestamp property functions
+  const RNInterval& TimestampRange(void) const;
+
   // Surfel property functions
   RNBoolean HasActive(void) const;
   RNBoolean HasNormals(void) const;
@@ -162,6 +165,7 @@ protected:
 
   // Property update functions
   virtual void UpdateBBox();
+  virtual void UpdateTimestampRange();
   virtual void UpdateComplexity();
   virtual void UpdateResolution();
   virtual void UpdateFlags();
@@ -185,6 +189,7 @@ protected:
   RNScalar complexity;
   RNScalar resolution;
   R3Box bbox;
+  RNInterval timestamp_range;
   char *name;
   RNFlags flags;
   void *data;

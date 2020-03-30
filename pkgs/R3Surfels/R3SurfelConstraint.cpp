@@ -74,7 +74,7 @@ Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
 {
   // Return PASS if surfel satisfies constraint
   // Return FAIL if surfel does not satisfy constraint
-  return Check(block->Origin() + R3Point(surfel->X(), surfel->Y(), surfel->Z()));
+  return Check(block->PositionOrigin() + R3Point(surfel->X(), surfel->Y(), surfel->Z()));
 }
 
 
@@ -97,6 +97,75 @@ Check(const R3Point& point) const
   // Return MAYBE if some surfels at this position may satisfy constraint
   // Return FAIL if no surfels at this position could possibly satisfy constraint
   return R3_SURFEL_CONSTRAINT_PASS;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// TIMESTAMP CONSTRAINT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelTimestampConstraint::
+R3SurfelTimestampConstraint(const RNInterval& timestamp_range)
+  : timestamp_range(timestamp_range)
+{
+}
+
+
+  
+R3SurfelTimestampConstraint::
+R3SurfelTimestampConstraint(double min_timestamp, double max_timestamp)
+  : timestamp_range(min_timestamp, max_timestamp)
+{
+}
+
+
+
+int R3SurfelTimestampConstraint::
+Check(const R3SurfelObject *object) const
+{
+  // Return whether object intersects timestamp range
+  if (timestamp_range.IsEmpty()) return R3_SURFEL_CONSTRAINT_PASS;
+  if (object->TimestampRange().IsEmpty()) return R3_SURFEL_CONSTRAINT_FAIL;
+  if (timestamp_range.Intersects(object->TimestampRange())) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+  
+int R3SurfelTimestampConstraint::
+Check(const R3SurfelNode *node) const
+{
+  // Return whether node intersects timestamp range
+  if (timestamp_range.IsEmpty()) return R3_SURFEL_CONSTRAINT_PASS;
+  if (node->TimestampRange().IsEmpty()) return R3_SURFEL_CONSTRAINT_FAIL;
+  if (timestamp_range.Intersects(node->TimestampRange())) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+
+int R3SurfelTimestampConstraint::
+Check(const R3SurfelBlock *block) const
+{
+  // Return whether block intersects timestamp range
+  if (timestamp_range.IsEmpty()) return R3_SURFEL_CONSTRAINT_PASS;
+  if (block->TimestampRange().IsEmpty()) return R3_SURFEL_CONSTRAINT_FAIL;
+  if (timestamp_range.Intersects(block->TimestampRange())) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+
+int R3SurfelTimestampConstraint::
+Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
+{
+  // Return whether block intersects timestamp range
+  int surfel_index = block->SurfelIndex(surfel);
+  assert((surfel_index >= 0) && (surfel_index < block->NSurfels()))
+  if (timestamp_range.IsEmpty()) return R3_SURFEL_CONSTRAINT_PASS;
+  if (timestamp_range.Contains(block->SurfelTimestamp(surfel_index))) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
 }
 
 

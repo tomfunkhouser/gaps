@@ -52,6 +52,12 @@ public:
   float Radius(void) const;
   float Radius(int axis) const;
 
+  // Timestamp property functions
+  RNScalar Timestamp(void) const;
+
+  // Value property functions (can be used for anything)
+  RNScalar Value(void) const;
+
   // Other property functions
   RNBoolean IsActive(void) const;
   RNBoolean IsMarked(void) const;
@@ -65,6 +71,7 @@ public:
   RNBoolean IsOnBoundary(void) const;
   RNBoolean HasNormal(void) const;
   RNBoolean HasTangent(void) const;
+  RNBoolean HasRadius(void) const;
   unsigned char Flags(void) const;
 
   // Access functions
@@ -84,6 +91,8 @@ public:
   void SetRadius(float radius);
   void SetRadius(int axis, float radius);
   void SetColor(const RNRgb& color);
+  void SetTimestamp(RNScalar timestamp);
+  void SetValue(RNScalar value);
   void SetActive(RNBoolean active = TRUE);
   void SetAerial(RNBoolean aerial = TRUE);
   void SetMark(RNBoolean mark);
@@ -119,7 +128,7 @@ PX(void) const
 {
   // Return X coordinate of surfel point in global coordinate system
   assert(block && surfel);
- return surfel->PX() + block->Origin().X();
+ return surfel->PX() + block->PositionOrigin().X();
 }
 
 
@@ -129,7 +138,7 @@ PY(void) const
 {
   // Return Y coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->PY() + block->Origin().Y();
+  return surfel->PY() + block->PositionOrigin().Y();
 }
 
 
@@ -139,7 +148,7 @@ PZ(void) const
 {
   // Return Z coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->PZ() + block->Origin().Z();
+  return surfel->PZ() + block->PositionOrigin().Z();
 }
 
 
@@ -149,7 +158,7 @@ PositionCoord(int dimension) const
 {
   // Return coordinate of surfel point in global coordinate system
   assert(block && surfel);
-  return surfel->PositionCoord(dimension) + block->Origin().Coord(dimension);
+  return surfel->PositionCoord(dimension) + block->PositionOrigin().Coord(dimension);
 }
 
 
@@ -323,6 +332,25 @@ Rgb(void) const
 }
 
 
+
+inline RNScalar R3SurfelPoint::
+Timestamp(void) const
+{
+  // Return timestamp of surfel
+  return surfel->Timestamp() + block->TimestampOrigin();
+}
+
+
+
+inline RNScalar R3SurfelPoint::
+Value(void) const
+{
+  // Return value of surfel
+  return surfel->Value();
+}
+
+
+
 inline RNBoolean R3SurfelPoint::
 IsActive(void) const
 {
@@ -427,6 +455,15 @@ HasTangent(void) const
 {
   // Return whether point has tangent
   return surfel->HasTangent();
+}
+
+
+
+inline RNBoolean R3SurfelPoint::
+HasRadius(void) const
+{
+  // Return whether point has radius
+  return surfel->HasRadius();
 }
 
 

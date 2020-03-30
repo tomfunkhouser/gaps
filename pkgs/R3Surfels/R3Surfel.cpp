@@ -18,7 +18,9 @@ namespace gaps {
 
 R3Surfel::
 R3Surfel(void)
-  : flags(0)
+  : timestamp(0),
+    value(0),
+    flags(0)
 {
   // Set everything
   this->position[0] = 0;
@@ -43,7 +45,9 @@ R3Surfel::
 R3Surfel(float x, float y, float z, 
   unsigned char r, unsigned char g, unsigned char b, 
   RNBoolean aerial)
-  : flags(0)
+  : timestamp(0),
+    value(0),
+    flags(0)
 {
   // Set everything
   this->position[0] = x;
@@ -69,7 +73,9 @@ R3Surfel::
 R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   float radius, unsigned char r, unsigned char g, unsigned char b, 
   unsigned char flags)
-  : flags(flags)
+  : timestamp(0),
+    value(0),
+    flags(flags)
 {
   // Set everything
   this->position[0] = x;
@@ -86,7 +92,11 @@ R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   this->color[0] = r;
   this->color[1] = g;
   this->color[2] = b;
-  this->flags |= R3_SURFEL_NORMAL_FLAG;
+
+  // Update flags
+  if ((nx != 0) && (ny != 0) && (nz != 0)) {
+    this->flags |= R3_SURFEL_NORMAL_FLAG;
+  }
 }
 
 
@@ -97,8 +107,11 @@ R3Surfel(float x, float y, float z,
   float tx, float ty, float tz,
   float radius0, float radius1,
   unsigned char r, unsigned char g, unsigned char b, 
+  float timestamp, float value,
   unsigned char flags)
-  : flags(flags)
+  : timestamp(timestamp),
+    value(value),
+    flags(flags)
 {
   // Set everything
   this->position[0] = x;
@@ -115,7 +128,14 @@ R3Surfel(float x, float y, float z,
   this->color[0] = r;
   this->color[1] = g;
   this->color[2] = b;
-  this->flags |= R3_SURFEL_NORMAL_FLAG;
+
+  // Update flags
+  if ((nx != 0) && (ny != 0) && (nz != 0)) {
+    this->flags |= R3_SURFEL_NORMAL_FLAG;
+  }
+  if ((tx != 0) && (ty != 0) && (tz != 0)) {
+    this->flags |= R3_SURFEL_TANGENT_FLAG;
+  }
 }
 
 

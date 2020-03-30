@@ -24,8 +24,10 @@ R3SurfelBlock::
 R3SurfelBlock(void)
   : surfels(NULL),
     nsurfels(0),
-    origin(0,0,0),
+    position_origin(0,0,0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(0),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
     data(NULL),
@@ -42,11 +44,38 @@ R3SurfelBlock(void)
 
 
 R3SurfelBlock::
+R3SurfelBlock(int nsurfels)
+  : surfels(NULL),
+    nsurfels(nsurfels),
+    position_origin(0,0,0),
+    bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(0),
+    timestamp_range(FLT_MAX,-FLT_MAX),
+    resolution(0),
+    flags(0),
+    data(NULL),
+    database(NULL),
+    database_index(-1),
+    file_surfels_offset(0),
+    file_surfels_count(0),
+    file_read_count(0),
+    node(NULL),
+    opengl_id(0)
+{
+  // Allocate surfels
+  this->surfels = new R3Surfel [ nsurfels ];
+}
+
+
+
+R3SurfelBlock::
 R3SurfelBlock(const R3SurfelBlock& block)
   : surfels(NULL),
     nsurfels(block.nsurfels),
-    origin(block.origin),
+    position_origin(block.position_origin),
     bbox(block.bbox),
+    timestamp_origin(block.timestamp_origin),
+    timestamp_range(block.timestamp_range),
     resolution(block.resolution),
     flags(block.flags & R3_SURFEL_BLOCK_PROPERTY_FLAGS),
     data(NULL),
@@ -71,8 +100,10 @@ R3SurfelBlock::
 R3SurfelBlock(const R3SurfelPointSet *set)
   : surfels(NULL),
     nsurfels(set->NPoints()),
-    origin(set->Centroid()),
+    position_origin(set->Centroid()),
     bbox(set->BBox()),
+    timestamp_origin(0),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
     data(NULL),
@@ -84,11 +115,11 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     node(NULL),
     opengl_id(0)
 {
-  // Copy surfels
+  // Copy points
   surfels = new R3Surfel [ nsurfels ];
   for (int i = 0; i < set->NPoints(); i++) {
     const R3SurfelPoint *point = set->Point(i);
-    R3Point position = point->Position() - origin.Vector();
+    R3Point position = point->Position() - position_origin.Vector();
     R3Vector normal = point->Normal();
     R3Vector tangent = point->Tangent();
     R3Surfel *surfel = &surfels[i];
@@ -98,6 +129,8 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     surfel->SetColor(point->Color());
     surfel->SetRadius(0, point->Radius(0));
     surfel->SetRadius(1, point->Radius(1));
+    surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
+    surfel->SetValue(point->Value());
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
 }
@@ -105,11 +138,14 @@ R3SurfelBlock(const R3SurfelPointSet *set)
 
 
 R3SurfelBlock::
-R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
+R3SurfelBlock(const R3SurfelPointSet *set,
+  const R3Point& position_origin, RNScalar timestamp_origin)
   : surfels(NULL),
     nsurfels(set->NPoints()),
-    origin(origin),
+    position_origin(position_origin),
     bbox(set->BBox()),
+    timestamp_origin(timestamp_origin),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
     data(NULL),
@@ -125,7 +161,7 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
   surfels = new R3Surfel [ nsurfels ];
   for (int i = 0; i < set->NPoints(); i++) {
     const R3SurfelPoint *point = set->Point(i);
-    R3Point position = point->Position() - origin.Vector();
+    R3Point position = point->Position() - position_origin.Vector();
     R3Vector normal = point->Normal();
     R3Vector tangent = point->Tangent();
     R3Surfel *surfel = &surfels[i];
@@ -134,6 +170,8 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
     surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
     surfel->SetRadius(0, point->Radius(0));
     surfel->SetRadius(1, point->Radius(1));
+    surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
+    surfel->SetValue(point->Value());
     surfel->SetColor(point->Color());
     surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
   }
@@ -142,11 +180,14 @@ R3SurfelBlock(const R3SurfelPointSet *set, const R3Point& origin)
 
 
 R3SurfelBlock::
-R3SurfelBlock(const R3Surfel *surfels, int nsurfels, const R3Point& origin)
+R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
+  const R3Point& position_origin, RNScalar timestamp_origin)
   : surfels(NULL),
     nsurfels(nsurfels),
-    origin(origin),
+    position_origin(position_origin),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(timestamp_origin),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
     data(NULL),
@@ -168,11 +209,14 @@ R3SurfelBlock(const R3Surfel *surfels, int nsurfels, const R3Point& origin)
 
 
 R3SurfelBlock::
-R3SurfelBlock(const RNArray<const R3Surfel *>& array, const R3Point& origin)
+R3SurfelBlock(const RNArray<const R3Surfel *>& array,
+  const R3Point& position_origin, RNScalar timestamp_origin)
   : surfels(NULL),
     nsurfels(array.NEntries()),
-    origin(origin),
+    position_origin(position_origin),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(timestamp_origin),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
     data(NULL),
@@ -197,8 +241,10 @@ R3SurfelBlock::
 R3SurfelBlock(const R3Point *points, int npoints)
   : surfels(NULL),
     nsurfels(npoints),
-    origin(R3zero_point),
+    position_origin(R3zero_point),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(0),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
     data(NULL),
@@ -213,8 +259,8 @@ R3SurfelBlock(const R3Point *points, int npoints)
   // Check number of points
   if (npoints == 0) return;
 
-  // Compute origin
-  origin = R3Centroid(npoints, (R3Point *) points);
+  // Compute position_origin
+  position_origin = R3Centroid(npoints, (R3Point *) points);
 
   // Compute bounding box
   for (int i = 0; i < npoints; i++) {
@@ -225,7 +271,7 @@ R3SurfelBlock(const R3Point *points, int npoints)
   surfels = new R3Surfel [ nsurfels ];
   for (int i = 0; i < nsurfels; i++) {
     R3Point point = points[i];
-    point -= origin.Vector();
+    point -= position_origin.Vector();
     R3Surfel& surfel = this->surfels[i];
     surfel.SetPosition(point.X(), point.Y(), point.Z());
     surfel.SetRadius(bbox.DiagonalLength() / npoints);
@@ -239,8 +285,10 @@ R3SurfelBlock::
 R3SurfelBlock(const RNArray<R3Point *>& points)
   : surfels(NULL),
     nsurfels(points.NEntries()),
-    origin(R3zero_point),
+    position_origin(R3zero_point),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_origin(0),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(0),
     data(NULL),
@@ -255,8 +303,8 @@ R3SurfelBlock(const RNArray<R3Point *>& points)
   // Check points
   if (points.IsEmpty()) return;
   
-  // Compute origin
-  origin = R3Centroid(points);
+  // Compute position_origin
+  position_origin = R3Centroid(points);
 
   // Compute bounding box
   for (int i = 0; i < points.NEntries(); i++) {
@@ -267,7 +315,7 @@ R3SurfelBlock(const RNArray<R3Point *>& points)
   surfels = new R3Surfel [ nsurfels ];
   for (int i = 0; i < nsurfels; i++) {
     R3Point point = *(points[i]);
-    point -= origin.Vector();
+    point -= position_origin.Vector();
     R3Surfel& surfel = this->surfels[i];
     surfel.SetPosition(point.X(), point.Y(), point.Z());
     surfel.SetRadius(bbox.DiagonalLength() / points.NEntries());
@@ -316,6 +364,21 @@ BBox(void) const
 
   // Return bbox
   return bbox;
+}
+
+
+
+const RNInterval& R3SurfelBlock::
+TimestampRange(void) const
+{
+  // Update timestamp range
+  if (timestamp_range.IsEmpty()) {
+    R3SurfelBlock *block = (R3SurfelBlock *) this;
+    block->UpdateTimestampRange();
+  }
+
+  // Return timestamp range
+  return timestamp_range;
 }
 
 
@@ -443,10 +506,19 @@ SetData(void *data)
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelBlock::
-SetOrigin(const R3Point& origin)
+SetPositionOrigin(const R3Point& position)
 {
-  // Set origin
-  this->origin = origin;
+  // Set position origin
+  this->position_origin = position;
+}
+
+
+
+void R3SurfelBlock::
+SetTimestampOrigin(RNScalar timestamp)
+{
+  // Set timestamp origin
+  this->timestamp_origin = timestamp;
 }
 
 
@@ -460,10 +532,10 @@ SetSurfelPosition(int surfel_index, const R3Point& position)
     abort();
   }
 
-  // Set surfel position
-  float x = position[0] - origin[0];
-  float y = position[1] - origin[1];
-  float z = position[2] - origin[2];
+  // Set surfel position (relative to position origin)
+  float x = position[0] - position_origin[0];
+  float y = position[1] - position_origin[1];
+  float z = position[2] - position_origin[2];
   surfels[surfel_index].SetPosition(x, y, z);
 
   // Mark properties out of date
@@ -559,6 +631,45 @@ SetSurfelColor(int surfel_index, const RNRgb& color)
 
   // Set surfel color
   surfels[surfel_index].SetColor(color);
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
+SetSurfelTimestamp(int surfel_index, RNScalar timestamp)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel timestamp (relative to timestamp_origin)
+  surfels[surfel_index].SetTimestamp(timestamp - timestamp_origin);
+
+  // Remember that timestamp range is out of date
+  timestamp_range.Empty();
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
+SetSurfelValue(int surfel_index, RNScalar value)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel value
+  surfels[surfel_index].SetValue(value);
 
   // Remember that block is dirty
   SetDirty();
@@ -717,9 +828,9 @@ Transform(const R3Affine& transformation)
   // Update resolution
   if (resolution > 0) resolution /= scale * scale;
 
-  // Transform origin
-  R3Point old_origin = origin;
-  origin.Transform(transformation);
+  // Transform position_origin
+  R3Point old_position_origin = position_origin;
+  position_origin.Transform(transformation);
 
   // Read block
   if (database) database->ReadBlock(this);
@@ -728,13 +839,13 @@ Transform(const R3Affine& transformation)
   bbox = R3null_box;
   for (int i = 0; i < NSurfels(); i++) {
     R3Surfel *surfel = &surfels[i];
-    R3Point position(surfel->X() + old_origin[0], surfel->Y() + old_origin[1], surfel->Z() + old_origin[2]);
+    R3Point position(surfel->X() + old_position_origin[0], surfel->Y() + old_position_origin[1], surfel->Z() + old_position_origin[2]);
     R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
     R3Vector tangent(surfel->TX(), surfel->TY(), surfel->TZ());
     position.Transform(transformation);
     normal.Transform(transformation);
     tangent.Transform(transformation);
-    surfel->SetPosition(position.X() - origin.X(), position.Y() - origin.Y(), position.Z() - origin.Z());
+    surfel->SetPosition(position.X() - position_origin.X(), position.Y() - position_origin.Y(), position.Z() - position_origin.Z());
     surfel->SetNormal(normal.X(), normal.Y(), normal.Z());
     surfel->SetTangent(tangent.X(), tangent.Y(), tangent.Z());
     surfel->SetRadius(0, scale * surfel->Radius(0));
@@ -767,6 +878,7 @@ UpdateProperties(void)
   // Update properties
   double dummy = 0;
   dummy += BBox().Min().X();
+  dummy += TimestampRange().Min();
   dummy += Resolution();
   dummy += (HasAerial()) ? 1 : 2;
   if (dummy == 927612.21242) {
@@ -798,11 +910,33 @@ UpdateBBox(void)
   // Release block
   if (database) database->ReleaseBlock(this);
 
-  // Translate bounding box by origin
-  bbox.Translate(origin.Vector());
+  // Translate bounding box by position_origin
+  bbox.Translate(position_origin.Vector());
 
   // Mark bbox uptodate
   flags.Add(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG);
+}
+
+
+
+void R3SurfelBlock::
+UpdateTimestampRange(void)
+{
+  // Read block
+  if (database) database->ReadBlock(this);
+
+  // Update timestamp range
+  timestamp_range = RNnull_interval;
+  for (int i = 0; i < nsurfels; i++) {
+    float t = surfels[i].Timestamp();
+    timestamp_range.Union(t);
+  }
+
+  // Release block
+  if (database) database->ReleaseBlock(this);
+
+  // Translate bounding box by timestamp origin
+  timestamp_range += timestamp_origin;
 }
 
 
@@ -908,10 +1042,11 @@ Draw(RNFlags flags) const
 {
   // Get convenient variables
   int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
+  int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
 
-  // Push translation to origin
+  // Push translation to position_origin
   glPushMatrix();
-  glTranslated(origin[0], origin[1], origin[2]);
+  glTranslated(position_origin[0], position_origin[1], position_origin[2]);
 
 #ifdef R3_SURFEL_DRAW_WITH_DISPLAY_LIST
   // Create a display list id to use to detect errors
@@ -1055,30 +1190,47 @@ Draw(RNFlags flags) const
   if (c) glDisableClientState(GL_COLOR_ARRAY);
 #endif
 
-#ifdef R3_SURFEL_DRAW_WITH_POINTS
-  // Draw surfels using traditional glBegin and glEnd
-  if (c) {
-    // Draw points with color
-    glBegin(GL_POINTS);
+#ifdef R3_SURFEL_DRAW_WITH_GLBEGIN
+  if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
+    // Draw discs
+    const int nsides = 6;
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
-      glColor3ubv(surfel.ColorPtr());
+      R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
+      R3Vector tangent1(surfel.TX(), surfel.TY(), surfel.TZ());
+      R3Vector tangent2 = tangent1 % normal;
+      double r1 = surfel.Radius(0);
+      double r2 = surfel.Radius(1);
+      if (r1 <= 0) r1 = 0.1;
+      if (r2 <= 0) r2 = r1;
+      if (c) glColor3ubv(surfel.ColorPtr());
+      if (n) R3LoadNormal(normal);
+      glBegin(GL_TRIANGLE_FAN);
       glVertex3fv(surfel.PositionPtr());
+      for (int j = 0; j < nsides; j++) {
+        double angle = RN_TWO_PI*j/nsides;
+        R3Point p(surfel.PX(), surfel.PY(), surfel.PZ());
+        p += cos(angle) * r1 * tangent1;
+        p += sin(angle) * r2 * tangent2;
+        R3LoadPoint(p);
+      }
+      glEnd();        
     }
-    glEnd();
   }
   else {
-    // Draw points without color
+    // Draw points
     glBegin(GL_POINTS);
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
+      if (c) glColor3ubv(surfel.ColorPtr());
+      if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
       glVertex3fv(surfel.PositionPtr());
     }
     glEnd();
   }
 #endif
 
-  // Pop translation to origin
+  // Pop translation to position_origin
   glPopMatrix();
 }
 
@@ -1232,8 +1384,8 @@ ReadOBJ(FILE *fp)
   cy /= count;
   cz /= count;
 
-  // Set origin to centroid of points
-  origin.Reset(cx, cy, cz);
+  // Set position_origin to centroid of points
+  position_origin.Reset(cx, cy, cz);
 
   // Rewind file to original file offset
   RNFileSeek(fp, file_offset, RN_FILE_SEEK_SET);
@@ -1465,7 +1617,7 @@ ReadXYZBinary(FILE *fp)
   }
 
   // Read surfels
-  origin = R3zero_point;
+  position_origin = R3zero_point;
   for (int i = 0; i < nsurfels; i++) {
     // Read data
     float xyzr[4];
@@ -1484,19 +1636,19 @@ ReadXYZBinary(FILE *fp)
     surfels[i].SetPosition(xyzr);
     surfels[i].SetColor(c, c, c);
 
-    // Update origin
-    origin[0] += xyzr[0];
-    origin[1] += xyzr[1];
-    origin[2] += xyzr[2];
+    // Update position_origin
+    position_origin[0] += xyzr[0];
+    position_origin[1] += xyzr[1];
+    position_origin[2] += xyzr[2];
   }
 
-  // Put origin at centroid
-  origin /= nsurfels;
+  // Put position_origin at centroid
+  position_origin /= nsurfels;
 
-  // Update surfels to be relative to origin
+  // Update surfels to be relative to position_origin
   for (int i = 0; i < nsurfels; i++) {
     const float *xyz = surfels[i].PositionPtr();
-    surfels[i].SetPosition(xyz[0] - origin[0], xyz[1] - origin[1], xyz[2] - origin[2]);
+    surfels[i].SetPosition(xyz[0] - position_origin[0], xyz[1] - position_origin[1], xyz[2] - position_origin[2]);
   }  
   
   // Return success
@@ -1809,8 +1961,8 @@ ReadUPC(FILE *fp)
   xoffset -= 444965;
   yoffset -= 5029450;
 
-  // Set origin
-  origin = R3Point(xoffset, yoffset, zoffset);
+  // Set position_origin
+  position_origin = R3Point(xoffset, yoffset, zoffset);
 
   // Allocate memory for surfels
   int target_count = (int) header.numOfPts;

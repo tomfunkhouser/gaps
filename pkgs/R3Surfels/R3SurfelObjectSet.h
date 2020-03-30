@@ -37,7 +37,9 @@ public:
   R3Point Centroid(void) const;
   const R3Box& BBox(void) const;
 
-
+  // Timestamp functions
+  const RNInterval& TimestampRange(void) const;
+  
   //////////////////////////
   //// ACCESS FUNCTIONS ////
   //////////////////////////
@@ -78,6 +80,7 @@ public:
 private:
   RNArray<R3SurfelObject *> objects;
   R3Box bbox;
+  RNInterval timestamp_range;
 };
 
 

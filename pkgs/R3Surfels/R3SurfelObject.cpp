@@ -45,6 +45,7 @@ R3SurfelObject(const char *name)
     identifier(-1),
     complexity(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    timestamp_range(FLT_MAX,-FLT_MAX),
     data(NULL)
 {
 }
@@ -66,6 +67,7 @@ R3SurfelObject(const R3SurfelObject& object)
     identifier(-1),
     complexity(object.complexity),
     bbox(object.bbox),
+    timestamp_range(object.timestamp_range),
     data(NULL)
 {
 }
@@ -133,6 +135,17 @@ BBox(void) const
   if (bbox[0][0] == FLT_MAX) 
     ((R3SurfelObject *) this)->UpdateBBox();
   return bbox;
+}
+
+
+
+const RNInterval& R3SurfelObject::
+TimestampRange(void) const
+{
+  // Return timestamp range of object
+  if (timestamp_range.Min() == FLT_MAX) 
+    ((R3SurfelObject *) this)->UpdateTimestampRange();
+  return timestamp_range;
 }
 
 
@@ -410,11 +423,27 @@ SetParent(R3SurfelObject *parent)
     ancestor = ancestor->parent;
   }
 
+  // Invalidate timestamps starting at current parent
+  ancestor = this->parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
   // Invalidate bounding boxes starting at new parent
   ancestor = parent;
   while (ancestor) {
     if (ancestor->bbox[0][0] == FLT_MAX) break;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
+  // Invalidate timestamp ranges starting at new parent
+  ancestor = parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -509,6 +538,14 @@ InsertNode(R3SurfelNode *node)
     ancestor = ancestor->parent;
   }
 
+  // Invalidate timestamp range
+  ancestor = this;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
   // Update node
   node->UpdateAfterInsert(this);
 
@@ -543,6 +580,14 @@ RemoveNode(R3SurfelNode *node)
   while (ancestor) {
     if (ancestor->bbox[0][0] == FLT_MAX) break;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
+  // Invalidate timestamp range
+  ancestor = this;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 
@@ -676,6 +721,14 @@ UpdateAfterInsert(R3SurfelScene *scene)
     ancestor->bbox[0][0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
+
+  // Invalidate timestamp ranges
+  ancestor = parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
 }
 
 
@@ -683,11 +736,19 @@ UpdateAfterInsert(R3SurfelScene *scene)
 void R3SurfelObject::
 UpdateBeforeRemove(R3SurfelScene *scene)
 {
-  // Invalidate properties
+  // Invalidate bounding boxes
   R3SurfelObject *ancestor = parent;
   while (ancestor) {
     if (ancestor->bbox[0][0] == FLT_MAX) break;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
+  // Invalidate timestamp ranges
+  ancestor = parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 }
@@ -793,11 +854,19 @@ UpdateAfterInsertBlock(R3SurfelNode *node, R3SurfelBlock *block)
   // Update complexity
   complexity += block->NSurfels();
 
-  // Invalidate properties
+  // Invalidate bounding boxes
   R3SurfelObject *ancestor = this;
   while (ancestor) {
     if (ancestor->bbox[0][0] == FLT_MAX) break;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
+  // Invalidate timestamp ranges
+  ancestor = parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 }
@@ -815,6 +884,14 @@ UpdateBeforeRemoveBlock(R3SurfelNode *node, R3SurfelBlock *block)
   while (ancestor) {
     if (ancestor->bbox[0][0] == FLT_MAX) break;
     ancestor->bbox[0][0] = FLT_MAX;
+    ancestor = ancestor->parent;
+  }
+
+  // Invalidate timestamp ranges
+  ancestor = parent;
+  while (ancestor) {
+    if (ancestor->timestamp_range[0] == FLT_MAX) break;
+    ancestor->timestamp_range[0] = FLT_MAX;
     ancestor = ancestor->parent;
   }
 }
@@ -846,6 +923,7 @@ UpdateProperties(void)
   double dummy = 0;
   dummy += Complexity();
   dummy += BBox().Min().X();
+  dummy += TimestampRange().Min();
   if (dummy == 927612.21242) {
     printf("Amazing!\n");
   }
@@ -895,6 +973,30 @@ UpdateBBox(void)
   for (int i = 0; i < NParts(); i++) {
     R3SurfelObject *part = Part(i);
     bbox.Union(part->BBox());
+  }
+}
+
+
+
+void R3SurfelObject::
+UpdateTimestampRange(void)
+{
+  // Check if bounding box is uptodate
+  if (timestamp_range[0] != FLT_MAX) return;
+
+  // Initialize timestamp range
+  timestamp_range.Reset(FLT_MAX,-FLT_MAX);
+
+  // Union timestamp ranges of nodes
+  for (int i = 0; i < NNodes(); i++) {
+    R3SurfelNode *node = Node(i);
+    timestamp_range.Union(node->TimestampRange());
+  }
+
+  // Union timestamp ranges of parts
+  for (int i = 0; i < NParts(); i++) {
+    R3SurfelObject *part = Part(i);
+    timestamp_range.Union(part->TimestampRange());
   }
 }
 
