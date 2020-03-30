@@ -288,7 +288,7 @@ PrintInfo(R3SurfelScene *scene)
       strncpy(prefix, " ", 16535);
       int level = label->PartHierarchyLevel();
       char assignment_keystroke = (label->AssignmentKeystroke() >= 0) ? label->AssignmentKeystroke() : ' ';
-      for (int i = 0; i < level; i++) strncat(prefix, " ", 16536);
+      for (int i = 0; i < level; i++) strncat(prefix, " ", 16535);
       printf("%s Label %d\n", prefix, label->SceneIndex());
       printf("%s Name = %s\n", prefix, (label->Name()) ? label->Name() : "None");
       printf("%s Assignment keystroke = %c\n", prefix, assignment_keystroke);
@@ -317,7 +317,7 @@ PrintInfo(R3SurfelScene *scene)
       char prefix[16536];
       strncpy(prefix, " ", 16535);
       int level = object->PartHierarchyLevel();
-      for (int i = 0; i < level; i++) strncat(prefix, " ", 16536);
+      for (int i = 0; i < level; i++) strncat(prefix, " ", 16535);
       R3Box bbox = object->BBox();
       R3Point centroid = object->Centroid();
       RNInterval timestamp_range = object->TimestampRange();
@@ -463,7 +463,7 @@ PrintInfo(R3SurfelScene *scene)
       char prefix[16536];
       strncpy(prefix, " ", 16535);
       int level = node->TreeLevel();
-      for (int i = 0; i < level; i++) strncat(prefix, " ", 16536);
+      for (int i = 0; i < level; i++) strncat(prefix, " ", 16535);
       R3Box bbox = node->BBox();
       R3Point centroid = node->Centroid();
       RNInterval timestamp_range = node->TimestampRange();
