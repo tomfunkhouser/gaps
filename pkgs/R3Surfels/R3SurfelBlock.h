@@ -31,7 +31,7 @@ public:
     const R3Point& position_origin, RNScalar timestamp_origin = 0);
   R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
     const R3Point& position_origin = R3zero_point, RNScalar timestamp_origin = 0);
-  R3SurfelBlock(const RNArray<const R3Surfel *>& surfels,
+  R3SurfelBlock(const RNArray<const R3Surfel *>& array,
     const R3Point& position_origin = R3zero_point, RNScalar timestamp_origin = 0);
   R3SurfelBlock(const R3Point *points, int npoints);
   R3SurfelBlock(const RNArray<R3Point *>& points);
@@ -189,7 +189,7 @@ public:
 
   // For backward compatibility
   const R3Point& Origin(void) const;
-  void SetOrigin(const R3Point& position);
+  void SetOrigin(const R3Point& origin);
 
   // Surfel index querying
   int SurfelIndex(const R3Surfel *surfel) const;
