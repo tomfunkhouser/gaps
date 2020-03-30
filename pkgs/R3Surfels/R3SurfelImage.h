@@ -82,7 +82,9 @@ public:
   /////////////////////////////////////////
 
   // Channel manipulation functions
+  virtual void InsertChannel(int channel_index, const R2Grid& channel);
   virtual void SetChannel(int channel_index, const R2Grid& channel);
+  virtual void RemoveChannel(int channel_index);
   
   // Pose manipulation functions
   virtual void SetPose(const R3CoordSystem& pose);
@@ -376,6 +378,15 @@ Scan(void) const
 }
 
 
+
+inline void R3SurfelImage::
+InsertChannel(int channel_index, const R2Grid& channel)
+{
+  // Insert a new channel
+  SetChannel(channel_index, channel);
+}
+
+
   
 inline R2Point R3SurfelImage::
 ImagePosition(const R3Point& world_position) const
@@ -384,9 +395,6 @@ ImagePosition(const R3Point& world_position) const
   // Transform 3D point from world into image coordinate system
   return TransformFromWorldToImage(world_position);
 }
-
-
-
 
   
 

@@ -112,6 +112,20 @@ SetChannel(int channel_index, const R2Grid& channel)
 
 
   
+inline void R3SurfelImage::
+RemoveChannel(int channel_index)
+{
+  // Check channel index
+  if (channel_index >= channels.NEntries()) return;
+  if (!channels[channel_index]) return;
+
+  // Remove channel
+  delete channels[channel_index];
+  channels[channel_index] = NULL;
+}
+
+
+  
 void R3SurfelImage::
 SetScan(R3SurfelScan *scan) 
 {
