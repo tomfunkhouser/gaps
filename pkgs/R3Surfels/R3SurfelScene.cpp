@@ -1194,7 +1194,8 @@ InsertScene(const R3SurfelScene& scene2,
     R3SurfelScan *scan1 = new R3SurfelScan(scan2->Name());
     scan1->SetPose(scan2->Pose());
     scan1->SetTimestamp(scan2->Timestamp());
-    scan1->SetFocalLength(scan2->FocalLength());
+    scan1->SetXFocal(scan2->XFocal());
+    scan1->SetYFocal(scan2->YFocal());
     scan1->SetImageDimensions(scan2->ImageWidth(), scan2->ImageHeight());
     scan1->SetImageCenter(scan2->ImageCenter());
     scan1->SetFlags(scan2->Flags());
@@ -1213,7 +1214,8 @@ InsertScene(const R3SurfelScene& scene2,
     R3SurfelImage *image1 = new R3SurfelImage(image2->Name());
     image1->SetPose(image2->Pose());
     image1->SetTimestamp(image2->Timestamp());
-    image1->SetFocalLength(image2->FocalLength());
+    image1->SetXFocal(image2->XFocal());
+    image1->SetYFocal(image2->YFocal());
     image1->SetImageDimensions(image2->ImageWidth(), image2->ImageHeight());
     image1->SetImageCenter(image2->ImageCenter());
     image1->SetFlags(image2->Flags());
@@ -1714,21 +1716,23 @@ ReadAsciiFile(const char *filename)
     char scan_name[1024];
     unsigned int flags;
     int node_index, width, height;
-    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "S")) { RNFail("Error reading scan %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, scan_name); 
-    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &node_index, &width, &height, &focal_length, &xcenter, &ycenter, &flags);
-    for (int j = 0; j < 2; j++) fscanf(fp, "%s", buffer);
+    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u%lf", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &node_index, &width, &height, &xfocal, &xcenter, &ycenter, &flags, &yfocal);
+    for (int j = 0; j < 1; j++) fscanf(fp, "%s", buffer);
     if (xcenter == 0) xcenter = width/2.0;
     if (ycenter == 0) ycenter = height/2.0;
     R3Point viewpoint(px, py, pz);
     R3Vector towards(tx, ty, tz);
     R3Vector up(ux, uy, uz);
     R3CoordSystem pose(viewpoint, R3Triad(towards, up));
+    if (yfocal <= 0) yfocal = xfocal;
     R3SurfelScan *scan = new R3SurfelScan();
     scan->SetPose(pose);
-    scan->SetFocalLength(focal_length);
+    scan->SetXFocal(xfocal);
+    scan->SetYFocal(yfocal);
     scan->SetTimestamp(timestamp);
     scan->SetImageDimensions(width, height);
     scan->SetImageCenter(R2Point(xcenter, ycenter));
@@ -1747,11 +1751,11 @@ ReadAsciiFile(const char *filename)
     char image_name[1024];
     unsigned int flags;
     int scan_index, width, height;
-    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "S")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, image_name); 
-    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &focal_length, &xcenter, &ycenter, &flags);
+    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &xfocal, &yfocal, &xcenter, &ycenter, &flags);
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     if (xcenter == 0) xcenter = width/2.0;
     if (ycenter == 0) ycenter = height/2.0;
@@ -1761,7 +1765,8 @@ ReadAsciiFile(const char *filename)
     R3CoordSystem pose(viewpoint, R3Triad(towards, up));
     R3SurfelImage *image = new R3SurfelImage();
     image->SetPose(pose);
-    image->SetFocalLength(focal_length);
+    image->SetXFocal(xfocal);
+    image->SetYFocal(yfocal);
     image->SetTimestamp(timestamp);
     image->SetImageDimensions(width, height);
     image->SetImageCenter(R2Point(xcenter, ycenter));
@@ -1959,9 +1964,10 @@ WriteAsciiFile(const char *filename)
     fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
     fprintf(fp, " %.6f %d", scan->Timestamp(), (scan->Node()) ? scan->Node()->TreeIndex() : -1);
     fprintf(fp, " %d %d ", scan->ImageWidth(), scan->ImageHeight());
-    fprintf(fp, " %g %g %g ", scan->FocalLength(), scan->ImageCenter().X(), scan->ImageCenter().Y());
+    fprintf(fp, " %g %g %g ", scan->XFocal(), scan->ImageCenter().X(), scan->ImageCenter().Y());
     fprintf(fp, " %u ", (unsigned int) scan->Flags());
-    for (int j = 0; j < 2; j++) fprintf(fp, " 0");
+    fprintf(fp, " %g ", scan->YFocal());
+    for (int j = 0; j < 1; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
   }
 
@@ -1979,7 +1985,8 @@ WriteAsciiFile(const char *filename)
     fprintf(fp, " %.6f", image->Timestamp());
     fprintf(fp, " %d ", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
     fprintf(fp, " %d %d ", image->ImageWidth(), image->ImageHeight());
-    fprintf(fp, " %g %g %g ", image->FocalLength(), image->ImageCenter().X(), image->ImageCenter().Y());
+    fprintf(fp, " %g %g ", image->XFocal(), image->YFocal());
+    fprintf(fp, " %g %g ", image->ImageCenter().X(), image->ImageCenter().Y());
     fprintf(fp, " %u ", (unsigned int) image->Flags());
     for (int j = 0; j < 4; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
@@ -2367,7 +2374,7 @@ ReadBinaryFile(const char *filename)
   for (int i = 0; i < nscans; i++) {
     char scan_name[1024];
     int node_index, width, height, flags;
-    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     ReadBinaryName(fp, scan_name); 
     ReadBinaryDouble(fp, &px);
     ReadBinaryDouble(fp, &py);
@@ -2382,19 +2389,22 @@ ReadBinaryFile(const char *filename)
     ReadBinaryInteger(fp, &node_index);
     ReadBinaryInteger(fp, &width);
     ReadBinaryInteger(fp, &height);
-    ReadBinaryDouble(fp, &focal_length);
+    ReadBinaryDouble(fp, &xfocal);
     ReadBinaryDouble(fp, &xcenter);
     ReadBinaryDouble(fp, &ycenter);
     ReadBinaryInteger(fp, &flags);
-    for (int j = 0; j < 6; j++) ReadBinaryInteger(fp, &dummy);
+    ReadBinaryDouble(fp, &yfocal);
+    for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
     R3SurfelScan *scan = new R3SurfelScan();
     if (strcmp(scan_name, "None")) scan->SetName(scan_name);
     if (xcenter == 0) xcenter = width/2.0;
     if (ycenter == 0) ycenter = height/2.0;
+    if (yfocal == 0) yfocal = xfocal;
     scan->SetViewpoint(R3Point(px, py, pz));
     scan->SetOrientation(R3Vector(tx, ty, tz), R3Vector(ux, uy, uz));
     scan->SetTimestamp(timestamp);
-    scan->SetFocalLength(focal_length);
+    scan->SetXFocal(xfocal);
+    scan->SetYFocal(yfocal);
     scan->SetImageDimensions(width, height);
     scan->SetImageCenter(R2Point(xcenter, ycenter));
     scan->SetFlags(flags);
@@ -2408,7 +2418,7 @@ ReadBinaryFile(const char *filename)
   for (int i = 0; i < nimages; i++) {
     char image_name[1024];
     int scan_index, width, height, flags;
-    double px, py, pz, tx, ty, tz, ux, uy, uz, focal_length, xcenter, ycenter, timestamp;
+    double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     ReadBinaryName(fp, image_name); 
     ReadBinaryDouble(fp, &px);
     ReadBinaryDouble(fp, &py);
@@ -2423,19 +2433,22 @@ ReadBinaryFile(const char *filename)
     ReadBinaryInteger(fp, &width);
     ReadBinaryInteger(fp, &scan_index);
     ReadBinaryInteger(fp, &height);
-    ReadBinaryDouble(fp, &focal_length);
+    ReadBinaryDouble(fp, &xfocal);
+    ReadBinaryDouble(fp, &yfocal);
     ReadBinaryDouble(fp, &xcenter);
     ReadBinaryDouble(fp, &ycenter);
     ReadBinaryInteger(fp, &flags);
     for (int j = 0; j < 5; j++) ReadBinaryInteger(fp, &dummy);
     R3SurfelImage *image = new R3SurfelImage();
     if (strcmp(image_name, "None")) image->SetName(image_name);
-    if (xcenter == 0) xcenter = width/2.0;
-    if (ycenter == 0) ycenter = height/2.0;
+    if (xcenter <= 0) xcenter = width/2.0;
+    if (ycenter <= 0) ycenter = height/2.0;
+    if (yfocal <= 0) yfocal = xfocal;
     image->SetViewpoint(R3Point(px, py, pz));
     image->SetOrientation(R3Vector(tx, ty, tz), R3Vector(ux, uy, uz));
     image->SetTimestamp(timestamp);
-    image->SetFocalLength(focal_length);
+    image->SetXFocal(xfocal);
+    image->SetYFocal(yfocal);
     image->SetImageDimensions(width, height);
     image->SetImageCenter(R2Point(xcenter, ycenter));
     image->SetFlags(flags);
@@ -2650,11 +2663,12 @@ WriteBinaryFile(const char *filename)
     WriteBinaryInteger(fp, (scan->Node()) ? scan->Node()->TreeIndex() : -1);
     WriteBinaryInteger(fp, scan->ImageWidth());
     WriteBinaryInteger(fp, scan->ImageHeight());
-    WriteBinaryDouble(fp, scan->FocalLength());
+    WriteBinaryDouble(fp, scan->XFocal());
     WriteBinaryDouble(fp, scan->ImageCenter().X());
     WriteBinaryDouble(fp, scan->ImageCenter().Y());
     WriteBinaryInteger(fp, scan->Flags());
-    for (int j = 0; j < 6; j++) WriteBinaryInteger(fp, 0);
+    WriteBinaryDouble(fp, scan->YFocal());
+    for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
   }
 
   // Write images
@@ -2674,7 +2688,8 @@ WriteBinaryFile(const char *filename)
     WriteBinaryInteger(fp, (image->scan) ? image->scan->SceneIndex() : -1);
     WriteBinaryInteger(fp, image->ImageWidth());
     WriteBinaryInteger(fp, image->ImageHeight());
-    WriteBinaryDouble(fp, image->FocalLength());
+    WriteBinaryDouble(fp, image->XFocal());
+    WriteBinaryDouble(fp, image->YFocal());
     WriteBinaryDouble(fp, image->ImageCenter().X());
     WriteBinaryDouble(fp, image->ImageCenter().Y());
     WriteBinaryInteger(fp, image->Flags());

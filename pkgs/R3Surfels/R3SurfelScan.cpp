@@ -33,7 +33,8 @@ R3SurfelScan(const char *name)
     image_width(0), 
     image_height(0),
     image_center(0,0),
-    focal_length(0),
+    xfocal(0),
+    yfocal(0),
     name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
@@ -53,7 +54,8 @@ R3SurfelScan(const R3SurfelScan& scan)
     image_width(scan.image_width), 
     image_height(scan.image_height),
     image_center(scan.image_center),
-    focal_length(scan.focal_length),
+    xfocal(scan.xfocal),
+    yfocal(scan.yfocal),
     name((scan.name) ? RNStrdup(scan.name) : NULL),
     flags(0),
     data(NULL)
@@ -127,10 +129,29 @@ SetOrientation(const R3Vector& towards, const R3Vector& up)
 
 
 void R3SurfelScan::
-SetFocalLength(RNLength f) 
+SetFocalLengths(RNLength focal_length) 
 {
-  // Set timestamp
-  this->focal_length = f;
+  // Set focal lengths
+  this->xfocal = focal_length;
+  this->yfocal = focal_length;
+}
+
+
+
+void R3SurfelScan::
+SetXFocal(RNLength focal_length) 
+{
+  // Set horizontal focal length
+  this->xfocal = focal_length;
+}
+
+
+
+void R3SurfelScan::
+SetYFocal(RNLength focal_length) 
+{
+  // Set horizontal focal length
+  this->yfocal = focal_length;
 }
 
 
@@ -298,8 +319,8 @@ ImagePosition(const R3Point& world_position) const
 
   // Compute 2D point projected onto viewport
   const R2Point c = ImageCenter();
-  RNCoord x = c.X() + focal_length * p.X() / -p.Z();
-  RNCoord y = c.Y() + focal_length * p.Y() / -p.Z();
+  RNCoord x = c.X() + xfocal * p.X() / -p.Z();
+  RNCoord y = c.Y() + yfocal * p.Y() / -p.Z();
 
   // Return point projected onto viewport
   return R2Point(x, y);

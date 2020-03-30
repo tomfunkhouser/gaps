@@ -32,7 +32,8 @@ R3SurfelImage(const char *name)
     image_width(0), 
     image_height(0),
     image_center(0,0),
-    focal_length(0),
+    xfocal(0),
+    yfocal(0),
     name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
@@ -51,7 +52,8 @@ R3SurfelImage(const R3SurfelImage& image)
     image_width(image.image_width), 
     image_height(image.image_height),
     image_center(image.image_center),
-    focal_length(image.focal_length),
+    xfocal(image.xfocal),
+    yfocal(image.yfocal),
     name((image.name) ? RNStrdup(image.name) : NULL),
     flags(0),
     data(NULL)
@@ -88,8 +90,8 @@ ImagePosition(const R3Point& world_position) const
 
   // Compute 2D point projected onto viewport
   const R2Point c = ImageCenter();
-  RNCoord x = c.X() + focal_length * p.X() / -p.Z();
-  RNCoord y = c.Y() + focal_length * p.Y() / -p.Z();
+  RNCoord x = c.X() + xfocal * p.X() / -p.Z();
+  RNCoord y = c.Y() + yfocal * p.Y() / -p.Z();
 
   // Return point projected onto viewport
   return R2Point(x, y);
@@ -235,10 +237,29 @@ SetOrientation(const R3Vector& towards, const R3Vector& up)
 
 
 void R3SurfelImage::
-SetFocalLength(RNLength f) 
+SetFocalLengths(RNLength focal_length) 
 {
-  // Set timestamp
-  this->focal_length = f;
+  // Set both focal lengths
+  this->xfocal = focal_length;
+  this->yfocal = focal_length;
+}
+
+
+
+void R3SurfelImage::
+SetXFocal(RNLength focal_length) 
+{
+  // Set horizontal focal length
+  this->xfocal = focal_length;
+}
+
+
+
+void R3SurfelImage::
+SetYFocal(RNLength focal_length) 
+{
+  // Set vertical focal length
+  this->yfocal = focal_length;
 }
 
 

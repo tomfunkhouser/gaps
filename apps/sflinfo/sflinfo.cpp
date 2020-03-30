@@ -587,7 +587,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("  FOV = %g %g\n", image->XFOV(), image->YFOV());
       printf("  Image dimensions = %d %d\n", image->ImageWidth(), image->ImageHeight());
       printf("  Image center = %g %g\n", image->ImageCenter().X(), image->ImageCenter().Y());
-      printf("  Focal length = %g\n", image->FocalLength());
+      printf("  Focal lengths = %g %g\n", image->XFocal(), image->YFocal());
       printf("  Timestamp = %.6f\n", image->Timestamp());
       printf("  Scan = %d\n", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
       printf("\n");

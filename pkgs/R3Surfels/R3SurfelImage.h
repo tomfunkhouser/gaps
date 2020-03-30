@@ -38,7 +38,8 @@ public:
   int ImageWidth(void) const;
   int ImageHeight(void) const;
   const R2Point& ImageCenter(void) const;
-  RNAngle FocalLength(void) const;
+  RNLength XFocal(void) const;
+  RNLength YFocal(void) const;
   RNAngle XFOV(void) const;
   RNAngle YFOV(void) const;
   
@@ -94,7 +95,9 @@ public:
   virtual void SetPose(const R3CoordSystem& pose);
   virtual void SetViewpoint(const R3Point& viewpoint);
   virtual void SetOrientation(const R3Vector& towards, const R3Vector& up);
-  virtual void SetFocalLength(RNLength focal_length);
+  virtual void SetFocalLengths(RNLength focal_length);
+  virtual void SetXFocal(RNLength focal_length);
+  virtual void SetYFocal(RNLength focal_length);
 
   // Timestamp manipulation functions
   virtual void SetTimestamp(RNScalar timestamp);
@@ -140,7 +143,7 @@ protected:
   RNScalar timestamp;
   int image_width, image_height;
   R2Point image_center;
-  RNLength focal_length;
+  RNLength xfocal, yfocal;
   char *name;
   RNFlags flags;
   void *data;
@@ -153,10 +156,19 @@ protected:
 ////////////////////////////////////////////////////////////////////////
 
 inline RNLength R3SurfelImage::
-FocalLength(void) const
+XFocal(void) const
 {
-  // Return focal length in pixels
-  return focal_length;
+  // Return horizontal focal length in pixels
+  return xfocal;
+}
+
+
+
+inline RNLength R3SurfelImage::
+YFocal(void) const
+{
+  // Return vertical focal length in pixels
+  return yfocal;
 }
 
 
@@ -165,8 +177,8 @@ inline RNLength R3SurfelImage::
 XFOV(void) const
 {
   // Return half-angle for horizontal field of view
-  if (focal_length <= 0) return 0.0;
-  return atan(0.5*image_width/focal_length);
+  if (xfocal <= 0) return 0.0;
+  return atan(0.5*image_width/xfocal);
 }
 
 
@@ -175,8 +187,8 @@ inline RNLength R3SurfelImage::
 YFOV(void) const
 {
   // Return half-angle for vertical field of view
-  if (focal_length <= 0) return 0.0;
-  return atan(0.5*image_height/focal_length);
+  if (yfocal <= 0) return 0.0;
+  return atan(0.5*image_height/yfocal);
 }
 
 
