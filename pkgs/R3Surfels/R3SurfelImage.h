@@ -34,6 +34,10 @@ public:
   //// PROPERTY FUNCTIONS ////
   ////////////////////////////
 
+  // Channel access functions
+  int NChannels(void) const;
+  const R2Grid *Channel(int channel_index) const;
+
   // Camera intrinsics functions
   int ImageWidth(void) const;
   int ImageHeight(void) const;
@@ -73,24 +77,13 @@ public:
   R3SurfelScan *Scan(void) const;
 
 
-  ////////////////////////////////////
-  //// IMAGE GENERATION FUNCTIONS ////
-  ////////////////////////////////////
-
-  // Projection from world into image
-  R2Point ImagePosition(const R3Point& world_position) const;
-
-  // Projection of all points into image
-  int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
-    R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
-    R2Grid *label_image = NULL, R2Grid *object_image = NULL,
-    R2Grid *node_image = NULL, R2Grid *block_image = NULL) const;
-
-  
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
 
+  // Channel manipulation functions
+  virtual void SetChannel(int channel_index, const R2Grid& channel);
+  
   // Pose manipulation functions
   virtual void SetPose(const R3CoordSystem& pose);
   virtual void SetViewpoint(const R3Point& viewpoint);
@@ -117,6 +110,22 @@ public:
   virtual void SetData(void *data);
 
 
+  /////////////////////////////////////////////
+  //// COORDINATE TRANSFORMATION FUNCTIONS ////
+  /////////////////////////////////////////////
+
+  // Transform between coordinate systems
+  R3Point TransformFromWorldToCamera(const R3Point& world_position) const;
+  R2Point TransformFromWorldToImage(const R3Point& world_position) const;
+  R3Point TransformFromCameraToWorld(const R3Point& camera_position) const;
+  R2Point TransformFromCameraToImage(const R3Point& camera_position) const;
+  R3Point TransformFromImageToWorld(const R2Point& image_position) const;
+  R3Point TransformFromImageToCamera(const R2Point& image_position, RNLength depth = -1) const;
+
+  // Check if pixel coordinates are within image bounds
+  RNBoolean ContainsImagePosition(const R2Point& image_position) const;
+
+  
   ///////////////////////////
   //// DISPLAY FUNCTIONS ////
   ///////////////////////////
@@ -127,10 +136,19 @@ public:
   // Print function
   virtual void Print(FILE *fp = NULL, const char *prefix = NULL, const char *suffix = NULL) const;
 
+  // Render image by projecting surfels into image
+  int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
+    R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
+    R2Grid *label_image = NULL, R2Grid *object_image = NULL,
+    R2Grid *node_image = NULL, R2Grid *block_image = NULL) const;
 
+  
   ////////////////////////////////////////////////////////////////////////
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
+
+  // For backward compatibility
+  R2Point ImagePosition(const R3Point& world_position) const;
 
 protected:
   // Internal data
@@ -139,6 +157,7 @@ protected:
   R3SurfelScene *scene;
   int scene_index;
   R3SurfelScan *scan;
+  RNArray<R2Grid *> channels;
   R3CoordSystem pose;
   RNScalar timestamp;
   int image_width, image_height;
@@ -152,8 +171,38 @@ protected:
 
 
 ////////////////////////////////////////////////////////////////////////
+// Channel indices
+////////////////////////////////////////////////////////////////////////
+
+enum {
+  R3_SURFEL_DEPTH_CHANNEL,
+  R3_SURFEL_USER_CHANNELS,
+  R3_SURFEL_NUM_CHANNELS
+};
+
+
+  
+////////////////////////////////////////////////////////////////////////
 // INLINE FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
+
+inline int R3SurfelImage::
+NChannels(void) const
+{
+  // Return the number of channels (including NULL pointers)
+  return channels.NEntries();
+}
+
+  
+
+inline const R2Grid *R3SurfelImage::
+Channel(int channel_index) const
+{
+  // Return the channel (may be NULL)
+  return channels[channel_index];
+}
+
+  
 
 inline RNLength R3SurfelImage::
 XFocal(void) const
@@ -325,6 +374,17 @@ Scan(void) const
   // Return scan this image is associated (NULL if none)
   return scan;
 }
+
+
+  
+inline R2Point R3SurfelImage::
+ImagePosition(const R3Point& world_position) const
+{
+  // DO NOT USE -- only here for backward compatibility
+  // Transform 3D point from world into image coordinate system
+  return TransformFromWorldToImage(world_position);
+}
+
 
 
 

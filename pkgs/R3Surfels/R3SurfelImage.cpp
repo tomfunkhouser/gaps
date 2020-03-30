@@ -27,6 +27,7 @@ R3SurfelImage(const char *name)
   : scene(NULL),
     scene_index(-1),
     scan(NULL),
+    channels(),
     pose(R3Point(0,0,0), R3Triad(R3Vector(0,0,0), R3Vector(0,0,0))),
     timestamp(0),
     image_width(0), 
@@ -47,6 +48,7 @@ R3SurfelImage(const R3SurfelImage& image)
   : scene(NULL),
     scene_index(-1),
     scan(NULL),
+    channels(),
     pose(image.pose),
     timestamp(image.timestamp),
     image_width(image.image_width), 
@@ -58,6 +60,12 @@ R3SurfelImage(const R3SurfelImage& image)
     flags(0),
     data(NULL)
 {
+  // Copy all channels
+  for (int i = 0; i < channels.NEntries(); i++) {
+    R2Grid *channel = channels.Kth(i);
+    if (channel) channels.Insert(new R2Grid(*channel));
+    else channels.Insert(NULL);
+  }
 }
 
 
@@ -65,6 +73,12 @@ R3SurfelImage(const R3SurfelImage& image)
 R3SurfelImage::
 ~R3SurfelImage(void)
 {
+  // Delete all channels
+  for (int i = 0; i < channels.NEntries(); i++) {
+    R2Grid *channel = channels.Kth(i);
+    if (channel) delete channel;
+  }
+  
   // Remove image from scan
   if (scan) SetScan(NULL);
   
@@ -78,110 +92,26 @@ R3SurfelImage::
 
 
 ////////////////////////////////////////////////////////////////////////
-// IMAGE GENERATION FUNCTIONS
-////////////////////////////////////////////////////////////////////////
-
-R2Point R3SurfelImage::
-ImagePosition(const R3Point& world_position) const
-{
-  // Transform 3D point into canonical coordinate system
-  R3Point p = Pose().InverseMatrix() * world_position;
-  if (RNIsPositiveOrZero(p.Z())) return R2infinite_point;
-
-  // Compute 2D point projected onto viewport
-  const R2Point c = ImageCenter();
-  RNCoord x = c.X() + xfocal * p.X() / -p.Z();
-  RNCoord y = c.Y() + yfocal * p.Y() / -p.Z();
-
-  // Return point projected onto viewport
-  return R2Point(x, y);
-}
-
-
-
-int R3SurfelImage::
-RenderImage(R2Image *color_image, R2Grid *depth_image,
-  R2Grid *xnormal_image, R2Grid *ynormal_image, R2Grid *znormal_image,
-  R2Grid *label_image, R2Grid *object_image,
-  R2Grid *node_image, R2Grid *block_image) const
-{
-  // Initialize images
-  R2Grid tmp_image(ImageWidth(), ImageHeight());
-  tmp_image.Clear(R2_GRID_UNKNOWN_VALUE);
-  if (color_image) *color_image = R2Image(ImageWidth(), ImageHeight());
-  if (depth_image) *depth_image = tmp_image;
-  if (xnormal_image) *xnormal_image = tmp_image;
-  if (ynormal_image) *ynormal_image = tmp_image;
-  if (znormal_image) *znormal_image = tmp_image;
-  if (label_image) *label_image = tmp_image;
-  if (object_image) *object_image = tmp_image;
-  if (node_image) *node_image = tmp_image;
-  if (block_image) *block_image = tmp_image;
-
-  // Check stuff
-  if (!scene || !scene->Tree()) return 0;
-
-  // Visit leaf nodes
-  RNArray<const R3SurfelNode *> stack;
-  stack.Insert(scene->Tree()->RootNode());
-  while (!stack.IsEmpty()) {
-    const R3SurfelNode *decendent = stack.Tail();
-    stack.RemoveTail();
-    if (decendent->NParts() > 0) {
-      // Visit decendent nodes
-      for (int i = 0; i < decendent->NParts(); i++) {
-        R3SurfelNode *part = decendent->Part(i);
-        stack.Insert(part);
-      }
-    }
-    else {
-      // Render all blocks of leaf node
-      for (int i = 0; i < decendent->NBlocks(); i++) {
-        R3SurfelBlock *block = decendent->Block(i);
-        R3SurfelNode *node = (block) ? block->Node() : NULL;
-        R3SurfelObject *object = (node) ? node->Object(TRUE) : NULL;
-        R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
-
-        // Read block
-        scene->Tree()->Database()->ReadBlock(block);
-
-        // Render block
-        for (int j = 0; j < block->NSurfels(); j++) {
-          const R3Surfel *surfel = block->Surfel(j);
-
-          // Get image position
-          R2Point image_position = ImagePosition(block->SurfelPosition(j));
-          int ix = (int) (image_position.X() + 0.5);
-          int iy = (int) (image_position.Y() + 0.5);
-
-          // Fill pixel at image index
-          if (color_image) color_image->SetPixelRGB(ix, iy, block->SurfelColor(j));
-          if (depth_image) depth_image->SetGridValue(ix, iy, (block->SurfelPosition(j) - Viewpoint()).Dot(Towards()));
-          if (xnormal_image) xnormal_image->SetGridValue(ix, iy, surfel->NX());
-          if (ynormal_image) ynormal_image->SetGridValue(ix, iy, surfel->NY());
-          if (znormal_image) znormal_image->SetGridValue(ix, iy, surfel->NZ());
-          if (block_image) block_image->SetGridValue(ix, iy, block->DatabaseIndex());
-          if (node_image && node) node_image->SetGridValue(ix, iy, node->TreeIndex());
-          if (object_image && object) object_image->SetGridValue(ix, iy, object->SceneIndex());
-          if (label_image && label) label_image->SetGridValue(ix, iy, label->SceneIndex());
-        }
-
-        // Release block
-        scene->Tree()->Database()->ReleaseBlock(block);
-      }
-    }
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+void R3SurfelImage::
+SetChannel(int channel_index, const R2Grid& channel)
+{
+  // Insert channels up to channel index
+  for (int i = channels.NEntries(); i <= channel_index; i++) {
+    channels.Insert(NULL);
+  }
+
+  // Delete previous channel
+  if (channels[channel_index]) delete channels[channel_index];
+  
+  // Copy image into channel
+  channels[channel_index] = new R2Grid(channel);
+}
+
+
+  
 void R3SurfelImage::
 SetScan(R3SurfelScan *scan) 
 {
@@ -324,6 +254,100 @@ SetData(void *data)
 
 
 ////////////////////////////////////////////////////////////////////////
+// COORDINATE TRANSFORMATION FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3Point R3SurfelImage::
+TransformFromWorldToCamera(const R3Point& world_position) const
+{
+  // Transform 3D point from world into camera coordinate system
+  return Pose().InverseMatrix() * world_position;
+}
+
+  
+
+R2Point R3SurfelImage::
+TransformFromWorldToImage(const R3Point& world_position) const
+{
+  // Transform into camera coordinates
+  R3Point camera_position = TransformFromWorldToCamera(world_position);
+  if (RNIsPositiveOrZero(camera_position.Z())) return R2unknown_point;
+
+  // Transform into image coordinates
+  return TransformFromCameraToImage(camera_position);
+}
+
+
+
+R3Point R3SurfelImage::
+TransformFromCameraToWorld(const R3Point& camera_position) const
+{
+  // Transform 3D point from camera into world coordinate system
+  return Pose().Matrix() * camera_position;
+}
+
+
+
+R2Point R3SurfelImage::
+TransformFromCameraToImage(const R3Point& camera_position) const
+{
+  // Project 3D point in camera coordinates into pixels
+  const R2Point c = ImageCenter();
+  RNCoord x = c.X() + xfocal * camera_position.X() / -camera_position.Z();
+  RNCoord y = c.Y() + yfocal * camera_position.Y() / -camera_position.Z();
+  return R2Point(x, y);
+}
+
+
+
+R3Point R3SurfelImage::
+TransformFromImageToWorld(const R2Point& image_position) const
+{
+  // Transform from pixels into world coordinate system
+  R3Point camera_position = TransformFromImageToCamera(image_position);
+  return TransformFromCameraToWorld(camera_position);
+}
+
+
+
+R3Point R3SurfelImage::
+TransformFromImageToCamera(const R2Point& image_position, RNLength depth) const
+{
+  // Get depth
+  if (depth < 0) {
+    if (channels.NEntries() <= R3_SURFEL_DEPTH_CHANNEL) return R3unknown_point;
+    if (!channels[R3_SURFEL_DEPTH_CHANNEL]) return R3unknown_point;
+    int ix = image_position.X() + 0.5;
+    int iy = image_position.Y() + 0.5;
+    depth = channels[R3_SURFEL_DEPTH_CHANNEL]->GridValue(ix, iy);
+  }
+
+  // Get camera intrinsics
+  if ((xfocal <= 0) || (yfocal <= 0)) return R3unknown_point;
+  const R2Point c = ImageCenter();
+
+  // Backproject from pixels into camera coordinate system
+  RNCoord x = (image_position.X() - c.X()) * depth / xfocal;
+  RNCoord y = (image_position.Y() - c.Y()) * depth / yfocal;
+  return R3Point(x, y, -depth);
+}
+
+
+
+RNBoolean R3SurfelImage::
+ContainsImagePosition(const R2Point& image_position) const
+{
+  // Check if within bounds
+  if (image_position.X() < -0.49) return FALSE;
+  if (image_position.Y() < -0.49) return FALSE;
+  if (image_position.X() >= ImageWidth() - 0.51) return FALSE;
+  if (image_position.Y() >= ImageHeight() - 0.51) return FALSE;
+  return TRUE;
+}
+
+  
+
+////////////////////////////////////////////////////////////////////////
 // DISPLAY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -345,6 +369,18 @@ Print(FILE *fp, const char *prefix, const char *suffix) const
 void R3SurfelImage::
 Draw(RNFlags flags) const
 {
+#if 1
+  // Draw towards and up
+  glBegin(GL_LINES);
+  const R3Point& viewpoint = Viewpoint();
+  const R3Vector towards = Towards();
+  const R3Vector up = Up();
+  R3LoadPoint(viewpoint);
+  R3LoadPoint(viewpoint + towards);
+  R3LoadPoint(viewpoint);
+  R3LoadPoint(viewpoint + 0.5 * up);
+  glEnd();
+#else
   // Draw camera
   RNScalar scale = 1.0;
   R3Point org = Viewpoint() + Towards() * scale;
@@ -366,6 +402,97 @@ Draw(RNFlags flags) const
   R3LoadPoint(Viewpoint());
   R3LoadPoint(ul);
   R3EndLine();
+#endif
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// RENDERING FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3SurfelImage::
+RenderImage(R2Image *color_image, R2Grid *depth_image,
+  R2Grid *xnormal_image, R2Grid *ynormal_image, R2Grid *znormal_image,
+  R2Grid *label_image, R2Grid *object_image,
+  R2Grid *node_image, R2Grid *block_image) const
+{
+  // Only for scans now
+  R3SurfelScan *scan = Scan();
+  if (!scan) return 0;
+  R3SurfelNode *node = scan->Node();
+  if (!node) return 0;
+  
+  // Initialize images
+  R2Grid tmp_image(ImageWidth(), ImageHeight());
+  tmp_image.Clear(R2_GRID_UNKNOWN_VALUE);
+  if (color_image) *color_image = R2Image(ImageWidth(), ImageHeight());
+  if (depth_image) *depth_image = tmp_image;
+  if (xnormal_image) *xnormal_image = tmp_image;
+  if (ynormal_image) *ynormal_image = tmp_image;
+  if (znormal_image) *znormal_image = tmp_image;
+  if (label_image) *label_image = tmp_image;
+  if (object_image) *object_image = tmp_image;
+  if (node_image) *node_image = tmp_image;
+  if (block_image) *block_image = tmp_image;
+
+  // Check stuff
+  if (!scene || !scene->Tree()) return 0;
+
+  // Visit leaf nodes
+  RNArray<const R3SurfelNode *> stack;
+  stack.Insert(node);
+  while (!stack.IsEmpty()) {
+    const R3SurfelNode *decendent = stack.Tail();
+    stack.RemoveTail();
+    if (decendent->NParts() > 0) {
+      // Visit decendent nodes
+      for (int i = 0; i < decendent->NParts(); i++) {
+        R3SurfelNode *part = decendent->Part(i);
+        stack.Insert(part);
+      }
+    }
+    else {
+      // Render all blocks of leaf node
+      for (int i = 0; i < decendent->NBlocks(); i++) {
+        R3SurfelBlock *block = decendent->Block(i);
+        R3SurfelNode *node = (block) ? block->Node() : NULL;
+        R3SurfelObject *object = (node) ? node->Object(TRUE) : NULL;
+        R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+
+        // Read block
+        scene->Tree()->Database()->ReadBlock(block);
+
+        // Render block
+        for (int j = 0; j < block->NSurfels(); j++) {
+          const R3Surfel *surfel = block->Surfel(j);
+
+          // Get image position
+          R2Point image_position = TransformFromWorldToImage(block->SurfelPosition(j));
+          if (!ContainsImagePosition(image_position)) continue;
+          int ix = (int) (image_position.X() + 0.5);
+          int iy = (int) (image_position.Y() + 0.5);
+
+          // Fill pixel at image index
+          if (color_image) color_image->SetPixelRGB(ix, iy, block->SurfelColor(j));
+          if (depth_image) depth_image->SetGridValue(ix, iy, (block->SurfelPosition(j) - Viewpoint()).Dot(Towards()));
+          if (xnormal_image) xnormal_image->SetGridValue(ix, iy, surfel->NX());
+          if (ynormal_image) ynormal_image->SetGridValue(ix, iy, surfel->NY());
+          if (znormal_image) znormal_image->SetGridValue(ix, iy, surfel->NZ());
+          if (block_image) block_image->SetGridValue(ix, iy, block->DatabaseIndex());
+          if (node_image && node) node_image->SetGridValue(ix, iy, node->TreeIndex());
+          if (object_image && object) object_image->SetGridValue(ix, iy, object->SceneIndex());
+          if (label_image && label) label_image->SetGridValue(ix, iy, label->SceneIndex());
+        }
+
+        // Release block
+        scene->Tree()->Database()->ReleaseBlock(block);
+      }
+    }
+  }
+
+  // Return success
+  return 1;
 }
 
 

@@ -150,16 +150,6 @@ public:
   virtual void Print(FILE *fp = NULL, const char *prefix = NULL, const char *suffix = NULL) const;
 
 
-  ////////////////////////////////////////////////////////////////////////
-  // INTERNAL STUFF BELOW HERE
-  ////////////////////////////////////////////////////////////////////////
-
-  // For backward compatibility
-  int RenderImage(R2Image *color_image = NULL, R2Grid *depth_image = NULL,
-    R2Grid *xnormal_image = NULL, R2Grid *ynormal_image = NULL, R2Grid *znormal_image = NULL,
-    R2Grid *label_image = NULL, R2Grid *object_image = NULL,
-    R2Grid *node_image = NULL, R2Grid *block_image = NULL) const;
-
 protected:
   // Internal data
   friend class R3SurfelScene;
