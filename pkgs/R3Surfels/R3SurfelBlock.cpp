@@ -1194,6 +1194,7 @@ Draw(RNFlags flags) const
   if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
     // Draw discs
     const int nsides = 6;
+    glBegin(GL_TRIANGLES);
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
       R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
@@ -1205,17 +1206,20 @@ Draw(RNFlags flags) const
       if (r2 <= 0) r2 = r1;
       if (c) glColor3ubv(surfel.ColorPtr());
       if (n) R3LoadNormal(normal);
-      glBegin(GL_TRIANGLE_FAN);
-      glVertex3fv(surfel.PositionPtr());
+      R3Point p[nsides];
       for (int j = 0; j < nsides; j++) {
         double angle = RN_TWO_PI*j/nsides;
-        R3Point p(surfel.PX(), surfel.PY(), surfel.PZ());
-        p += cos(angle) * r1 * tangent1;
-        p += sin(angle) * r2 * tangent2;
-        R3LoadPoint(p);
+        p[j].Reset(surfel.PX(), surfel.PY(), surfel.PZ());
+        p[j] += cos(angle) * r1 * tangent1;
+        p[j] += sin(angle) * r2 * tangent2;
       }
-      glEnd();        
+      for (int j = 0; j < nsides; j++) {
+        glVertex3fv(surfel.PositionPtr());
+        R3LoadPoint(p[j]);
+        R3LoadPoint(p[(j+1)%nsides]);
+      }
     }
+    glEnd();        
   }
   else {
     // Draw points
