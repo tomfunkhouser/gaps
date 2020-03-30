@@ -320,7 +320,8 @@ Redraw(void)
   LoadViewingExtent(this);
 
   // Set draw modes
-  glDisable(GL_LIGHTING);
+  if (shape_draw_flags == 0) glDisable(GL_LIGHTING);
+  else glEnable(GL_LIGHTING);
   glPointSize(surfel_size);
   glLineWidth(1);
   if (backfacing_visibility) glDisable(GL_CULL_FACE);
@@ -1007,8 +1008,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case 'D':
     case 'd':
-      if (shape_draw_flags) shape_draw_flags = R3_SURFEL_DISC_DRAW_FLAG;
-      else shape_draw_flags = 0;
+      if (shape_draw_flags != 0) shape_draw_flags = 0;
+      else shape_draw_flags = R3_SURFEL_DISC_DRAW_FLAG | R3_SURFEL_NORMAL_DRAW_FLAG;
       break;
       
     case 'F':
@@ -1220,6 +1221,10 @@ Initialize(void)
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
   glEnable(GL_LIGHT1);
   glEnable(GL_NORMALIZE);
+
+  // Initialize color settings
+  glEnable(GL_COLOR_MATERIAL);
+  glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
   // Initialize graphics modes
   glEnable(GL_DEPTH_TEST);
