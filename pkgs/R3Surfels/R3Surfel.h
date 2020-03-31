@@ -149,7 +149,7 @@ private:
   RNUChar8 flags;
 
   // Friend database so that it can swap endian when reading
-  friend R3SurfelDatabase;
+  friend class R3SurfelDatabase;
 };
 
 
