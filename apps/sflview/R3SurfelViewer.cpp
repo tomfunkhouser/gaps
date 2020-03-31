@@ -949,7 +949,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     last_mouse_down_time.Read();
 
     // Set center point on left double-click 
-    if ((button == 0) && double_click) {
+    if ((button == 0) && !drag) {
       R3Point pick_position;
       R3SurfelNode *node = PickNode(x, y, &pick_position);
       if (node) SetCenterPoint(pick_position);
@@ -1680,8 +1680,6 @@ RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy)
 
 
 
-#if 1
-
 R3SurfelNode *R3SurfelViewer::
 PickNode(int x, int y, R3Point *picked_position, 
   R3SurfelBlock **picked_block, const R3Surfel **picked_surfel,
@@ -1855,185 +1853,6 @@ PickNode(int x, int y, R3Point *picked_position,
   // Return picked node
   return picked_node;
 }
-
-#else
-
-R3SurfelNode *R3SurfelViewer::
-PickNode(int x, int y, R3Point *picked_position, 
-  R3SurfelBlock **picked_block, const R3Surfel **picked_surfel,
-  RNBoolean exclude_nonobjects) 
-{
-  // Initialize result
-  if (picked_position) *picked_position = R3zero_point;
-  if (picked_block) picked_block = NULL;
-  if (picked_surfel) picked_surfel = NULL;
-
-  // Check cursor position
-  R2Point cursor_position(x,y);
-  if (!R2Contains(viewer.Viewport().BBox(), cursor_position)) {
-    return NULL;
-  }
-
-  // Allocate select buffer
-  const int SELECT_BUFFER_SIZE = 1024;
-  GLuint select_buffer[SELECT_BUFFER_SIZE];
-  GLint select_buffer_hits;
-
-  // Initialize select buffer
-  glSelectBuffer(SELECT_BUFFER_SIZE, select_buffer);
-  glRenderMode(GL_SELECT);
-  glInitNames();
-  glPushName(0);
-
-  // Draw surfels with pick names into selection buffer
-  GLint viewport[4];
-  glViewport(0, 0, Viewport().Width(), Viewport().Height());
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPickMatrix((GLdouble) x, (GLdouble) y, 16, 16, viewport);
-  viewer.Camera().Load(TRUE);
-  glMatrixMode(GL_MODELVIEW);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  for (int i = 0; i < resident_nodes.NNodes(); i++) {
-    R3SurfelNode *node = resident_nodes.Node(i);
-    glLoadName(i + 1);
-    for (int j = 0; j < node->NBlocks(); j++) {
-      R3SurfelBlock *block = node->Block(j);
-      glPushMatrix();
-      const R3Point& origin = block->PositionOrigin();
-      glTranslated(origin[0], origin[1], origin[2]);
-      glBegin(GL_POINTS);
-      for (int k = 0; k < block->NSurfels(); k++) {
-        const R3Surfel *surfel = block->Surfel(k);
-        if (!aerial_visibility && surfel->IsAerial()) continue;
-        if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-        glVertex3fv(surfel->PositionPtr());
-      }
-      glEnd();
-      glPopMatrix();
-    }
-  }
-  glFlush();
-  select_buffer_hits = glRenderMode(GL_RENDER);
-
-  // Process select buffer to find front-most hit
-  GLuint hit = 0;
-  GLuint hit_z = 0xFFFFFFFF;
-  GLuint *bufp = select_buffer;
-  GLuint numnames, z1, z2;
-  for (int i = 0; i < select_buffer_hits; i++) {
-    numnames = *bufp++;
-    z1 = *bufp++;
-    z2 = *bufp++;
-    while (numnames--) {
-      if (z1 < hit_z) {
-        hit = *bufp;
-        hit_z = z1/2 + z2/2;
-      }
-      bufp++;
-    }
-  }
-
-  // Check if hit anything
-  if (hit <= 0) return NULL;
-
-  // Find hit node
-  hit--; // subtract the one added to avoid zero
-  if (hit < 0) return NULL;
-  if (hit >= (GLuint) resident_nodes.NNodes()) return NULL;
-  R3SurfelNode *hit_node = resident_nodes.Node(hit);
-
-  // Find node part of an object
-  R3SurfelNode *picked_node = hit_node;
-  if (exclude_nonobjects) {
-    // Find node associated with object
-    picked_node = NULL;
-
-    // Check if hit node is part of an object
-    if (hit_node->Object()) {
-      picked_node = hit_node;
-    }
-
-    // Check if hit node has ancestor that is part of an object
-    if (picked_node == NULL) {
-      R3SurfelNode *ancestor = hit_node->Parent();
-      while (ancestor) {
-        if (ancestor->Object()) { picked_node = ancestor; break; }
-        ancestor = ancestor->Parent();
-      }
-    }
-    
-    // Check if hit node has descendent that is part of an object
-    if (picked_node == NULL) {
-      R3Ray ray = viewer.WorldRay(x, y);
-      RNScalar t, picked_t = FLT_MAX;
-      RNArray<R3SurfelNode *> stack;
-      stack.Insert(hit_node);
-      while (!stack.IsEmpty()) {
-        R3SurfelNode *node = stack.Tail();
-        stack.RemoveTail();
-        for (int i = 0; i < node->NParts(); i++) {
-          stack.Insert(node->Part(i));
-        }
-        if (node->Object()) {
-          if (R3Intersects(ray, node->BBox(), NULL, NULL, &t)) {
-            if (t < picked_t) {
-              picked_node = node;
-              picked_t = t;
-            }
-          }
-        }
-      }
-    }
-  }
-    
-  // Find hit position
-  GLdouble p[3];
-  GLdouble modelview_matrix[16];
-  GLdouble projection_matrix[16];
-  glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
-  glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
-  GLdouble z = (GLdouble) hit_z / (GLdouble) 0xFFFFFFFF;
-  gluUnProject(x, y, z, modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
-  if (picked_position) picked_position->Reset(p[0], p[1], p[2]);
-
-  // Find hit surfel
-  if (picked_block || picked_surfel) {
-    // Create pointset in vicinity of picked position
-    R3Point position(p[0], p[1], p[2]);
-    R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, 0.1));
-    R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &sphere_constraint);
-    if (pointset) {
-      // Find surfel point closest to picked position
-      R3SurfelPoint *closest_point = NULL;
-      RNLength closest_distance = FLT_MAX;
-      for (int i = 0; i < pointset->NPoints(); i++) {
-        R3SurfelPoint *point = pointset->Point(i);
-        RNLength distance = R3SquaredDistance(point->Position(), position);
-        if (distance < closest_distance) {
-          closest_distance = distance;
-          closest_point = point;
-        }
-      }
-
-      // Return closest point
-      if (closest_point) {
-        if (picked_position) *picked_position = closest_point->Position();
-        if (picked_block) *picked_block = closest_point->Block();
-        if (picked_surfel) *picked_surfel = closest_point->Surfel();
-      }
-
-      // Delete point set
-      delete pointset;
-    }
-  }
-
-  // Return picked node
-  return picked_node;
-}
-
-#endif
 
 
 
