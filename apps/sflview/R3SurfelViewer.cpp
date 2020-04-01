@@ -1272,7 +1272,7 @@ JumpToNextImageViewpoint(int delta)
   R3SurfelScan *scan = image->Scan();
   R3SurfelNode *node = (scan) ? scan->Node() : NULL;
   if (!node) {
-    SetCenterPoint(scan->Viewpoint() + 2.0 * scan->Towards());
+    SetCenterPoint(image->Viewpoint() + 2.0 * image->Towards());
   }
   else {
     EmptyWorkingSet();
