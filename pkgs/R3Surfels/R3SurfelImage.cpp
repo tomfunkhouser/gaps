@@ -92,6 +92,29 @@ R3SurfelImage::
 
 
 ////////////////////////////////////////////////////////////////////////
+// PROPERTY RETRIEVAL FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R4Matrix R3SurfelImage::
+ProjectionMatrix(RNScalar neardist, RNScalar fardist) const
+{
+  // Return projection transformation from camera coordinates to normalized image coordinates
+  RNScalar fx = XFocal();
+  RNScalar fy = YFocal();
+  RNScalar cx = ImageCenter().X();
+  RNScalar cy = ImageCenter().Y();
+  RNScalar W = ImageWidth();
+  RNScalar H = ImageHeight();
+  return R4Matrix(
+    2*fx/W, 0, -2*(cx/W)+1, 0,
+    0, 2*fy/H, -2*(cy/H)+1, 0,
+    0, 0, -(fardist + neardist) / (fardist - neardist),  -2.0 * neardist * fardist / (fardist - neardist),
+    0, 0, -1, 0 );
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -275,7 +298,7 @@ R3Point R3SurfelImage::
 TransformFromWorldToCamera(const R3Point& world_position) const
 {
   // Transform 3D point from world into camera coordinate system
-  return Pose().InverseMatrix() * world_position;
+  return Extrinsics() * world_position;
 }
 
   
@@ -297,7 +320,7 @@ R3Point R3SurfelImage::
 TransformFromCameraToWorld(const R3Point& camera_position) const
 {
   // Transform 3D point from camera into world coordinate system
-  return Pose().Matrix() * camera_position;
+  return CameraToWorld() * camera_position;
 }
 
 

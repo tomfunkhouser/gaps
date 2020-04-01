@@ -799,6 +799,43 @@ DrawFitSupportPlane(R3SurfelViewer *viewer)
 
 
 ////////////////////////////////////////////////////////////////////////
+// VISIBIILITY STUFF
+////////////////////////////////////////////////////////////////////////
+
+void
+DrawVisiblePointSet(R3SurfelViewer *viewer)
+{
+  // Get convenient variables
+  R3SurfelScene *scene = viewer->Scene();
+  R3SurfelImage *selected_image = viewer->SelectedImage();
+
+  // Create visible pointset
+  static R3SurfelPointSet *segment = NULL;
+  static R3SurfelImage *last_selected_image = NULL;
+  if (selected_image != last_selected_image) {
+    last_selected_image = selected_image;
+    if (segment) { delete segment; segment = NULL; }
+    if (selected_image) {
+      R3SurfelViewConstraint constraint(*selected_image);
+      segment = CreatePointSet(scene, NULL, &constraint);
+    }
+  }
+
+  // Draw segment
+  if (segment) {
+    glDisable(GL_LIGHTING);
+    glColor3d(0, 1, 1);
+    glDisable(GL_DEPTH_TEST);
+    glPointSize(5);
+    segment->Draw(0);
+    glPointSize(1);
+    glEnable(GL_DEPTH_TEST);
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // SEGMENTATION STUFF
 ////////////////////////////////////////////////////////////////////////
 
@@ -1296,8 +1333,9 @@ DebugRedraw(R3SurfelViewer *viewer)
 {
   int status = 0;
   if (debug1) DrawPointSet(viewer);
-  if (debug2) DrawAbovePointSet(viewer);
-  if (debug3) DrawGrid(viewer);
+  if (debug2) DrawVisiblePointSet(viewer);
+  // if (debug2) DrawAbovePointSet(viewer);
+  // if (debug3) DrawGrid(viewer);
   if (debug9) CreateObject(viewer);
   // if (debug3) DrawConnectedPointSet(viewer);
   // if (debug5) DrawAlign(viewer);

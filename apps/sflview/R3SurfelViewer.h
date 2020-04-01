@@ -150,6 +150,9 @@ public:
 // INTERNAL STUFF BELOW HERE
 ////////////////////////////////////////////////////////////////////////
 
+  // Selection properties
+  R3SurfelImage *SelectedImage(void) const;
+  
   // Pick utility functions
   R3SurfelNode *PickNode(int xcursor, int ycursor, 
     R3Point *hit_position = NULL, R3SurfelBlock **block = NULL, const R3Surfel **surfel = NULL,
@@ -985,6 +988,17 @@ SetFocusRadius(RNScalar focus_radius)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
+}
+
+
+
+inline R3SurfelImage *R3SurfelViewer::
+SelectedImage(void) const
+{
+  // Return currently selected image
+  if (current_image_index < 0) return NULL;
+  if (current_image_index >= Scene()->NImages()) return NULL;
+  return Scene()->Image(current_image_index);
 }
 
 

@@ -704,10 +704,25 @@ Check(const R3Point& point) const
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelViewConstraint::
+R3SurfelViewConstraint(
+  const R3SurfelImage& image,
+  RNLength neardist, RNLength fardist, 
+  const R2Grid *image_mask)
+  : R3SurfelViewConstraint(
+      image.Viewpoint(), image.Towards(), image.Up(),
+      image.ImageWidth(), image.ImageHeight(),
+      image.XFocal(), image.YFocal(),
+      image.ImageCenter().X(), image.ImageCenter().Y(),
+      neardist, fardist, image_mask)
+{
+}
+
+
+
+R3SurfelViewConstraint::
 R3SurfelViewConstraint(const R3Point& world_viewpoint,
   const R3Vector& world_towards, const R3Vector& world_up,
-  int w, int h,
-  RNScalar fx, RNScalar fy, RNScalar cx, RNScalar cy,
+  int w, int h, RNScalar fx, RNScalar fy, RNScalar cx, RNScalar cy,
   RNLength neardist, RNLength fardist, 
   const R2Grid *image_mask)
   : world_to_camera(),

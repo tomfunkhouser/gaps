@@ -61,7 +61,11 @@ public:
   RNScalar depth;
   R3Point position;
   R3Vector normal;
+  R3Vector tangent;
   RNLength radius;
+  RNLength radius2;
+  RNScalar timestamp;
+  RNScalar value;
   RNArea area;
   RNRgb color;
   unsigned int boundary;

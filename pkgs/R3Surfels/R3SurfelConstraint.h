@@ -313,6 +313,9 @@ private:
 class R3SurfelViewConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions
+  R3SurfelViewConstraint(const R3SurfelImage& image,
+    RNLength near_distance = RN_EPSILON, RNLength far_distance = RN_INFINITY, 
+    const R2Grid *image_mask = NULL);
   R3SurfelViewConstraint(const R3Point& world_viewpoint,
     const R3Vector& world_towards, const R3Vector& world_up,
     int image_width, int image_height, // in pixels

@@ -1266,7 +1266,7 @@ JumpToNextImageViewpoint(int delta)
   R3SurfelImage *image = scene->Image(current_image_index);
   R3Camera camera(image->Viewpoint(), image->Towards(), image->Up(),
     image->XFOV(), image->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
-  viewer.SetCamera(camera);
+  // viewer.SetCamera(camera);
 
   // Update working set
   R3SurfelScan *scan = image->Scan();

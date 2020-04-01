@@ -46,6 +46,8 @@ public:
   RNLength YFocal(void) const;
   RNAngle XFOV(void) const;
   RNAngle YFOV(void) const;
+  R3Matrix Intrinsics(void) const;
+  R4Matrix ProjectionMatrix(RNScalar neardist, RNScalar fardist) const;
   
   // Camera extrinsics functions
   const R3CoordSystem& Pose(void) const;
@@ -53,6 +55,8 @@ public:
   R3Vector Towards(void) const;
   const R3Vector& Up(void) const;
   const R3Vector& Right(void) const;
+  R4Matrix CameraToWorld(void) const;
+  R4Matrix Extrinsics(void) const;
 
   // Timestamp property functions
   RNScalar Timestamp(void) const;
@@ -271,11 +275,40 @@ ImageCenter(void) const
 
 
 
+inline R3Matrix R3SurfelImage::
+Intrinsics(void) const
+{
+  // Return intrinsics matrix
+  return R3Matrix(xfocal, 0, image_center.X(),
+                  0, yfocal, image_center.Y(),
+                  0, 0, 1);
+}
+
+
+
 inline const R3CoordSystem& R3SurfelImage::
 Pose(void) const
 {
   // Return pose 
   return pose;
+}
+
+
+
+inline R4Matrix R3SurfelImage::
+CameraToWorld(void) const
+{
+  // Return matrix going from camera coordinates to world coordinates
+  return pose.Matrix();
+}
+
+
+
+inline R4Matrix R3SurfelImage::
+Extrinsics(void) const
+{
+  // Return matrix going from world coordinates to camera coordinates
+  return pose.InverseMatrix();
 }
 
 
