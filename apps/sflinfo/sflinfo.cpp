@@ -533,8 +533,9 @@ PrintInfo(R3SurfelScene *scene)
         printf("    Surfel %d\n", j);
         printf("      Position = %f %f %f\n", surfel->X(), surfel->Y(), surfel->Z());
         printf("      Normal = %f %f %f\n", surfel->NX(), surfel->NY(), surfel->NZ());
+        printf("      Tangent = %f %f %f\n", surfel->TX(), surfel->TY(), surfel->TZ());
         printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
-        printf("      Radius = %f\n", surfel->Radius());
+        printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
         printf("      Timestamp = %.6f\n", surfel->Timestamp());
         printf("      Value = %f\n", surfel->Value());
         printf("      Flags = %d\n", surfel->Flags());
