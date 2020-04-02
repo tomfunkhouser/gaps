@@ -7,7 +7,7 @@
 
 /* Dependency include files */
 
-#include "R3Shapes/R3Shapes.h"
+#include "R3Graphics/R3Graphics.h"
 
 
 
@@ -97,6 +97,7 @@ class R3SurfelScene;
 /* Utility include files */
 
 #include "R3SurfelUtils.h"
+#include "R3SurfelViewer.h"
 
 
 

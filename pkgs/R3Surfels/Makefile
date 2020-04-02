@@ -37,7 +37,8 @@ CCSRCS=$(NAME).cpp \
   R3SurfelLabelRelationship.cpp \
   R3SurfelLabelAssignment.cpp \
   R3SurfelScene.cpp \
-  R3SurfelUtils.cpp
+  R3SurfelUtils.cpp \
+  R3SurfelViewer.cpp
 
 
 #

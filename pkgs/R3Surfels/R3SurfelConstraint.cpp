@@ -708,13 +708,41 @@ R3SurfelViewConstraint(
   const R3SurfelImage& image,
   RNLength neardist, RNLength fardist, 
   const R2Grid *image_mask)
-  : R3SurfelViewConstraint(
-      image.Viewpoint(), image.Towards(), image.Up(),
-      image.ImageWidth(), image.ImageHeight(),
-      image.XFocal(), image.YFocal(),
-      image.ImageCenter().X(), image.ImageCenter().Y(),
-      neardist, fardist, image_mask)
+  : world_to_camera(image.Extrinsics()),
+    w(image.ImageWidth()), h(image.ImageHeight()),
+    fx(image.XFocal()), fy(image.YFocal()),
+    cx(image.ImageCenter().X()), cy(image.ImageCenter().Y()),
+    neardist(neardist), fardist(fardist),
+    image_mask(image_mask)
 {
+  // Get convenient variables
+  R3Point world_viewpoint = image.Viewpoint();
+  R3Vector world_towards = image.Towards();
+  R3Vector world_up = image.Up();
+  R3Vector world_right = image.Right();
+  RNScalar xfov = image.XFOV();
+  RNScalar yfov = image.YFOV();
+
+  // Compute default image center
+  if (this->cx <= 0) this->cx = 0.5*w;
+  if (this->cy <= 0) this->cy = 0.5*h;
+
+  // Compute default near and far distances
+  if (this->neardist <= 0) this->neardist = RN_EPSILON;
+  if (this->fardist <= 0) this->fardist = RN_INFINITY;
+
+  // Compute frustum halfspaces
+  R3Vector world_normal;
+  world_normal = world_right;  world_normal.Rotate(world_up, xfov);
+  frustum[RN_LO][RN_X] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = -world_right;  world_normal.Rotate(world_up, -xfov);
+  frustum[RN_HI][RN_X] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = world_up;  world_normal.Rotate(world_right, -yfov);
+  frustum[RN_LO][RN_Y] = R3Halfspace(world_viewpoint, world_normal);
+  world_normal = -world_up;  world_normal.Rotate(world_right, yfov);
+  frustum[RN_HI][RN_Y] = R3Halfspace(world_viewpoint, world_normal);
+  frustum[RN_LO][RN_Z] = R3Halfspace(world_viewpoint + neardist*world_towards, world_towards);
+  frustum[RN_HI][RN_Z] = R3Halfspace(world_viewpoint + fardist*world_towards, -world_towards);
 }
 
 
@@ -744,7 +772,7 @@ R3SurfelViewConstraint(const R3Point& world_viewpoint,
   R3CoordSystem cs(world_viewpoint, R3Triad(world_towards, world_up));
   world_to_camera = cs.InverseMatrix();
   
-  // Compute frustum halfspaces (not implemented yet)
+  // Compute frustum halfspaces
   R3Vector world_normal;
   RNScalar xfov = atan(0.5*w/fx);
   RNScalar yfov = atan(0.5*h/fy);
