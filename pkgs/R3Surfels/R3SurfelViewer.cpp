@@ -1585,7 +1585,7 @@ PickNode(int x, int y, R3Point *picked_position,
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Set viewing transformation
-  viewer.Load();
+  viewer.Camera().Load();
 
   // Set viewing extent
   LoadViewingExtent(this);
