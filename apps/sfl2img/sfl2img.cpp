@@ -182,6 +182,7 @@ ReadGrid(const char *directory_name, const char *category_name, const char *fiel
 }
 
 
+
 static int
 WriteGrid(const R2Grid& grid, 
   const char *directory_name, const char *category_name, const char *field_name)
@@ -195,6 +196,7 @@ WriteGrid(const R2Grid& grid,
 }
 
 
+
 static int
 WritePlanarGrid(const R3PlanarGrid& grid, 
   const char *directory_name, const char *category_name, const char *field_name)
@@ -206,6 +208,7 @@ WritePlanarGrid(const R3PlanarGrid& grid,
   // Write grid
   return grid.WriteFile(filename);
 }
+
 
 
 static int

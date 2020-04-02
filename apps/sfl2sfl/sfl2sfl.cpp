@@ -58,7 +58,7 @@ OpenScene(const char *input_scene_name, const char *input_database_name)
     printf("  # Features = %d\n", scene->NFeatures());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
@@ -85,7 +85,7 @@ CloseScene(R3SurfelScene *scene)
     printf("  # Features = %d\n", scene->NFeatures());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
@@ -131,7 +131,7 @@ WriteScene(R3SurfelScene *scene, const char *output_scene_name, const char *outp
     printf("  # Features = %d\n", scene->NFeatures());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
     printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %d\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
     fflush(stdout);
   }
 
