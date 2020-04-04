@@ -740,7 +740,8 @@ WriteHeader(FILE *fp, int swap_endian)
   if (!RNWriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
   if (!RNWriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
   if (!RNWriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
-  if (!RNWriteChar(fp, buffer, 1008, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
+  if (!RNWriteChar(fp, buffer, 1004, swap_endian)) return 0;
   
   // Return success
   return 1;
@@ -825,8 +826,11 @@ OpenFile(const char *filename, const char *rwaccess)
     // Read timestamp range
     if (!RNReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
 
+    // Read max identifier
+    if (!RNReadUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
+
     // Read extra at end of header
-    if (!RNReadChar(fp, buffer, 1008, swap_endian)) return 0;
+    if (!RNReadChar(fp, buffer, 1004, swap_endian)) return 0;
 
     // Read blocks
     RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
@@ -842,7 +846,8 @@ OpenFile(const char *filename, const char *rwaccess)
       if (!RNReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
       if (!RNReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
       if (!RNReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-      if (!RNReadChar(fp, buffer, 40, swap_endian)) return 0;
+      if (!RNReadUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
+      if (!RNReadChar(fp, buffer, 36, swap_endian)) return 0;
       block->flags = block_flags;
       block->SetDirty(FALSE);
       block->database = this;
@@ -892,7 +897,8 @@ SyncFile(void)
     if (!RNWriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
     if (!RNWriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
     if (!RNWriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-    if (!RNWriteChar(fp, buffer, 40, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
+    if (!RNWriteChar(fp, buffer, 36, swap_endian)) return 0;
   }
 
   // Write header again (now that the offset values have been filled in)
