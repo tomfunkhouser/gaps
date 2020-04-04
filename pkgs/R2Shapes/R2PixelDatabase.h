@@ -16,7 +16,7 @@ public:
   // Constructors
   R2PixelDatabase(void);
   R2PixelDatabase(const R2PixelDatabase& database);
-  ~R2PixelDatabase(void);
+  virtual ~R2PixelDatabase(void);
 
   // Property access functions
   const char *Name(void) const;
