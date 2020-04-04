@@ -764,7 +764,7 @@ CreateModel(const RNArray<Point *>& points, RNCoord zmin = RN_UNKNOWN,
   model->pca_transformation = PCAAlignmentTransformation(positions, &(model->origin));
 
   // Remember filename
-  if (name) strncpy(model->name, name, 1024);
+  if (name) strncpy(model->name, name, 1023);
   else model->name[0] = '\0';
 
   // Return model
@@ -940,7 +940,7 @@ CreateObjectModel(R3SurfelObject *object)
 {
   // Create name
   char name[1024];
-  strncpy(name, object->Name(), 1024);
+  strncpy(name, object->Name(), 1023);
 
   // Create sample points
   RNArray<Point *> *points = CreateSamplePoints(object);

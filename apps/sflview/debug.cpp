@@ -37,12 +37,15 @@ int debug9 = 0;
 
 // Colors
 
+#if 0
 static GLfloat colors[24][4] = {
   {1,0,0,1}, {0,1,0,1}, {0,0,1,1}, {1,0,1,1}, {0,1,1,1}, {1,1,0,1}, 
   {1,.3,.7,1}, {1,.7,.3,1}, {.7,1,.3}, {.3,1,.7,1}, {.7,.3,1,1}, {.3,.7,1,1}, 
   {1,.5,.5,1}, {.5,1,.5,1}, {.5,.5,1,1}, {1,.5,1,1}, {.5,1,1,1}, {1,1,.5,1}, 
   {.5,0,0,1}, {0,.5,0,1}, {0,0,.5,1}, {.5,0,.5,1}, {0,.5,.5,1}, {.5,.5,0,1} 
 };
+#endif
+
 
 
 // Parameters
@@ -354,7 +357,7 @@ ReadObjects(R3SurfelViewer *viewer)
 
   // Read file
   double x, y, z;
-  char label_name[1024];
+  char label_name[256];
   while (fscanf(fp, "%s%lf%lf%lf", label_name, &x, &y, &z) == (unsigned int) 4) {
     // Get label
     R3SurfelLabel *label = scene->FindLabelByName(label_name);
@@ -1074,6 +1077,7 @@ CreateDirections(R3SurfelPointGraph *graph)
 
 
 
+#if 0
 static void
 DrawDirections(R3SurfelViewer *viewer)
 {
@@ -1108,9 +1112,11 @@ DrawDirections(R3SurfelViewer *viewer)
     glEnd();
   }
 }
+#endif
 
 
 
+#if 0
 static void
 DrawGrid(R3SurfelViewer *viewer)
 {
@@ -1142,9 +1148,11 @@ DrawGrid(R3SurfelViewer *viewer)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 }
+#endif
 
 
 
+#if 0
 static void
 DrawOverheadImage(R3SurfelViewer *viewer)
 {
@@ -1179,9 +1187,11 @@ DrawOverheadImage(R3SurfelViewer *viewer)
     R2null_texture.Draw();
   }
 }
+#endif
 
 
 
+#if 0
 static void
 DrawPlanarGrids(R3SurfelViewer *viewer)
 {
@@ -1217,9 +1227,11 @@ DrawPlanarGrids(R3SurfelViewer *viewer)
     }
   }
 }
+#endif
 
 
 
+#if 0
 static void
 CreatePlanarObjects(R3SurfelViewer *viewer)
 {
@@ -1264,9 +1276,11 @@ CreatePlanarObjects(R3SurfelViewer *viewer)
     }      
   }
 }
+#endif
 
 
 
+#if 0
 static void
 CreateClusterObjects(R3SurfelViewer *viewer)
 {
@@ -1320,6 +1334,7 @@ CreateClusterObjects(R3SurfelViewer *viewer)
     }      
   }
 }
+#endif
 
 
 
