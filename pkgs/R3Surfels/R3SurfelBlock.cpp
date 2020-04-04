@@ -63,7 +63,9 @@ R3SurfelBlock(int nsurfels)
     opengl_id(0)
 {
   // Allocate surfels
-  this->surfels = new R3Surfel [ nsurfels ];
+  if (nsurfels > 0) {
+    this->surfels = new R3Surfel [ nsurfels ];
+  }
 }
 
 
@@ -88,9 +90,11 @@ R3SurfelBlock(const R3SurfelBlock& block)
     opengl_id(0)
 {
   // Copy surfels
-  surfels = new R3Surfel [ nsurfels ];
-  for (int i = 0; i < nsurfels; i++) {
-    surfels[i] = block.surfels[i];
+  if (nsurfels > 0) {
+    surfels = new R3Surfel [ nsurfels ];
+    for (int i = 0; i < nsurfels; i++) {
+      surfels[i] = block.surfels[i];
+    }
   }
 }
 
@@ -116,22 +120,31 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     opengl_id(0)
 {
   // Copy points
-  surfels = new R3Surfel [ nsurfels ];
-  for (int i = 0; i < set->NPoints(); i++) {
-    const R3SurfelPoint *point = set->Point(i);
-    R3Point position = point->Position() - position_origin.Vector();
-    R3Vector normal = point->Normal();
-    R3Vector tangent = point->Tangent();
-    R3Surfel *surfel = &surfels[i];
-    surfel->SetPosition(position[0], position[1], position[2]);
-    surfel->SetNormal(normal[0], normal[1], normal[2]);
-    surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
-    surfel->SetColor(point->Color());
-    surfel->SetRadius(0, point->Radius(0));
-    surfel->SetRadius(1, point->Radius(1));
-    surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
-    surfel->SetValue(point->Value());
-    surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
+  if (nsurfels > 0) {
+    // Set timestamp range and origin
+    this->timestamp_range = set->TimestampRange();
+    if (!this->timestamp_range.IsEmpty()) {
+      this->timestamp_origin = this->timestamp_range.Mid();
+    }
+
+    // Create surfels
+    surfels = new R3Surfel [ nsurfels ];
+    for (int i = 0; i < set->NPoints(); i++) {
+      const R3SurfelPoint *point = set->Point(i);
+      R3Point position = point->Position() - position_origin.Vector();
+      R3Vector normal = point->Normal();
+      R3Vector tangent = point->Tangent();
+      R3Surfel *surfel = &surfels[i];
+      surfel->SetPosition(position[0], position[1], position[2]);
+      surfel->SetNormal(normal[0], normal[1], normal[2]);
+      surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
+      surfel->SetColor(point->Color());
+      surfel->SetRadius(0, point->Radius(0));
+      surfel->SetRadius(1, point->Radius(1));
+      surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
+      surfel->SetValue(point->Value());
+      surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
+    }
   }
 }
 
@@ -144,7 +157,7 @@ R3SurfelBlock(const R3SurfelPointSet *set,
     nsurfels(set->NPoints()),
     position_origin(position_origin),
     bbox(set->BBox()),
-    timestamp_origin(timestamp_origin),
+    timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
@@ -158,22 +171,31 @@ R3SurfelBlock(const R3SurfelPointSet *set,
     opengl_id(0)
 {
   // Copy surfels
-  surfels = new R3Surfel [ nsurfels ];
-  for (int i = 0; i < set->NPoints(); i++) {
-    const R3SurfelPoint *point = set->Point(i);
-    R3Point position = point->Position() - position_origin.Vector();
-    R3Vector normal = point->Normal();
-    R3Vector tangent = point->Tangent();
-    R3Surfel *surfel = &surfels[i];
-    surfel->SetPosition(position[0], position[1], position[2]);
-    surfel->SetNormal(normal[0], normal[1], normal[2]);
-    surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
-    surfel->SetRadius(0, point->Radius(0));
-    surfel->SetRadius(1, point->Radius(1));
-    surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
-    surfel->SetValue(point->Value());
-    surfel->SetColor(point->Color());
-    surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
+  if (nsurfels > 0) {
+    // Set timestamp range and origin
+    this->timestamp_range = set->TimestampRange();
+    if (!this->timestamp_range.IsEmpty()) {
+      this->timestamp_origin = this->timestamp_range.Mid();
+    }
+
+    // Copy surfels
+    surfels = new R3Surfel [ nsurfels ];
+    for (int i = 0; i < set->NPoints(); i++) {
+      const R3SurfelPoint *point = set->Point(i);
+      R3Point position = point->Position() - position_origin.Vector();
+      R3Vector normal = point->Normal();
+      R3Vector tangent = point->Tangent();
+      R3Surfel *surfel = &surfels[i];
+      surfel->SetPosition(position[0], position[1], position[2]);
+      surfel->SetNormal(normal[0], normal[1], normal[2]);
+      surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
+      surfel->SetRadius(0, point->Radius(0));
+      surfel->SetRadius(1, point->Radius(1));
+      surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
+      surfel->SetValue(point->Value());
+      surfel->SetColor(point->Color());
+      surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
+    }
   }
 }
 
@@ -200,9 +222,11 @@ R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
     opengl_id(0)
 {
   // Copy surfels
-  this->surfels = new R3Surfel [ nsurfels ];
-  for (int i = 0; i < nsurfels; i++) {
-    this->surfels[i] = surfels[i];
+  if (nsurfels > 0) {
+    this->surfels = new R3Surfel [ nsurfels ];
+    for (int i = 0; i < nsurfels; i++) {
+      this->surfels[i] = surfels[i];
+    }
   }
 }
 
@@ -229,9 +253,11 @@ R3SurfelBlock(const RNArray<const R3Surfel *>& array,
     opengl_id(0)
 {
   // Copy surfels
-  surfels = new R3Surfel [ nsurfels ];
-  for (int i = 0; i < nsurfels; i++) {
-    this->surfels[i] = *(array[i]);
+  if (nsurfels > 0) {
+    surfels = new R3Surfel [ nsurfels ];
+    for (int i = 0; i < nsurfels; i++) {
+      this->surfels[i] = *(array[i]);
+    }
   }
 }
 
