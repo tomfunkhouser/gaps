@@ -369,7 +369,7 @@ WriteEntries(FILE *fp, int swap_endian)
 
   // Write entries
   char buffer[128] = { '\0' };
-  std::map<std::string, R2PixelDatabaseEntry, RNMapComparator<std::string>>::iterator it;
+  std::map<std::string, R2PixelDatabaseEntry, RNMapComparator<std::string> >::iterator it;
   for (it = map.m->begin(); it != map.m->end(); ++it) {
     R2PixelDatabaseEntry entry = it->second;
     strncpy(buffer, entry.key, 127);
