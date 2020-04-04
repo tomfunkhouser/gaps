@@ -372,7 +372,7 @@ WriteEntries(FILE *fp, int swap_endian)
   std::map<std::string, R2PixelDatabaseEntry, RNMapComparator<std::string> >::iterator it;
   for (it = map.m->begin(); it != map.m->end(); ++it) {
     R2PixelDatabaseEntry entry = it->second;
-    strncpy(buffer, entry.key, 127);
+    strncpy(buffer, entry.key, 128);
     if (!RNWriteChar(fp, buffer, 128, swap_endian)) return 0;
     if (!RNWriteUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
