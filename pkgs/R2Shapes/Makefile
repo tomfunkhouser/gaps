@@ -13,7 +13,7 @@ NAME=R2Shapes
 CCSRCS=R2Shapes.cpp \
     R2Draw.cpp R2Io.cpp R2Kdtree.cpp \
     R2Dist.cpp R2Cont.cpp R2Isect.cpp R2Parall.cpp R2Perp.cpp R2Relate.cpp R2Align.cpp \
-    R2Grid.cpp \
+    R2Grid.cpp R2PixelDatabase.cpp \
     R2Polyline.cpp R2Arc.cpp R2Curve.cpp \
     R2Polygon.cpp R2Circle.cpp R2Box.cpp R2Solid.cpp \
     R2Shape.cpp \

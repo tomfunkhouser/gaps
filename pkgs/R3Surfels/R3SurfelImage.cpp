@@ -95,6 +95,35 @@ R3SurfelImage::
 // PROPERTY RETRIEVAL FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R2Image R3SurfelImage::
+ColorChannels(void) const
+{
+  // Allocate color image for result
+  R2Image color_image(ImageWidth(), ImageHeight(), 3);
+
+  // Get RGB channels
+  const R2Grid *red_channel = RedChannel();
+  const R2Grid *green_channel = GreenChannel();
+  const R2Grid *blue_channel = BlueChannel();
+  if (red_channel && green_channel && blue_channel) {
+    // Fill in RGB for each pixel
+    for (int iy = 0; iy < ImageHeight(); iy++) {
+      for (int ix = 0; ix < ImageWidth(); ix++) {
+        RNScalar red = red_channel->GridValue(ix, iy);
+        RNScalar green = green_channel->GridValue(ix, iy);
+        RNScalar blue = blue_channel->GridValue(ix, iy);
+        RNRgb color(red, green, blue);
+        color_image.SetPixelRGB(ix, iy, color);
+      }
+    }
+  }
+
+  // Return color image
+  return color_image;
+}
+
+
+  
 R4Matrix R3SurfelImage::
 ProjectionMatrix(RNScalar neardist, RNScalar fardist) const
 {
@@ -114,6 +143,29 @@ ProjectionMatrix(RNScalar neardist, RNScalar fardist) const
 
 
 
+R3Ray R3SurfelImage::
+PixelWorldRay(const R2Point& image_position) const
+{
+  // Get/check intrinsics matrix
+  if (RNIsZero(xfocal)) return R3null_ray;
+  if (RNIsZero(yfocal)) return R3null_ray;
+
+  // Get point at depth 1.0 along ray in camera coordinates
+  R3Point camera_position;
+  camera_position[0] = (image_position[0] - image_center.X()) / xfocal;
+  camera_position[1] = (image_position[1] - image_center.Y()) / yfocal;
+  camera_position[2] = -1.0;
+
+  // Create ray and transform into world coordinates
+  R3Ray ray(R3zero_point, camera_position);
+  ray.Transform(R3Affine(CameraToWorld(), 0));
+
+  // Return ray through pixel in world coordinates
+  return ray;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -128,14 +180,103 @@ SetChannel(int channel_index, const R2Grid& channel)
 
   // Delete previous channel
   if (channels[channel_index]) delete channels[channel_index];
+
+  // Update image width and height
+  if (image_width <= 0) image_width = channel.XResolution();
+  if (image_height <= 0) image_height = channel.YResolution();
   
   // Copy image into channel
   channels[channel_index] = new R2Grid(channel);
+
+  // Resample if necessary
+  if ((image_width != channel.XResolution()) || (image_height != channel.YResolution())) {
+    channels[channel_index]->Resample(image_width, image_height);
+  }
 }
 
 
   
-inline void R3SurfelImage::
+void R3SurfelImage::
+SetRedChannel(const R2Grid& channel)
+{
+  // Set red channel
+  SetChannel(R3_SURFEL_RED_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetGreenChannel(const R2Grid& channel)
+{
+  // Set green channel
+  SetChannel(R3_SURFEL_GREEN_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetBlueChannel(const R2Grid& channel)
+{
+  // Set blue channel
+  SetChannel(R3_SURFEL_BLUE_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetDepthChannel(const R2Grid& channel)
+{
+  // Set depth channel
+  SetChannel(R3_SURFEL_DEPTH_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetCategoryChannel(const R2Grid& channel)
+{
+  // Set category channel
+  SetChannel(R3_SURFEL_CATEGORY_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetObjectChannel(const R2Grid& channel)
+{
+  // Set object channel
+  SetChannel(R3_SURFEL_OBJECT_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetColorChannels(const R2Image& color_image)
+{
+  // Initialize channels
+  R2Grid red_channel(color_image.Width(), color_image.Height());
+  R2Grid green_channel(color_image.Width(), color_image.Height());
+  R2Grid blue_channel(color_image.Width(), color_image.Height());
+
+  // Fill channels
+  for (int iy = 0; iy < color_image.Height(); iy++) {
+    for (int ix = 0; ix < color_image.Width(); ix++) {
+      RNRgb rgb = color_image.PixelRGB(ix, iy);
+      red_channel.SetGridValue(ix, iy, rgb.R());
+      green_channel.SetGridValue(ix, iy, rgb.G());
+      blue_channel.SetGridValue(ix, iy, rgb.B());
+    }
+  }
+
+  // Set channels
+  SetRedChannel(red_channel);
+  SetGreenChannel(green_channel);
+  SetBlueChannel(blue_channel);
+}
+
+
+
+void R3SurfelImage::
 RemoveChannel(int channel_index)
 {
   // Check channel index

@@ -17,10 +17,12 @@ extern double max_cluster_diameter;
 extern double max_cluster_primitive_distance;
 extern double max_cluster_normal_angle;
 extern double max_cluster_color_difference;
+extern double max_cluster_timestamp_difference;
 extern double max_pair_centroid_distance;
 extern double max_pair_primitive_distance;
 extern double max_pair_normal_angle;
 extern double max_pair_color_difference;
+extern double max_pair_timestamp_difference;
 extern double min_pair_affinity;
 extern int max_refinement_iterations;  
 extern int max_reassignment_iterations;  
@@ -111,6 +113,7 @@ public:
   int UpdatePoints(const R3Kdtree<Point *> *kdtree);
   int UpdatePrimitive(void);
   int UpdateColor(void);
+  int UpdateTimestamp(void);
   int UpdateArea(void);
   RNScalar Affinity(Point *point) const;
   RNScalar Affinity(Cluster *cluster) const;
@@ -123,6 +126,7 @@ public:
   Primitive primitive;
   RNArea area;
   RNRgb color;
+  RNScalar timestamp;
   RNScalar possible_affinity; 
   RNScalar total_affinity;
   struct Segmentation *segmentation;
@@ -152,7 +156,8 @@ public:
     double max_neighbor_primitive_distance = 0.01,
     double max_neighbor_normal_angle = RN_PI / 4.0,
     double max_neighbor_color_difference = 0,
-    double max_neighbor_distance_factor = 10);
+    double max_neighbor_distance_factor = 10,
+    double max_timestamp_difference = 0);
 public:
   int AssignPoints(void);  
   int CreateClusters(int primitive_type);

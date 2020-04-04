@@ -41,6 +41,9 @@ public:
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
 
+  // Statistics functions
+  long long NSurfels(void) const;
+
   
   //////////////////////////
   //// ACCESS FUNCTIONS ////
@@ -204,6 +207,16 @@ TimestampRange(void) const
   R3SurfelNode *root = RootNode();
   if (!root) return RNnull_interval;
   return root->TimestampRange();
+}
+
+
+
+inline long long R3SurfelTree::
+NSurfels(void) const
+{
+  // Return number of surfels in database
+  if (!database) return 0;
+  return database->NSurfels();
 }
 
 

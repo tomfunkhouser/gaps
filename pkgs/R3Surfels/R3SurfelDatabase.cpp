@@ -465,228 +465,12 @@ WriteFile(const char *filename) const
 // I/O UTILITY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-static void
-swap2(void *values, int count)
-{
-  // Swap endian of 2-byte data type
-  unsigned short *y = (unsigned short *) values;
-  for (int i = 0; i < count; i++) {
-    unsigned short x = y[i];
-    y[i] = (x<<8) | (x>>8);
-  }
-}
-
-
-
-static void
-swap4(void *values, int count)
-{
-  // Swap endian of 4-byte data type
-  unsigned int *y = (unsigned int *) values;
-  for (int i = 0; i < count; i++) {
-    unsigned int x = y[i];
-    y[i] = 
-       (x<<24) | 
-      ((x<<8) & 0x00FF0000) | 
-      ((x>>8) & 0x0000FF00) | 
-       (x>>24);
-  }
-}
-
-
-
-static void
-swap8(void *values, int count)
-{
-  // Swap endian
-  unsigned long long *y = (unsigned long long *) values;
-  for (int i = 0; i < count; i++) {
-    unsigned long long x = y[i];
-    y[i] = 
-       (x<<56) | 
-      ((x<<40) & 0x00FF000000000000ULL) |
-      ((x<<24) & 0x0000FF0000000000ULL) |
-      ((x<<8)  & 0x000000FF00000000ULL) |
-      ((x>>8)  & 0x00000000FF000000ULL) |
-      ((x>>24) & 0x0000000000FF0000ULL) |
-      ((x>>40) & 0x000000000000FF00ULL) |
-       (x>>56);
-  }
-}
-
-
-
-static int 
-ReadChar(FILE *fp, char *ptr, int count, int /* swap_endian */)
-{
-  // Read the values
-  if (fread(ptr, sizeof(char), count, fp) != (size_t) count) {
-    RNFail("Unable to read char from database file\n");
-    return 0;
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-#if 0
-static int 
-ReadShort(FILE *fp, RNInt16 *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(RNInt16), count, fp) != (size_t) count) {
-    RNFail("Unable to read short from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap2(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
-#if 0
-static int 
-ReadUnsignedShort(FILE *fp, RNUInt16 *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(RNUInt16), count, fp) != (size_t) count) {
-    RNFail("Unable to read unsigned short from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap2(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-static int 
-ReadInt(FILE *fp, int *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(int), count, fp) != (size_t) count) {
-    RNFail("Unable to read integer from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int 
-ReadUnsignedInt(FILE *fp, unsigned int *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(unsigned int), count, fp) != (size_t) count) {
-    RNFail("Unable to read unsigned integer from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-#if 0
-static int
-ReadFloat(FILE *fp, float *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(float), count, fp) != (size_t) count) {
-    RNFail("Unable to read float from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
-static int
-ReadDouble(FILE *fp, double *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(double), count, fp) != (size_t) count) {
-    RNFail("Unable to read double from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-ReadLongLong(FILE *fp, long long *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(long long), count, fp) != (size_t) count) {
-    RNFail("Unable to read long long from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-ReadUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endian)
-{
-  // Read the values
-  if (fread(ptr, sizeof(unsigned long long), count, fp) != (size_t) count) {
-    RNFail("Unable to read unsigned long long from database file\n");
-    return 0;
-  }
-
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
 int R3SurfelDatabase::
-ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
+ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   unsigned int major_version, unsigned int minor_version) const
 {
   // Check database version
   if ((major_version == current_major_version) && (minor_version == current_minor_version)) {
-    // Read surfels all at once into struct
     int sofar = 0;
     while (sofar < count) {
       size_t status = fread(ptr, sizeof(R3Surfel), count - sofar, fp);
@@ -695,7 +479,6 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
     }
   }
   else {
-    // Read surfels one by one and element by element
     if (major_version == 3) {
       for (int i = 0; i < count; i++) {
         fread(ptr[i].position, sizeof(float), 3, fp);
@@ -721,201 +504,12 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   // Swap endian
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      swap4(ptr[i].position, 3);
-      swap2(ptr[i].normal, 3);
-      swap2(ptr[i].tangent, 3);
-      swap2(ptr[i].radius, 2);
+      RNSwap4(ptr[i].position, 3);
+      RNSwap2(ptr[i].normal, 3);
+      RNSwap2(ptr[i].tangent, 3);
+      RNSwap2(ptr[i].radius, 2);
     }
   }
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-WriteChar(FILE *fp, char *ptr, int count, int /* swap_endian */)
-{
-  // Write the values
-  if (fwrite(ptr, sizeof(char), count, fp) != (size_t) count) {
-    RNFail("Unable to write integer to database file\n");
-    return 0;
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-#if 0
-static int
-WriteShort(FILE *fp, RNInt16 *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap2(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(RNInt16), count, fp) != (size_t) count) {
-    RNFail("Unable to write short to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap2(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
-#if 0
-static int
-WriteUnsignedShort(FILE *fp, RNUInt16 *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap2(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(RNUInt16), count, fp) != (size_t) count) {
-    RNFail("Unable to write unsigned short to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap2(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
-static int
-WriteInt(FILE *fp, int *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(int), count, fp) != (size_t) count) {
-    RNFail("Unable to write integer to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-WriteUnsignedInt(FILE *fp, unsigned int *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(unsigned int), count, fp) != (size_t) count) {
-    RNFail("Unable to write integer to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-#if 0
-static int
-WriteFloat(FILE *fp, float *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap4(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(float), count, fp) != (size_t) count) {
-    RNFail("Unable to write float to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap4(ptr, count);
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
-static int
-WriteDouble(FILE *fp, double *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(double), count, fp) != (size_t) count) {
-    RNFail("Unable to write double to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap8(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-WriteLongLong(FILE *fp, long long *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(long long), count, fp) != (size_t) count) {
-    RNFail("Unable to write long long to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap8(ptr, count);
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-WriteUnsignedLongLong(FILE *fp, unsigned long long *ptr, int count, int swap_endian)
-{
-  // Swap endian
-  if (swap_endian) swap8(ptr, count);
-
-  // Write the values
-  if (fwrite(ptr, sizeof(unsigned long long), count, fp) != (size_t) count) {
-    RNFail("Unable to write unsigned long long to database file\n");
-    return 0;
-  }
-
-  // Swap endian back
-  if (swap_endian) swap8(ptr, count);
 
   // Return success
   return 1;
@@ -930,10 +524,10 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   // Swap endian
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      swap4(ptr[i].position, 3);
-      swap2(ptr[i].normal, 3);
-      swap2(ptr[i].tangent, 3);
-      swap2(ptr[i].radius, 2);
+      RNSwap4(ptr[i].position, 3);
+      RNSwap2(ptr[i].normal, 3);
+      RNSwap2(ptr[i].tangent, 3);
+      RNSwap2(ptr[i].radius, 2);
     }
   }
 
@@ -942,24 +536,25 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
 
   // Write current version of surfel
   int sofar = 0;
+  int status = 1;
   while (sofar < count) {
-    size_t status = fwrite(ptr, sizeof(R3Surfel), count - sofar, fp);
-    if (status > 0) sofar += status;
-    else { RNFail("Unable to write surfel to database file\n"); return 0; }
+    size_t n = fwrite(ptr, sizeof(R3Surfel), count - sofar, fp);
+    if (n > 0) sofar += n;
+    else { RNFail("Unable to write surfel to database file\n"); status = 0; }
   }
 
   // Swap endian back
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
-      swap4(ptr[i].position, 3);
-      swap2(ptr[i].normal, 3);
-      swap2(ptr[i].tangent, 3);
-      swap2(ptr[i].radius, 2);
+      RNSwap4(ptr[i].position, 3);
+      RNSwap2(ptr[i].normal, 3);
+      RNSwap2(ptr[i].tangent, 3);
+      RNSwap2(ptr[i].radius, 2);
     }
   }
 
-  // Return success
-  return 1;
+  // Return status
+  return status;
 }
 
 
@@ -1125,18 +720,18 @@ WriteHeader(FILE *fp, int swap_endian)
 
   // Write header
   RNFileSeek(fp, 0, RN_FILE_SEEK_SET);
-  if (!WriteChar(fp, magic, 32, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
-  if (!WriteUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
-  if (!WriteUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
-  if (!WriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
-  if (!WriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
-  if (!WriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
-  if (!WriteChar(fp, buffer, 1008, swap_endian)) return 0;
+  if (!RNWriteChar(fp, magic, 32, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
+  if (!RNWriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+  if (!RNWriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
+  if (!RNWriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
+  if (!RNWriteChar(fp, buffer, 1008, swap_endian)) return 0;
   
   // Return success
   return 1;
@@ -1173,7 +768,7 @@ OpenFile(const char *filename, const char *rwaccess)
   else {
     // Read unique string
     char buffer[1024]; 
-    if (!ReadChar(fp, buffer, 32, 0)) return 0;
+    if (!RNReadChar(fp, buffer, 32, 0)) return 0;
     if (strcmp(buffer, "R3SurfelDatabase")) {
       RNFail("Incorrect header (%s) in database file %s\n", buffer, filename);
       return 0;
@@ -1181,17 +776,17 @@ OpenFile(const char *filename, const char *rwaccess)
 
     // Read endian test
     unsigned int endian_test1, endian_test2;
-    if (!ReadUnsignedInt(fp, &endian_test1, 1, 0)) return 0;
+    if (!RNReadUnsignedInt(fp, &endian_test1, 1, 0)) return 0;
     if (endian_test1 != 1) swap_endian = 1;
-    if (!ReadUnsignedInt(fp, &endian_test2, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &endian_test2, 1, swap_endian)) return 0;
     if (endian_test2 != 1) {
       RNFail("Incorrect endian (%x) in database file %s\n", endian_test1, filename);
       return 0;
     }
 
     // Read version
-    if (!ReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
-    if (!ReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
     if ((major_version < 2) || (major_version > 4)) {
       RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
       return 0;
@@ -1199,46 +794,46 @@ OpenFile(const char *filename, const char *rwaccess)
   
     // Read block info
     unsigned int nblocks;
-    if (!ReadUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
-    if (!ReadUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
-    if (!ReadUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
 
     // Read number of surfels
     if (major_version < 4) {
       // nsurfels used to be an int
       int nsurfels32;
-      if (!ReadInt(fp, &nsurfels32, 1, swap_endian)) return 0;
+      if (!RNReadInt(fp, &nsurfels32, 1, swap_endian)) return 0;
       nsurfels = nsurfels32;
     }
     else {
       // nsurfels now is an RNInt64
-      if (!ReadLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+      if (!RNReadLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
     }
 
     // Read bounding box
-    if (!ReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
 
     // Read timestamp range
-    if (!ReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
 
     // Read extra at end of header
-    if (!ReadChar(fp, buffer, 1008, swap_endian)) return 0;
+    if (!RNReadChar(fp, buffer, 1008, swap_endian)) return 0;
 
     // Read blocks
     RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
     for (unsigned int i = 0; i < nblocks; i++) {
       R3SurfelBlock *block = new R3SurfelBlock();
       unsigned int block_flags;
-      if (!ReadUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
-      if (!ReadUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
-      if (!ReadInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->resolution, 1, swap_endian)) return 0;
-      if (!ReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
-      if (!ReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-      if (!ReadChar(fp, buffer, 40, swap_endian)) return 0;
+      if (!RNReadUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
+      if (!RNReadUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
+      if (!RNReadInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
+      if (!RNReadDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
+      if (!RNReadDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
+      if (!RNReadDouble(fp, &block->resolution, 1, swap_endian)) return 0;
+      if (!RNReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
+      if (!RNReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+      if (!RNReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+      if (!RNReadChar(fp, buffer, 40, swap_endian)) return 0;
       block->flags = block_flags;
       block->SetDirty(FALSE);
       block->database = this;
@@ -1279,16 +874,16 @@ SyncFile(void)
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
     unsigned int block_flags = block->flags; 
-    if (!WriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
-    if (!WriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
-    if (!WriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->resolution, 1, swap_endian)) return 0;
-    if (!WriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
-    if (!WriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-    if (!WriteChar(fp, buffer, 40, swap_endian)) return 0;
+    if (!RNWriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
+    if (!RNWriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->resolution, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+    if (!RNWriteChar(fp, buffer, 40, swap_endian)) return 0;
   }
 
   // Write header again (now that the offset values have been filled in)

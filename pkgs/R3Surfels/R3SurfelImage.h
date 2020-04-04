@@ -34,10 +34,35 @@ public:
   //// PROPERTY FUNCTIONS ////
   ////////////////////////////
 
+  // Pixel property access functions
+  RNRgb PixelColor(int ix, int iy) const;
+  RNScalar PixelRed(int ix, int iy) const;
+  RNScalar PixelGreen(int ix, int iy) const;
+  RNScalar PixelBlue(int ix, int iy) const;
+  RNScalar PixelDepth(int ix, int iy) const;
+  RNScalar PixelCategory(int ix, int iy) const;
+  RNScalar PixelObject(int ix, int iy) const;
+  RNScalar PixelChannelValue(int ix, int iy, int channel_index) const;
+
+  // Point property access functions
+  RNRgb PixelColor(const R2Point& image_position) const;
+  RNScalar PixelRed(const R2Point& image_position) const;
+  RNScalar PixelGreen(const R2Point& image_position) const;
+  RNScalar PixelBlue(const R2Point& image_position) const;
+  R3Ray PixelWorldRay(const R2Point& image_position) const;
+  RNScalar PixelChannelValue(const R2Point& image_position, int channel_index) const;
+
   // Channel access functions
   int NChannels(void) const;
   const R2Grid *Channel(int channel_index) const;
-
+  const R2Grid *RedChannel(void) const;
+  const R2Grid *GreenChannel(void) const;
+  const R2Grid *BlueChannel(void) const;
+  const R2Grid *DepthChannel(void) const;
+  const R2Grid *CategoryChannel(void) const;
+  const R2Grid *ObjectChannel(void) const;
+  R2Image ColorChannels(void) const;
+  
   // Camera intrinsics functions
   int ImageWidth(void) const;
   int ImageHeight(void) const;
@@ -86,8 +111,14 @@ public:
   /////////////////////////////////////////
 
   // Channel manipulation functions
-  virtual void InsertChannel(int channel_index, const R2Grid& channel);
   virtual void SetChannel(int channel_index, const R2Grid& channel);
+  virtual void SetRedChannel(const R2Grid& channel);
+  virtual void SetGreenChannel(const R2Grid& channel);
+  virtual void SetBlueChannel(const R2Grid& channel);
+  virtual void SetDepthChannel(const R2Grid& channel);
+  virtual void SetCategoryChannel(const R2Grid& channel);
+  virtual void SetObjectChannel(const R2Grid& channel);
+  virtual void SetColorChannels(const R2Image& image);
   virtual void RemoveChannel(int channel_index);
   
   // Pose manipulation functions
@@ -181,8 +212,13 @@ protected:
 ////////////////////////////////////////////////////////////////////////
 
 enum {
+  R3_SURFEL_RED_CHANNEL,
+  R3_SURFEL_GREEN_CHANNEL,
+  R3_SURFEL_BLUE_CHANNEL,
   R3_SURFEL_DEPTH_CHANNEL,
-  R3_SURFEL_USER_CHANNELS,
+  R3_SURFEL_CATEGORY_CHANNEL,
+  R3_SURFEL_OBJECT_CHANNEL,
+  R3_SURFEL_USER_CHANNEL,
   R3_SURFEL_NUM_CHANNELS
 };
 
@@ -209,6 +245,199 @@ Channel(int channel_index) const
 }
 
   
+
+inline const R2Grid *R3SurfelImage::
+RedChannel(void) const
+{
+  // Return the red channel (may be NULL)
+  return Channel(R3_SURFEL_RED_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+GreenChannel(void) const
+{
+  // Return the green channel (may be NULL)
+  return Channel(R3_SURFEL_GREEN_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+BlueChannel(void) const
+{
+  // Return the blue channel (may be NULL)
+  return Channel(R3_SURFEL_BLUE_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+DepthChannel(void) const
+{
+  // Return the depth channel (may be NULL)
+  return Channel(R3_SURFEL_DEPTH_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+CategoryChannel(void) const
+{
+  // Return the category channel (may be NULL)
+  return Channel(R3_SURFEL_CATEGORY_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+ObjectChannel(void) const
+{
+  // Return the object channel (may be NULL)
+  return Channel(R3_SURFEL_OBJECT_CHANNEL);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelRed(int ix, int iy) const
+{
+  // Return the red component of the pixel
+  const R2Grid *red_channel = RedChannel();
+  if (!red_channel) return -1;
+  return red_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelGreen(int ix, int iy) const
+{
+  // Return the green component of the pixel
+  const R2Grid *green_channel = GreenChannel();
+  if (!green_channel) return -1;
+  return green_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelBlue(int ix, int iy) const
+{
+  // Return the blue component of the pixel
+  const R2Grid *blue_channel = BlueChannel();
+  if (!blue_channel) return -1;
+  return blue_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNRgb R3SurfelImage::
+PixelColor(int ix, int iy) const
+{
+  // Return the color of the pixel
+  return RNRgb(PixelRed(ix,iy), PixelGreen(ix,iy), PixelBlue(ix,iy));
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelDepth(int ix, int iy) const
+{
+  // Return the depth of the pixel
+  const R2Grid *depth_channel = DepthChannel();
+  if (!depth_channel) return -1;
+  return depth_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelCategory(int ix, int iy) const
+{
+  // Return the category index of the pixel
+  const R2Grid *category_channel = CategoryChannel();
+  if (!category_channel) return -1;
+  return category_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelObject(int ix, int iy) const
+{
+  // Return the object index of the pixel
+  const R2Grid *object_channel = ObjectChannel();
+  if (!object_channel) return -1;
+  return object_channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelChannelValue(int ix, int iy, int channel_index) const
+{
+  // Return the channel value of the pixel
+  const R2Grid *channel = Channel(channel_index);
+  if (!channel) return -1;
+  return channel->GridValue(ix, iy);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelRed(const R2Point& image_position) const
+{
+  // Return the red component of the pixel
+  const R2Grid *red_channel = RedChannel();
+  if (!red_channel) return -1;
+  return red_channel->GridValue(image_position);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelGreen(const R2Point& image_position) const
+{
+  // Return the green component of the pixel
+  const R2Grid *green_channel = GreenChannel();
+  if (!green_channel) return -1;
+  return green_channel->GridValue(image_position);
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelBlue(const R2Point& image_position) const
+{
+  // Return the blue component of the pixel
+  const R2Grid *blue_channel = BlueChannel();
+  if (!blue_channel) return -1;
+  return blue_channel->GridValue(image_position);
+}
+
+
+
+inline RNRgb R3SurfelImage::
+PixelColor(const R2Point& image_position) const
+{
+  // Return the color of the pixel
+  return RNRgb(PixelRed(image_position), PixelGreen(image_position), PixelBlue(image_position));
+}
+
+
+
+inline RNScalar R3SurfelImage::
+PixelChannelValue(const R2Point& image_position, int channel_index) const
+{
+  // Return the channel value of the pixel
+  const R2Grid *channel = Channel(channel_index);
+  if (!channel) return -1;
+  return channel->GridValue(image_position);
+}
+
+
 
 inline RNLength R3SurfelImage::
 XFocal(void) const
@@ -412,15 +641,6 @@ Scan(void) const
 
 
 
-inline void R3SurfelImage::
-InsertChannel(int channel_index, const R2Grid& channel)
-{
-  // Insert a new channel
-  SetChannel(channel_index, channel);
-}
-
-
-  
 inline R2Point R3SurfelImage::
 ImagePosition(const R3Point& world_position) const
 {
@@ -429,7 +649,7 @@ ImagePosition(const R3Point& world_position) const
   return TransformFromWorldToImage(world_position);
 }
 
-  
+
 
 // End namespace
 }

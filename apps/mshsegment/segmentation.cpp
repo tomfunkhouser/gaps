@@ -28,10 +28,12 @@ double max_cluster_diameter = 16;
 double max_cluster_primitive_distance = 0.01;
 double max_cluster_normal_angle = RN_PI / 4.0;
 double max_cluster_color_difference = 0.5;
+double max_cluster_timestamp_difference = 0;
 double max_pair_centroid_distance = 16;
 double max_pair_primitive_distance = 0.01;
 double max_pair_normal_angle = RN_PI / 4.0;
 double max_pair_color_difference = 0.5;
+double max_pair_timestamp_difference = 0;
 double min_pair_affinity = RN_EPSILON;
 int max_refinement_iterations = 3;
 int max_reassignment_iterations = 1;
@@ -412,6 +414,7 @@ Cluster(Point *seed_point, int primitive_type)
     primitive(primitive_type),
     area(0),
     color(0,0,0),
+    timestamp(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -420,6 +423,7 @@ Cluster(Point *seed_point, int primitive_type)
   // Update primitive and color and area
   if (seed_point) primitive.Update(seed_point);
   if (seed_point) color = seed_point->color;
+  if (seed_point) timestamp = seed_point->timestamp;
   if (seed_point) area = seed_point->area;
 }
 
@@ -435,6 +439,7 @@ Cluster(Point *seed_point, const Primitive& primitive)
     primitive(primitive),
     area(0),
     color(0,0,0),
+    timestamp(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -442,6 +447,7 @@ Cluster(Point *seed_point, const Primitive& primitive)
 {
   // Update color and area
   if (seed_point) color = seed_point->color;
+  if (seed_point) timestamp = seed_point->timestamp;
   if (seed_point) area = seed_point->area;
 }
 
@@ -457,6 +463,7 @@ Cluster(Cluster *child1, Cluster *child2)
     primitive(),
     area(0),
     color(0,0,0),
+    timestamp(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -474,6 +481,9 @@ Cluster(Cluster *child1, Cluster *child2)
     color += child2->points.NEntries() * child2->color;
     color /= child1->points.NEntries() + child2->points.NEntries();
   }
+
+  // Update timestamp
+  timestamp = 0.5*(child1->timestamp + child2->timestamp);
 
   // Update area
   area = child1->area + child2->area;
@@ -587,6 +597,7 @@ EmptyPoints(void)
 
   // Update color and area
   color = RNblack_rgb;
+  timestamp = 0;
   area = 0;
 
   // Update affinity
@@ -606,7 +617,8 @@ InsertPoint(Point *point, RNScalar affinity)
 
   // Update cluster
   total_affinity += affinity; // point->cluster_affinity;
-  color = (point->color * points.NEntries()*color) / (points.NEntries()+1);
+  color = (point->color + points.NEntries()*color) / (points.NEntries()+1);
+  timestamp = (point->timestamp + points.NEntries()*timestamp) / (points.NEntries()+1);
   area += point->area;
 
   // Update point
@@ -630,6 +642,7 @@ RemovePoint(Point *point)
   // Update cluster
   total_affinity -= point->cluster_affinity;
   color = (points.NEntries() > 1) ? (points.NEntries()*color - point->color) / (points.NEntries()-1) : RNblack_rgb;
+  timestamp = (points.NEntries() > 1) ? (points.NEntries()*timestamp - point->timestamp) / (points.NEntries()-1) : 0;
   area -= point->area;
 
   // Remove point
@@ -662,6 +675,11 @@ InsertChild(Cluster *child)
   color += child->points.NEntries() * child->color;
   color = (n > 0) ? color / n : RNblack_rgb;
 
+  // Update timestamp
+  timestamp *= points.NEntries();
+  timestamp += child->points.NEntries() * child->timestamp;
+  timestamp = (n > 0) ? timestamp / n : 0;
+
   // Update primitive
   primitive.Update(this->primitive, child->primitive, this->points.NEntries(), child->points.NEntries());
 
@@ -690,6 +708,7 @@ InsertChild(Cluster *child)
   // Update child
   child->area = 0;
   child->color = RNblack_rgb;
+  child->timestamp = 0;
 
   // Update hierarchy
   child->parent = this;
@@ -709,6 +728,11 @@ RemoveChild(Cluster *child)
   color *= points.NEntries();
   color -= child->points.NEntries() * child->color;
   color = (n > 0) ? color / n : RNblack_rgb;
+
+  // Update timestamp
+  timestamp *= points.NEntries();
+  timestamp -= child->points.NEntries() * child->timestamp;
+  timestamp = (n > 0) ? timestamp / n : 0;
 
   // Remove child
   this->children.Remove(child);
@@ -810,6 +834,20 @@ UpdateColor(void)
 
 
 int Cluster::
+UpdateTimestamp(void)
+{
+  // Update timestamp
+  timestamp = 0;
+  if (points.NEntries() == 0) return 1;
+  for (int i = 0; i < points.NEntries(); i++)
+    timestamp += points[i]->timestamp;
+  timestamp /= points.NEntries();
+  return 1;
+}
+
+
+
+int Cluster::
 UpdateArea(void)
 {
   // Update area
@@ -890,6 +928,15 @@ Affinity(Point *point) const
     affinity *= color_difference_affinity;
   }
 
+  // Check timestamp difference
+  if (max_cluster_timestamp_difference > 0) {
+    RNLength timestamp_difference = fabs(timestamp - point->timestamp);
+    if (timestamp_difference > 0) {
+      RNScalar timestamp_difference_affinity = exp(timestamp_difference * timestamp_difference / (-2.0 * max_cluster_timestamp_difference * max_cluster_timestamp_difference));
+      affinity *= timestamp_difference_affinity;
+    }
+  }
+
   // Check primitive distance 
   if (max_cluster_primitive_distance > 0) {
     RNLength primitive_distance = primitive.Distance(position);
@@ -947,6 +994,16 @@ Affinity(Cluster *cluster) const
     RNScalar color_difference_affinity = exp(color_difference * color_difference / (-2.0 * 0.25 * max_pair_color_difference * max_pair_color_difference));
     affinity *= color_difference_affinity;
     assert(affinity >= 0);
+  }
+
+  // Check timestamp difference
+  if (max_pair_timestamp_difference > 0) {
+    RNLength timestamp_difference = fabs(timestamp - cluster->timestamp);
+    if (timestamp_difference > 0) {
+      RNScalar timestamp_difference_affinity = exp(timestamp_difference * timestamp_difference / (-2.0 *  max_pair_timestamp_difference * max_pair_timestamp_difference));
+      affinity *= timestamp_difference_affinity;
+      assert(affinity >= 0);
+    }
   }
 
   // Compute centroid distance
@@ -1216,7 +1273,8 @@ CreateNeighbors(
   double max_neighbor_primitive_distance,
   double max_neighbor_normal_angle,
   double max_neighbor_color_difference,
-  double max_neighbor_distance_factor)
+  double max_neighbor_distance_factor,
+  double max_neighbor_timestamp_difference)
 {
   // Create kdtree of points
   Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
@@ -1254,6 +1312,10 @@ CreateNeighbors(
           color_difference += fabs(neighbor->color.G() - point->color.G());
           color_difference += fabs(neighbor->color.B() - point->color.B());
           if (color_difference > max_neighbor_color_difference) continue;
+        }
+        if (max_neighbor_timestamp_difference > 0) {
+          RNLength timestamp_difference = fabs(neighbor->timestamp - point->timestamp);
+          if (timestamp_difference > max_neighbor_timestamp_difference) continue; 
         }
         point->neighbors.Insert(neighbor);
       }
@@ -1329,6 +1391,7 @@ CreateRegionGrowingClusters(int primitive_type)
     Cluster *cluster = new Cluster(seed_point, primitive);
     if (!cluster->UpdatePoints(kdtree)) { delete cluster; continue; }
     if (!cluster->UpdateColor()) { delete cluster; continue; }
+    if (!cluster->UpdateTimestamp()) { delete cluster; continue; }
 
     // Insert cluster
     cluster->segmentation = this;
@@ -1369,6 +1432,7 @@ ReassignClusters(void)
       if (!error && !cluster->UpdatePrimitive()) error = TRUE;
       if (!error && !cluster->UpdatePoints(kdtree)) error = TRUE; 
       if (!error && !cluster->UpdateColor()) error = TRUE; 
+      if (!error && !cluster->UpdateTimestamp()) error = TRUE; 
 
       // Insert cluster
       cluster->segmentation = this;
@@ -1767,6 +1831,9 @@ SplitClusters(void)
             // Update color
             c->UpdateColor();
 
+            // Update timestamp
+            c->UpdateTimestamp();
+
             // Update planar grid
             // c->UpdatePlanarGrid();
 
@@ -1978,12 +2045,13 @@ WriteFile(const char *filename) const
     R3Point center;
     RNScalar variances[3];
     R3Triad axes = cluster->PrincipleAxes(&center, variances);
-    fprintf(fp, "%d %d %g %g %g %d  %g %g %g   %g %g %g %g   %g %g %g   %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
+    fprintf(fp, "%d %d %g %g %g %d  %g %g %g   %g %g %g %g   %g %g %g  %g  %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
             i+1, cluster->points.NEntries(), cluster->area,
             cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
             cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
             cluster->primitive.plane.A(), cluster->primitive.plane.B(), cluster->primitive.plane.C(), cluster->primitive.plane.D(),
             cluster->color.R(), cluster->color.G(), cluster->color.B(),
+            cluster->timestamp,
             center.X(), center.Y(), center.Z(),
             axes[0][0], axes[0][1], axes[0][2], axes[1][0], axes[1][1], axes[1][2], axes[2][0], axes[2][1], axes[2][2],
             variances[0], variances[1], variances[2]);

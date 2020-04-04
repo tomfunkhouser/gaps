@@ -30,6 +30,7 @@ class R2Box;
 class R2Circle;
 class R2Polygon;
 class R2Grid;
+class R2PixelDatabase;
 }
 
 
@@ -83,10 +84,10 @@ class R2Grid;
 
 
 
-/* Solid shapes include files */
+/* Image/grid include files */
 
 #include "R2Grid.h"
-
+#include "R2PixelDatabase.h"
 
 
 /* Shape relationship include files */

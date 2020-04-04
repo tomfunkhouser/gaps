@@ -41,6 +41,9 @@ public:
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
   
+  // Statistics functions
+  long long NSurfels(void) const;
+
   // Name property functions
   const char *Name(void) const;
 
@@ -254,6 +257,16 @@ TimestampRange(void) const
 {
   // Return timestamp range of scene
   return tree->TimestampRange();
+}
+
+
+
+inline long long R3SurfelScene::
+NSurfels(void) const
+{
+  // Return number of surfels in tree
+  if (!tree) return 0;
+  return tree->NSurfels();
 }
 
 
