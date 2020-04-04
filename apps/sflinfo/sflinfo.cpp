@@ -258,6 +258,7 @@ PrintInfo(R3SurfelScene *scene)
   printf("  Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
   printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
   printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
+  printf("  Max surfel identifier = %u\n", database->MaxIdentifier());
   printf("  # Objects = %d\n", scene->NObjects());
   printf("  # Labels = %d\n", scene->NLabels());
   printf("  # Features = %d\n", scene->NFeatures());
@@ -515,6 +516,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("    Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
       printf("    Timestamp Origin = %.6f\n", block->TimestampOrigin());
       printf("    Timestamp Range = %.6f %.6f\n", timestamp_range.Min(), timestamp_range.Max());
+      printf("    Max surfel identifier = %u\n", block->MaxIdentifier());
       printf("\n");
     }
     printf("\n");
@@ -537,7 +539,7 @@ PrintInfo(R3SurfelScene *scene)
         printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
         printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
         printf("      Timestamp = %.6f\n", surfel->Timestamp());
-        printf("      Value = %f\n", surfel->Value());
+        printf("      Identifier = %u\n", surfel->Identifier());
         printf("      Flags = %d\n", surfel->Flags());
       }
       printf("\n");

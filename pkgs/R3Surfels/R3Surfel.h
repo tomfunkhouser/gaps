@@ -28,7 +28,7 @@ public:
     float tx, float ty, float tz, 
     float radius0, float radius1,
     unsigned char r, unsigned char g, unsigned char b, 
-    float timestamp, float value,
+    float timestamp, unsigned int identifier,
     unsigned char flags = 0);
 
   // Position property functions
@@ -65,8 +65,8 @@ public:
   // Timestamp property functions
   float Timestamp(void) const;
   
-  // Value property functions (can be used for anything)
-  float Value(void) const;
+  // Identifier property functions (can be used for anything)
+  unsigned int Identifier(void) const;
 
   // Other property functions
   RNBoolean IsActive(void) const;
@@ -97,7 +97,7 @@ public:
   void SetColor(const unsigned char *rgb);
   void SetColor(const RNRgb& rgb);
   void SetTimestamp(float timestamp);
-  void SetValue(float value);
+  void SetIdentifier(unsigned int identifier);
   void SetAerial(RNBoolean aerial = TRUE);
   void SetSilhouetteBoundary(RNBoolean boundary = TRUE);
   void SetShadowBoundary(RNBoolean boundary = TRUE);
@@ -144,7 +144,7 @@ private:
   RNInt16 normal[3]; // x 2^15-1 (32767)
   RNInt16 tangent[3]; // x 2^15-1 (32767)
   RNUInt16 radius[2]; // x 2^13 (8192)
-  RNScalar32 value;
+  RNUInt32 identifier;
   RNUChar8 color[3];
   RNUChar8 flags;
 
@@ -366,11 +366,11 @@ Timestamp(void) const
 
 
 
-inline float R3Surfel::
-Value(void) const
+inline unsigned int R3Surfel::
+Identifier(void) const
 {
-  // Return value
-  return value;
+  // Return identifier
+  return identifier;
 }
 
 
@@ -643,10 +643,10 @@ SetTimestamp(float timestamp)
 
 
 inline void R3Surfel::
-SetValue(float value)
+SetIdentifier(unsigned int identifier)
 {
-  // Set value
-  this->value = value;
+  // Set identifier
+  this->identifier = identifier;
 }
 
 

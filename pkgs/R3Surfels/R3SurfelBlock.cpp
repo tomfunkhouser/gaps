@@ -28,6 +28,7 @@ R3SurfelBlock(void)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(0),
     data(NULL),
@@ -51,6 +52,7 @@ R3SurfelBlock(int nsurfels)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(0),
     data(NULL),
@@ -78,6 +80,7 @@ R3SurfelBlock(const R3SurfelBlock& block)
     bbox(block.bbox),
     timestamp_origin(block.timestamp_origin),
     timestamp_range(block.timestamp_range),
+    max_identifier(block.max_identifier),
     resolution(block.resolution),
     flags(block.flags & R3_SURFEL_BLOCK_PROPERTY_FLAGS),
     data(NULL),
@@ -108,6 +111,7 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     bbox(set->BBox()),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
     data(NULL),
@@ -142,7 +146,7 @@ R3SurfelBlock(const R3SurfelPointSet *set)
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
-      surfel->SetValue(point->Value());
+      surfel->SetIdentifier(point->Identifier());
       surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
     }
   }
@@ -159,6 +163,7 @@ R3SurfelBlock(const R3SurfelPointSet *set,
     bbox(set->BBox()),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
     data(NULL),
@@ -192,7 +197,7 @@ R3SurfelBlock(const R3SurfelPointSet *set,
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
-      surfel->SetValue(point->Value());
+      surfel->SetIdentifier(point->Identifier());
       surfel->SetColor(point->Color());
       surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
     }
@@ -210,6 +215,7 @@ R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(timestamp_origin),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(0),
     data(NULL),
@@ -241,6 +247,7 @@ R3SurfelBlock(const RNArray<const R3Surfel *>& array,
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(timestamp_origin),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(0),
     data(NULL),
@@ -271,6 +278,7 @@ R3SurfelBlock(const R3Point *points, int npoints)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     resolution(0),
     flags(0),
     data(NULL),
@@ -405,6 +413,21 @@ TimestampRange(void) const
 
   // Return timestamp range
   return timestamp_range;
+}
+
+
+
+unsigned int R3SurfelBlock::
+MaxIdentifier(void) const
+{
+  // Update max identifier
+  if (max_identifier == 0) {
+    R3SurfelBlock *block = (R3SurfelBlock *) this;
+    block->UpdateMaxIdentifier();
+  }
+
+  // Return max identifier
+  return max_identifier;
 }
 
 
@@ -686,7 +709,7 @@ SetSurfelTimestamp(int surfel_index, RNScalar timestamp)
 
 
 void R3SurfelBlock::
-SetSurfelValue(int surfel_index, RNScalar value)
+SetSurfelIdentifier(int surfel_index, unsigned int identifier)
 {
   // Check if surfels are resident
   if (!surfels) {
@@ -694,8 +717,11 @@ SetSurfelValue(int surfel_index, RNScalar value)
     abort();
   }
 
-  // Set surfel value
-  surfels[surfel_index].SetValue(value);
+  // Set surfel identifier
+  surfels[surfel_index].SetIdentifier(identifier);
+
+  // Remember than max identifier is out of date
+  max_identifier = 0;
 
   // Remember that block is dirty
   SetDirty();
@@ -905,6 +931,7 @@ UpdateProperties(void)
   double dummy = 0;
   dummy += BBox().Min().X();
   dummy += TimestampRange().Min();
+  dummy += MaxIdentifier();
   dummy += Resolution();
   dummy += (HasAerial()) ? 1 : 2;
   if (dummy == 927612.21242) {
@@ -963,6 +990,25 @@ UpdateTimestampRange(void)
 
   // Translate bounding box by timestamp origin
   timestamp_range += timestamp_origin;
+}
+
+
+
+void R3SurfelBlock::
+UpdateMaxIdentifier(void)
+{
+  // Read block
+  if (database) database->ReadBlock(this);
+
+  // Update max identifier
+  max_identifier = 1;
+  for (int i = 0; i < nsurfels; i++) {
+    unsigned int id = surfels[i].Identifier();
+    if (id > max_identifier) max_identifier = id;
+  }
+
+  // Release block
+  if (database) database->ReleaseBlock(this);
 }
 
 

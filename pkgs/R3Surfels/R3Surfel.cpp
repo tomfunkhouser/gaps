@@ -19,7 +19,7 @@ namespace gaps {
 R3Surfel::
 R3Surfel(void)
   : timestamp(0),
-    value(0),
+    identifier(0),
     flags(0)
 {
   // Set everything
@@ -46,7 +46,7 @@ R3Surfel(float x, float y, float z,
   unsigned char r, unsigned char g, unsigned char b, 
   RNBoolean aerial)
   : timestamp(0),
-    value(0),
+    identifier(0),
     flags(0)
 {
   // Set everything
@@ -74,7 +74,7 @@ R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   float radius, unsigned char r, unsigned char g, unsigned char b, 
   unsigned char flags)
   : timestamp(0),
-    value(0),
+    identifier(0),
     flags(flags)
 {
   // Set everything
@@ -107,10 +107,10 @@ R3Surfel(float x, float y, float z,
   float tx, float ty, float tz,
   float radius0, float radius1,
   unsigned char r, unsigned char g, unsigned char b, 
-  float timestamp, float value,
+  float timestamp, unsigned int identifier,
   unsigned char flags)
   : timestamp(timestamp),
-    value(value),
+    identifier(identifier),
     flags(flags)
 {
   // Set everything

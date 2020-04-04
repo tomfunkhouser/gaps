@@ -169,11 +169,11 @@ SetTimestamp(RNScalar timestamp)
 
 
 void R3SurfelPoint::
-SetValue(RNScalar value)
+SetIdentifier(unsigned int identifier)
 {
-  // Set value
+  // Set identifier
   assert(block && surfel);
-  block->SetSurfelValue(block->SurfelIndex(surfel), value);
+  block->SetSurfelIdentifier(block->SurfelIndex(surfel), identifier);
 }
 
 

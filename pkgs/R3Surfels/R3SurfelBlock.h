@@ -72,6 +72,9 @@ public:
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
   RNScalar TimestampOrigin(void) const;
+
+  // Identifier property functions
+  unsigned int MaxIdentifier(void) const;
   
   // Aggregate surfel property functions
   RNBoolean HasActive(void) const;
@@ -96,7 +99,7 @@ public:
   RNLength SurfelRadius(int surfel_index, int axis) const;
   RNRgb SurfelColor(int surfel_index) const;
   RNScalar SurfelTimestamp(int surfel_index) const;
-  RNScalar SurfelValue(int surfel_index) const;
+  unsigned int SurfelIdentifier(int surfel_index) const;
   RNBoolean IsSurfelActive(int surfel_index) const;
   RNBoolean IsSurfelMarked(int surfel_index) const;
   RNBoolean IsSurfelAerial(int surfel_index) const;
@@ -138,7 +141,7 @@ public:
   void SetSurfelRadius(int surfel_index, int axis, RNLength radius);
   void SetSurfelColor(int surfel_index, const RNRgb& color);
   void SetSurfelTimestamp(int surfel_index, RNLength timestamp);
-  void SetSurfelValue(int surfel_index, RNLength value);
+  void SetSurfelIdentifier(int surfel_index, unsigned int identifier);
   void SetSurfelFlags(int surfel_index, unsigned char flags);
   void SetSurfelActive(int surfel_index, RNBoolean active = TRUE);
   void SetSurfelAerial(int surfel_index, RNBoolean aerial = TRUE);
@@ -221,6 +224,7 @@ private:
   // Block update functions
   void UpdateBBox(void);
   void UpdateTimestampRange(void);
+  void UpdateMaxIdentifier(void);
   void UpdateResolution(void);
   void UpdateFlags(void);
 
@@ -237,6 +241,7 @@ private:
   R3Box bbox;
   RNScalar timestamp_origin;
   RNInterval timestamp_range;
+  unsigned int max_identifier;
   RNScalar resolution;
   RNFlags flags;
   void *data;
@@ -481,12 +486,12 @@ SurfelTimestamp(int surfel_index) const
 
 
 
-inline RNScalar R3SurfelBlock::
-SurfelValue(int surfel_index) const
+inline unsigned int R3SurfelBlock::
+SurfelIdentifier(int surfel_index) const
 {
-  // Return value of kth surfel
+  // Return identifier of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
-  return surfel.Value();
+  return surfel.Identifier();
 }
 
 

@@ -45,6 +45,9 @@ public:
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
 
+  // Identifier property functions
+  unsigned int MaxIdentifier(void) const;
+  
 
   //////////////////////////
   //// ACCESS FUNCTIONS ////
@@ -159,6 +162,7 @@ protected:
   long long nsurfels;
   R3Box bbox;
   RNInterval timestamp_range;
+  unsigned int max_identifier;
   char *name;
   friend class R3SurfelTree;
   R3SurfelTree *tree;
@@ -203,6 +207,15 @@ TimestampRange(void) const
 {
   // Return timestamp range of database
   return timestamp_range;
+}
+
+
+
+inline unsigned int R3SurfelDatabase::
+MaxIdentifier(void) const
+{
+  // Return maximum identifier in database
+  return max_identifier;
 }
 
 

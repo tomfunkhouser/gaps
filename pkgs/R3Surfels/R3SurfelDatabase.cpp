@@ -53,6 +53,7 @@ R3SurfelDatabase(void)
     nsurfels(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     name(NULL),
     tree(NULL),
     resident_surfels(0)
@@ -75,6 +76,7 @@ R3SurfelDatabase(const R3SurfelDatabase& database)
     nsurfels(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    max_identifier(0),
     name(RNStrdup(database.name)),
     tree(NULL),
     resident_surfels(0)
@@ -162,6 +164,10 @@ InsertBlock(R3SurfelBlock *block)
 
   // Update timestamp range
   timestamp_range.Union(block->TimestampRange());
+
+  // Update max identifier
+  if (block->MaxIdentifier() > max_identifier)
+    max_identifier = block->MaxIdentifier();
 
   // Update number of surfels
   nsurfels += block->NSurfels();
@@ -508,6 +514,7 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap4(&ptr[i].identifier, 1);
     }
   }
 
@@ -528,6 +535,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap4(&ptr[i].identifier, 1);
     }
   }
 
@@ -550,6 +558,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap4(&ptr[i].identifier, 1);
     }
   }
 
