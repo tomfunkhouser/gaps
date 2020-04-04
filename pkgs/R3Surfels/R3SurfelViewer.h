@@ -158,8 +158,8 @@ public:
   R3SurfelImage *SelectedImage(void) const;
   
   // Pick utility functions
-  R3SurfelNode *PickNode(int xcursor, int ycursor, 
-    R3Point *hit_position = NULL, R3SurfelBlock **block = NULL, const R3Surfel **surfel = NULL,
+  R3SurfelNode *PickNode(int x, int y, R3Point *picked_position = NULL,
+    R3SurfelBlock **picked_block = NULL, const R3Surfel **picked_surfel = NULL,
     RNBoolean exclude_nonobjects = FALSE);
 
   // Object editing 
@@ -669,10 +669,10 @@ SetCenterPoint(const R3Point& point)
 
 
 inline void R3SurfelViewer::
-SetSurfelSize(RNScalar surfel_size)
+SetSurfelSize(RNScalar npixels)
 {
   // Set surfel size
-  this->surfel_size = surfel_size;
+  this->surfel_size = npixels;
 }
 
 
