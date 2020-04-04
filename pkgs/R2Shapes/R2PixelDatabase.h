@@ -30,7 +30,7 @@ public:
   virtual void SetName(const char *name);
 
   // Entry manipulation functions
-  virtual int Insert(const char *key, const R2Grid& grid);
+  virtual int Insert(const char *key, const R2Grid& pixels);
   virtual int Remove(const char *key);
 
   // I/O functions
