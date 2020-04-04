@@ -533,7 +533,7 @@ PrintInfo(R3SurfelScene *scene)
       for (int j = 0; j < block->NSurfels(); j++) {
         const R3Surfel *surfel = block->Surfel(j);
         printf("    Surfel %d\n", j);
-        printf("      Position = %f %f %f\n", surfel->X(), surfel->Y(), surfel->Z());
+        printf("      Position = %f %f %f\n", surfel->PX(), surfel->PY(), surfel->PZ());
         printf("      Normal = %f %f %f\n", surfel->NX(), surfel->NY(), surfel->NZ());
         printf("      Tangent = %f %f %f\n", surfel->TX(), surfel->TY(), surfel->TZ());
         printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
