@@ -241,6 +241,8 @@ inline const R2Grid *R3SurfelImage::
 Channel(int channel_index) const
 {
   // Return the channel (may be NULL)
+  if (channel_index < 0) return NULL;
+  if (channel_index >= channels.NEntries()) return NULL;
   return channels[channel_index];
 }
 
