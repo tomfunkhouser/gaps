@@ -206,7 +206,8 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
     Point *point = &segmentation->point_buffer[i];
     point->position = mesh->FaceCentroid(face);
     point->normal = mesh->FaceNormal(face);
-    point->radius = 2 * sqrt(mesh->FaceArea(face));
+    point->radius1 = 2 * sqrt(mesh->FaceArea(face));
+    point->radius2 = point->radius2;
     point->area = mesh->FaceArea(face);
     point->color = RNblack_rgb;
     point->boundary = 0;

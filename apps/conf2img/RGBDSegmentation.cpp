@@ -71,7 +71,8 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
 
       // Get radius
       RNScalar radius = radius_image.GridValue(i);
-      point->radius = radius;
+      point->radius1 = radius;
+      point->radius2 = radius;
       point->area = RN_PI * radius * radius;
 
       // Get color
@@ -115,7 +116,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
 
         // Check if too far away
         if (max_neighbor_distance_factor > 0) {
-          RNScalar radius = (point->radius > neighbor->radius) ? neighbor->radius : point->radius;
+          RNScalar radius = (point->radius1 > neighbor->radius1) ? neighbor->radius1 : point->radius1;
           RNScalar max_neighbor_distance = (radius > 0) ? max_neighbor_distance_factor * radius : 0.25;
           RNScalar dd = R3SquaredDistance(point->position, neighbor->position);
           if (dd > max_neighbor_distance * max_neighbor_distance) continue;

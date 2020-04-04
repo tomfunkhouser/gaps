@@ -1,6 +1,8 @@
 //////////////////////////////////////////////////////////////////////
 // Include file for code that does segmentation of points
 ////////////////////////////////////////////////////////////////////////
+#ifndef __R3__SEGMENTATION__H__
+#define __R3__SEGMENTATION__H__
 
 
 
@@ -64,10 +66,10 @@ public:
   R3Point position;
   R3Vector normal;
   R3Vector tangent;
-  RNLength radius;
+  RNLength radius1;
   RNLength radius2;
   RNScalar timestamp;
-  RNScalar value;
+  unsigned int identifier;
   RNArea area;
   RNRgb color;
   unsigned int boundary;
@@ -180,7 +182,4 @@ public:
 
 
 
-
-
-
-
+#endif

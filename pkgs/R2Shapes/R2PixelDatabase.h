@@ -24,13 +24,15 @@ public:
   
   // Entry access functions
   int NEntries() const;
-  virtual int Find(const char *key, R2Grid *grid) const;
+  virtual int FindImage(const char *key, R2Image *image) const;
+  virtual int FindGrid(const char *key, R2Grid *grid) const;
 
   // Property manipulation functions
   virtual void SetName(const char *name);
 
   // Entry manipulation functions
-  virtual int Insert(const char *key, const R2Grid& pixels);
+  virtual int InsertImage(const char *key, const R2Image& image);
+  virtual int InsertGrid(const char *key, const R2Grid& grid);
   virtual int Remove(const char *key);
 
   // I/O functions

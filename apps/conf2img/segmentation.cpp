@@ -57,10 +57,10 @@ Point(void)
     position(0,0,0),
     normal(0,0,0),
     tangent(0,0,0),
-    radius(0),
+    radius1(0),
     radius2(0),
     timestamp(0),
-    value(0),
+    identifier(0),
     area(0),
     color(0,0,0),
     boundary(0),
@@ -1288,11 +1288,11 @@ CreateNeighbors(
   for (int i = 0; i < points.NEntries(); i++) {
     Point *point = points.Kth(i);
     RNArray<Point *> neighbors;
-    if ((max_neighbor_distance_factor > 0) && (point->radius > 0)) {
-      RNScalar max_d = max_neighbor_distance_factor * point->radius;
+    if ((max_neighbor_distance_factor > 0) && (point->radius1 > 0)) {
+      RNScalar max_d = max_neighbor_distance_factor * point->radius1;
       if ((max_neighbor_distance == 0) || (max_d < max_neighbor_distance)) max_neighbor_distance = max_d;
     }
-    if (max_neighbor_distance == 0) max_neighbor_distance = 10 * point->radius;
+    if (max_neighbor_distance == 0) max_neighbor_distance = 10 * point->radius1;
     if (max_neighbor_distance == 0) max_neighbor_distance = 1;
     if (kdtree->FindClosest(point, 0, max_neighbor_distance, max_neighbor_count, neighbors)) {
       for (int j = 0; j < neighbors.NEntries(); j++) {

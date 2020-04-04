@@ -116,7 +116,32 @@ SetName(const char *name)
 ////////////////////////////////////////////////////////////////////////
 
 int R2PixelDatabase::
-Find(const char *key, R2Grid *grid) const
+FindImage(const char *key, R2Image *image) const
+{
+  // Find entry
+  R2PixelDatabaseEntry entry;
+  if (!map.Find(key, &entry)) return FALSE;
+
+  // Read image
+  if (image) {
+    // Seek to start of entry
+    RNFileSeek(fp, entry.offset, RN_FILE_SEEK_SET);
+  
+    // Read entry
+    if (!image->ReadPNGStream(fp)) {
+      RNFail("Error reading %s from pixel database\n", key);
+      return FALSE;
+    }
+  }
+
+  // Return success
+  return TRUE;
+}
+
+
+
+int R2PixelDatabase::
+FindGrid(const char *key, R2Grid *grid) const
 {
   // Find entry
   R2PixelDatabaseEntry entry;
@@ -145,14 +170,41 @@ Find(const char *key, R2Grid *grid) const
 ////////////////////////////////////////////////////////////////////////
 
 int R2PixelDatabase::
-Insert(const char *key, const R2Grid& pixels)
+InsertImage(const char *key, const R2Image& image)
 {
   // Seek to end of entries
   unsigned long long offset = entries_offset;
   RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
 
   // Write pixels to file
-  if (!pixels.WritePNGStream(fp)) return FALSE;
+  if (!image.WritePNGStream(fp)) return FALSE;
+
+  // Update entries offset
+  entries_offset = RNFileTell(fp);
+  unsigned int size = entries_offset - offset;
+  
+  // Insert entry into map
+  R2PixelDatabaseEntry entry(key, offset, size);
+  map.Insert(key, entry);
+  
+  // Increment number of entries
+  entries_count++;
+
+  // Return success
+  return 1;
+}
+
+
+
+int R2PixelDatabase::
+InsertGrid(const char *key, const R2Grid& grid)
+{
+  // Seek to end of entries
+  unsigned long long offset = entries_offset;
+  RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
+
+  // Write pixels to file
+  if (!grid.WritePNGStream(fp)) return FALSE;
 
   // Update entries offset
   entries_offset = RNFileTell(fp);
