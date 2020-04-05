@@ -116,7 +116,6 @@ public:
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
   void SetSurfelSize(RNScalar npixels);
-  void JumpToNextImageViewpoint(int delta);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
   void SetSurfelVisibility(int visibility);
@@ -145,6 +144,11 @@ public:
   void SetImageViewpointColor(const RNRgb& color);
   void SetCenterPointColor(const RNRgb& color);
 
+  // Selection manipulation
+  void SelectImage(R3SurfelImage *image,
+    RNBoolean update_working_set = TRUE,
+    RNBoolean jump_to_viewpoint = FALSE);
+
   // Working set parameters
   void SetTargetResolution(RNScalar resolution);
   void SetFocusRadius(RNScalar radius);
@@ -164,6 +168,7 @@ public:
   R3SurfelImage *SelectedImage(void) const;
   
   // Pick utility functions
+  R3SurfelImage *PickImage(int x, int y, R3Point *picked_position = NULL);
   R3SurfelNode *PickNode(int x, int y, R3Point *picked_position = NULL,
     R3SurfelBlock **picked_block = NULL, const R3Surfel **picked_surfel = NULL,
     RNBoolean exclude_nonobjects = FALSE);
@@ -208,7 +213,7 @@ protected:
   R3Viewer viewer;
   R3Box viewing_extent;
   R3Point center_point;
-  int current_image_index;
+  R3SurfelImage *selected_image;
   R2Texture current_image_texture;
   RNScalar surfel_size;
 
@@ -968,9 +973,7 @@ inline R3SurfelImage *R3SurfelViewer::
 SelectedImage(void) const
 {
   // Return currently selected image
-  if (current_image_index < 0) return NULL;
-  if (current_image_index >= Scene()->NImages()) return NULL;
-  return Scene()->Image(current_image_index);
+  return selected_image;
 }
 
 

@@ -30,7 +30,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewer(),
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     center_point(0,0,0),
-    current_image_index(-1),
+    selected_image(NULL),
     current_image_texture(),
     surfel_size(2),
     surfel_visibility(1),
@@ -43,7 +43,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     node_bbox_visibility(0),
     block_bbox_visibility(0),
     scan_viewpoint_visibility(0),
-    image_viewpoint_visibility(0),
+    image_viewpoint_visibility(1),
     image_pixels_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
@@ -637,17 +637,18 @@ Redraw(void)
     RNLoadRgb(image_viewpoint_color);
     for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
+      if (image == selected_image) glLineWidth(5);
       image->Draw();
+      if (image == selected_image) glLineWidth(1);
     }
   }
 
   // Draw image pixels
-  if ((image_pixels_visibility) && (current_image_texture.Image()) &&
-      (current_image_index >= 0) && (current_image_index < scene->NImages())) {
+  if ((image_pixels_visibility) && (current_image_texture.Image()) && selected_image) {
     RNLength depth = 10;
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
-    R3SurfelImage *image = scene->Image(current_image_index);
+    R3SurfelImage *image = selected_image;
     if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
       R3Point c = image->Viewpoint() + depth * image->Towards();
       c -= ((image->ImageCenter().X() - 0.5*image->ImageWidth()) / (0.5*image->ImageWidth())) * image->Right() * depth;
@@ -850,8 +851,18 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     // Set center point on left double-click 
     if ((button == 0) && !drag) {
       R3Point pick_position;
-      R3SurfelNode *node = PickNode(x, y, &pick_position);
-      if (node) SetCenterPoint(pick_position);
+      R3SurfelImage *image = PickImage(x, y, &pick_position);
+      SelectImage(image, FALSE, FALSE);
+      if (image) {
+        printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
+        SetCenterPoint(pick_position);
+        redraw = TRUE;
+      }
+      else {
+        R3SurfelNode *node = PickNode(x, y, &pick_position);
+        if (node) SetCenterPoint(pick_position);
+        redraw = TRUE;
+      }
     }
   }
 
@@ -898,9 +909,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case 'C':
     case 'c':
-      surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
+      SetImageViewpointVisibility(-1);
       break;
-
+      
     case 'D':
     case 'd':
       if (shape_draw_flags != 0) shape_draw_flags = 0;
@@ -915,6 +926,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'I':
     case 'i':
       SetImagePixelsVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
       break;
       
     case 'N':
@@ -942,12 +954,14 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetSurfelVisibility(-1);
       break;
 
-    case 'v':
-      JumpToNextImageViewpoint(1);
+    case 'T':
+    case 't':
+      surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
       break;
-      
+
     case 'V':
-      JumpToNextImageViewpoint(-1);
+    case 'v':
+      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
       break;
       
     case 'W':
@@ -971,11 +985,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'Y':
     case 'y':
       SetScanViewpointVisibility(-1);
-      break;
-      
-    case 'Z':
-    case 'z':
-      SetImageViewpointVisibility(-1);
       break;
       
     case 'Q': 
@@ -1147,66 +1156,64 @@ ZoomCamera(RNScalar scale)
 
 
 void R3SurfelViewer::
-JumpToNextImageViewpoint(int delta)
+SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_to_viewpoint)
 {
-  // Check number of images
-  if (scene->NImages() == 0) return;
-
-  // Update current image index
-  if (current_image_index < 0) current_image_index = 0;
-  else current_image_index += delta;
-  if (current_image_index < 0) current_image_index = 0;
-  if (current_image_index >= scene->NImages()) current_image_index = scene->NImages() - 1;
-
-  // Set camera
-  R3SurfelImage *image = scene->Image(current_image_index);
-  R3Camera camera(image->Viewpoint(), image->Towards(), image->Up(),
-    image->XFOV(), image->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
-  // viewer.SetCamera(camera);
+  // Jump to viewpoint
+  if (image && jump_to_viewpoint) {
+    R3Camera camera(image->Viewpoint(), image->Towards(), image->Up(),
+      image->XFOV(), image->YFOV(), viewer.Camera().Near(), viewer.Camera().Far());
+    viewer.SetCamera(camera);
+  }
 
   // Update working set
-  R3SurfelScan *scan = image->Scan();
-  R3SurfelNode *node = (scan) ? scan->Node() : NULL;
-  if (!node) {
-    SetCenterPoint(image->Viewpoint() + 2.0 * image->Towards());
-  }
-  else {
-    EmptyWorkingSet();
-    center_point = node->Centroid();
-    InsertIntoWorkingSet(node, TRUE);
+  if (image && update_working_set) {
+    R3SurfelScan *scan = image->Scan();
+    R3SurfelNode *node = (scan) ? scan->Node() : NULL;
+    if (!node) {
+      SetCenterPoint(image->Viewpoint() + 2.0 * image->Towards());
+    }
+    else {
+      EmptyWorkingSet();
+      center_point = node->Centroid();
+      InsertIntoWorkingSet(node, TRUE);
+    }
   }
 
   // Update image texture
-  if (image_pixels_visibility) {
-    if ((current_image_index >= 0) && (current_image_index < scene->NImages())) {
-      RNBoolean found = FALSE;      
-      char image_filename[4096];
-      if (!found) {
-        sprintf(image_filename, "%s.png", image->Name());
-        if (RNFileExists(image_filename)) found = TRUE;
-      }
-      if (!found) {
-        sprintf(image_filename, "%s.jpg", image->Name());
-        if (RNFileExists(image_filename)) found = TRUE;
-      }
-      if (!found && color_image_directory) {
-        sprintf(image_filename, "%s/%s.png", color_image_directory, image->Name());
-        if (RNFileExists(image_filename)) found = TRUE;
-      }
-      if (!found && color_image_directory) {
-        sprintf(image_filename, "%s/%s.jpg", color_image_directory, image->Name());
-        if (RNFileExists(image_filename)) found = TRUE;
-      }
-      if (found) {
-        static R2Image image;
-        if (image.Read(image_filename)) { 
-          current_image_texture.SetImage(&image);
-          printf("Read %s\n", image_filename);
-        }
+  static R3SurfelImage *previous_image = NULL;
+  if (image && (image != previous_image) && image_pixels_visibility) {
+    previous_image = image;
+    RNBoolean found = FALSE;      
+    char image_filename[4096];
+    if (!found) {
+      sprintf(image_filename, "%s.png", image->Name());
+      if (RNFileExists(image_filename)) found = TRUE;
+    }
+    if (!found) {
+      sprintf(image_filename, "%s.jpg", image->Name());
+      if (RNFileExists(image_filename)) found = TRUE;
+    }
+    if (!found && color_image_directory) {
+      sprintf(image_filename, "%s/%s.png", color_image_directory, image->Name());
+      if (RNFileExists(image_filename)) found = TRUE;
+    }
+    if (!found && color_image_directory) {
+      sprintf(image_filename, "%s/%s.jpg", color_image_directory, image->Name());
+      if (RNFileExists(image_filename)) found = TRUE;
+    }
+    if (found) {
+      static R2Image color_image;
+      if (color_image.Read(image_filename)) { 
+        current_image_texture.SetImage(&color_image);
+        printf("Read %s\n", image_filename);
       }
     }
   }
+
+  // Remember selected image
+  selected_image = image;
 }
+
 
 
 int R3SurfelViewer::
@@ -1580,6 +1587,89 @@ RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy)
   // if (phi > max_phi) phi = max_phi;
   viewer.RotateWorld(origin, viewer.Camera().Right(), phi);
 }
+
+
+
+R3SurfelImage *R3SurfelViewer::
+PickImage(int x, int y, R3Point *picked_position) 
+{
+  // How close the cursor has to be to a point (in pixels)
+  int pick_tolerance = 10;
+
+  // Clear window 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Set viewing transformation
+  viewer.Camera().Load();
+
+  // Set viewing extent
+  LoadViewingExtent(this);
+
+  // Set OpenGL stuff
+  glLineWidth(pick_tolerance);    
+
+  // Draw image viewpoints
+  if (image_viewpoint_visibility) {
+    glDisable(GL_LIGHTING);
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      unsigned char rgba[4];
+      int image_index = i + 1;
+      rgba[0] = (image_index >> 16) & 0xFF;
+      rgba[1] = (image_index >> 8) & 0xFF;
+      rgba[2] = image_index & 0xFF;
+      rgba[3] = 0xFD;
+      glColor4ubv(rgba);
+      image->Draw(0);
+    }
+  }
+
+  // Reset OpenGL stuff
+  glLineWidth(1);
+  glFinish();
+
+  // Reset viewing modes
+  LoadViewingExtent(NULL);
+
+  // Read color buffer at cursor position
+  unsigned char rgba[4];
+  glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+  if (rgba[3] == 0) return NULL;
+
+  // Determine image index
+  int r = rgba[0] & 0xFF;
+  int g = rgba[1] & 0xFF;
+  int b = rgba[2] & 0xFF;
+  int a = rgba[3] & 0xFF;
+  if (a != 0xFD) return NULL;
+  int image_index = (r << 16) | (g << 8) | b;
+  image_index--;
+
+  // Determine image
+  if (image_index < 0) return NULL;
+  if (image_index >= scene->NImages()) return NULL;
+  R3SurfelImage *picked_image = scene->Image(image_index);
+
+  // Find hit position
+  if (picked_position) {
+    GLfloat depth;
+    GLdouble p[3];
+    GLint viewport[4];
+    GLdouble modelview_matrix[16];
+    GLdouble projection_matrix[16];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+    glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+    glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    gluUnProject(x, y, depth, modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
+    R3Point position(p[0], p[1], p[2]);
+    *picked_position = position;
+  }
+
+  // Return picked image
+  return picked_image;
+}
+
 
 
 

@@ -46,6 +46,8 @@ target:
 	cd confview; $(MAKE) $(TARGET)
 	cd conf2img; $(MAKE) $(TARGET)
 	cd conf2conf; $(MAKE) $(TARGET)
+	cd sflinfo; $(MAKE) $(TARGET)
+	cd sflview; $(MAKE) $(TARGET)
 
 
 
