@@ -1841,7 +1841,7 @@ PickNode(int x, int y, R3Point *picked_position,
   if (picked_block || picked_surfel_index) {
     // Create pointset in vicinity of picked position
     R3Point position(p[0], p[1], p[2]);
-    R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, 0.1));
+    R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, 0.2));
     R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &sphere_constraint);
     if (pointset) {
       // Find surfel point closest to picked position
