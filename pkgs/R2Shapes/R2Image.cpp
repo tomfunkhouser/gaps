@@ -240,15 +240,20 @@ operator=(const R2Image& image)
   this->height = image.height;
   this->ncomponents = image.ncomponents;
   this->rowsize = image.rowsize;
+  
+  // Delete previous pixels
+  if (this->pixels) delete [] pixels;
+  this->pixels = NULL;
 
   // Copy pixels
-  if (this->pixels) delete [] pixels;
   int nbytes = this->rowsize * this->height;
-  this->pixels = new unsigned char [nbytes];
-  assert(this->pixels);
-  unsigned char *p =this-> pixels;
-  unsigned char *data = image.pixels;
-  while (--nbytes) *(p++) = *(data++);
+  if (nbytes > 0) {
+    this->pixels = new unsigned char [nbytes];
+    assert(this->pixels);
+    unsigned char *p =this-> pixels;
+    unsigned char *data = image.pixels;
+    while (--nbytes) *(p++) = *(data++);
+  }
 
   // Return this
   return *this;

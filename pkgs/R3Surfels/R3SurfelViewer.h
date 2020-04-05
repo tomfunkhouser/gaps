@@ -290,9 +290,6 @@ protected:
   RNTime frame_timer;
   RNScalar frame_time;
 
-  // Image loading
-  char *image_directory;
-
   // Screen capture
   char *screenshot_name;
 };
@@ -672,15 +669,6 @@ Scene(void) const
 }
 
 
-inline const char *R3SurfelViewer::
-ImageDirectory(void) const
-{
-  // Return image directory
-  return image_directory;
-}
-
-
-
 inline void R3SurfelViewer::
 SetCamera(const R3Camera& camera)
 {
@@ -993,17 +981,6 @@ SetFocusRadius(RNScalar focus_radius)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
-}
-
-
-
-inline void R3SurfelViewer::
-SetImageDirectory(const char *directory_name)
-{
-  // Set image directory
-  if (this->image_directory) free(this->image_directory);
-  if (directory_name) this->image_directory = strdup(directory_name);
-  else image_directory = NULL;
 }
 
 

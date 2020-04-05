@@ -99,7 +99,7 @@ R2Image R3SurfelImage::
 ColorChannels(void) const
 {
   // Allocate color image for result
-  R2Image color_image(ImageWidth(), ImageHeight(), 3);
+  R2Image color_image;
 
   // Get RGB channels
   const R2Grid *red_channel = RedChannel();
@@ -107,6 +107,7 @@ ColorChannels(void) const
   const R2Grid *blue_channel = BlueChannel();
   if (red_channel && green_channel && blue_channel) {
     // Fill in RGB for each pixel
+    color_image = R2Image(ImageWidth(), ImageHeight(), 3);
     for (int iy = 0; iy < ImageHeight(); iy++) {
       for (int ix = 0; ix < ImageWidth(); ix++) {
         RNScalar red = red_channel->GridValue(ix, iy);
@@ -121,7 +122,7 @@ ColorChannels(void) const
   // Return color image
   return color_image;
 }
-
+ 
 
   
 R4Matrix R3SurfelImage::

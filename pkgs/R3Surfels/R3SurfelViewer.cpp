@@ -70,7 +70,6 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
-    image_directory(NULL),
     screenshot_name(NULL)
 {
   // Initialize mouse button state
@@ -102,8 +101,6 @@ R3SurfelViewer(R3SurfelScene *scene)
 R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
-  // Free image directory
-  if (image_directory) free(image_directory);
 }
 
 
@@ -1201,36 +1198,16 @@ SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_t
       InsertIntoWorkingSet(node, TRUE);
     }
   }
-
+  
   // Update image texture
   static R3SurfelImage *previous_image = NULL;
   if (image && (image != previous_image) && image_pixels_visibility) {
     previous_image = image;
-    char image_filename[4096];
-    RNBoolean found = FALSE;      
-    const char *dir = image_directory;
-    if (!dir) dir = ".";
-    if (!found) {
-      sprintf(image_filename, "%s/%s.png", dir, image->Name());
-      if (RNFileExists(image_filename)) found = TRUE;
-    }
-    if (!found) {
-      sprintf(image_filename, "%s/%s.jpg", dir, image->Name());
-      if (RNFileExists(image_filename)) found = TRUE;
-    }
-    if (!found) {
-      sprintf(image_filename, "%s/color_images/%s.png", dir, image->Name());
-      if (RNFileExists(image_filename)) found = TRUE;
-    }
-    if (!found) {
-      sprintf(image_filename, "%s/color_images/%s.jpg", dir, image->Name());
-      if (RNFileExists(image_filename)) found = TRUE;
-    }
-    if (found) {
-      static R2Image color_image;
-      if (color_image.Read(image_filename)) { 
+    static R2Image color_image;
+    color_image = image->ColorChannels();
+    if (color_image.Depth() == 3) {
+      if ((color_image.Width() == image->ImageWidth()) && (color_image.Height() == image->ImageHeight())) {
         current_image_texture.SetImage(&color_image);
-        printf("Read %s\n", image_filename);
       }
     }
   }
