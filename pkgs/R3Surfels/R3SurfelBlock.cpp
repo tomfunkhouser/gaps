@@ -1287,8 +1287,8 @@ Draw(RNFlags flags) const
       }
       for (int j = 0; j < nsides; j++) {
         glVertex3fv(surfel.PositionPtr());
-        R3LoadPoint(p[j]);
         R3LoadPoint(p[(j+1)%nsides]);
+        R3LoadPoint(p[j]);
       }
     }
     glEnd();        
