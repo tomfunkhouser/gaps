@@ -18,6 +18,7 @@ public:
   R3SurfelPoint(void);
   R3SurfelPoint(const R3SurfelPoint& surfel);
   R3SurfelPoint(R3SurfelBlock *block, const R3Surfel *surfel);
+  R3SurfelPoint(R3SurfelBlock *block, int surfel_index);
   ~R3SurfelPoint(void);
 
   // Position property functions

@@ -1,4 +1,4 @@
-// Source file for the surfel tree viewer program
+// Source file for the surfel scene viewer program
 
 
 
@@ -11,8 +11,6 @@ using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "fglut/fglut.h" 
-#include "align.h"
-#include "debug.h"
 
 
 
@@ -25,9 +23,30 @@ using namespace gaps;
 static const char *scene_name = NULL;
 static const char *database_name = NULL;
 static const char *model_name = NULL;
-static const char *color_image_directory = "color_images";
-static const char *output_image_name = NULL;
+static const char *image_directory = NULL;
 static int print_verbose = 0;
+
+
+// Display parameters
+
+static RNRgb background_color(0,0,0);
+static R3Point initial_camera_eye(0,0,0);
+static R3Vector initial_camera_towards(0,0,0);
+static R3Vector initial_camera_up(0,0,0);
+static RNBoolean initial_camera = FALSE;
+
+
+// Display selections
+
+static int show_model = 1;
+static int show_model_names = 0;
+static int show_image_affinities = 0;
+
+// Glut variables
+
+static int GLUTwindow = 0;
+static int GLUTwindow_width = 1024;
+static int GLUTwindow_height = 768;
 
 
 // Application variables
@@ -37,30 +56,9 @@ R3SurfelViewer *viewer = NULL;
 R3Scene *model = NULL;
 
 
-// Display variables
-
-static int color_scheme = R3_SURFEL_VIEWER_COLOR_BY_RGB;
-static int cull_backfacing = 0;
-static int show_model = 1;
-static int show_model_names = 0;
-static RNRgb background_color(0,0,0);
-static R3Point initial_camera_eye(0,0,0);
-static R3Vector initial_camera_towards(0,0,0);
-static R3Vector initial_camera_up(0,0,0);
-static RNBoolean initial_camera = FALSE;
-
-
-
-// Glut variables
-
-static int GLUTwindow = 0;
-static int GLUTwindow_width = 1024;
-static int GLUTwindow_height = 768;
-
-
 
 ////////////////////////////////////////////////////////////////////////
-// Surfel I/O Functions
+// I/O Functions
 ////////////////////////////////////////////////////////////////////////
 
 static R3SurfelScene *
@@ -189,8 +187,91 @@ DrawText(const R3Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
   glRasterPos3d(p[0], p[1], p[2]);
   while (*s) glutBitmapCharacter(font, *(s++));
 }
- 
 
+
+
+static void
+DrawModel(void)
+{
+  // Check model
+  if (!model) return;
+
+  // Draw model faces
+  if (show_model) {
+    glEnable(GL_LIGHTING);
+    glColor3d(0, 0.8, 0);
+    model->Draw(R3_DEFAULT_DRAW_FLAGS);
+    glDisable(GL_LIGHTING);
+  }
+
+  // Draw model node names
+  if (show_model_names) {
+    glDisable(GL_LIGHTING);
+    glColor3d(1, 1, 1);
+    for (int i = 0; i < model->NNodes(); i++) {
+      R3SceneNode *node = model->Node(i);
+      if (node->NChildren() == 0) continue;
+      R3Point p = node->Centroid() + 1.5 * node->BBox().ZRadius() * R3posz_vector;
+      DrawText(p, node->Name());
+    }
+  }
+}
+
+
+
+static void
+DrawImageAffinities(void)
+{
+  // Check if should draw
+  if (!show_image_affinities) return;
+
+  // Get selected point
+  R3SurfelPoint *selected_point = viewer->SelectedPoint();
+  if (!selected_point) return;
+  R3Point point_position = selected_point->Position();
+
+  // Draw line between selected center point and
+  // viewpoint of each image in which it is visible
+  glDisable(GL_LIGHTING);
+  glBegin(GL_LINES);
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+
+    // Compute depth 
+    R3Point image_viewpoint = image->Viewpoint();
+    R3Vector image_towards = image->Towards();
+    R3Vector vector = point_position - image_viewpoint;
+    RNScalar point_depth = image_towards.Dot(vector);
+    if (RNIsNegativeOrZero(point_depth)) continue;
+      
+    // Project to image coordinates
+    R2Point image_position = image->TransformFromWorldToImage(point_position);
+    if (!image->ContainsImagePosition(image_position)) continue;
+
+    // Check depth
+    const R2Grid *depth_channel = image->DepthChannel();
+    if (depth_channel) {
+      RNScalar max_depth_difference_fraction = 0.1;
+      RNScalar image_depth = image->PixelDepth(image_position.X(), image_position.Y());
+      if (RNIsNegativeOrZero(image_depth)) continue;
+      if (fabs(image_depth - point_depth) / point_depth > max_depth_difference_fraction) continue;
+    }
+    
+    // Set color and alpha based on affinity
+    RNScalar affinity = 0.5 + ((point_depth > 2) ? 1.0 / point_depth : 0.5);
+    glColor3d(affinity, 0, affinity);
+    
+    // Draw line
+    R3LoadPoint(point_position);
+    R3LoadPoint(image_viewpoint);
+  }
+  glEnd();
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// GLUT callback functions
+////////////////////////////////////////////////////////////////////////
 
 void GLUTStop(void)
 {
@@ -216,42 +297,9 @@ void GLUTRedraw(void)
     glutPostRedisplay();
   }
 
-  // Draw model
-  if (model) {
-    // Draw model faces
-    if (show_model) {
-      glEnable(GL_LIGHTING);
-      static GLfloat material[] = { 0.0, 0.8, 0.0, 1.0 };
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, material); 
-      model->Draw(R3_DEFAULT_DRAW_FLAGS);
-      glDisable(GL_LIGHTING);
-    }
-
-    // Draw model node names
-    if (show_model_names) {
-      glDisable(GL_LIGHTING);
-      glColor3d(1, 1, 1);
-      for (int i = 0; i < model->NNodes(); i++) {
-        R3SceneNode *node = model->Node(i);
-        if (node->NChildren() == 0) continue;
-        R3Point p = node->Centroid() + 1.5 * node->BBox().ZRadius() * R3posz_vector;
-        DrawText(p, node->Name());
-      }
-    }
-  }
-
-  // Draw debug info
-  if (DebugRedraw(viewer)) {
-    glutPostRedisplay();
-  }    
-
-  // Capture image and exit
-  if (output_image_name) {
-    R2Image image(GLUTwindow_width, GLUTwindow_height, 3);
-    image.Capture();
-    image.Write(output_image_name);
-    GLUTStop();
-  }
+  // Draw stuff
+  DrawModel();
+  DrawImageAffinities();
 
   // Swap buffers 
   glutSwapBuffers();
@@ -269,11 +317,6 @@ void GLUTResize(int w, int h)
   if (viewer->Resize(w, h)) {
     glutPostRedisplay();
   }
-
-  // Send resize to debug function
-  if (DebugResize(viewer, w, h)) {
-    glutPostRedisplay();
-  }    
 }
 
 
@@ -287,11 +330,6 @@ void GLUTMouseMotion(int x, int y)
   if (viewer->MouseMotion(x, y)) {
     glutPostRedisplay();
   }
-
-  // Send mouse motion to debug function
-  if (DebugMouseMotion(viewer, x, y)) {
-    glutPostRedisplay();
-  }    
 }
 
 
@@ -320,11 +358,6 @@ void GLUTMouseButton(int button, int state, int x, int y)
   if (viewer->MouseButton(x, y, b, s, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
-
-  // Send mouse event to debug function
-  if (DebugMouseButton(viewer, x, y, b, s, shift, ctrl, alt)) {
-    glutPostRedisplay();
-  }    
 }
 
 
@@ -370,11 +403,6 @@ void GLUTSpecial(int key, int x, int y)
   if (viewer->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
-
-  // Send keyboard event to debug function
-  if (DebugKeyboard(viewer, x, y, translated_key, shift, ctrl, alt)) {
-    glutPostRedisplay();
-  }    
 }
 
 
@@ -409,16 +437,24 @@ void GLUTKeyboard(unsigned char key, int x, int y)
       glutPostRedisplay();
     }
   }
-  else {
-    if (translated_key == 27) { // ESC
+  else if (!ctrl) {
+    switch (translated_key) {
+    case 'A':
+    case 'a':
+      show_image_affinities = !show_image_affinities;
+      break;
+
+    case 27: // ESC
       exit(0);
-    }
-    else if (translated_key == 32) { // SPACE
+      break;
+
+    case 32: { // SPACE
       const R3Camera& camera = viewer->Camera();
       printf("#camera  %g %g %g  %g %g %g  %g %g %g\n",
         camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
         camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
         camera.Up().X(), camera.Up().Y(), camera.Up().Z());
+      break; }
     }
   }
 
@@ -426,11 +462,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   if (viewer->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
-
-  // Send keyboard event to debug function
-  if (DebugKeyboard(viewer, x, y, translated_key, shift, ctrl, alt)) {
-    glutPostRedisplay();
-  }    
 }
 
 
@@ -461,11 +492,6 @@ void GLUTInit(int *argc, char **argv)
 
 void GLUTMainLoop(void)
 {
-  // Set viewer properties
-  viewer->SetSurfelColorScheme(color_scheme);
-  viewer->SetBackgroundColor(background_color);
-  viewer->SetBackfacingVisibility(1 - cull_backfacing);
-
   // Set camera 
   if (initial_camera) {
     R3Camera camera(initial_camera_eye, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.01, 100000.0);
@@ -490,17 +516,8 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-image")) { 
-        argc--; argv++; output_image_name = *argv; 
-      }
-      else if (!strcmp(*argv, "-color")) { 
-        argc--; argv++; color_scheme = atoi(*argv); 
-      }
-      else if (!strcmp(*argv, "-cull_backfacing")) { 
-        cull_backfacing = 1; 
-      }
-      else if (!strcmp(*argv, "-color_image_directory")) { 
-        argv++; argc--; color_image_directory = *argv;
+      else if (!strcmp(*argv, "-image_directory")) { 
+        argv++; argc--; image_directory = *argv;
       }
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 
@@ -578,8 +595,8 @@ int main(int argc, char **argv)
   if (!viewer) exit(-1);
 
   // Set color image directory
-  if (color_image_directory) {
-    viewer->SetColorImageDirectory(color_image_directory);
+  if (image_directory) {
+    viewer->SetImageDirectory(image_directory);
   }
   
   // Initialize GLUT

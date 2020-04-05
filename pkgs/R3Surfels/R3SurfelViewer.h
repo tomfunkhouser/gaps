@@ -63,6 +63,7 @@ public:
   const R2Viewport& Viewport(void) const;
   const R3Box& ViewingExtent(void) const;
   const R3Point& CenterPoint(void) const;
+  RNLength ImagePixelsDepth(void) const;
   RNScalar SurfelSize(void) const;
 
   // Visibility properties (0=off, 1=on)
@@ -96,13 +97,17 @@ public:
   RNScalar TargetResolution(void) const;
   RNScalar FocusRadius(void) const;
 
+  // Selection properties
+  R3SurfelPoint *SelectedPoint(void) const;
+  R3SurfelImage *SelectedImage(void) const;
+  
   // Frame rate statistics
   RNScalar FrameRate(void) const;
   RNScalar FrameTime(void) const;
   RNScalar CurrentTime(void) const;
 
-  // Image loading
-  const char *ColorImageDirectory(void) const;
+  // Image loading properties
+  const char *ImageDirectory(void) const;
   
   
   /////////////////////////////////////////
@@ -115,6 +120,7 @@ public:
   void SetViewport(const R2Viewport& viewport);
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
+  void SetImagePixelsDepth(RNLength depth);
   void SetSurfelSize(RNScalar npixels);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
@@ -145,6 +151,7 @@ public:
   void SetCenterPointColor(const RNRgb& color);
 
   // Selection manipulation
+  void SelectPoint(R3SurfelBlock *block, int surfel_index);
   void SelectImage(R3SurfelImage *image,
     RNBoolean update_working_set = TRUE,
     RNBoolean jump_to_viewpoint = FALSE);
@@ -154,24 +161,36 @@ public:
   void SetFocusRadius(RNScalar radius);
 
   // Image loading
-  void SetColorImageDirectory(const char *directory_name);
+  void SetImageDirectory(const char *directory_name);
 
   // Image input/output
   int WriteImage(const char *filename);
 
 
-////////////////////////////////////////////////////////////////////////
-// INTERNAL STUFF BELOW HERE
-////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////
+  //// PICKING FUNCTIONS               ////
+  /////////////////////////////////////////
 
-  // Selection properties
-  R3SurfelImage *SelectedImage(void) const;
-  
   // Pick utility functions
   R3SurfelImage *PickImage(int x, int y, R3Point *picked_position = NULL);
   R3SurfelNode *PickNode(int x, int y, R3Point *picked_position = NULL,
-    R3SurfelBlock **picked_block = NULL, const R3Surfel **picked_surfel = NULL,
+    R3SurfelBlock **picked_block = NULL, int *picked_surfel_index = NULL,
     RNBoolean exclude_nonobjects = FALSE);
+
+
+  /////////////////////////////////////////
+  //// DRAWING UTILITY FUNCTIONS       ////
+  /////////////////////////////////////////
+
+  void LoadColor(int k) const;
+  void LoadColor(double value) const;
+  void EnableViewingExtent(void) const;
+  void DisableViewingExtent(void) const;
+  
+  
+////////////////////////////////////////////////////////////////////////
+// INTERNAL STUFF BELOW HERE
+////////////////////////////////////////////////////////////////////////
 
   // Object editing 
   int SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint, 
@@ -213,8 +232,10 @@ protected:
   R3Viewer viewer;
   R3Box viewing_extent;
   R3Point center_point;
+  R3SurfelPoint *selected_point;
   R3SurfelImage *selected_image;
   R2Texture current_image_texture;
+  RNLength image_pixels_depth;
   RNScalar surfel_size;
 
   // Visibility properties
@@ -270,7 +291,7 @@ protected:
   RNScalar frame_time;
 
   // Image loading
-  char *color_image_directory;
+  char *image_directory;
 
   // Screen capture
   char *screenshot_name;
@@ -368,6 +389,15 @@ CenterPoint(void) const
 {
   // Return center point
   return center_point;
+}
+
+
+
+inline RNLength R3SurfelViewer::
+ImagePixelsDepth(void) const
+{
+  // Return depth at which image pixels will be drawn
+  return image_pixels_depth;
 }
 
 
@@ -643,10 +673,10 @@ Scene(void) const
 
 
 inline const char *R3SurfelViewer::
-ColorImageDirectory(void) const
+ImageDirectory(void) const
 {
-  // Return color image directory
-  return color_image_directory;
+  // Return image directory
+  return image_directory;
 }
 
 
@@ -686,6 +716,15 @@ SetCenterPoint(const R3Point& point)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
+}
+
+
+
+inline void R3SurfelViewer::
+SetImagePixelsDepth(RNLength depth)
+{
+  // Set depth at which image pixels will be drawn
+  this->image_pixels_depth = depth;
 }
 
 
@@ -959,12 +998,21 @@ SetFocusRadius(RNScalar focus_radius)
 
 
 inline void R3SurfelViewer::
-SetColorImageDirectory(const char *directory_name)
+SetImageDirectory(const char *directory_name)
 {
   // Set image directory
-  if (this->color_image_directory) free(this->color_image_directory);
-  if (directory_name) this->color_image_directory = strdup(directory_name);
-  else color_image_directory = NULL;
+  if (this->image_directory) free(this->image_directory);
+  if (directory_name) this->image_directory = strdup(directory_name);
+  else image_directory = NULL;
+}
+
+
+
+inline R3SurfelPoint *R3SurfelViewer::
+SelectedPoint(void) const
+{
+  // Return currently selected point
+  return selected_point;
 }
 
 

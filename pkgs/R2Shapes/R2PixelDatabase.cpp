@@ -19,11 +19,14 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
-// Versioning variables
+// Internal variables
 ////////////////////////////////////////////////////////////////////////
 
-static unsigned int current_major_version = 0;
-static unsigned int current_minor_version = 1;
+static const unsigned int current_major_version = 0;
+static const unsigned int current_minor_version = 1;
+
+static const unsigned int R2_PIXEL_DATABASE_3_8_PNG_FORMAT = 0;
+static const unsigned int R2_PIXEL_DATABASE_1_16_PNG_FORMAT = 1;
 
 
 
@@ -33,12 +36,13 @@ static unsigned int current_minor_version = 1;
 
 struct R2PixelDatabaseEntry {
 public:
-  R2PixelDatabaseEntry(const char *key = NULL, unsigned long long offset = 0, unsigned int size = 0)
-    : offset(offset), size(size) { this->key[0] = '\0'; if (key) strncpy(this->key, key, 127); this->key[127]='\0'; };
+  R2PixelDatabaseEntry(const char *key = NULL, int format = 0, unsigned int size = 0, unsigned long long offset = 0)
+    : format(format), size(size), offset(offset) { this->key[0] = '\0'; if (key) strncpy(this->key, key, 127); this->key[127]='\0'; };
 public:
   char key[128];
-  unsigned long long offset;
+  unsigned int format;
   unsigned int size;
+  unsigned long long offset;
 };
 
 
@@ -184,7 +188,7 @@ InsertImage(const char *key, const R2Image& image)
   unsigned int size = entries_offset - offset;
   
   // Insert entry into map
-  R2PixelDatabaseEntry entry(key, offset, size);
+  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_3_8_PNG_FORMAT, size, offset);
   map.Insert(key, entry);
   
   // Increment number of entries
@@ -211,7 +215,7 @@ InsertGrid(const char *key, const R2Grid& grid)
   unsigned int size = entries_offset - offset;
   
   // Insert entry into map
-  R2PixelDatabaseEntry entry(key, offset, size);
+  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, offset);
   map.Insert(key, entry);
   
   // Increment number of entries
@@ -402,8 +406,9 @@ ReadEntries(FILE *fp, int swap_endian)
   for (unsigned int i = 0; i < entries_count; i++) {
     R2PixelDatabaseEntry entry;
     if (!RNReadChar(fp, entry.key, 128, swap_endian)) return 0;
-    if (!RNReadUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
     map.Insert(entry.key, entry);
   }
 
@@ -426,8 +431,9 @@ WriteEntries(FILE *fp, int swap_endian)
     R2PixelDatabaseEntry entry = it->second;
     strncpy(buffer, entry.key, 128);
     if (!RNWriteChar(fp, buffer, 128, swap_endian)) return 0;
-    if (!RNWriteUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
   }
 
   // Return success

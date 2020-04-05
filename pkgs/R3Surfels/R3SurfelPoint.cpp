@@ -48,6 +48,20 @@ R3SurfelPoint(R3SurfelBlock *block, const R3Surfel *surfel)
 
 
 R3SurfelPoint::
+R3SurfelPoint(R3SurfelBlock *block, int surfel_index)
+  : block(block),
+    surfel(NULL)
+{
+  // Update block reference count
+  if (block && block->Database()) block->Database()->ReadBlock(block);
+
+  // Find surfel
+  surfel = block->Surfel(surfel_index);
+}
+
+
+
+R3SurfelPoint::
 ~R3SurfelPoint(void)
 {
   // Update block reference count

@@ -3,7 +3,7 @@
 #
 
 NAME=sflview
-CCSRCS=$(NAME).cpp debug.cpp align.cpp map.cpp 
+CCSRCS=$(NAME).cpp
 
 
 

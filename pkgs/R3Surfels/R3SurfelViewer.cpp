@@ -30,8 +30,10 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewer(),
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     center_point(0,0,0),
+    selected_point(NULL),
     selected_image(NULL),
     current_image_texture(),
+    image_pixels_depth(10),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -55,7 +57,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     block_bbox_color(0,1,0),
     scan_viewpoint_color(0,1,1),
     image_viewpoint_color(0,1,1),
-    center_point_color(1,0,0),
+    center_point_color(0,0,0.5),
     shape_draw_flags(0),
     adapt_working_set_automatically(0),
     target_resolution(30),
@@ -68,7 +70,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
-    color_image_directory(NULL),
+    image_directory(NULL),
     screenshot_name(NULL)
 {
   // Initialize mouse button state
@@ -101,7 +103,7 @@ R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
   // Free image directory
-  if (color_image_directory) free(color_image_directory);
+  if (image_directory) free(image_directory);
 }
 
 
@@ -110,8 +112,8 @@ R3SurfelViewer::
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
 
-void
-LoadColor(int k)
+void R3SurfelViewer::
+LoadColor(int k) const
 {
   // Make array of colors
   const int ncolors = 72;
@@ -142,17 +144,17 @@ LoadColor(int k)
     RNRgb(0.8, 0.8, 0.5), RNRgb(0.5, 0.8, 0.8), RNRgb(0.8, 0.5, 0.8)
   };
 
-  // Return color
-  if (k == 0) RNLoadRgb(colors[0]);
+  // Return color based on k
+  if (k <= 0) RNLoadRgb(colors[0]);
   else RNLoadRgb(colors[1 + (k % (ncolors-1))]);
 }
 
 
 
-void
-LoadColor(double value)
+void R3SurfelViewer::
+LoadColor(double value) const
 {
-  // Compute rgb
+  // Compute rgb based on blue-green-red heatmap
   GLdouble r, g, b;
   if (value < 0) {
     r = 0;
@@ -195,88 +197,53 @@ LoadColor(double value)
 
 
 
-static void
-LoadViewingExtent(const R3SurfelViewer *viewer)
+void R3SurfelViewer::
+EnableViewingExtent(void) const
+{
+  // Check extent
+  const R3Box& bbox = scene->BBox();  
+  const R3Box& extent = ViewingExtent();
+  if (extent.IsEmpty() || R3Contains(extent, bbox)) {
+    DisableViewingExtent();
+    return;
+  }
+
+  // Load lo clip planes
+  for (int dim = RN_X; dim <= RN_Z; dim++) {
+    if (extent[RN_LO][dim] > bbox[RN_LO][dim]) {
+      GLdouble plane_equation[4] = { 0, 0, 0, 0 };
+      plane_equation[dim] = 1.0;
+      plane_equation[3] = -extent[RN_LO][dim];
+      glClipPlane(GL_CLIP_PLANE0 + dim, plane_equation);
+      glEnable(GL_CLIP_PLANE0 + dim);
+    }
+  }
+
+  // Load hi clip planes
+  for (int dim = RN_X; dim <= RN_Z; dim++) {
+    if (extent[RN_HI][dim] < bbox[RN_HI][dim]) {
+      GLdouble plane_equation[4] = { 0, 0, 0, 0 };
+      plane_equation[dim] = -1.0;
+      plane_equation[3] = extent[RN_HI][dim];
+      glClipPlane(GL_CLIP_PLANE0 + 3 + dim, plane_equation);
+      glEnable(GL_CLIP_PLANE0 + 3 + dim);
+    }
+  }
+}  
+
+
+
+void R3SurfelViewer::
+DisableViewingExtent(void) const
 {
   // Disable all clip planes
   for (int i = 0; i < 6; i++) {
     glDisable(GL_CLIP_PLANE0 + i);
   }
-
-  // Check viewer
-  if (viewer) {
-    // Check extent
-    const R3Box& extent = viewer->ViewingExtent();
-    if (extent.IsEmpty()) return;
-    const R3SurfelScene *scene = viewer->Scene();
-    const R3Box& bbox = scene->BBox();  
-    if (R3Contains(extent, bbox)) return;
-
-    // Load lo clip planes
-    for (int dim = RN_X; dim <= RN_Z; dim++) {
-      if (extent[RN_LO][dim] > bbox[RN_LO][dim]) {
-        GLdouble plane_equation[4] = { 0, 0, 0, 0 };
-        plane_equation[dim] = 1.0;
-        plane_equation[3] = -extent[RN_LO][dim];
-        glClipPlane(GL_CLIP_PLANE0 + dim, plane_equation);
-        glEnable(GL_CLIP_PLANE0 + dim);
-      }
-    }
-
-    // Load hi clip planes
-    for (int dim = RN_X; dim <= RN_Z; dim++) {
-      if (extent[RN_HI][dim] < bbox[RN_HI][dim]) {
-        GLdouble plane_equation[4] = { 0, 0, 0, 0 };
-        plane_equation[dim] = -1.0;
-        plane_equation[3] = extent[RN_HI][dim];
-        glClipPlane(GL_CLIP_PLANE0 + 3 + dim, plane_equation);
-        glEnable(GL_CLIP_PLANE0 + 3 + dim);
-      }
-    }
-  }  
 }
 
 
-
-#if 0
-static void
-DrawSurfelQuad(const R3SurfelViewer *viewer, const R3SurfelBlock *block, const R3Surfel *surfel, unsigned char alpha)
-{
-  // Get color
-  unsigned char color[4];
-  color[0] = surfel->R();
-  color[1] = surfel->G();
-  color[2] = surfel->B();
-  color[3] = alpha;
-  
-  // Get position
-  const R3Point& block_origin = block->PositionOrigin();
-  double px = surfel->X() + block_origin.X();
-  double py = surfel->Y() + block_origin.Y();
-  double pz = surfel->Z() + block_origin.Z();
-  R3Point p(px, py, pz);
-
-  // Get radius
-  RNScalar r = 0.5 / block->Resolution();
-
-  // Get axis vectors
-  R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
-  RNDimension dim = normal.MinDimension();
-  R3Vector axis1 = normal % R3xyz_triad[dim];  axis1.Normalize();
-  R3Vector axis2 = normal % axis1; axis2.Normalize();
-
-  // Draw square
-  glColor4ubv(color);
-  // R3LoadNormal(normal);
-  R3LoadPoint(p - r*axis1 - r*axis2);
-  R3LoadPoint(p + r*axis1 - r*axis2);
-  R3LoadPoint(p + r*axis1 + r*axis2);
-  R3LoadPoint(p - r*axis1 + r*axis2);
-}
-#endif
-
-
-
+    
 ////////////////////////////////////////////////////////////////////////
 // UI event handler functions
 ////////////////////////////////////////////////////////////////////////
@@ -301,7 +268,7 @@ Redraw(void)
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
 
   // Set viewing extent
-  LoadViewingExtent(this);
+  EnableViewingExtent();
 
   // Set draw modes
   if (shape_draw_flags == 0) glDisable(GL_LIGHTING);
@@ -402,7 +369,7 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
             double z = block_origin.Z() + surfel->Z();
-            double value = 0.1 * (z - center_point.Z());
+            double value = 0.1 * (z - center_point.Z() - 1.0);
             LoadColor(value);
             glVertex3fv(surfel->PositionPtr());
           }
@@ -581,7 +548,7 @@ Redraw(void)
     }
   }
 
-  // Draw object properties
+  // Draw object relationships
   if (object_relationship_visibility) {
     RNLoadRgb(1.0, 1.0, 1.0);
     for (int i = 0; i < scene->NObjectRelationships(); i++) {
@@ -645,7 +612,7 @@ Redraw(void)
 
   // Draw image pixels
   if ((image_pixels_visibility) && (current_image_texture.Image()) && selected_image) {
-    RNLength depth = 10;
+    RNLength depth = image_pixels_depth;
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
     R3SurfelImage *image = selected_image;
@@ -673,18 +640,21 @@ Redraw(void)
   // Draw center point
   if (center_point_visibility) {
     glEnable(GL_LIGHTING);
-    GLfloat color[4];
-    color[0] = center_point_color[0];
-    color[1] = center_point_color[1];
-    color[2] = center_point_color[2];
-    color[3] = 1;
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
+    RNLoadRgb(center_point_color);
     R3Sphere(center_point, 0.1).Draw();
     glDisable(GL_LIGHTING);
   }
 
   // Reset viewing modes
-  LoadViewingExtent(NULL);
+  DisableViewingExtent();
+
+  // Draw selected point
+  if (selected_point) {
+    glEnable(GL_LIGHTING);
+    RNLoadRgb(RNred_rgb);
+    R3Sphere(selected_point->Position(), 0.1).Draw();
+    glDisable(GL_LIGHTING);
+  }
 
   // Draw axes
   if (axes_visibility) {
@@ -848,22 +818,32 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     double_click = !drag && !double_click && (last_mouse_down_time.Elapsed() < 0.4);
     last_mouse_down_time.Read();
 
-    // Set center point on left click 
+    // Select stuff on left click 
     if ((button == 0) && !drag) {
+      // Select image
       R3Point pick_position;
       R3SurfelImage *image = PickImage(x, y, &pick_position);
       SelectImage(image, FALSE, FALSE);
       if (image) {
         // Set center point and update working set around picked image
         printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
-        SetCenterPoint(pick_position - 3*R3posz_vector);
+        SetCenterPoint(pick_position);
         redraw = TRUE;
       }
       else {
-        // Set center point and update working set around picked position
-        R3SurfelNode *node = PickNode(x, y, &pick_position);
-        if (node) SetCenterPoint(pick_position);
-        redraw = TRUE;
+        // Select point
+        int picked_surfel_index = -1;
+        R3SurfelBlock *picked_block = NULL;
+        if (PickNode(x, y, &pick_position, &picked_block, &picked_surfel_index)) {
+          // Hit
+          if (picked_surfel_index >= 0) SelectPoint(picked_block, picked_surfel_index);
+          SetCenterPoint(pick_position);
+          redraw = TRUE;
+        }
+        else {
+          // Miss
+          SelectPoint(NULL, -1);
+        }
       }
     }
   }
@@ -930,6 +910,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetImagePixelsVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);
       break;
+
+    // case 'M': // Reserve for toggling "model" in app
+    // case 'm':
+    //  break;
       
     case 'N':
     case 'n':
@@ -1079,11 +1063,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
       break;
 
+    case '_': 
+      SetImagePixelsDepth(0.9 * ImagePixelsDepth());
+      break;
+
+    case '+': 
+      SetImagePixelsDepth(1.1 * ImagePixelsDepth());
+      break;
+
     case '-': 
       SetSurfelSize(0.9 * SurfelSize());
       break;
 
-    case '+': 
+    case '=': 
       SetSurfelSize(1.1 * SurfelSize());
       break;
 
@@ -1169,6 +1161,24 @@ ZoomCamera(RNScalar scale)
 
 
 void R3SurfelViewer::
+SelectPoint(R3SurfelBlock *block, int surfel_index)
+{
+  // Remember previously selected point
+  R3SurfelPoint *previous_selected_point = selected_point;
+
+  // Select point
+  selected_point = NULL;
+  if (block && (surfel_index >= 0) && (surfel_index < block->NSurfels())) {
+    selected_point = new R3SurfelPoint(block, surfel_index);
+  }
+
+  // Delete previously selected point
+  if (previous_selected_point) delete previous_selected_point;
+}
+
+
+
+void R3SurfelViewer::
 SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_to_viewpoint)
 {
   // Jump to viewpoint
@@ -1196,22 +1206,24 @@ SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_t
   static R3SurfelImage *previous_image = NULL;
   if (image && (image != previous_image) && image_pixels_visibility) {
     previous_image = image;
-    RNBoolean found = FALSE;      
     char image_filename[4096];
+    RNBoolean found = FALSE;      
+    const char *dir = image_directory;
+    if (!dir) dir = ".";
     if (!found) {
-      sprintf(image_filename, "%s.png", image->Name());
+      sprintf(image_filename, "%s/%s.png", dir, image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
     }
     if (!found) {
-      sprintf(image_filename, "%s.jpg", image->Name());
+      sprintf(image_filename, "%s/%s.jpg", dir, image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
     }
-    if (!found && color_image_directory) {
-      sprintf(image_filename, "%s/%s.png", color_image_directory, image->Name());
+    if (!found) {
+      sprintf(image_filename, "%s/color_images/%s.png", dir, image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
     }
-    if (!found && color_image_directory) {
-      sprintf(image_filename, "%s/%s.jpg", color_image_directory, image->Name());
+    if (!found) {
+      sprintf(image_filename, "%s/color_images/%s.jpg", dir, image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
     }
     if (found) {
@@ -1616,7 +1628,7 @@ PickImage(int x, int y, R3Point *picked_position)
   viewer.Camera().Load();
 
   // Set viewing extent
-  LoadViewingExtent(this);
+  EnableViewingExtent();
 
   // Set OpenGL stuff
   glLineWidth(pick_tolerance);    
@@ -1642,7 +1654,7 @@ PickImage(int x, int y, R3Point *picked_position)
   glFinish();
 
   // Reset viewing modes
-  LoadViewingExtent(NULL);
+  DisableViewingExtent();
 
   // Read color buffer at cursor position
   unsigned char rgba[4];
@@ -1688,7 +1700,7 @@ PickImage(int x, int y, R3Point *picked_position)
 
 R3SurfelNode *R3SurfelViewer::
 PickNode(int x, int y, R3Point *picked_position, 
-  R3SurfelBlock **picked_block, const R3Surfel **picked_surfel,
+  R3SurfelBlock **picked_block, int *picked_surfel_index,
   RNBoolean exclude_nonobjects) 
 {
   // How close the cursor has to be to a point (in pixels)
@@ -1701,7 +1713,7 @@ PickNode(int x, int y, R3Point *picked_position,
   viewer.Camera().Load();
 
   // Set viewing extent
-  LoadViewingExtent(this);
+  EnableViewingExtent();
 
   // Set OpenGL stuff
   glPointSize(pick_tolerance);    
@@ -1746,7 +1758,7 @@ PickNode(int x, int y, R3Point *picked_position,
   glFinish();
 
   // Reset viewing modes
-  LoadViewingExtent(NULL);
+  DisableViewingExtent();
 
   // Read color buffer at cursor position
   unsigned char rgba[4];
@@ -1826,7 +1838,7 @@ PickNode(int x, int y, R3Point *picked_position,
   if (picked_position) *picked_position = position;
 
   // Find hit surfel
-  if (picked_block || picked_surfel) {
+  if (picked_block || picked_surfel_index) {
     // Create pointset in vicinity of picked position
     R3Point position(p[0], p[1], p[2]);
     R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, 0.1));
@@ -1848,7 +1860,7 @@ PickNode(int x, int y, R3Point *picked_position,
       if (closest_point) {
         if (picked_position) *picked_position = closest_point->Position();
         if (picked_block) *picked_block = closest_point->Block();
-        if (picked_surfel) *picked_surfel = closest_point->Surfel();
+        if (picked_surfel_index) *picked_surfel_index = closest_point->BlockIndex();
       }
 
       // Delete point set
