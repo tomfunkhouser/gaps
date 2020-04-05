@@ -442,6 +442,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     case 'A':
     case 'a':
       show_image_affinities = !show_image_affinities;
+      glutPostRedisplay();
       break;
 
     case 27: // ESC
