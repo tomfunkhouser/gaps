@@ -68,7 +68,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
-    image_directory(strdup("color_images")),
+    color_image_directory(NULL),
     screenshot_name(NULL)
 {
   // Initialize mouse button state
@@ -101,7 +101,7 @@ R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
   // Free image directory
-  if (image_directory) free(image_directory);
+  if (color_image_directory) free(color_image_directory);
 }
 
 
@@ -1181,15 +1181,21 @@ JumpToNextImageViewpoint(int delta)
     if ((current_image_index >= 0) && (current_image_index < scene->NImages())) {
       RNBoolean found = FALSE;      
       char image_filename[4096];
-      sprintf(image_filename, "%s.jpg", image->Name());
-      if (RNFileExists(image_filename)) found = TRUE;
       if (!found) {
-        sprintf(image_filename, "%s/%s.png", image_directory, image->Name());
+        sprintf(image_filename, "%s.png", image->Name());
         if (RNFileExists(image_filename)) found = TRUE;
-        else {
-          sprintf(image_filename, "%s/%s.jpg", image_directory, image->Name());
-          if (RNFileExists(image_filename)) found = TRUE;
-        }
+      }
+      if (!found) {
+        sprintf(image_filename, "%s.jpg", image->Name());
+        if (RNFileExists(image_filename)) found = TRUE;
+      }
+      if (!found && color_image_directory) {
+        sprintf(image_filename, "%s/%s.png", color_image_directory, image->Name());
+        if (RNFileExists(image_filename)) found = TRUE;
+      }
+      if (!found && color_image_directory) {
+        sprintf(image_filename, "%s/%s.jpg", color_image_directory, image->Name());
+        if (RNFileExists(image_filename)) found = TRUE;
       }
       if (found) {
         static R2Image image;

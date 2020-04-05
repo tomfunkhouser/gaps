@@ -102,7 +102,7 @@ public:
   RNScalar CurrentTime(void) const;
 
   // Image loading
-  const char *ImageDirectory(void) const;
+  const char *ColorImageDirectory(void) const;
   
   
   /////////////////////////////////////////
@@ -150,7 +150,7 @@ public:
   void SetFocusRadius(RNScalar radius);
 
   // Image loading
-  void SetImageDirectory(const char *directory_name);
+  void SetColorImageDirectory(const char *directory_name);
 
   // Image input/output
   int WriteImage(const char *filename);
@@ -265,7 +265,7 @@ protected:
   RNScalar frame_time;
 
   // Image loading
-  char *image_directory;
+  char *color_image_directory;
 
   // Screen capture
   char *screenshot_name;
@@ -638,10 +638,10 @@ Scene(void) const
 
 
 inline const char *R3SurfelViewer::
-ImageDirectory(void) const
+ColorImageDirectory(void) const
 {
-  // Return image directory
-  return image_directory;
+  // Return color image directory
+  return color_image_directory;
 }
 
 
@@ -954,12 +954,12 @@ SetFocusRadius(RNScalar focus_radius)
 
 
 inline void R3SurfelViewer::
-SetImageDirectory(const char *directory_name)
+SetColorImageDirectory(const char *directory_name)
 {
   // Set image directory
-  if (this->image_directory) free(this->image_directory);
-  if (directory_name) this->image_directory = strdup(directory_name);
-  else image_directory = NULL;
+  if (this->color_image_directory) free(this->color_image_directory);
+  if (directory_name) this->color_image_directory = strdup(directory_name);
+  else color_image_directory = NULL;
 }
 
 

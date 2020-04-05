@@ -22,10 +22,11 @@ using namespace gaps;
 
 // Program arguments
 
-static char *scene_name = NULL;
-static char *database_name = NULL;
-static char *model_name = NULL;
-static char *output_image_name = NULL;
+static const char *scene_name = NULL;
+static const char *database_name = NULL;
+static const char *model_name = NULL;
+static const char *color_image_directory = "color_images";
+static const char *output_image_name = NULL;
 static int print_verbose = 0;
 
 
@@ -144,7 +145,7 @@ CloseScene(R3SurfelScene *scene)
 
 
 static R3Scene *
-ReadModel(char *filename)
+ReadModel(const char *filename)
 {
   // Start statistics
   RNTime start_time;
@@ -498,6 +499,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-cull_backfacing")) { 
         cull_backfacing = 1; 
       }
+      else if (!strcmp(*argv, "-color_image_directory")) { 
+        argv++; argc--; color_image_directory = *argv;
+      }
       else if (!strcmp(*argv, "-window")) { 
         argv++; argc--; GLUTwindow_width = atoi(*argv); 
         argv++; argc--; GLUTwindow_height = atoi(*argv); 
@@ -573,6 +577,11 @@ int main(int argc, char **argv)
   viewer = new R3SurfelViewer(scene);
   if (!viewer) exit(-1);
 
+  // Set color image directory
+  if (color_image_directory) {
+    viewer->SetColorImageDirectory(color_image_directory);
+  }
+  
   // Initialize GLUT
   GLUTInit(&argc, argv);
 
