@@ -855,7 +855,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
       SelectImage(image, FALSE, FALSE);
       if (image) {
         printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
-        SetCenterPoint(pick_position);
+        SetCenterPoint(pick_position + 2*R3negz_vector);
         redraw = TRUE;
       }
       else {
@@ -1012,6 +1012,17 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
           node = node->Parent();        
         }
       }
+      break; }
+
+    case '.':
+    case ',': {
+      // Select next/prev image
+      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
+      if (key == '.') image_index++;
+      else if (key == ',') image_index--;
+      if (image_index < 0) image_index = 0;
+      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
+      SelectImage(scene->Image(image_index), TRUE, TRUE);
       break; }
 
     default:
