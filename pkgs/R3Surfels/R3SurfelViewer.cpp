@@ -848,17 +848,19 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     double_click = !drag && !double_click && (last_mouse_down_time.Elapsed() < 0.4);
     last_mouse_down_time.Read();
 
-    // Set center point on left double-click 
+    // Set center point on left click 
     if ((button == 0) && !drag) {
       R3Point pick_position;
       R3SurfelImage *image = PickImage(x, y, &pick_position);
       SelectImage(image, FALSE, FALSE);
       if (image) {
+        // Set center point and update working set around picked image
         printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
         SetCenterPoint(pick_position - 3*R3posz_vector);
         redraw = TRUE;
       }
       else {
+        // Set center point and update working set around picked position
         R3SurfelNode *node = PickNode(x, y, &pick_position);
         if (node) SetCenterPoint(pick_position);
         redraw = TRUE;
