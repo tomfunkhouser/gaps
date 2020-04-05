@@ -855,7 +855,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
       SelectImage(image, FALSE, FALSE);
       if (image) {
         printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
-        SetCenterPoint(pick_position + 2*R3negz_vector);
+        SetCenterPoint(pick_position - 3*R3posz_vector);
         redraw = TRUE;
       }
       else {
