@@ -101,7 +101,10 @@ public:
   RNScalar FrameTime(void) const;
   RNScalar CurrentTime(void) const;
 
-
+  // Image loading
+  const char *ImageDirectory(void) const;
+  
+  
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
@@ -145,6 +148,9 @@ public:
   // Working set parameters
   void SetTargetResolution(RNScalar resolution);
   void SetFocusRadius(RNScalar radius);
+
+  // Image loading
+  void SetImageDirectory(const char *directory_name);
 
   // Image input/output
   int WriteImage(const char *filename);
@@ -258,7 +264,10 @@ protected:
   RNTime frame_timer;
   RNScalar frame_time;
 
-  // Image capture
+  // Image loading
+  char *image_directory;
+
+  // Screen capture
   char *screenshot_name;
 };
 
@@ -628,6 +637,14 @@ Scene(void) const
 }
 
 
+inline const char *R3SurfelViewer::
+ImageDirectory(void) const
+{
+  // Return image directory
+  return image_directory;
+}
+
+
 
 inline void R3SurfelViewer::
 SetCamera(const R3Camera& camera)
@@ -932,6 +949,17 @@ SetFocusRadius(RNScalar focus_radius)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
+}
+
+
+
+inline void R3SurfelViewer::
+SetImageDirectory(const char *directory_name)
+{
+  // Set image directory
+  if (this->image_directory) free(this->image_directory);
+  if (directory_name) this->image_directory = strdup(directory_name);
+  else image_directory = NULL;
 }
 
 

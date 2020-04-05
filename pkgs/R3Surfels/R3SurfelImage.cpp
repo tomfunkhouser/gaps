@@ -173,6 +173,9 @@ PixelWorldRay(const R2Point& image_position) const
 void R3SurfelImage::
 SetChannel(int channel_index, const R2Grid& channel)
 {
+  // Check channel index
+  assert(channel_index >= 0);
+
   // Insert channels up to channel index
   for (int i = channels.NEntries(); i <= channel_index; i++) {
     channels.Insert(NULL);
@@ -280,6 +283,7 @@ void R3SurfelImage::
 RemoveChannel(int channel_index)
 {
   // Check channel index
+  if (channel_index < 0) return;
   if (channel_index >= channels.NEntries()) return;
   if (!channels[channel_index]) return;
 

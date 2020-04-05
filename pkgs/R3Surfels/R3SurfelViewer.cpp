@@ -68,6 +68,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
+    image_directory(strdup("color_images")),
     screenshot_name(NULL)
 {
   // Initialize mouse button state
@@ -99,6 +100,8 @@ R3SurfelViewer(R3SurfelScene *scene)
 R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
+  // Free image directory
+  if (image_directory) free(image_directory);
 }
 
 
@@ -1181,11 +1184,12 @@ JumpToNextImageViewpoint(int delta)
       sprintf(image_filename, "%s.jpg", image->Name());
       if (RNFileExists(image_filename)) found = TRUE;
       if (!found) {
-        const char *image_directory = "undistorted_color_images";
-        sprintf(image_filename, "%s/%s.jpg", image_directory, image->Name());
-        char *s = strstr(image_filename, "_d");
-        if (s) *(s+1) = 'i';
+        sprintf(image_filename, "%s/%s.png", image_directory, image->Name());
         if (RNFileExists(image_filename)) found = TRUE;
+        else {
+          sprintf(image_filename, "%s/%s.jpg", image_directory, image->Name());
+          if (RNFileExists(image_filename)) found = TRUE;
+        }
       }
       if (found) {
         static R2Image image;
