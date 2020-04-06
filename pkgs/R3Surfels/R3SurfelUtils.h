@@ -152,7 +152,7 @@ int RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label);
 
 int ReadAllImageChannels(R3SurfelScene *scene,
   const char *image_directory,
-  double depth_scale = 2000, double depth_exponent = 0.5);
+  double depth_scale, double depth_exponent);
 
 
   
