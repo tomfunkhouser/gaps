@@ -185,6 +185,7 @@ CreateNode(R3SurfelScene *scene, const char *node_name, const char *parent_name)
 }
 
 
+
 static R3SurfelObject *
 CreateObject(R3SurfelScene *scene, const char *object_name, 
   const char *parent_name, const char *node_name)
@@ -235,13 +236,6 @@ CreateObject(R3SurfelScene *scene, const char *object_name,
 static R3SurfelLabel *
 CreateLabel(R3SurfelScene *scene, const char *label_name, const char *parent_name)
 {
-  // Get surfel tree
-  R3SurfelTree *tree = scene->Tree();
-  if (!tree) {
-    RNFail("Scene has no tree\n");
-    return NULL;
-  }    
-
   // Find parent label
   R3SurfelLabel *parent_label = scene->FindLabelByName(parent_name);
   if (!parent_label) {
@@ -250,14 +244,11 @@ CreateLabel(R3SurfelScene *scene, const char *label_name, const char *parent_nam
   }
 
   // Create label
-  R3SurfelLabel *label = new R3SurfelLabel(label_name);
+  R3SurfelLabel *label = CreateLabel(scene, parent_label, label_name);
   if (!label) {
-    RNFail("Unable to allocate label\n");
+    RNFail("Unable to create label\n");
     return NULL;
   }
-         
-  // Insert label into scene
-  scene->InsertLabel(label, parent_label);
 
   // Return label
   return label;
@@ -266,111 +257,10 @@ CreateLabel(R3SurfelScene *scene, const char *label_name, const char *parent_nam
 
 
 ////////////////////////////////////////////////////////////////////////
-// REMOVE FUNCTIONS 
-////////////////////////////////////////////////////////////////////////
-
-static int
-RemoveParts(R3SurfelScene *scene, R3SurfelObject *object)
-{
-  // Copy array of parts
-  RNArray<R3SurfelObject *> parts;
-  for (int i = 0; i < object->NParts(); i++) {
-    R3SurfelObject *part = object->Part(i);
-    parts.Insert(part);
-  }
-  
-  // Delete parts
-  for (int i = 0; i < parts.NEntries(); i++) {
-    R3SurfelObject *part = parts.Kth(i);
-    RemoveParts(scene, part);
-    scene->RemoveObject(part);
-    delete part;
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label)
-{
-  // Copy array of parts
-  RNArray<R3SurfelLabel *> parts;
-  for (int i = 0; i < label->NParts(); i++) {
-    R3SurfelLabel *part = label->Part(i);
-    parts.Insert(part);
-  }
-  
-  // Delete parts
-  for (int i = 0; i < parts.NEntries(); i++) {
-    R3SurfelLabel *part = parts.Kth(i);
-    RemoveParts(scene, part);
-    scene->RemoveLabel(part);
-    delete part;
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-RemoveObjects(R3SurfelScene *scene)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-
-  // Remove objects recursively
-  int nobjects = scene->NObjects();
-  if (!RemoveParts(scene, scene->RootObject())) return 0;
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Removed objects ...\n");
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Objects Removed = %d\n", nobjects - scene->NObjects());
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-RemoveLabels(R3SurfelScene *scene)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-
-  // Remove labels recursively
-  int nlabels = scene->NLabels();
-  if (!RemoveParts(scene, scene->RootLabel())) return 0;
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Removed labels ...\n");
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Labels Removed = %d\n", nlabels - scene->NLabels());
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // LOAD FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+#if 0
 static R3SurfelNode *
 LoadSurfels(R3SurfelScene *scene, R3SurfelNode *parent_node, 
   R3Point *points, int npoints, const char *node_name)
@@ -424,6 +314,7 @@ LoadSurfels(R3SurfelScene *scene, R3SurfelNode *parent_node,
   // Return node
   return node;
 }
+#endif
 
 
 
@@ -818,215 +709,6 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Objects = %d\n", node_count);
     printf("  # Surfels = %d\n", surfel_count);
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
-static int
-LoadSurfelsFromGoogleStreetView(R3SurfelScene *scene, const char *list_filename, 
-  const char *parent_node_name)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-
-  // Get surfel tree
-  R3SurfelTree *tree = scene->Tree();
-  if (!tree) {
-    RNFail("Scene has no tree\n");
-    return 0;
-  }    
-
-  // Get surfel database
-  R3SurfelDatabase *database = tree->Database();
-  if (!database) {
-    RNFail("Scene has no database\n");
-    return 0;
-  }    
-
-  // Find parent node
-  R3SurfelNode *parent_node = tree->FindNodeByName(parent_node_name);
-  if (!parent_node) {
-    RNFail("Unable to find parent node with name %s\n", parent_node_name);
-    return 0;
-  }
-
-  // Open list file
-  FILE *list_fp = fopen(list_filename, "r");
-  if (!list_fp) {
-    RNFail("Unable to open %s\n", list_filename);
-    return 0;
-  }
-
-  // Allocate data for scanlines
-  int scanline_npoints = 0;
-  const int max_points_per_scanline = 1024 * 1024;
-  R3Point *scanline_points = new R3Point [max_points_per_scanline];
-  char scanline_name[1024] = { '\0' };
-
-  // Read list of run names
-  int count = 0;
-  char buffer[4096];
-  char run_name[4096];
-  while (fgets(buffer, 4096, list_fp)) {
-    if (buffer[0] == '#') continue;
-
-    // Get run name
-    if (sscanf(buffer, "%s", run_name) != (unsigned int) 1) continue;
-    char *start = strrchr(run_name, '/');
-    start = (start) ? start+1 : run_name;
-    char node_name[1024];
-    strncpy(node_name, start, 1024);
-    char *end = strrchr(node_name, '.');
-    if (end) *end = '\0';
-
-    // Create run node
-    R3SurfelNode *run_node = new R3SurfelNode(run_name);
-    if (!run_node) {
-      RNFail("Unable to allocate node\n");
-      return 0;
-    }
-            
-    // Insert run node into tree
-    tree->InsertNode(run_node, parent_node);
-          
-     // Read all laser obj files in run directory
-    const int max_laser_index = 2;
-    for (int laser_index = 0; laser_index <= max_laser_index; laser_index++) {
-      // Temporary ???
-      if (laser_index == 1) continue;
-
-      // Create obj filename
-      char obj_filename[4096];
-      sprintf(obj_filename, "raw_data/%s/laser_point_cloud_%d.obj", run_name, laser_index+1);
-
-      // Open file
-      FILE *obj_fp = fopen(obj_filename, "r");
-      if (!obj_fp) {
-        RNFail("Unable to open laser pose file: %s\n", obj_filename);
-        return 0;
-      }
-
-      // Create scan node
-      char scan_name[2048];
-      sprintf(scan_name, "scan_%d", laser_index);
-      R3SurfelNode *scan_node = new R3SurfelNode(scan_name);
-      if (!scan_node) {
-        RNFail("Unable to allocate node\n");
-        return 0;
-      }
-            
-      // Insert scan node into tree
-      tree->InsertNode(scan_node, run_node);
-
-      // Read points for each scanline
-      int line_count = 0;
-      const int buffer_size = 16*1024;
-      char buffer[buffer_size];
-      char keyword[1024];
-      while (fgets(buffer, buffer_size, obj_fp)) {
-        line_count++;
-        if (buffer[0] == '\0') continue;
-        if (buffer[0] == '#') continue;
-        if (buffer[0] == 'v') {
-          // Parse point
-          double x, y, z; 
-          if (sscanf(buffer, "%s%lf%lf%lf", keyword, &x, &y, &z) != 4) {
-            RNFail("Error reading line %d from %s\n", line_count, obj_filename);
-            return 0;
-          }
-          
-          // Insert point
-          if (scanline_npoints < max_points_per_scanline) {
-            scanline_points[scanline_npoints].Reset(x, y, z);
-            scanline_npoints++;
-          }
-        }
-        else if (buffer[0] == 'g') {
-          // Process points from previous scanline
-          if (scanline_npoints > 0) {
-            if (!LoadSurfels(scene, scan_node, scanline_points, scanline_npoints, scanline_name)) return 0;
-            scanline_name[0] = '\0';
-            scanline_npoints = 0;
-          }
-
-          // Get scanline string
-          char scanline_string[1024];
-          if (sscanf(buffer, "%s%s", keyword, scanline_string) != 2) {
-            RNFail("Error reading line %d from %s\n", line_count, obj_filename);
-            return 0;
-          }
-
-          // Parse scanline string
-          int segment_index = 0;
-          int scanline_index = 0;
-          char *bufferp = strtok(scanline_string, "_ \n\t");
-          if (bufferp) { 
-            assert(!strcmp(bufferp, "seg"));
-            bufferp = strtok(NULL, "_ \n\t"); 
-            if (bufferp) {
-              segment_index = atoi(bufferp);
-              bufferp = strtok(NULL, "_ \n\t"); 
-              if (bufferp) {
-                assert(!strcmp(bufferp, "scanline"));
-                bufferp = strtok(NULL, "_ \n\t"); 
-                if (bufferp) {
-                  scanline_index = atoi(bufferp);
-                }
-              }
-            }
-          }
-
-          // Adjust scanline_index to count within segment
-          static int last_segment_index = -1;
-          static int segment_index_offset = 0;
-          if (segment_index != last_segment_index) {
-            segment_index_offset = scanline_index;
-            last_segment_index = segment_index;
-          }
-
-          // Initialize everything for next scanline
-          scanline_index -= segment_index_offset;
-          const char *run_name_without_directory = strrchr(run_name, '/');
-          if (run_name_without_directory) run_name_without_directory++;
-          else run_name_without_directory = run_name;
-          sprintf(scanline_name, "%s__%d__%d__%d", 
-            run_name_without_directory, segment_index, laser_index, scanline_index);
-          scanline_npoints = 0;
-        }
-      }
-
-      // Process points from last scanline
-      if (scanline_npoints > 0) {
-       if (!LoadSurfels(scene, scan_node, scanline_points, scanline_npoints, scanline_name)) return 0;
-       scanline_name[0] = '\0';
-       scanline_npoints = 0;
-      }
-
-      // Update scan node properties
-      scan_node->UpdateProperties();
-
-      // Close file
-      fclose(obj_fp);
-    }
-  }
-
-  // Close file
-  fclose(list_fp);
-
-  // Delete temporary data for scan lines
-  delete [] scanline_points;
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Loaded surfels from %s ...\n", list_filename);
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Nodes = %d\n", count);
     fflush(stdout);
   }
 
@@ -1552,39 +1234,27 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
       R3Affine transformation(R4Matrix(m), 0);
       if (invert) transformation.Invert();
 
-      // Get node name
+      // Get image name
       char tmp[4096];
       strncpy(tmp, depth_name, 4096);
-      char *scan_name = strrchr(tmp, '/');
-      if (!scan_name) scan_name = tmp;
-      char *endp = strrchr(scan_name, '.');
+      char *image_name = strrchr(tmp, '/');
+      if (!image_name) image_name = tmp;
+      char *endp = strrchr(image_name, '.');
       if (endp) *endp = '\0';
       char node_name[4096];
-      sprintf(node_name, "SCAN:%s", scan_name);
+      sprintf(node_name, "SCAN:%s", image_name);
 
-#if 1
       // Find node
       R3SurfelNode *node = tree->FindNodeByName(node_name);
-      if (!node) {
-        // RNFail("Unable to find node %s for %s\n", node_name, filename);
-        // return 0;
-        continue;
+      R3SurfelScan *scan = scene->FindScanByName(image_name);
+      R3SurfelImage *image = scene->FindImageByName(image_name);
+      
+      // Transform image
+      if (image) {
+        R3CoordSystem pose = image->Pose();
+        pose.Transform(transformation);
+        image->SetPose(pose);
       }
-
-      // Find scan
-      R3SurfelScan *scan = node->Scan();
-#else
-      // Find scan
-      R3SurfelScan *scan = tree->FindScanByName(scan_name);
-      if (!scan) {
-        // RNFail("Unable to find scan %s for %s\n", scan_name, filename);
-        // return 0;
-        continue;
-      }
-
-      // Find node
-      R3SurfelNode *node = scan->Node();
-#endif
       
       // Transform scan
       if (scan) {
@@ -1683,7 +1353,7 @@ TransferObjects(R3SurfelScene *scene1, R3SurfelScene *scene2)
     R3SurfelObject *object1 = objects_index[object2->SceneIndex()];
     R3SurfelLabel *label2 = assignment2->Label();
     R3SurfelLabel *label1 = scene1->FindLabelByName(label2->Name());
-    R3SurfelLabelAssignment *assignment1 = new R3SurfelLabelAssignment(object1, label1, assignment2->Confidence(), assignment2->Originaor());
+    R3SurfelLabelAssignment *assignment1 = new R3SurfelLabelAssignment(object1, label1, assignment2->Confidence(), assignment2->Originator());
     scene1->InsertLabelAssignment(assignment1);
   }
 
@@ -1810,7 +1480,6 @@ Mask(R3SurfelScene *scene, const char *node_name, R3SurfelConstraint *constraint
 
   // Return success
   return 1;
-
 }
 
 
@@ -1818,71 +1487,6 @@ Mask(R3SurfelScene *scene, const char *node_name, R3SurfelConstraint *constraint
 ////////////////////////////////////////////////////////////////////////
 // MULTIRESOLUTION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
-
-static int
-RemoveInteriorNodes(R3SurfelScene *scene)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-
-  // Get surfel tree
-  R3SurfelTree *tree = scene->Tree();
-  if (!tree) {
-    RNFail("Scene has no surfel tree\n");
-    return 0;
-  }    
-
-  // Create copy of nodes (because will edit as traverse)
-  RNArray<R3SurfelNode *> interior_nodes;
-  for (int i = 0; i < tree->NNodes(); i++) {
-    R3SurfelNode *node = tree->Node(i);
-    if (node->Name() && !strcmp(node->Name(), "Root")) continue;
-    if (!node->Parent()) continue;
-    if (node->NParts() == 0) continue;
-    if (node->Object()) continue;
-    assert(node->Tree() == node->Parent()->Tree());
-    interior_nodes.Insert(node);
-  }
-
-  // Remove interior nodes
-  for (int i = 0; i < interior_nodes.NEntries(); i++) {
-    R3SurfelNode *node = interior_nodes.Kth(i);
-    R3SurfelNode *parent = node->Parent();
-
-    // Move parts into parent
-    while (node->NParts() > 0) {
-      R3SurfelNode *part = node->Part(0);
-      part->SetParent(parent);
-    }
-
-    // Remove node
-    tree->RemoveNode(node);
-    delete node;
-  }
-
-  // Remove blocks from root node
-  R3SurfelNode *node = tree->RootNode();
-  while (node->NBlocks() > 0) {
-    R3SurfelBlock *block = node->Block(0);
-    node->RemoveBlock(block);
-    tree->Database()->RemoveBlock(block);
-    delete block;
-  }
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Removed interior nodes ...\n");
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Nodes = %d\n", tree->NNodes());
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-
-
 
 static int
 SplitSurfelTreeNodes(R3SurfelScene *scene, const char *node_name,
@@ -2713,12 +2317,6 @@ int main(int argc, char **argv)
       argc--; argv++; char *list_filename = *argv; 
       if (!LoadFeatureList(scene, list_filename)) exit(-1);
     }
-    else if (!strcmp(*argv, "-load_google")) { 
-      argc--; argv++; char *list_filename = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
-      if (!LoadSurfelsFromGoogleStreetView(scene, list_filename,
-        parent_node_name)) exit(-1);
-    }
     else if (!strcmp(*argv, "-load_mesh")) { 
       argc--; argv++; char *mesh_filename = *argv; 
       argc--; argv++; char *parent_object_name = *argv; 
@@ -2761,6 +2359,16 @@ int main(int argc, char **argv)
     }
     else if (!strcmp(*argv, "-remove_interior_nodes")) { 
       if (!RemoveInteriorNodes(scene)) exit(-1);
+    }
+    else if (!strcmp(*argv, "-estimate_surfel_colors")) { 
+      argc--; argv++; char *image_directory = *argv; 
+      argc--; argv++; double depth_scale = atof(*argv); 
+      argc--; argv++; double depth_exponent = atof(*argv); 
+      if (!ReadAllImageChannels(scene, image_directory, depth_scale, depth_exponent)) exit(-1);
+      if (!EstimateSurfelColors(scene)) exit(-1);
+    }
+    else if (!strcmp(*argv, "-order_surfel_identifiers")) { 
+      if (!OrderSurfelIdentifiers(scene)) exit(-1);
     }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
       argc--; argv++; char *configuration_filename = *argv; 

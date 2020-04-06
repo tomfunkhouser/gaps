@@ -867,23 +867,50 @@ Objects(void) const
 void R3SurfelPointSet::
 Draw(RNFlags flags) const
 {
-  // Draw surfels
-  if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) {
-    // Draw surfels with color
-    glBegin(GL_POINTS);
+  // Get convenient variables
+  int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
+  int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
+  int d = flags[R3_SURFEL_DISC_DRAW_FLAG];
+
+  // Draw discs
+  if (d) {
+    const int nsides = 6;
+    glBegin(GL_TRIANGLES);
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
-      glColor3ubv(point->Color());
-      glVertex3dv(point->Position().Coords());
+      R3Point position = point->Position();
+      R3Vector normal = point->Normal();
+      R3Vector tangent1 = point->Tangent();
+      R3Vector tangent2 = tangent1 % normal;
+      double r1 = point->Radius(0);
+      double r2 = point->Radius(1);
+      if (r1 <= 0) r1 = 0.1;
+      if (r2 <= 0) r2 = r1;
+      if (c) glColor3ubv(point->Color());
+      if (n) R3LoadNormal(normal);
+      R3Point p[nsides];
+      for (int j = 0; j < nsides; j++) {
+        double angle = RN_TWO_PI*j/nsides;
+        p[j] = position;
+        p[j] += cos(angle) * r1 * tangent1;
+        p[j] += sin(angle) * r2 * tangent2;
+      }
+      for (int j = 0; j < nsides; j++) {
+        R3LoadPoint(position);
+        R3LoadPoint(p[(j+1)%nsides]);
+        R3LoadPoint(p[j]);
+      }
     }
     glEnd();
   }
   else {
-    // Draw surfels without color
+    // Draw surfels with color
     glBegin(GL_POINTS);
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
-      glVertex3dv(point->Position().Coords());
+      if (c) glColor3ubv(point->Color());
+      if (n) R3LoadNormal(point->Normal());
+      R3LoadPoint(point->Position());
     }
     glEnd();
   }

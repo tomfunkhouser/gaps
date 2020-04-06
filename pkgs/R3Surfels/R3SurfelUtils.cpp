@@ -19,48 +19,6 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
-// Surfel query (call callback for each surfel satisfying constraint)
-////////////////////////////////////////////////////////////////////////
-
-void
-VisitResidentSurfels(R3SurfelScene *scene,
-  void (*callback_function)(const R3SurfelBlock *block, const R3Surfel *surfel, void *callback_data),
-  R3SurfelNode *source_node,
-  const R3SurfelConstraint *constraint,
-  void *callback_data)
-{
-  // Check node
-  if (constraint && !constraint->Check(source_node)) return;
-
-  // Check if leaf node
-  if (source_node->NParts() == 0) {
-    // Visit blocks
-    for (int i = 0; i < source_node->NBlocks(); i++) {
-      R3SurfelBlock *block = source_node->Block(i);
-      if (block->NSurfels() == 0) continue;
-      if (!constraint->Check(block->BBox())) continue;
-      if (block->Database() && !block->Database()->IsBlockResident(block)) continue;
-
-      // Visit surfels
-      for (int i = 0; i < block->NSurfels(); i++) {
-        const R3Surfel *surfel = block->Surfel(i);
-        if (!constraint->Check(block, surfel)) continue;
-        (*callback_function)(block, surfel, callback_data);
-      }
-    }
-  }
-  else {
-    // Consider parts
-    for (int i = 0; i < source_node->NParts(); i++) {
-      R3SurfelNode *part = source_node->Part(i);
-      VisitResidentSurfels(scene, callback_function, part, constraint, callback_data);
-    }
-  }
-}
-
-  
-
-////////////////////////////////////////////////////////////////////////
 // Point set creation
 ////////////////////////////////////////////////////////////////////////
 
@@ -243,6 +201,48 @@ CreatePointGraph(R3SurfelScene *scene,
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Surfel query (call callback for each surfel satisfying constraint)
+////////////////////////////////////////////////////////////////////////
+
+void
+VisitResidentSurfels(R3SurfelScene *scene,
+  void (*callback_function)(const R3SurfelBlock *block, const R3Surfel *surfel, void *callback_data),
+  R3SurfelNode *source_node,
+  const R3SurfelConstraint *constraint,
+  void *callback_data)
+{
+  // Check node
+  if (constraint && !constraint->Check(source_node)) return;
+
+  // Check if leaf node
+  if (source_node->NParts() == 0) {
+    // Visit blocks
+    for (int i = 0; i < source_node->NBlocks(); i++) {
+      R3SurfelBlock *block = source_node->Block(i);
+      if (block->NSurfels() == 0) continue;
+      if (!constraint->Check(block->BBox())) continue;
+      if (block->Database() && !block->Database()->IsBlockResident(block)) continue;
+
+      // Visit surfels
+      for (int i = 0; i < block->NSurfels(); i++) {
+        const R3Surfel *surfel = block->Surfel(i);
+        if (!constraint->Check(block, surfel)) continue;
+        (*callback_function)(block, surfel, callback_data);
+      }
+    }
+  }
+  else {
+    // Consider parts
+    for (int i = 0; i < source_node->NParts(); i++) {
+      R3SurfelNode *part = source_node->Part(i);
+      VisitResidentSurfels(scene, callback_function, part, constraint, callback_data);
+    }
+  }
+}
+
+  
 
 ////////////////////////////////////////////////////////////////////////
 // Block creation
@@ -452,120 +452,87 @@ CreateNode(R3SurfelScene *scene,
 }
 
 
-
+  
 ////////////////////////////////////////////////////////////////////////
-// Object creation
+// Node manipulation
 ////////////////////////////////////////////////////////////////////////
 
 int
-SplitObject(R3SurfelObject *object, R3SurfelPointSet *pointset,
-  R3SurfelObject **resultA, R3SurfelObject **resultB)
+RemoveInteriorNodes(R3SurfelScene *scene)
 {
-  // Read blocks
-  object->ReadBlocks();
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) {
+    RNFail("Scene has no surfel tree\n");
+    return 0;
+  }    
 
-  // Set marks
-  object->SetMarks(FALSE);
-  pointset->SetMarks(TRUE);
+  // Create copy of nodes (because will edit as traverse)
+  RNArray<R3SurfelNode *> interior_nodes;
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->Name() && !strcmp(node->Name(), "Root")) continue;
+    if (!node->Parent()) continue;
+    if (node->NParts() == 0) continue;
+    if (node->Object()) continue;
+    assert(node->Tree() == node->Parent()->Tree());
+    interior_nodes.Insert(node);
+  }
 
-  // Create constraint
-  R3SurfelMultiConstraint constraint;
-  R3SurfelMarkConstraint mark_constraint(TRUE, FALSE);
-  R3SurfelObjectConstraint object_constraint(object);
-  constraint.InsertConstraint(&mark_constraint);
-  constraint.InsertConstraint(&object_constraint);
+  // Remove interior nodes
+  for (int i = 0; i < interior_nodes.NEntries(); i++) {
+    R3SurfelNode *node = interior_nodes.Kth(i);
+    R3SurfelNode *parent = node->Parent();
 
-  // Split object
-  int status = SplitObject(object, &constraint, resultA, resultB);
+    // Move parts into parent
+    while (node->NParts() > 0) {
+      R3SurfelNode *part = node->Part(0);
+      part->SetParent(parent);
+    }
 
-  // Release blocks
-  object->ReleaseBlocks();
+    // Remove node
+    tree->RemoveNode(node);
+    delete node;
+  }
 
-  // Return status
-  return status;
+  // Remove blocks from root node
+  R3SurfelNode *node = tree->RootNode();
+  while (node->NBlocks() > 0) {
+    R3SurfelBlock *block = node->Block(0);
+    node->RemoveBlock(block);
+    tree->Database()->RemoveBlock(block);
+    delete block;
+  }
+
+  // Return success
+  return 1;
 }
 
 
 
-int
-SplitObject(R3SurfelObject *object, const R3SurfelConstraint *constraint,
-  R3SurfelObject **resultA, R3SurfelObject **resultB)
+
+////////////////////////////////////////////////////////////////////////
+// Object creation 
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObject *
+CreateObject(R3SurfelScene *scene, 
+  R3SurfelObject *parent_object, const char *object_name)
 {
-  // Get useful variables
-  if (!object) return 0;
-  if (!constraint) return 0;
-  if (object->NNodes() == 0) return 0;
-  assert(strcmp(object->Name(), "Root"));
-  R3SurfelScene *scene = object->Scene();
-  if (!scene) return 0;
-  R3SurfelTree *tree = scene->Tree();
-  if (!tree) return 0;
+  // Get parent object
+  if (!parent_object) parent_object = scene->RootObject();
 
-  // Create constraint
-  R3SurfelMultiConstraint multi_constraint;
-  R3SurfelObjectConstraint object_constraint(object);
-  multi_constraint.InsertConstraint(constraint);
-  multi_constraint.InsertConstraint(&object_constraint);
-
-  // Create array of nodes
-  RNArray<R3SurfelNode *> nodes;
-  for (int i = 0; i < object->NNodes(); i++) {
-    R3SurfelNode *node = object->Node(i);
-    nodes.Insert(node);
-  }
-
-  // Split all nodes
-  RNArray<R3SurfelNode *> nodesA, nodesB;
-  for (int i = 0; i < nodes.NEntries(); i++) {
-    R3SurfelNode *node = nodes.Kth(i);
-    tree->SplitLeafNodes(node, *constraint, &nodesA, &nodesB);
-  }
-
-  // Check nodesA
-  if (nodesA.NEntries() == 0) {
-    if (resultA) *resultA = NULL;
-    if (resultB) *resultB = object; 
-    return 0;
-  }
+  // Create object
+  R3SurfelObject *object = new R3SurfelObject(object_name);
     
-  // Check nodesB
-  if (nodesB.NEntries() == 0) {
-    if (resultA) *resultA = object;
-    if (resultB) *resultB = NULL; 
-    return 0;
-  }
+  // Insert object into scene
+  scene->InsertObject(object, parent_object);
 
-  // Create new objects
-  R3SurfelObject *objectA = new R3SurfelObject();
-  R3SurfelObject *objectB = new R3SurfelObject();
-  if (!objectA || !objectB) return 0;
-      
-  // Remove nodes from object
-  while (object->NNodes() > 0) {
-    R3SurfelNode *node = object->Node(0);
-    object->RemoveNode(node);
-  }
-  
-  // Insert nodes into objectA
-  for (int j = 0; j < nodesA.NEntries(); j++) {
-    R3SurfelNode *nodeA = nodesA.Kth(j);
-    if (nodeA->Object()) continue;
-    objectA->InsertNode(nodeA);
-  }
-  
-  // Insert nodes into objectB
-  for (int j = 0; j < nodesB.NEntries(); j++) {
-    R3SurfelNode *nodeB = nodesB.Kth(j);
-    if (nodeB->Object()) continue;
-    objectB->InsertNode(nodeB);
-  }
-      
-  // Copy result
-  if (resultA) *resultA = objectA;
-  if (resultB) *resultB = objectB;
-  
-  // Return success
-  return 1;
+  // Update properties
+  object->UpdateProperties();
+
+  // Return object
+  return object;
 }
 
 
@@ -683,6 +650,456 @@ CreateObject(R3SurfelScene *scene,
   return object;
 }
 
+
+
+////////////////////////////////////////////////////////////////////////
+// Object removal
+////////////////////////////////////////////////////////////////////////
+
+int
+RemoveObjects(R3SurfelScene *scene)
+{
+  // Remove objects recursively
+  if (!RemoveParts(scene, scene->RootObject())) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+RemoveParts(R3SurfelScene *scene, R3SurfelObject *object)
+{
+  // Copy array of parts
+  RNArray<R3SurfelObject *> parts;
+  for (int i = 0; i < object->NParts(); i++) {
+    R3SurfelObject *part = object->Part(i);
+    parts.Insert(part);
+  }
+  
+  // Delete parts
+  for (int i = 0; i < parts.NEntries(); i++) {
+    R3SurfelObject *part = parts.Kth(i);
+    RemoveParts(scene, part);
+    scene->RemoveObject(part);
+    delete part;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Object splitting
+////////////////////////////////////////////////////////////////////////
+
+int
+SplitObject(R3SurfelObject *object, R3SurfelPointSet *pointset,
+  R3SurfelObject **resultA, R3SurfelObject **resultB)
+{
+  // Read blocks
+  object->ReadBlocks();
+
+  // Set marks
+  object->SetMarks(FALSE);
+  pointset->SetMarks(TRUE);
+
+  // Create constraint
+  R3SurfelMultiConstraint constraint;
+  R3SurfelMarkConstraint mark_constraint(TRUE, FALSE);
+  R3SurfelObjectConstraint object_constraint(object);
+  constraint.InsertConstraint(&mark_constraint);
+  constraint.InsertConstraint(&object_constraint);
+
+  // Split object
+  int status = SplitObject(object, &constraint, resultA, resultB);
+
+  // Release blocks
+  object->ReleaseBlocks();
+
+  // Return status
+  return status;
+}
+
+
+
+int
+SplitObject(R3SurfelObject *object, const R3SurfelConstraint *constraint,
+  R3SurfelObject **resultA, R3SurfelObject **resultB)
+{
+  // Get useful variables
+  if (!object) return 0;
+  if (!constraint) return 0;
+  if (object->NNodes() == 0) return 0;
+  assert(strcmp(object->Name(), "Root"));
+  R3SurfelScene *scene = object->Scene();
+  if (!scene) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+
+  // Create constraint
+  R3SurfelMultiConstraint multi_constraint;
+  R3SurfelObjectConstraint object_constraint(object);
+  multi_constraint.InsertConstraint(constraint);
+  multi_constraint.InsertConstraint(&object_constraint);
+
+  // Create array of nodes
+  RNArray<R3SurfelNode *> nodes;
+  for (int i = 0; i < object->NNodes(); i++) {
+    R3SurfelNode *node = object->Node(i);
+    nodes.Insert(node);
+  }
+
+  // Split all nodes
+  RNArray<R3SurfelNode *> nodesA, nodesB;
+  for (int i = 0; i < nodes.NEntries(); i++) {
+    R3SurfelNode *node = nodes.Kth(i);
+    tree->SplitLeafNodes(node, *constraint, &nodesA, &nodesB);
+  }
+
+  // Check nodesA
+  if (nodesA.NEntries() == 0) {
+    if (resultA) *resultA = NULL;
+    if (resultB) *resultB = object; 
+    return 0;
+  }
+    
+  // Check nodesB
+  if (nodesB.NEntries() == 0) {
+    if (resultA) *resultA = object;
+    if (resultB) *resultB = NULL; 
+    return 0;
+  }
+
+  // Create new objects
+  R3SurfelObject *objectA = new R3SurfelObject();
+  R3SurfelObject *objectB = new R3SurfelObject();
+  if (!objectA || !objectB) return 0;
+      
+  // Remove nodes from object
+  while (object->NNodes() > 0) {
+    R3SurfelNode *node = object->Node(0);
+    object->RemoveNode(node);
+  }
+  
+  // Insert nodes into objectA
+  for (int j = 0; j < nodesA.NEntries(); j++) {
+    R3SurfelNode *nodeA = nodesA.Kth(j);
+    if (nodeA->Object()) continue;
+    objectA->InsertNode(nodeA);
+  }
+  
+  // Insert nodes into objectB
+  for (int j = 0; j < nodesB.NEntries(); j++) {
+    R3SurfelNode *nodeB = nodesB.Kth(j);
+    if (nodeB->Object()) continue;
+    objectB->InsertNode(nodeB);
+  }
+      
+  // Copy result
+  if (resultA) *resultA = objectA;
+  if (resultB) *resultB = objectB;
+  
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Label creation
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelLabel *
+CreateLabel(R3SurfelScene *scene, R3SurfelLabel *parent_label,
+  const char *label_name, int identifier, int key, const RNRgb& color)
+{
+  // Create label
+  R3SurfelLabel *label = new R3SurfelLabel(label_name);
+  if (!label) {
+    RNFail("Unable to allocate label\n");
+    return NULL;
+  }
+
+  // Set label properties
+  if (identifier >= 0) label->SetIdentifier(identifier);
+  if (key >= 0) label->SetAssignmentKeystroke(key);
+  if ((color.R() >= 0) && (color.G() >= 0) && (color.B() >=0)) label->SetColor(color);
+         
+  // Find parent label
+  if (!parent_label) parent_label = scene->RootLabel();
+
+  // Insert label into scene
+  scene->InsertLabel(label, parent_label);
+
+  // Return label
+  return label;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Label removal
+////////////////////////////////////////////////////////////////////////
+
+int
+RemoveLabels(R3SurfelScene *scene)
+{
+  // Remove labels recursively
+  if (!RemoveParts(scene, scene->RootLabel())) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label)
+{
+  // Copy array of parts
+  RNArray<R3SurfelLabel *> parts;
+  for (int i = 0; i < label->NParts(); i++) {
+    R3SurfelLabel *part = label->Part(i);
+    parts.Insert(part);
+  }
+  
+  // Delete parts
+  for (int i = 0; i < parts.NEntries(); i++) {
+    R3SurfelLabel *part = parts.Kth(i);
+    RemoveParts(scene, part);
+    scene->RemoveLabel(part);
+    delete part;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Image channel manipulation
+////////////////////////////////////////////////////////////////////////
+
+int
+ReadAllImageChannels(R3SurfelScene *scene,
+  const char *image_directory,
+  double depth_scale, double depth_exponent)
+{
+  /// Get convenient variables
+  double ds = (depth_scale >= 0) ? 1.0 / depth_scale : 1.0;
+  double de = (depth_exponent != 0) ? 1.0 / depth_exponent : 1.0;
+  
+  // Read all channels for all images
+  char filename[1024];
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+
+    // Get color image name
+    sprintf(filename, "%s/color_images/%s.png", image_directory, image->Name());
+    if (!RNFileExists(filename)) {
+      sprintf(filename, "%s/color_images/%s.jpg", image_directory, image->Name());
+    }
+
+    // Read color image 
+    if (RNFileExists(filename)) {
+      R2Image color_image;
+      if (!color_image.ReadFile(filename)) return 0;
+      image->SetColorChannels(color_image);
+    }
+
+    // Read depth image
+    sprintf(filename, "%s/depth_images/%s.png", image_directory, image->Name());
+    if (RNFileExists(filename)) {
+      R2Grid depth_image;
+      if (!depth_image.ReadFile(filename)) return 0;
+      depth_image.Multiply(ds);
+      depth_image.Pow(de);
+      image->SetDepthChannel(depth_image);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Surfel manipulation
+////////////////////////////////////////////////////////////////////////
+
+int
+OrderSurfelIdentifiers(R3SurfelScene *scene)
+{
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) {
+    RNFail("Scene has no surfel tree\n");
+    return 0;
+  }    
+
+  // Get surfel database
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) {
+    RNFail("Scene has no surfel database\n");
+    return 0;
+  }
+
+  // Set identifer of every surfel in database ordered from 1 to N
+  unsigned int identifier = 0;
+  for (int i = 0; i < database->NBlocks(); i++) {
+    R3SurfelBlock *block = database->Block(i);
+    block->SetMaxIdentifier(0);
+    database->ReadBlock(block);
+    for (int j = 0; j < block->NSurfels(); j++) 
+      block->SetSurfelIdentifier(j, ++identifier);
+    block->SetMaxIdentifier(identifier);
+    database->ReleaseBlock(block);
+  }
+
+  // Update database max identifier
+  database->SetMaxIdentifier(identifier);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Color estimation from images
+////////////////////////////////////////////////////////////////////////
+
+RNRgb
+EstimateColor(const R3SurfelScene *scene,
+  const R3Point& position, const R3Vector& normal,
+  double timestamp)
+{
+  // Initialize color
+  RNRgb total_color(0,0,0);
+  double total_weight = 0;
+ 
+  // Check all images
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+
+    // Get/check color channels
+    const R2Grid *red_channel = image->Channel(R3_SURFEL_RED_CHANNEL);
+    const R2Grid *green_channel = image->Channel(R3_SURFEL_GREEN_CHANNEL);
+    const R2Grid *blue_channel = image->Channel(R3_SURFEL_BLUE_CHANNEL);
+    if (!red_channel || !green_channel || !blue_channel) continue;
+
+    // Get useful variables
+    R3Point viewpoint = image->Viewpoint();
+    R3Vector towards = image->Towards();
+    R3Vector vector = position - viewpoint;
+
+    // Compute/check depth
+    double depth = vector.Dot(towards);
+    if (depth <= 1E-3) continue;
+    vector.Normalize();
+
+    // Compute/check N dot V
+    double angle_weight = 1.0;
+    if (!normal.IsZero()) {
+      double ndotv = normal.Dot(-vector);
+      if (ndotv <= 0) continue;
+      angle_weight = ndotv;
+    }
+
+    // Compute/check timestamp difference
+    double timestamp_weight = 1.0;
+    if (timestamp > 0) {
+      double image_timestamp = image->Timestamp();
+      double timestamp_difference = fabs(image_timestamp - timestamp);
+      if (timestamp_difference < 1E-3) timestamp_difference = 1E-3;
+      timestamp_weight = 1.0 / timestamp_difference;
+    }
+   
+    // Project 3D world position to 2D pixels
+    R2Point image_position = image->ImagePosition(position);
+    if (!image->ContainsImagePosition(image_position)) continue;
+
+    // Check depth consistency
+    const R2Grid *depth_channel = image->Channel(R3_SURFEL_DEPTH_CHANNEL);
+    if (depth_channel) {
+      RNScalar max_depth_difference_fraction = 0.1;
+      RNScalar image_depth = image->PixelDepth(image_position.X(), image_position.Y());
+      if (RNIsNegativeOrZero(image_depth)) continue;
+      if (fabs(image_depth - depth) / depth > max_depth_difference_fraction) continue;
+    }
+    
+    // Compute weight
+    double depth_weight = 1.0 / depth;
+    double weight = timestamp_weight * angle_weight * depth_weight;
+    if (weight < 1E-6) continue;
+   
+    // Get color at the 2D pixel
+    double r = red_channel->GridValue(image_position);
+    double g = green_channel->GridValue(image_position);
+    double b = blue_channel->GridValue(image_position);
+    RNRgb color(r, g, b);
+   
+    // Add to weighted sums
+    total_color += weight * color;
+    total_weight += weight;
+  }
+
+  // Return weighted average color
+  return (total_weight > 0) ? total_color / total_weight : RNgray_rgb;
+}
+
+
+  
+int
+EstimateSurfelColors(R3SurfelScene *scene)
+{
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) {
+    RNFail("Scene has no surfel tree\n");
+    return 0;
+  }    
+
+  // Get surfel database
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) {
+    RNFail("Scene has no surfel database\n");
+    return 0;
+  }
+
+  // Estimate color very every surfel
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+
+      // Read block
+      if (!database->ReadBlock(block)) continue;
+
+      // Estimate color
+      for (int k = 0; k < block->NSurfels(); k++) {
+        R3Point position = block->SurfelPosition(k);
+        R3Vector normal = block->SurfelNormal(k);
+        RNScalar timestamp = block->SurfelTimestamp(k);
+        RNRgb color = EstimateColor(scene, position, normal, timestamp);
+        block->SetSurfelColor(k, color);
+      }
+
+      // Release block
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+  
 
 
 ////////////////////////////////////////////////////////////////////////

@@ -134,6 +134,10 @@ public:
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
 
+public:
+  // Identifier manipulation functions
+  void SetMaxIdentifier(unsigned int identifier);
+
 protected:
   // Internal block I/O functions
   virtual int InternalReadBlock(R3SurfelBlock *block);
@@ -278,6 +282,15 @@ ResidentSurfels(void) const
 {
   // Return number of resident surfels
   return resident_surfels;
+}
+
+
+
+inline void R3SurfelDatabase::
+SetMaxIdentifier(unsigned int identifier)
+{
+  // Set max identifier
+  this->max_identifier = identifier;
 }
 
 

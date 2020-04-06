@@ -190,6 +190,9 @@ public:
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
 
+  // Identifier manipulation functions
+  void SetMaxIdentifier(unsigned int identifier);
+
   // For backward compatibility
   const R3Point& Origin(void) const;
   void SetOrigin(const R3Point& origin);
@@ -200,13 +203,13 @@ public:
   // Manipulation functions
   RNBoolean IsDirty(void) const;
   void SetDirty(RNBoolean dirty = TRUE);
-
-  // Temporary
-  int ReadCount(void) const { return file_read_count; }
-
+  
 public:
   // Update functions
   void UpdateProperties(void);
+
+  // Only use if you know what you are doing
+  int ReadCount(void) const { return file_read_count; }
 
 protected:
   // Database update functions
@@ -602,6 +605,15 @@ SetOrigin(const R3Point& origin)
   // Set position origin
   // DO NOT USE -- here only for backward compatibility
   SetPositionOrigin(origin);
+}
+
+
+
+inline void R3SurfelBlock::
+SetMaxIdentifier(unsigned int identifier)
+{
+  // Set max identifier
+  this->max_identifier = identifier;
 }
 
 

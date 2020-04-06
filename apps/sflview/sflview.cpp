@@ -54,9 +54,9 @@ static int GLUTwindow_height = 768;
 
 // Application variables
 
-R3SurfelScene *scene = NULL;
-R3SurfelViewer *viewer = NULL;
-R3Scene *model = NULL;
+static R3SurfelScene *scene = NULL;
+static R3SurfelViewer *viewer = NULL;
+static R3Scene *model = NULL;
 
 
 
@@ -151,49 +151,16 @@ ReadAllImageChannels(R3SurfelScene *scene, const char *image_directory)
   // Start statistics
   RNTime start_time;
   start_time.Read();
-  int nchannels = 0;
 
-  /// Get convenient variables
-  double ds = (depth_scale >= 0) ? 1.0 / depth_scale : 1.0;
-  double de = (depth_exponent != 0) ? 1.0 / depth_exponent : 1.0;
-  
-  // Read all channels for all images
-  char filename[1024];
-  for (int i = 0; i < scene->NImages(); i++) {
-    R3SurfelImage *image = scene->Image(i);
-
-    // Get color image name
-    sprintf(filename, "%s/color_images/%s.png", image_directory, image->Name());
-    if (!RNFileExists(filename)) {
-      sprintf(filename, "%s/color_images/%s.jpg", image_directory, image->Name());
-    }
-
-    // Read color image 
-    if (RNFileExists(filename)) {
-      R2Image color_image;
-      if (!color_image.ReadFile(filename)) return 0;
-      image->SetColorChannels(color_image);
-      nchannels++;
-    }
-
-    // Read depth image
-    sprintf(filename, "%s/depth_images/%s.png", image_directory, image->Name());
-    if (RNFileExists(filename)) {
-      R2Grid depth_image;
-      if (!depth_image.ReadFile(filename)) return 0;
-      depth_image.Multiply(ds);
-      depth_image.Pow(de);
-      image->SetDepthChannel(depth_image);
-      nchannels++;
-    }
-  }
+  // Read all surfel channels
+  if (!ReadAllImageChannels(scene, image_directory,
+    depth_scale, depth_exponent)) return 0;
 
   // Print statistics
   if (print_verbose) {
     printf("Read all image channels from %s ...\n", image_directory);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", scene->NImages());
-    printf("  # Channels = %d\n", nchannels);
     fflush(stdout);
   }
 
