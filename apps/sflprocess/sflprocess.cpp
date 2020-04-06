@@ -478,7 +478,7 @@ LoadSurfelsList(R3SurfelScene *scene, const char *list_filename,
   // Read objects/nodes from file with list
   int count = 0;
   char buffer[4096];
-  char node_filename[4096];
+  char node_filename[512];
   while (fgets(buffer, 4096, fp)) {
     if (buffer[0] == '#') continue;
     if (sscanf(buffer, "%s", node_filename) == (unsigned int) 1) {
@@ -1235,8 +1235,8 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
       if (invert) transformation.Invert();
 
       // Get image name
-      char tmp[4096];
-      strncpy(tmp, depth_name, 4096);
+      char tmp[1024];
+      strncpy(tmp, depth_name, 1024);
       char *image_name = strrchr(tmp, '/');
       if (!image_name) image_name = tmp;
       char *endp = strrchr(image_name, '.');
