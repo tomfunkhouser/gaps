@@ -1210,7 +1210,7 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
     if (!strcmp(cmd, "scan") || !strcmp(cmd, "image") || !strcmp(cmd, "frame")) {
       // Parse image name and alignment transformation
       RNScalar m[16], depth_timestamp, color_timestamp;
-      char depth_name[4096], color_name[4096];
+      char depth_name[1024], color_name[1024];
       if (!strcmp(cmd, "frame")) {
         if (sscanf(buffer, "%s%s%lf%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, 
            depth_name, &depth_timestamp, color_name, &color_timestamp,
@@ -1235,8 +1235,8 @@ TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoo
       if (invert) transformation.Invert();
 
       // Get image name
-      char tmp[1024];
-      strncpy(tmp, depth_name, 1024);
+      char tmp[2048];
+      strncpy(tmp, depth_name, 1048);
       char *image_name = strrchr(tmp, '/');
       if (!image_name) image_name = tmp;
       char *endp = strrchr(image_name, '.');
