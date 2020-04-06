@@ -2250,7 +2250,16 @@ int main(int argc, char **argv)
   R3SurfelScene *scene = OpenScene(scene_name, database_name);
   if (!scene) exit(-1);
 
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Processing scene ...\n");
+    fflush(stdout);
+  }
+  
   // Execute operations
+  int noperations = 0;
   argc -= 3; argv += 3;
   while (argc > 0) {
     if (!strcmp(*argv, "-v")) print_verbose = 1;
@@ -2261,31 +2270,35 @@ int main(int argc, char **argv)
       argc--; argv++; char *node_name = *argv; 
       argc--; argv++; char *parent_name = *argv; 
       if (!CreateNode(scene, node_name, parent_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_object")) { 
       argc--; argv++; char *object_name = *argv; 
       argc--; argv++; char *parent_name = *argv; 
       argc--; argv++; char *node_name = *argv; 
       if (!CreateObject(scene, object_name, parent_name, node_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_label")) { 
       argc--; argv++; char *label_name = *argv; 
       argc--; argv++; char *parent_name = *argv; 
       if (!CreateLabel(scene, label_name, parent_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_surfels")) { 
       argc--; argv++; char *surfels_filename = *argv; 
       argc--; argv++; char *node_name = *argv; 
       argc--; argv++; char *parent_node_name = *argv; 
-      if (!LoadSurfels(scene, surfels_filename, 
-        NULL, NULL, 
+      if (!LoadSurfels(scene, surfels_filename, NULL, NULL, 
         node_name, parent_node_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_surfels_list")) { 
       argc--; argv++; char *list_filename = *argv; 
       argc--; argv++; char *parent_node_name = *argv; 
       if (!LoadSurfelsList(scene, list_filename, 
         NULL, parent_node_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_object")) { 
       argc--; argv++; char *surfels_filename = *argv; 
@@ -2296,6 +2309,7 @@ int main(int argc, char **argv)
       if (!LoadSurfels(scene, surfels_filename, 
         object_name, parent_object_name, 
         node_name, parent_node_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_object_list")) { 
       argc--; argv++; char *list_filename = *argv; 
@@ -2303,19 +2317,23 @@ int main(int argc, char **argv)
       argc--; argv++; char *parent_node_name = *argv; 
       if (!LoadSurfelsList(scene, list_filename, 
         parent_object_name, parent_node_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_label_list")) { 
       argc--; argv++; char *list_filename = *argv; 
       argc--; argv++; char *parent_label_name = *argv; 
       if (!LoadLabelList(scene, list_filename, parent_label_name)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_assignment_list")) { 
       argc--; argv++; char *list_filename = *argv; 
       if (!LoadAssignmentList(scene, list_filename)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_feature_list")) { 
       argc--; argv++; char *list_filename = *argv; 
       if (!LoadFeatureList(scene, list_filename)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_mesh")) { 
       argc--; argv++; char *mesh_filename = *argv; 
@@ -2325,6 +2343,7 @@ int main(int argc, char **argv)
       if (!LoadSurfelsFromMesh(scene, mesh_filename,
         parent_object_name, parent_node_name,
         surfel_spacing)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-load_scene")) { 
       argc--; argv++; char *scene_filename = *argv; 
@@ -2333,16 +2352,14 @@ int main(int argc, char **argv)
       argc--; argv++; char *parent_label_name = *argv; 
       argc--; argv++; char *parent_node_name = *argv; 
       if (!LoadScene(scene, scene_filename, database_filename, 
-        parent_object_name, parent_label_name, parent_node_name)) {
-        exit(-1);
-      }
+        parent_object_name, parent_label_name, parent_node_name)) exit(-1);
+      noperations++;
     }
     // else if (!strcmp(*argv, "-transfer_labels")) { 
     //   argc--; argv++; char *label_scene_filename = *argv; 
     //   argc--; argv++; char *label_database_filename = *argv; 
-    //   if (!TransferLabels(scene, label_scene_filename, label_database_filename)) {
-    //     exit(-1);
-    //   }
+    //   if (!TransferLabels(scene, label_scene_filename, label_database_filename)) exit(-1);
+    //     noperations++;
     // }
     else if (!strcmp(*argv, "-mask")) { 
       argc--; argv++; char *source_node_name = *argv; 
@@ -2350,15 +2367,19 @@ int main(int argc, char **argv)
       if (!constraint) exit(-1);
       if (!Mask(scene, source_node_name, constraint)) exit(-1);
       delete constraint;
+      noperations++;
     }
     else if (!strcmp(*argv, "-remove_objects")) { 
       if (!RemoveObjects(scene)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-remove_labels")) { 
       if (!RemoveLabels(scene)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-remove_interior_nodes")) { 
       if (!RemoveInteriorNodes(scene)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-estimate_surfel_colors")) { 
       argc--; argv++; char *image_directory = *argv; 
@@ -2366,17 +2387,21 @@ int main(int argc, char **argv)
       argc--; argv++; double depth_exponent = atof(*argv); 
       if (!ReadAllImageChannels(scene, image_directory, depth_scale, depth_exponent)) exit(-1);
       if (!EstimateSurfelColors(scene)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-order_surfel_identifiers")) { 
       if (!OrderSurfelIdentifiers(scene)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
       argc--; argv++; char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-inverse_transform_with_configuration_file")) { 
       argc--; argv++; char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename, TRUE)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_object_relationships")) { 
       argc--; argv++; double max_gap_distance = atof(*argv);
@@ -2384,6 +2409,7 @@ int main(int argc, char **argv)
       argc--; argv++; double max_normal_angle = atof(*argv);
       argc--; argv++; double min_overlap = atof(*argv);
       if (!CreateObjectRelationships(scene, max_gap_distance, max_plane_offset, max_normal_angle, min_overlap)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_cluster_objects")) { 
       argc--; argv++; char *parent_object_name = *argv; 
@@ -2397,9 +2423,8 @@ int main(int argc, char **argv)
       argc--; argv++; double chunk_size= atof(*argv); 
       if (!CreateClusterObjects(scene, parent_object_name, parent_node_name, source_node_name,
         chunk_size, max_neighbors, max_neighbor_distance, 
-        max_offplane_distance, max_normal_angle, min_points_per_object)) {
-        exit(-1);
-      }
+        max_offplane_distance, max_normal_angle, min_points_per_object)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_planar_objects")) { 
       argc--; argv++; char *parent_object_name = *argv; 
@@ -2417,9 +2442,8 @@ int main(int argc, char **argv)
       argc--; argv++; double chunk_size= atof(*argv); 
       if (!CreatePlanarObjects(scene, parent_object_name, parent_node_name, source_node_name,
         chunk_size, max_neighbors, max_neighbor_distance, max_offplane_distance, max_normal_angle,
-        min_area, min_density, min_points, grid_spacing, accuracy_factor)) {
-        exit(-1);
-      }
+        min_area, min_density, min_points, grid_spacing, accuracy_factor)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_multiresolution_hierarchy")) { 
       const char *node_name = "Root";
@@ -2434,13 +2458,11 @@ int main(int argc, char **argv)
       if (!SplitSurfelTreeNodes(scene, node_name, 
         max_parts_per_node, max_blocks_per_node, 
         max_node_complexity, max_block_complexity,
-        max_leaf_extent, max_block_extent, max_levels)) {
-        exit(-1);
-      }
+        max_leaf_extent, max_block_extent, max_levels)) exit(-1);
       if (!CreateMultiresolutionBlocks(scene, node_name, 
-        multiresolution_factor, max_node_complexity)) {
-        exit(-1);
-      }
+        multiresolution_factor, max_node_complexity)) exit(-1);
+      noperations++;
+
     }
     else if (!strcmp(*argv, "-create_tree_hierarchy")) { 
       argc--; argv++; char *node_name = *argv; 
@@ -2455,13 +2477,10 @@ int main(int argc, char **argv)
       if (!SplitSurfelTreeNodes(scene, node_name, 
         max_parts_per_node, max_blocks_per_node, 
         max_node_complexity, max_block_complexity,
-        max_leaf_extent, max_block_extent, max_levels)) {
-        exit(-1);
-      }
+        max_leaf_extent, max_block_extent, max_levels)) exit(-1);
       if (!CreateMultiresolutionBlocks(scene, node_name, 
-        multiresolution_factor, max_node_complexity)) {
-        exit(-1);
-      }
+        multiresolution_factor, max_node_complexity)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-split_nodes")) { 
       argc--; argv++; char *node_name = *argv; 
@@ -2475,9 +2494,8 @@ int main(int argc, char **argv)
       if (!SplitSurfelTreeNodes(scene, node_name, 
         max_parts_per_node, max_blocks_per_node, 
         max_node_complexity, max_block_complexity,
-        max_leaf_extent, max_block_extent, max_levels)) {
-        exit(-1);
-      }
+        max_leaf_extent, max_block_extent, max_levels)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_multiresolution_nodes")) { 
       argc--; argv++; char *node_name = *argv; 
@@ -2485,22 +2503,21 @@ int main(int argc, char **argv)
       argc--; argv++; double min_resolution = atof(*argv); 
       argc--; argv++; double min_multiresolution_factor = atof(*argv); 
       if (!CreateMultiresolutionNodes(scene, node_name, 
-        min_complexity, min_resolution, min_multiresolution_factor)) {
-        exit(-1);
-      }
+        min_complexity, min_resolution, min_multiresolution_factor)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-create_multiresolution_blocks")) { 
       argc--; argv++; char *node_name = *argv; 
       argc--; argv++; double multiresolution_factor = atof(*argv); 
       argc--; argv++; double max_node_complexity = atof(*argv); 
       if (!CreateMultiresolutionBlocks(scene, node_name, 
-        multiresolution_factor, max_node_complexity)) {
-        exit(-1);
-      }
+        multiresolution_factor, max_node_complexity)) exit(-1);
+      noperations++;
     }
     else if (!strcmp(*argv, "-output_blobs")) { 
       argc--; argv++; char *blob_directory_name = *argv; 
       if (!OutputBlobs(scene, blob_directory_name)) exit(-1);
+      noperations++;
     }
     else { 
       RNFail("Invalid operation: %s", *argv); 
@@ -2509,6 +2526,13 @@ int main(int argc, char **argv)
     argv++; argc--;
   }
 
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f\n", start_time.Elapsed());
+    printf("  # Operations = %d\n", noperations);
+    fflush(stdout);
+  }
+  
   // Close scene
   if (!CloseScene(scene)) exit(-1);
 
