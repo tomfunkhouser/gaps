@@ -871,6 +871,7 @@ Draw(RNFlags flags) const
   int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
   int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
   int d = flags[R3_SURFEL_DISC_DRAW_FLAG];
+  int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
 
   // Draw discs
   if (d) {
@@ -887,7 +888,8 @@ Draw(RNFlags flags) const
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
       if (c) glColor3ubv(point->Color());
-      if (n) R3LoadNormal(normal);
+      if (id) LoadUnsignedInt(point->Identifier());
+      else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
       for (int j = 0; j < nsides; j++) {
         double angle = RN_TWO_PI*j/nsides;
@@ -909,7 +911,8 @@ Draw(RNFlags flags) const
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
       if (c) glColor3ubv(point->Color());
-      if (n) R3LoadNormal(point->Normal());
+      if (id) LoadUnsignedInt(point->Identifier());
+      else if (n) R3LoadNormal(point->Normal());
       R3LoadPoint(point->Position());
     }
     glEnd();

@@ -74,6 +74,7 @@ public:
   RNScalar TimestampOrigin(void) const;
 
   // Identifier property functions
+  unsigned int MinIdentifier(void) const;
   unsigned int MaxIdentifier(void) const;
   
   // Aggregate surfel property functions
@@ -92,6 +93,7 @@ public:
   ///////////////////////////////////
 
   // Surfel property functions
+  int SurfelIndex(const R3Surfel *surfel) const;
   R3Point SurfelPosition(int surfel_index) const;
   R3Vector SurfelNormal(int surfel_index) const;
   R3Vector SurfelTangent(int surfel_index) const;
@@ -116,6 +118,9 @@ public:
   //// BLOCK MANIPULATION FUNCTIONS ////
   //////////////////////////////////////////
 
+  // Assignment operator
+  R3SurfelBlock& operator=(const R3SurfelBlock& block);
+  
   // Property manipulation functions
   void SetPositionOrigin(const R3Point& position);
 
@@ -186,19 +191,18 @@ public:
   int WriteXYZAscii(FILE *fp) const;
   int WriteBinary(FILE *fp) const;
 
+
   ////////////////////////////////////////////////////////////////////////
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
 
   // Identifier manipulation functions
+  void SetMinIdentifier(unsigned int identifier);
   void SetMaxIdentifier(unsigned int identifier);
 
   // For backward compatibility
   const R3Point& Origin(void) const;
   void SetOrigin(const R3Point& origin);
-
-  // Surfel index querying
-  int SurfelIndex(const R3Surfel *surfel) const;
 
   // Manipulation functions
   RNBoolean IsDirty(void) const;
@@ -211,6 +215,9 @@ public:
   // Only use if you know what you are doing
   int ReadCount(void) const { return file_read_count; }
 
+  // Only use if you know what you are doing (really)
+  void ResetSurfels(int nsurfels);
+  
 protected:
   // Database update functions
   void UpdateAfterInsert(R3SurfelDatabase *database);
@@ -227,7 +234,7 @@ private:
   // Block update functions
   void UpdateBBox(void);
   void UpdateTimestampRange(void);
-  void UpdateMaxIdentifier(void);
+  void UpdateIdentifierRange(void);
   void UpdateResolution(void);
   void UpdateFlags(void);
 
@@ -244,6 +251,7 @@ private:
   R3Box bbox;
   RNScalar timestamp_origin;
   RNInterval timestamp_range;
+  unsigned int min_identifier;
   unsigned int max_identifier;
   RNScalar resolution;
   RNFlags flags;
@@ -605,6 +613,15 @@ SetOrigin(const R3Point& origin)
   // Set position origin
   // DO NOT USE -- here only for backward compatibility
   SetPositionOrigin(origin);
+}
+
+
+
+inline void R3SurfelBlock::
+SetMinIdentifier(unsigned int identifier)
+{
+  // Set min identifier
+  this->min_identifier = identifier;
 }
 
 

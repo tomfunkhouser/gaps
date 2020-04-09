@@ -847,7 +847,8 @@ OpenFile(const char *filename, const char *rwaccess)
       if (!RNReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
       if (!RNReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
       if (!RNReadUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
-      if (!RNReadChar(fp, buffer, 36, swap_endian)) return 0;
+      if (!RNReadUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
+      if (!RNReadChar(fp, buffer, 32, swap_endian)) return 0;
       block->flags = block_flags;
       block->SetDirty(FALSE);
       block->database = this;
@@ -898,7 +899,8 @@ SyncFile(void)
     if (!RNWriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
     if (!RNWriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
-    if (!RNWriteChar(fp, buffer, 36, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
+    if (!RNWriteChar(fp, buffer, 32, swap_endian)) return 0;
   }
 
   // Write header again (now that the offset values have been filled in)

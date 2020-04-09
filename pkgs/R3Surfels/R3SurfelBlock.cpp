@@ -28,6 +28,7 @@ R3SurfelBlock(void)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(0),
@@ -52,6 +53,7 @@ R3SurfelBlock(int nsurfels)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(0),
@@ -80,6 +82,7 @@ R3SurfelBlock(const R3SurfelBlock& block)
     bbox(block.bbox),
     timestamp_origin(block.timestamp_origin),
     timestamp_range(block.timestamp_range),
+    min_identifier(block.min_identifier),
     max_identifier(block.max_identifier),
     resolution(block.resolution),
     flags(block.flags & R3_SURFEL_BLOCK_PROPERTY_FLAGS),
@@ -111,6 +114,7 @@ R3SurfelBlock(const R3SurfelPointSet *set)
     bbox(set->BBox()),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
@@ -163,6 +167,7 @@ R3SurfelBlock(const R3SurfelPointSet *set,
     bbox(set->BBox()),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(R3_SURFEL_BLOCK_BBOX_UPTODATE_FLAG),
@@ -215,6 +220,7 @@ R3SurfelBlock(const R3Surfel *surfels, int nsurfels,
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(timestamp_origin),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(0),
@@ -247,6 +253,7 @@ R3SurfelBlock(const RNArray<const R3Surfel *>& array,
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(timestamp_origin),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(0),
@@ -278,6 +285,7 @@ R3SurfelBlock(const R3Point *points, int npoints)
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_origin(0),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    min_identifier(UINT_MAX),
     max_identifier(0),
     resolution(0),
     flags(0),
@@ -384,6 +392,50 @@ R3SurfelBlock::
 
 
 ////////////////////////////////////////////////////////////////////////
+// ASSIGNMENT OPERATOR
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelBlock& R3SurfelBlock::
+operator=(const R3SurfelBlock& block)
+{
+  // Delete old surfels
+  if (this->surfels) delete this->surfels;
+  this->surfels = NULL;
+
+  // Copy properties
+  this->nsurfels = block.nsurfels;
+  this->position_origin = block.position_origin;
+  this->bbox = block.bbox;
+  this->timestamp_origin = block.timestamp_origin;
+  this->timestamp_range = block.timestamp_range;
+  this->min_identifier = block.min_identifier;
+  this->max_identifier = block.max_identifier;
+  this->resolution = block.resolution;
+  this->flags = block.flags & R3_SURFEL_BLOCK_PROPERTY_FLAGS;
+  this->data = NULL;
+  this->database = NULL;
+  this->database_index = -1;
+  this->file_surfels_offset = 0;
+  this->file_surfels_count = 0;
+  this->file_read_count = 0;
+  this->node = NULL;
+  this->opengl_id = 0;
+
+  // Copy surfels
+  if (this->nsurfels > 0) {
+    this->surfels = new R3Surfel [ this->nsurfels ];
+    for (int i = 0; i < this->nsurfels; i++) {
+      this->surfels[i] = block.surfels[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -418,12 +470,27 @@ TimestampRange(void) const
 
 
 unsigned int R3SurfelBlock::
+MinIdentifier(void) const
+{
+  // Update min identifier
+  if (max_identifier < min_identifier) {
+    R3SurfelBlock *block = (R3SurfelBlock *) this;
+    block->UpdateIdentifierRange();
+  }
+
+  // Return min identifier
+  return min_identifier;
+}
+
+
+
+unsigned int R3SurfelBlock::
 MaxIdentifier(void) const
 {
   // Update max identifier
-  if (max_identifier == 0) {
+  if (max_identifier < min_identifier) {
     R3SurfelBlock *block = (R3SurfelBlock *) this;
-    block->UpdateMaxIdentifier();
+    block->UpdateIdentifierRange();
   }
 
   // Return max identifier
@@ -551,7 +618,7 @@ SetData(void *data)
 
   
 ////////////////////////////////////////////////////////////////////////
-// PROPERTY UPDATE FUNCTIONS
+// PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelBlock::
@@ -720,7 +787,8 @@ SetSurfelIdentifier(int surfel_index, unsigned int identifier)
   // Set surfel identifier
   surfels[surfel_index].SetIdentifier(identifier);
 
-  // Remember than max identifier is out of date
+  // Remember that identifier range is out of date
+  min_identifier = UINT_MAX;
   max_identifier = 0;
 
   // Remember that block is dirty
@@ -931,6 +999,7 @@ UpdateProperties(void)
   double dummy = 0;
   dummy += BBox().Min().X();
   dummy += TimestampRange().Min();
+  dummy += MinIdentifier();
   dummy += MaxIdentifier();
   dummy += Resolution();
   dummy += (HasAerial()) ? 1 : 2;
@@ -995,15 +1064,17 @@ UpdateTimestampRange(void)
 
 
 void R3SurfelBlock::
-UpdateMaxIdentifier(void)
+UpdateIdentifierRange(void)
 {
   // Read block
   if (database) database->ReadBlock(this);
 
   // Update max identifier
-  max_identifier = 1;
+  min_identifier = UINT_MAX;
+  max_identifier = 0;
   for (int i = 0; i < nsurfels; i++) {
     unsigned int id = surfels[i].Identifier();
+    if (id < min_identifier) min_identifier = id;
     if (id > max_identifier) max_identifier = id;
   }
 
@@ -1115,6 +1186,7 @@ Draw(RNFlags flags) const
   // Get convenient variables
   int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
   int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
+  int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
 
   // Push translation to position_origin
   glPushMatrix();
@@ -1277,7 +1349,8 @@ Draw(RNFlags flags) const
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
       if (c) glColor3ubv(surfel.ColorPtr());
-      if (n) R3LoadNormal(normal);
+      if (id) LoadUnsignedInt(surfel.Identifier());
+      else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
       for (int j = 0; j < nsides; j++) {
         double angle = RN_TWO_PI*j/nsides;
@@ -1299,7 +1372,8 @@ Draw(RNFlags flags) const
     for (int i = 0; i < NSurfels(); i++) {
       const R3Surfel& surfel = surfels[i];
       if (c) glColor3ubv(surfel.ColorPtr());
-      if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
+      if (id) LoadUnsignedInt(surfel.Identifier());
+      else if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
       glVertex3fv(surfel.PositionPtr());
     }
     glEnd();
@@ -2084,6 +2158,45 @@ ReadUPC(FILE *fp)
 
   // Return success
   return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// INTERNAL FUNCTIONS (DO NOT USE)
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelBlock::
+ResetSurfels(int nsurfels)
+{
+  // Delete old surfels
+  if (surfels) delete [] surfels;
+
+  // Reset everything
+  this->surfels = NULL;
+  this->nsurfels = 0;
+  this->position_origin = R3zero_point;
+  this->bbox = R3null_box;
+  this->timestamp_origin = 0;
+  this->timestamp_range.Reset(FLT_MAX,-FLT_MAX);
+  this->min_identifier = UINT_MAX;
+  this->max_identifier = 0;
+  this->resolution = 0;
+  this->flags = 0;
+  this->data = NULL;
+  this->database = NULL;
+  this->database_index = -1;
+  this->file_surfels_offset = 0;
+  this->file_surfels_count = 0;
+  this->file_read_count = 0;
+  this->node = NULL;
+  this->opengl_id = 0;
+
+  // Allocate new surfels
+  if (nsurfels > 0) {
+    this->nsurfels = nsurfels;
+    this->surfels = new R3Surfel [ nsurfels ];
+  }
 }
 
 

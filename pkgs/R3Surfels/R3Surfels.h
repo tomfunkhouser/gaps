@@ -13,14 +13,17 @@
 
 /* Draw flags */
 
-#define R3_SURFEL_COLOR_DRAW_FLAG     0x0001
-#define R3_SURFEL_NORMAL_DRAW_FLAG    0x0002
-#define R3_SURFEL_DISC_DRAW_FLAG      0x0004
-#define R3_SURFEL_DEFAULT_DRAW_FLAGS  R3_SURFEL_COLOR_DRAW_FLAG
+/* Shading draw flags */
+#define R3_SURFEL_COLOR_DRAW_FLAG      0x0001
+#define R3_SURFEL_NORMAL_DRAW_FLAG     0x0002
+#define R3_SURFEL_IDENTIFIER_DRAW_FLAG 0x0004
+/* Shape draw flags */
+#define R3_SURFEL_DISC_DRAW_FLAG       0x0010
+#define R3_SURFEL_DEFAULT_DRAW_FLAGS   R3_SURFEL_COLOR_DRAW_FLAG
 
 
 
-/* Draw method selection */
+/* Drawing method */
 
 // Define only one of these
 // #define R3_SURFEL_DRAW_WITH_DISPLAY_LIST

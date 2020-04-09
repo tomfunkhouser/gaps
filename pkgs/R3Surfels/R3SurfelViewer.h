@@ -1012,6 +1012,34 @@ UpdateWorkingSet(void)
 
 
 
+inline void
+LoadUnsignedInt(unsigned int value)
+{
+  // Load identifer
+  unsigned char rgba[4];
+  rgba[0] = value & 0xFF;
+  rgba[1] = (value >> 8) & 0xFF;
+  rgba[2] = (value >> 16) & 0xFF;
+  rgba[3] = (value >> 24) & 0xFF;
+  glColor4ubv(rgba);
+}
+
+
+
+inline unsigned int
+DecodeUnsignedInt(unsigned char rgba[4])
+{
+  // Decode identifer
+  int r = rgba[0] & 0xFF;
+  int g = rgba[1] & 0xFF;
+  int b = rgba[2] & 0xFF;
+  int a = rgba[3] & 0xFF;
+  int value = r | (g << 8) | (b << 16) | (a << 24);
+  return value;
+}
+
+
+
 // End namespace
 }
 
