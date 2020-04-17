@@ -353,6 +353,16 @@ Redraw(void)
         }
       }
     }
+    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
+      // Draw with colors based on shading
+      glEnable(GL_LIGHTING);
+      glColor3d(0.8, 0.8, 0.8);
+      for (int i = 0; i < resident_nodes.NNodes(); i++) {
+        R3SurfelNode *node = resident_nodes.Node(i);
+        node->Draw(R3_SURFEL_NORMAL_DRAW_FLAG | shape_draw_flags);
+      }
+      glDisable(GL_LIGHTING);
+    }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) {
       // Draw with colors based on heights
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
@@ -397,28 +407,6 @@ Redraw(void)
           glPopMatrix();
         }
       }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
-      // Draw with colors based on shading
-      glEnable(GL_LIGHTING);
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
-            const R3Surfel *surfel = block->Surfel(k);
-            glNormal3f(surfel->NX(), surfel->NY(), surfel->NZ());
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-          glPopMatrix();
-        }
-      }
-      glDisable(GL_LIGHTING);
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT) {
       // Draw with RGB surfel colors, with alpha based on distance to viewpoint
@@ -471,34 +459,7 @@ Redraw(void)
       // Draw with RGB surfel colors
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
-            const R3Surfel *surfel = block->Surfel(k);
-
-            // Check surfel type
-            if (!aerial_visibility && surfel->IsAerial()) continue;
-            if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-
-            // Check backfacing
-            if (!backfacing_visibility) {
-              R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
-              if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
-            }
-
-            // Set color
-            glColor3ubv(surfel->Color());
-
-            // Draw surfel
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-          glPopMatrix();
-        }
+        node->Draw(R3_SURFEL_COLOR_DRAW_FLAG | shape_draw_flags);
       }
     }
   }
