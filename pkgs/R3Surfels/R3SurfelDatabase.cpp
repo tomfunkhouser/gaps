@@ -89,8 +89,20 @@ R3SurfelDatabase(const R3SurfelDatabase& database)
 R3SurfelDatabase::
 ~R3SurfelDatabase(void)
 {
-  // Delete tree
-  if (tree) delete tree;
+  // Close database
+  if (IsOpen()) CloseFile();
+
+  // Delete blocks
+  while (NBlocks() > 0) {
+    R3SurfelBlock *block = Block(NBlocks()-1);
+    // This allows delete of database without releasing all blocks
+    block->file_read_count = 0; 
+    RemoveBlock(block);
+    delete block;
+  }
+
+  // Remove from tree
+  if (tree) tree->database = NULL;
 
   // Delete filename
   if (filename) free(filename);

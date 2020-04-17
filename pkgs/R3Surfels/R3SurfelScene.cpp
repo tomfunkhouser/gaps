@@ -76,16 +76,20 @@ R3SurfelScene::
 ~R3SurfelScene(void)
 {
   // Delete everything
-  // ???
-
-  // Close database
-  if (tree) {
-    R3SurfelDatabase *database = tree->Database();
-    if (database && database->IsOpen()) {
-      database->CloseFile();
-    }
-  }
-
+  while (NFeatures() > 0) delete Feature(NFeatures()-1);
+  while (NLabelAssignments() > 0) delete LabelAssignment(NLabelAssignments()-1);
+  while (NObjectRelationships() > 0) delete ObjectRelationship(NObjectRelationships()-1);
+  while (NLabelRelationships() > 0) delete LabelRelationship(NLabelRelationships()-1);
+  while (NObjectProperties() > 0) delete ObjectProperty(NObjectProperties()-1);
+  while (NLabelProperties() > 0) delete LabelProperty(NLabelProperties()-1);
+  while (NLabels() > 0) delete Label(NLabels()-1);
+  while (NObjects() > 0) delete Object(NObjects()-1);
+  while (NScans() > 0) delete Scan(NScans()-1);
+  while (NImages() > 0) delete Image(NImages()-1);
+  
+  // Delete tree
+  if (tree) delete tree;
+  
   // Delete filename
   if (filename) free(filename);
 
@@ -1669,6 +1673,7 @@ ReadAsciiFile(const char *filename)
     }
     R3SurfelObjectRelationship *relationship = new R3SurfelObjectRelationship(type, objs, operands, noperands);
     InsertObjectRelationship(relationship);
+    if (operands) delete [] operands;
   }
 
   // Read label relationships
@@ -1694,6 +1699,7 @@ ReadAsciiFile(const char *filename)
     }
     R3SurfelLabelRelationship *relationship = new R3SurfelLabelRelationship(type, objs, operands, noperands);
     InsertLabelRelationship(relationship);
+    if (operands) delete [] operands;
   }
 
   // Read assignments
@@ -1795,6 +1801,7 @@ ReadAsciiFile(const char *filename)
     }
     R3SurfelObjectProperty *property = new R3SurfelObjectProperty(type, object, operands, noperands);
     InsertObjectProperty(property);
+    if (operands) delete [] operands;
   }
 
   // Read label properties
@@ -1813,6 +1820,7 @@ ReadAsciiFile(const char *filename)
     }
     R3SurfelLabelProperty *property = new R3SurfelLabelProperty(type, label, operands, noperands);
     InsertLabelProperty(property);
+    if (operands) delete [] operands;
   }
 
   // Close file
@@ -2325,6 +2333,7 @@ ReadBinaryFile(const char *filename)
     }
     R3SurfelObjectRelationship *relationship = new R3SurfelObjectRelationship(type, objs, operands, noperands);
     InsertObjectRelationship(relationship);
+    if (operands) delete [] operands;
   }
 
   // Read label relationships
@@ -2351,6 +2360,7 @@ ReadBinaryFile(const char *filename)
     }
     R3SurfelLabelRelationship *relationship = new R3SurfelLabelRelationship(type, objs, operands, noperands);
     InsertLabelRelationship(relationship);
+    if (operands) delete [] operands;
   }
 
   // Read assignments
@@ -2474,6 +2484,7 @@ ReadBinaryFile(const char *filename)
     }
     R3SurfelObjectProperty *property = new R3SurfelObjectProperty(type, object, operands, noperands);
     InsertObjectProperty(property);
+    if (operands) delete [] operands;
   }
 
   // Read label properties
@@ -2494,6 +2505,7 @@ ReadBinaryFile(const char *filename)
     }
     R3SurfelLabelProperty *property = new R3SurfelLabelProperty(type, label, operands, noperands);
     InsertLabelProperty(property);
+    if (operands) delete [] operands;
   }
 
   // Close file

@@ -72,7 +72,7 @@ R3SurfelObjectProperty(const R3SurfelObjectProperty& property)
 R3SurfelObjectProperty::
 ~R3SurfelObjectProperty(void)
 {
-  // Remove from scene
+  // Remove from scene (removes from everything)
   if (scene) scene->RemoveObjectProperty(this);
 
   // Delete operands

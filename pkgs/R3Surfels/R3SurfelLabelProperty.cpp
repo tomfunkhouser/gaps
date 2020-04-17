@@ -68,7 +68,7 @@ R3SurfelLabelProperty(const R3SurfelLabelProperty& property)
 R3SurfelLabelProperty::
 ~R3SurfelLabelProperty(void)
 {
-  // Remove from scene
+  // Remove from scene (removes from everything)
   if (scene) scene->RemoveLabelProperty(this);
 
   // Delete operands

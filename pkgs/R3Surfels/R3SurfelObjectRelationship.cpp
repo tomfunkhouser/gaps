@@ -102,7 +102,7 @@ R3SurfelObjectRelationship(const R3SurfelObjectRelationship& relationship)
 R3SurfelObjectRelationship::
 ~R3SurfelObjectRelationship(void)
 {
-  // Remove from scene
+  // Remove from scene (and everything in it)
   if (scene) scene->RemoveObjectRelationship(this);
 
   // Delete operands

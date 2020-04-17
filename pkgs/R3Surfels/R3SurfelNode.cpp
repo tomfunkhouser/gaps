@@ -80,13 +80,19 @@ R3SurfelNode(const R3SurfelNode& node)
 R3SurfelNode::
 ~R3SurfelNode(void)
 {
-  // Delete node from object
+  // Remove blocks from node
+  while (NBlocks() > 0) RemoveBlock(Block(NBlocks()-1));
+
+  // Remove node from object
   if (object) object->RemoveNode(this);
 
-  // Delete node from scan
+  // Remove node from scan
   if (scan) scan->SetNode(NULL);
 
-  // Delete node from tree
+  // Delete parts
+  // while (NParts() > 0) delete (Part(NParts()-1));
+  
+  // Remove node from tree
   if (tree) tree->RemoveNode(this);
 
   // Delete name

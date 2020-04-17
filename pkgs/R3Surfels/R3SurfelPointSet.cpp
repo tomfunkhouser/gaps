@@ -1046,6 +1046,7 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
     // Compute radius of neighborhood
     int neighbor_index = (npositions <= 6) ? npositions-1 : 6;
     RNScalar radius = R3Distance(positions[neighbor_index], point->Position());
+    if (radius < RN_EPSILON) radius = RN_EPSILON;
     
     // Compute normal with PCA of neighborhood
     R3Point centroid = R3Centroid(npositions, positions);

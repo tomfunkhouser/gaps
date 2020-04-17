@@ -92,7 +92,7 @@ R3SurfelLabelRelationship(const R3SurfelLabelRelationship& relationship)
 R3SurfelLabelRelationship::
 ~R3SurfelLabelRelationship(void)
 {
-  // Remove from scene
+  // Remove from scene (and everything in it)
   if (scene) scene->RemoveLabelRelationship(this);
 
   // Delete operands

@@ -57,7 +57,7 @@ R3SurfelLabelAssignment(const R3SurfelLabelAssignment& assignment)
 R3SurfelLabelAssignment::
 ~R3SurfelLabelAssignment(void)
 {
-  // Update scene
+  // Remove from scene (removes from everything)
   if (scene) scene->RemoveLabelAssignment(this);
 }
 

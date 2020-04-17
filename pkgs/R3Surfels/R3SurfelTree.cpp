@@ -51,11 +51,15 @@ R3SurfelTree(const R3SurfelTree& tree)
 R3SurfelTree::
 ~R3SurfelTree(void)
 {
-  // Delete scene
-  if (scene) delete scene;
+  // Delete nodes
+  while (NNodes() > 0) delete Node(NNodes()-1);
+  // OR if (RootNode()) delete RootNode();
+  
+  // Remove from scene
+  if (scene) scene->tree = NULL;
 
-  // Delete everything
-  // ???
+  // Delete database
+  if (database) delete database;
 }
 
 

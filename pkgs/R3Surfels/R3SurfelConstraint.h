@@ -345,7 +345,8 @@ public:
   R3SurfelMeshConstraint(R3Mesh *mesh, 
     const R3Affine& surfels_to_mesh,
     RNLength max_distance = 0.25);
-
+  ~R3SurfelMeshConstraint(void);
+  
   // Surfel check functions
   virtual int Check(const R3Point& point) const;
   virtual int Check(const R3Box& box) const;

@@ -70,11 +70,13 @@ public:
 
 
   ////////////////////////////////
-  //// PROPERTY MANIPULATION FUNCTIONS ////
+  //// MANIPULATION FUNCTIONS ////
   ////////////////////////////////
 
-  // Manipulation functions
+  // Hierarchy manipulation functions
   virtual void SetParent(R3SurfelLabel *parent);
+
+  // Property manipulation functions
   virtual void SetName(const char *name);
   virtual void SetIdentifier(int identifier);
   virtual void SetAssignmentKeystroke(int key);

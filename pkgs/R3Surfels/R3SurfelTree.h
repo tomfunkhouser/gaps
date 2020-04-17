@@ -150,6 +150,7 @@ protected:
   R3SurfelScene *scene;
 
   // Database stuff
+  friend class R3SurfelDatabase;
   R3SurfelDatabase *database;
 
   // Node stuff

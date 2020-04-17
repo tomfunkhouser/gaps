@@ -857,6 +857,15 @@ R3SurfelMeshConstraint(R3Mesh *mesh, const R3Affine& surfels_to_mesh, RNLength m
 }
 
 
+R3SurfelMeshConstraint::
+~R3SurfelMeshConstraint(void)
+{
+  // Delete search tree
+  if (tree) delete tree;
+}
+
+
+
 int R3SurfelMeshConstraint::
 Check(const R3Box& box) const
 {

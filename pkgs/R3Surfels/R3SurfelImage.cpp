@@ -73,18 +73,18 @@ R3SurfelImage(const R3SurfelImage& image)
 R3SurfelImage::
 ~R3SurfelImage(void)
 {
+  // Remove image from scan
+  if (scan) SetScan(NULL);
+  
+  // Remove image from scene
+  if (scene) scene->RemoveImage(this);
+
   // Delete all channels
   for (int i = 0; i < channels.NEntries(); i++) {
     R2Grid *channel = channels.Kth(i);
     if (channel) delete channel;
   }
   
-  // Remove image from scan
-  if (scan) SetScan(NULL);
-  
-  // Delete image from scene
-  if (scene) scene->RemoveImage(this);
-
   // Delete name
   if (name) free(name);
 }

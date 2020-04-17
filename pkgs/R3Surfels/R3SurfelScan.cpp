@@ -73,7 +73,7 @@ R3SurfelScan::
   // Remove image
   if (image) SetImage(NULL);
 
-  // Delete scan from scene
+  // Remove scan from scene
   if (scene) scene->RemoveScan(this);
 
   // Delete name

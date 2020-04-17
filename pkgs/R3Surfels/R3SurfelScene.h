@@ -189,6 +189,7 @@ public:
   virtual int CloseFile(const char *output_scene_filename = NULL);
   void SetDirty(void);
 
+  
   ////////////////////////////////////////////////////////////////////////
   // INTERNAL STUFF BELOW HERE
   ////////////////////////////////////////////////////////////////////////
@@ -209,6 +210,7 @@ public:
 
 protected:
   // Structure access stuff
+  friend class R3SurfelTree;
   R3SurfelTree *tree;
   RNArray<R3SurfelObject *> objects;
   RNArray<R3SurfelLabel *> labels;
@@ -220,7 +222,7 @@ protected:
   RNArray<R3SurfelScan *> scans;
   RNArray<R3SurfelImage *> images;
   RNArray<R3SurfelFeature *> features;
-
+  
   // File stuff
   char *filename;
   char *rwaccess;

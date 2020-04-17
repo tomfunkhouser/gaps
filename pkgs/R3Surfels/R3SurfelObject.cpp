@@ -101,7 +101,16 @@ R3SurfelObject::
     RemoveNode(node);
   }
 
-  // Remove object from scene
+  // Delete parts
+  while (NParts() > 0) {
+    R3SurfelObject *part = Part(NParts()-1);
+    delete part;
+  }
+
+  // Remove from parent
+  SetParent(NULL);
+
+  // Remove object from scene (handles all removals)
   if (scene) scene->RemoveObject(this);
 
   // Delete name
@@ -409,10 +418,10 @@ void R3SurfelObject::
 SetParent(R3SurfelObject *parent)
 {
   // Just checking
-  assert(parent);
-  assert(this->parent);
-  assert(scene == this->parent->scene);
-  assert(parent->scene == this->parent->scene);
+  // assert(parent);
+  // assert(this->parent);
+  assert(!this->parent || (scene == this->parent->scene));
+  assert(!parent || !this->parent || (parent->scene == this->parent->scene));
   if (parent == this->parent) return;
 
   // Invalidate bounding boxes starting at current parent
@@ -448,8 +457,8 @@ SetParent(R3SurfelObject *parent)
   }
 
   // Update hierarchy
-  this->parent->parts.Remove(this);
-  parent->parts.Insert(this);
+  if (this->parent) this->parent->parts.Remove(this);
+  if (parent) parent->parts.Insert(this);
   this->parent = parent;
 
   // Mark scene as dirty

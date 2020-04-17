@@ -370,11 +370,14 @@ R3SurfelBlock(const RNArray<R3Point *>& points)
 R3SurfelBlock::
 ~R3SurfelBlock(void)
 {
-  // Just checking
-  assert(!database);
-  assert(database_index == -1);
+  // Safety check
   assert(file_read_count == 0);
-  assert(!node);
+
+  // Remove from node
+  if (node) node->RemoveBlock(this);
+
+  // Remove from database
+  if (database) database->RemoveBlock(this);
 
   // Delete surfels
   if (surfels) delete [] surfels;

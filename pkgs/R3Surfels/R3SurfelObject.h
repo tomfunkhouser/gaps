@@ -112,7 +112,6 @@ public:
   /////////////////////////////////////////
 
   // Name manipulation functions
-  virtual void SetParent(R3SurfelObject *parent);
   virtual void SetName(const char *name);
   virtual void SetIdentifier(int identifier);
 
@@ -126,6 +125,9 @@ public:
   /////////////////////////////////////////
   //// STRUCTURE MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
+
+  // Hierarchy manipulation functions
+  virtual void SetParent(R3SurfelObject *parent);
 
   // Node manipulation functions
   void InsertNode(R3SurfelNode *node);

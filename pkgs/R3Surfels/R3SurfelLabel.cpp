@@ -89,7 +89,16 @@ R3SurfelLabel::
     delete assignment;
   }
 
-  // Delete label from scene
+  // Delete parts
+  while (NParts() > 0) {
+    R3SurfelLabel *part = Part(NParts()-1);
+    delete part;
+  }
+
+  // Remove from parent
+  SetParent(NULL);
+
+  // Remove label from scene (handles all removals)
   if (scene) scene->RemoveLabel(this);
 
   // Delete name
@@ -155,15 +164,15 @@ void R3SurfelLabel::
 SetParent(R3SurfelLabel *parent)
 {
   // Just checking
-  assert(parent);
-  assert(this->parent);
-  assert(scene == this->parent->scene);
-  assert(parent->scene == this->parent->scene);
+  // assert(parent);
+  // assert(this->parent);
+  assert(!this->parent || (scene == this->parent->scene));
+  assert(!parent || !this->parent || (parent->scene == this->parent->scene));
   if (parent == this->parent) return;
 
   // Update hierarchy
-  this->parent->parts.Remove(this);
-  parent->parts.Insert(this);
+  if (this->parent) this->parent->parts.Remove(this);
+  if (parent) parent->parts.Insert(this);
   this->parent = parent;
 
   // Mark scene as dirty
