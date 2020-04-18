@@ -40,9 +40,6 @@ public:
   RNScalar PixelGreen(int ix, int iy) const;
   RNScalar PixelBlue(int ix, int iy) const;
   RNScalar PixelDepth(int ix, int iy) const;
-  RNScalar PixelHeight(int ix, int iy) const;
-  RNScalar PixelCategory(int ix, int iy) const;
-  RNScalar PixelObject(int ix, int iy) const;
   RNScalar PixelChannelValue(int ix, int iy, int channel_index) const;
 
   // Point property access functions
@@ -60,9 +57,6 @@ public:
   const R2Grid *GreenChannel(void) const;
   const R2Grid *BlueChannel(void) const;
   const R2Grid *DepthChannel(void) const;
-  const R2Grid *HeightChannel(void) const;
-  const R2Grid *CategoryChannel(void) const;
-  const R2Grid *ObjectChannel(void) const;
   R2Image ColorChannels(void) const;
   
   // Camera intrinsics functions
@@ -118,9 +112,6 @@ public:
   virtual void SetGreenChannel(const R2Grid& channel);
   virtual void SetBlueChannel(const R2Grid& channel);
   virtual void SetDepthChannel(const R2Grid& channel);
-  virtual void SetHeightChannel(const R2Grid& channel);
-  virtual void SetCategoryChannel(const R2Grid& channel);
-  virtual void SetObjectChannel(const R2Grid& channel);
   virtual void SetColorChannels(const R2Image& image);
   virtual void RemoveChannel(int channel_index);
   
@@ -220,12 +211,6 @@ enum {
   R3_SURFEL_GREEN_CHANNEL,
   R3_SURFEL_BLUE_CHANNEL,
   R3_SURFEL_DEPTH_CHANNEL,
-  R3_SURFEL_HEIGHT_CHANNEL,
-  R3_SURFEL_CATEGORY_CHANNEL,
-  R3_SURFEL_OBJECT_CHANNEL,
-  R3_SURFEL_NORMAL_X_CHANNEL,
-  R3_SURFEL_NORMAL_Y_CHANNEL,
-  R3_SURFEL_NORMAL_Z_CHANNEL,
   R3_SURFEL_USER_CHANNEL,
   R3_SURFEL_NUM_CHANNELS
 };
@@ -292,33 +277,6 @@ DepthChannel(void) const
 
 
 
-inline const R2Grid *R3SurfelImage::
-HeightChannel(void) const
-{
-  // Return the height channel (may be NULL)
-  return Channel(R3_SURFEL_HEIGHT_CHANNEL);
-}
-
-
-
-inline const R2Grid *R3SurfelImage::
-CategoryChannel(void) const
-{
-  // Return the category channel (may be NULL)
-  return Channel(R3_SURFEL_CATEGORY_CHANNEL);
-}
-
-
-
-inline const R2Grid *R3SurfelImage::
-ObjectChannel(void) const
-{
-  // Return the object channel (may be NULL)
-  return Channel(R3_SURFEL_OBJECT_CHANNEL);
-}
-
-
-
 inline RNScalar R3SurfelImage::
 PixelRed(int ix, int iy) const
 {
@@ -368,39 +326,6 @@ PixelDepth(int ix, int iy) const
   const R2Grid *depth_channel = DepthChannel();
   if (!depth_channel) return -1;
   return depth_channel->GridValue(ix, iy);
-}
-
-
-
-inline RNScalar R3SurfelImage::
-PixelHeight(int ix, int iy) const
-{
-  // Return the height of the pixel
-  const R2Grid *height_channel = HeightChannel();
-  if (!height_channel) return -1;
-  return height_channel->GridValue(ix, iy);
-}
-
-
-
-inline RNScalar R3SurfelImage::
-PixelCategory(int ix, int iy) const
-{
-  // Return the category index of the pixel
-  const R2Grid *category_channel = CategoryChannel();
-  if (!category_channel) return -1;
-  return category_channel->GridValue(ix, iy);
-}
-
-
-
-inline RNScalar R3SurfelImage::
-PixelObject(int ix, int iy) const
-{
-  // Return the object index of the pixel
-  const R2Grid *object_channel = ObjectChannel();
-  if (!object_channel) return -1;
-  return object_channel->GridValue(ix, iy);
 }
 
 

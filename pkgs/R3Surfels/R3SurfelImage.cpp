@@ -237,33 +237,6 @@ SetDepthChannel(const R2Grid& channel)
 
 
 void R3SurfelImage::
-SetHeightChannel(const R2Grid& channel)
-{
-  // Set height channel
-  SetChannel(R3_SURFEL_HEIGHT_CHANNEL, channel);
-}
-
-
-
-void R3SurfelImage::
-SetCategoryChannel(const R2Grid& channel)
-{
-  // Set category channel
-  SetChannel(R3_SURFEL_CATEGORY_CHANNEL, channel);
-}
-
-
-
-void R3SurfelImage::
-SetObjectChannel(const R2Grid& channel)
-{
-  // Set object channel
-  SetChannel(R3_SURFEL_OBJECT_CHANNEL, channel);
-}
-
-
-
-void R3SurfelImage::
 SetColorChannels(const R2Image& color_image)
 {
   // Initialize channels
@@ -670,7 +643,7 @@ RenderImage(R2Image *color_image,
           // Fill pixel at image index
           if (color_image) color_image->SetPixelRGB(ix, iy, block->SurfelColor(j));
           if (depth_image) depth_image->SetGridValue(ix, iy, (block->SurfelPosition(j) - Viewpoint()).Dot(Towards()));
-          if (height_image) depth_image->SetGridValue(ix, iy, block->SurfelPosition(j).Z());
+          if (height_image) height_image->SetGridValue(ix, iy, block->SurfelPosition(j).Z() - Viewpoint().Z());
           if (xnormal_image) xnormal_image->SetGridValue(ix, iy, surfel->NX());
           if (ynormal_image) ynormal_image->SetGridValue(ix, iy, surfel->NY());
           if (znormal_image) znormal_image->SetGridValue(ix, iy, surfel->NZ());
