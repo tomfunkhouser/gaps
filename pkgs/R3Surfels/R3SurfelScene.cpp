@@ -929,6 +929,9 @@ RemoveFeature(R3SurfelFeature *feature)
 {
   // Just checking
   assert(feature);
+  assert(feature->scene == this);
+  assert(feature->scene_index >= 0);
+  assert(feature->scene_index < NFeatures());
 
   // Remove feature from scene
   RNArrayEntry *entry = features.KthEntry(feature->scene_index);
@@ -940,7 +943,7 @@ RemoveFeature(R3SurfelFeature *feature)
   feature->scene = NULL;
 
   // Update all object feature vectors
-  if (tail->scene_index < NFeatures()) {
+  if (feature != tail) {
     for (int i = 0; i < NObjects(); i++) {
       R3SurfelObject *object = Object(i);
       R3SurfelFeatureVector& vector = object->feature_vector;
