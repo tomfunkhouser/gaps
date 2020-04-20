@@ -286,8 +286,9 @@ DrawImageAffinities(void)
     }
     
     // Set color and alpha based on affinity
-    RNScalar affinity = 0.5 + ((point_depth > 2) ? 1.0 / point_depth : 0.5);
-    glColor3d(affinity, 0, affinity);
+    // RNScalar affinity = 0.5 + ((point_depth > 2) ? 1.0 / point_depth : 0.5);
+    // glColor3d(affinity, 0, affinity);
+    glColor3d(1, 0, 1);
     
     // Draw line
     R3LoadPoint(point_position);
