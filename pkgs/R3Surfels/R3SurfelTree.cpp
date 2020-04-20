@@ -156,7 +156,6 @@ int R3SurfelTree::
 CreateMultiresolutionBlocks(R3SurfelNode *node, RNScalar multiresolution_factor, RNScalar max_complexity, RNScalar max_resolution)
 {
   // Check node
-  if (node->NBlocks() > 0) return 1;
   if (node->NParts() == 0) return 1;
 
   // Create multiresolution blocks for parts
@@ -164,6 +163,9 @@ CreateMultiresolutionBlocks(R3SurfelNode *node, RNScalar multiresolution_factor,
     R3SurfelNode *part = node->Part(i);
     if (!CreateMultiresolutionBlocks(part, multiresolution_factor, max_complexity, max_resolution)) return 0;
   }
+
+  // Check if already have blocks
+  if (node->NBlocks() > 0) return 1;
 
   // Compute some statistics
   RNScalar total_complexity = 0;
