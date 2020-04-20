@@ -79,6 +79,7 @@ public:
   int ScanViewpointVisibility(void) const;
   int ImageViewpointVisibility(void) const;
   int ImagePixelsVisibility(void) const;
+  int ImagePointsVisibility(void) const;
   int CenterPointVisibility(void) const;
   int AxesVisibility(void) const;
 
@@ -136,6 +137,7 @@ public:
   void SetScanViewpointVisibility(int visibility);
   void SetImageViewpointVisibility(int visibility);
   void SetImagePixelsVisibility(int visibility);
+  void SetImagePointsVisibility(int visibility);
   void SetCenterPointVisibility(int visibility);
   void SetAxesVisibility(int visibility);
 
@@ -252,6 +254,7 @@ protected:
   int scan_viewpoint_visibility;
   int image_viewpoint_visibility;
   int image_pixels_visibility;
+  int image_points_visibility;
   int center_point_visibility;
   int axes_visibility;
 
@@ -512,6 +515,15 @@ ImagePixelsVisibility(void) const
 {
   // Return image pixels visibililty
   return image_pixels_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ImagePointsVisibility(void) const
+{
+  // Return image points visibililty
+  return image_points_visibility;
 }
 
 
@@ -854,6 +866,17 @@ SetImagePixelsVisibility(int visibility)
   if (visibility == -1) image_pixels_visibility = 1 - image_pixels_visibility;
   else if (visibility == 0) image_pixels_visibility = 0;
   else image_pixels_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetImagePointsVisibility(int visibility)
+{
+  // Set image points visibililty
+  if (visibility == -1) image_points_visibility = 1 - image_points_visibility;
+  else if (visibility == 0) image_points_visibility = 0;
+  else image_points_visibility = 1;
 }
 
 

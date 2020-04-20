@@ -251,15 +251,8 @@ CreateMultiresolutionBlocks(R3SurfelNode *node, RNScalar multiresolution_factor,
 int R3SurfelTree::
 CreateMultiresolutionBlocks(RNScalar multiresolution_factor, RNScalar max_complexity)
 {
-#if 0
-  // Create multiresolution blocks for all nodes starting at Root
-  for (int i = 0; i < NNodes(); i++) {
-    R3SurfelNode *node = Node(i);
-    CreateMultiresolutionBlocks(node, multiresolution_factor, max_complexity);
-  }
-#else
+  // Create multiresolution blocks recursively
   CreateMultiresolutionBlocks(RootNode(), multiresolution_factor, max_complexity);
-#endif
   
   // Return success
   return 1;

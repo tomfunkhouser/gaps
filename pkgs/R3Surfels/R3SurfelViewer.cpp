@@ -47,6 +47,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     scan_viewpoint_visibility(0),
     image_viewpoint_visibility(1),
     image_pixels_visibility(0),
+    image_points_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
@@ -595,6 +596,25 @@ Redraw(void)
     }
   }
 
+  // Draw image points
+  if ((image_points_visibility) && (selected_image)) {
+    R3SurfelImage *image = selected_image;
+    const R2Grid *depth_channel = image->DepthChannel();
+    if (depth_channel) {
+      glDisable(GL_LIGHTING);
+      RNLoadRgb(1.0, 1.0, 0.0);
+      glBegin(GL_POINTS);
+      for (int iy = 0; iy < image->ImageHeight(); iy += 2) {
+        for (int ix = 0; ix < image->ImageWidth(); ix += 2) {
+          R2Point image_position(ix, iy);
+          R3Point world_position = image->TransformFromImageToWorld(image_position);
+          R3LoadPoint(world_position);
+        }
+      }
+      glEnd();
+    }
+  }
+  
   // Draw center point
   if (center_point_visibility) {
     glEnable(GL_LIGHTING);
@@ -854,6 +874,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'D':
     case 'd':
+      SetImagePointsVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
+      break;
+      
+    case 'E':
+    case 'e':
       if (shape_draw_flags != 0) shape_draw_flags = 0;
       else shape_draw_flags = R3_SURFEL_DISC_DRAW_FLAG | R3_SURFEL_NORMAL_DRAW_FLAG;
       break;
