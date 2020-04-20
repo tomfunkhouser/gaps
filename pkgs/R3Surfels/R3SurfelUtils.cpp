@@ -1037,7 +1037,7 @@ EstimateColor(const R3SurfelScene *scene,
     // Compute weight
     double depth_weight = 1.0 / depth;
     double weight = timestamp_weight * angle_weight * depth_weight;
-    if (weight < 1E-6) continue;
+    if (weight <= 0) continue;
    
     // Get color at the 2D pixel
     double r = red_channel->GridValue(image_position);
