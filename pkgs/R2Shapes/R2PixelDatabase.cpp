@@ -37,10 +37,11 @@ static const unsigned int R2_PIXEL_DATABASE_1_16_PNG_FORMAT = 1;
 struct R2PixelDatabaseEntry {
 public:
   R2PixelDatabaseEntry(const char *key = NULL,
-    int format = 0, unsigned int size = 0, unsigned long long offset = 0,
-    double scale = 1, double exponent = 1)
+    int format = 0, unsigned int size = 0, unsigned long long seek = 0,
+    double offset = 0, double scale = 1, double exponent = 1)
     : format(format),
       size(size),
+      seek(seek),
       offset(offset),
       scale(scale),
       exponent(exponent)
@@ -54,7 +55,8 @@ public:
   char key[128];
   unsigned int format;
   unsigned int size;
-  unsigned long long offset;
+  unsigned long long seek;
+  double offset;
   double scale;
   double exponent;
 };
@@ -75,7 +77,7 @@ R2PixelDatabase(void)
     minor_version(current_minor_version),
     swap_endian(0),
     entries_count(0),
-    entries_offset(0),
+    entries_seek(0),
     map()
 {
 }
@@ -92,7 +94,7 @@ R2PixelDatabase(const R2PixelDatabase& database)
     minor_version(current_minor_version),
     swap_endian(0),
     entries_count(0),
-    entries_offset(0),
+    entries_seek(0),
     map()
 {
   RNAbort("Not implemented");
@@ -143,7 +145,7 @@ FindImage(const char *key, R2Image *image) const
   // Read image
   if (image) {
     // Seek to start of entry
-    RNFileSeek(fp, entry.offset, RN_FILE_SEEK_SET);
+    RNFileSeek(fp, entry.seek, RN_FILE_SEEK_SET);
   
     // Read entry
     if (!image->ReadPNGStream(fp)) {
@@ -168,12 +170,17 @@ FindGrid(const char *key, R2Grid *grid) const
   // Read grid
   if (grid) {
     // Seek to start of entry
-    RNFileSeek(fp, entry.offset, RN_FILE_SEEK_SET);
+    RNFileSeek(fp, entry.seek, RN_FILE_SEEK_SET);
   
     // Read entry
     if (!grid->ReadPNGStream(fp)) {
       RNFail("Error reading %s from pixel database\n", key);
       return FALSE;
+    }
+
+    // Apply offset 
+    if (entry.offset != 0) {
+      grid->Subtract(entry.offset);
     }
 
     // Apply scale 
@@ -201,18 +208,18 @@ int R2PixelDatabase::
 InsertImage(const char *key, const R2Image& image)
 {
   // Seek to end of entries
-  unsigned long long offset = entries_offset;
-  RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
+  unsigned long long seek = entries_seek;
+  RNFileSeek(fp, seek, RN_FILE_SEEK_SET);
 
   // Write pixels to file
   if (!image.WritePNGStream(fp)) return FALSE;
 
-  // Update entries offset
-  entries_offset = RNFileTell(fp);
-  unsigned int size = entries_offset - offset;
+  // Update entries seek
+  entries_seek = RNFileTell(fp);
+  unsigned int size = entries_seek - seek;
   
   // Insert entry into map
-  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_3_8_PNG_FORMAT, size, offset);
+  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_3_8_PNG_FORMAT, size, seek);
   map.Insert(key, entry);
   
   // Increment number of entries
@@ -225,18 +232,20 @@ InsertImage(const char *key, const R2Image& image)
 
 
 int R2PixelDatabase::
-InsertGrid(const char *key, const R2Grid& grid, double scale, double exponent)
+InsertGrid(const char *key, const R2Grid& grid,
+  double offset, double scale, double exponent)
 {
   // Seek to end of entries
-  unsigned long long offset = entries_offset;
-  RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
+  unsigned long long seek = entries_seek;
+  RNFileSeek(fp, seek, RN_FILE_SEEK_SET);
 
-  // Check if need to apply scale and exponent
-  if ((scale != 1) || (exponent != 1)) {
+  // Check if need to apply offset, scale, or exponent
+  if ((offset != 0) || (scale != 1) || (exponent != 1)) {
     // Write processed pixels to file
     R2Grid tmp(grid);
     if (exponent != 1) tmp.Pow(exponent);
     if (scale != 1) tmp.Multiply(scale);
+    if (offset != 0) tmp.Add(offset);
     if (!tmp.WritePNGStream(fp)) return FALSE;
   }
   else {
@@ -244,12 +253,12 @@ InsertGrid(const char *key, const R2Grid& grid, double scale, double exponent)
     if (!grid.WritePNGStream(fp)) return FALSE;
   }
 
-  // Update entries offset
-  entries_offset = RNFileTell(fp);
-  unsigned int size = entries_offset - offset;
+  // Update entries seek
+  entries_seek = RNFileTell(fp);
+  unsigned int size = entries_seek - seek;
   
   // Insert entry into map
-  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, offset, scale, exponent);
+  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, seek, offset, scale, exponent);
   map.Insert(key, entry);
   
   // Increment number of entries
@@ -312,7 +321,7 @@ OpenFile(const char *filename, const char *rwaccess)
     if (!WriteHeader(fp, 0)) return 0;
 
     // Update entries info
-    entries_offset = RNFileTell(fp);
+    entries_seek = RNFileTell(fp);
   }
   else {
     // Read header
@@ -336,7 +345,7 @@ CloseFile(void)
     // Write entries
     if (!WriteEntries(fp, swap_endian)) return 0;
 
-    // Write header again (now that the offset values have been filled in)
+    // Write header again (now that the seek values have been filled in)
     if (!WriteHeader(fp, swap_endian)) return 0;
   }
 
@@ -391,7 +400,7 @@ ReadHeader(FILE *fp)
   if (!RNReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
   
   // Read entry info
-  if (!RNReadUnsignedLongLong(fp, &entries_offset, 1, swap_endian)) return 0;
+  if (!RNReadUnsignedLongLong(fp, &entries_seek, 1, swap_endian)) return 0;
   if (!RNReadUnsignedInt(fp, &entries_count, 1, swap_endian)) return 0;
 
   // Read extra at end of header
@@ -420,7 +429,7 @@ WriteHeader(FILE *fp, int swap_endian)
   if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
-  if (!RNWriteUnsignedLongLong(fp, &entries_offset, 1, swap_endian)) return 0;
+  if (!RNWriteUnsignedLongLong(fp, &entries_seek, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &entries_count, 1, swap_endian)) return 0;
   if (!RNWriteChar(fp, buffer, 1024, swap_endian)) return 0;
   
@@ -433,8 +442,8 @@ WriteHeader(FILE *fp, int swap_endian)
 int R2PixelDatabase::
 ReadEntries(FILE *fp, int swap_endian)
 {
-  // Seek to entries offset
-  RNFileSeek(fp, entries_offset, RN_FILE_SEEK_SET);
+  // Seek to entries seek
+  RNFileSeek(fp, entries_seek, RN_FILE_SEEK_SET);
 
   // Read entries
   int dummy = 0;
@@ -443,7 +452,8 @@ ReadEntries(FILE *fp, int swap_endian)
     if (!RNReadChar(fp, entry.key, 128, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
-    if (!RNReadUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedLongLong(fp, &entry.seek, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &entry.offset, 1, swap_endian)) return 0;
     if (!RNReadDouble(fp, &entry.scale, 1, swap_endian)) return 0;
     if (!RNReadDouble(fp, &entry.exponent, 1, swap_endian)) return 0;
     for (int j = 0; j < 12; j++) RNReadInt(fp, &dummy, 1, swap_endian);
@@ -459,8 +469,8 @@ ReadEntries(FILE *fp, int swap_endian)
 int R2PixelDatabase::
 WriteEntries(FILE *fp, int swap_endian)
 {
-  // Seek to entries offset
-  RNFileSeek(fp, entries_offset, RN_FILE_SEEK_SET);
+  // Seek to entries seek
+  RNFileSeek(fp, entries_seek, RN_FILE_SEEK_SET);
 
   // Write entries
   int dummy = 0;
@@ -472,7 +482,8 @@ WriteEntries(FILE *fp, int swap_endian)
     if (!RNWriteChar(fp, buffer, 128, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
-    if (!RNWriteUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedLongLong(fp, &entry.seek, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &entry.offset, 1, swap_endian)) return 0;
     if (!RNWriteDouble(fp, &entry.scale, 1, swap_endian)) return 0;
     if (!RNWriteDouble(fp, &entry.exponent, 1, swap_endian)) return 0;
     for (int j = 0; j < 12; j++) RNWriteInt(fp, &dummy, 1, swap_endian);

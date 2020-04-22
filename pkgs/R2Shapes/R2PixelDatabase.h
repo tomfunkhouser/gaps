@@ -32,7 +32,8 @@ public:
 
   // Entry manipulation functions
   virtual int InsertImage(const char *key, const R2Image& image);
-  virtual int InsertGrid(const char *key, const R2Grid& grid, double scale = 1, double exponent = 1);
+  virtual int InsertGrid(const char *key, const R2Grid& grid,
+    double offset = 0, double scale = 1, double exponent = 1);
   virtual int Remove(const char *key);
 
   // I/O functions
@@ -55,7 +56,7 @@ private:
   unsigned int minor_version;
   unsigned int swap_endian;
   unsigned int entries_count;
-  unsigned long long entries_offset;
+  unsigned long long entries_seek;
   RNSymbolTable<struct R2PixelDatabaseEntry> map;
 };
 
