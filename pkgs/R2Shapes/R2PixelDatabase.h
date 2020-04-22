@@ -33,7 +33,8 @@ public:
   // Entry manipulation functions
   virtual int InsertImage(const char *key, const R2Image& image);
   virtual int InsertGrid(const char *key, const R2Grid& grid,
-    double offset = 0, double scale = 1, double exponent = 1);
+    double offset = 0, double scale = 1, double exponent = 1,
+    RNBoolean apply_transformation = TRUE);
   virtual int Remove(const char *key);
 
   // I/O functions

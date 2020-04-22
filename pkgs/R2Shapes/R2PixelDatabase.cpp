@@ -233,14 +233,15 @@ InsertImage(const char *key, const R2Image& image)
 
 int R2PixelDatabase::
 InsertGrid(const char *key, const R2Grid& grid,
-  double offset, double scale, double exponent)
+  double offset, double scale, double exponent, RNBoolean apply_transformation)
 {
   // Seek to end of entries
   unsigned long long seek = entries_seek;
   RNFileSeek(fp, seek, RN_FILE_SEEK_SET);
 
   // Check if need to apply offset, scale, or exponent
-  if ((offset != 0) || (scale != 1) || (exponent != 1)) {
+  if ((apply_transformation) &&
+      ((offset != 0) || (scale != 1) || (exponent != 1))) {
     // Write processed pixels to file
     R2Grid tmp(grid);
     if (exponent != 1) tmp.Pow(exponent);
