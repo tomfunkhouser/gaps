@@ -36,13 +36,27 @@ static const unsigned int R2_PIXEL_DATABASE_1_16_PNG_FORMAT = 1;
 
 struct R2PixelDatabaseEntry {
 public:
-  R2PixelDatabaseEntry(const char *key = NULL, int format = 0, unsigned int size = 0, unsigned long long offset = 0)
-    : format(format), size(size), offset(offset) { this->key[0] = '\0'; if (key) strncpy(this->key, key, 127); this->key[127]='\0'; };
+  R2PixelDatabaseEntry(const char *key = NULL,
+    int format = 0, unsigned int size = 0, unsigned long long offset = 0,
+    double scale = 1, double exponent = 1)
+    : format(format),
+      size(size),
+      offset(offset),
+      scale(scale),
+      exponent(exponent)
+  {
+    this->key[0] = '\0';
+    if (key) strncpy(this->key, key, 127);
+    this->key[127]='\0';
+  };
+  
 public:
   char key[128];
   unsigned int format;
   unsigned int size;
   unsigned long long offset;
+  double scale;
+  double exponent;
 };
 
 
@@ -161,6 +175,16 @@ FindGrid(const char *key, R2Grid *grid) const
       RNFail("Error reading %s from pixel database\n", key);
       return FALSE;
     }
+
+    // Apply scale 
+    if ((entry.scale != 0) && (entry.scale != 1)) {
+      grid->Multiply(1.0 / entry.scale);
+    }
+
+    // Apply exponent
+    if ((entry.exponent != 0) && (entry.exponent != 1)) {
+      grid->Pow(1.0 / entry.exponent);
+    }
   }
 
   // Return success
@@ -201,21 +225,31 @@ InsertImage(const char *key, const R2Image& image)
 
 
 int R2PixelDatabase::
-InsertGrid(const char *key, const R2Grid& grid)
+InsertGrid(const char *key, const R2Grid& grid, double scale, double exponent)
 {
   // Seek to end of entries
   unsigned long long offset = entries_offset;
   RNFileSeek(fp, offset, RN_FILE_SEEK_SET);
 
-  // Write pixels to file
-  if (!grid.WritePNGStream(fp)) return FALSE;
+  // Check if need to apply scale and exponent
+  if ((scale != 1) || (exponent != 1)) {
+    // Write processed pixels to file
+    R2Grid tmp(grid);
+    if (exponent != 1) tmp.Pow(exponent);
+    if (scale != 1) tmp.Multiply(scale);
+    if (!tmp.WritePNGStream(fp)) return FALSE;
+  }
+  else {
+    // Write original pixels to file
+    if (!grid.WritePNGStream(fp)) return FALSE;
+  }
 
   // Update entries offset
   entries_offset = RNFileTell(fp);
   unsigned int size = entries_offset - offset;
   
   // Insert entry into map
-  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, offset);
+  R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, offset, scale, exponent);
   map.Insert(key, entry);
   
   // Increment number of entries
@@ -403,12 +437,16 @@ ReadEntries(FILE *fp, int swap_endian)
   RNFileSeek(fp, entries_offset, RN_FILE_SEEK_SET);
 
   // Read entries
+  int dummy = 0;
   for (unsigned int i = 0; i < entries_count; i++) {
     R2PixelDatabaseEntry entry;
     if (!RNReadChar(fp, entry.key, 128, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
     if (!RNReadUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &entry.scale, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &entry.exponent, 1, swap_endian)) return 0;
+    for (int j = 0; j < 12; j++) RNReadInt(fp, &dummy, 1, swap_endian);
     map.Insert(entry.key, entry);
   }
 
@@ -425,6 +463,7 @@ WriteEntries(FILE *fp, int swap_endian)
   RNFileSeek(fp, entries_offset, RN_FILE_SEEK_SET);
 
   // Write entries
+  int dummy = 0;
   char buffer[128] = { '\0' };
   std::map<std::string, R2PixelDatabaseEntry, RNMapComparator<std::string> >::iterator it;
   for (it = map.m->begin(); it != map.m->end(); ++it) {
@@ -434,6 +473,9 @@ WriteEntries(FILE *fp, int swap_endian)
     if (!RNWriteUnsignedInt(fp, &entry.format, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &entry.size, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedLongLong(fp, &entry.offset, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &entry.scale, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &entry.exponent, 1, swap_endian)) return 0;
+    for (int j = 0; j < 12; j++) RNWriteInt(fp, &dummy, 1, swap_endian);
   }
 
   // Return success

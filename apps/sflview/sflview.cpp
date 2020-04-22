@@ -79,7 +79,7 @@ OpenScene(const char *scene_name, const char *database_name)
   }
 
   // Open scene files
-  if (!scene->OpenFile(scene_name, database_name, "r+", "r+")) {
+  if (!scene->OpenFile(scene_name, database_name, "r", "r")) {
     delete scene;
     return NULL;
   }
