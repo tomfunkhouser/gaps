@@ -886,8 +886,7 @@ RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label)
 ////////////////////////////////////////////////////////////////////////
 
 int
-ReadAllImageChannels(R3SurfelScene *scene,
-  const char *image_directory,
+ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
   double depth_scale, double depth_exponent)
 {
   /// Get convenient variables
@@ -922,6 +921,42 @@ ReadAllImageChannels(R3SurfelScene *scene,
       image->SetDepthChannel(depth_image);
     }
   }
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+ReadPixelDatabase(R3SurfelScene *scene, const char *filename)
+{
+  // Open pixel database
+  R2PixelDatabase database;
+  if (!database.OpenFile(filename, "r")) return 0;
+  
+  // Read all channels for all images
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    char imagekey[1024];
+
+    // Get color image
+    R2Image color_image;
+    sprintf(imagekey, "color_images/%s.png", image->Name());
+    if (database.FindImage(imagekey, &color_image)) {
+      image->SetColorChannels(color_image);
+    }
+
+    // Get depth image
+    R2Grid depth_image;
+    sprintf(imagekey, "depth_images/%s.png", image->Name());
+    if (database.FindGrid(imagekey, &depth_image)) {
+      image->SetDepthChannel(depth_image);
+    }
+  }
+
+  // Close pixel database
+  if (!database.CloseFile()) return 0;
 
   // Return success
   return 1;

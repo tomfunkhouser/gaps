@@ -23,6 +23,7 @@ using namespace gaps;
 static const char *scene_name = NULL;
 static const char *database_name = NULL;
 static const char *model_name = NULL;
+static const char *pixel_database = NULL;
 static const char *image_directory = NULL;
 static double depth_scale = 2000;
 static double depth_exponent = 0.5;
@@ -146,14 +147,38 @@ CloseScene(R3SurfelScene *scene)
 
 
 static int
-ReadAllImageChannels(R3SurfelScene *scene, const char *image_directory)
+ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
-  // Read all surfel channels
-  if (!ReadAllImageChannels(scene, image_directory,
+  // Read all image channels
+  if (!ReadPixelDatabase(scene, pixel_database)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read all image channels from %s ...\n", pixel_database);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", scene->NImages());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read all image channels
+  if (!ReadImageDirectory(scene, image_directory,
     depth_scale, depth_exponent)) return 0;
 
   // Print statistics
@@ -546,6 +571,9 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
+      else if (!strcmp(*argv, "-pixel_database")) { 
+        argv++; argc--; pixel_database = *argv;
+      }
       else if (!strcmp(*argv, "-image_directory")) { 
         argv++; argc--; image_directory = *argv;
       }
@@ -627,8 +655,11 @@ int main(int argc, char **argv)
   }
 
   // Read images
-  if (image_directory) {
-    if (!ReadAllImageChannels(scene, image_directory)) exit(-1);
+  if (pixel_database) {
+    if (!ReadImagesFromPixelDatabase(scene, pixel_database)) exit(-1);
+  }
+  else if (image_directory) {
+    if (!ReadImagesFromDirectory(scene, image_directory)) exit(-1);
   }
   
   // Create viewer
