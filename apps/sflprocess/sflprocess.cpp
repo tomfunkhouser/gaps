@@ -2385,7 +2385,7 @@ int main(int argc, char **argv)
       argc--; argv++; char *image_directory = *argv; 
       argc--; argv++; double depth_scale = atof(*argv); 
       argc--; argv++; double depth_exponent = atof(*argv); 
-      if (!ReadAllImageChannels(scene, image_directory, depth_scale, depth_exponent)) exit(-1);
+      if (!ReadImageDirectory(scene, image_directory, depth_scale, depth_exponent)) exit(-1);
       if (!EstimateSurfelColors(scene)) exit(-1);
       noperations++;
     }

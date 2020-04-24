@@ -1227,7 +1227,7 @@ InsertScene(const R3SurfelScene& scene2,
     image1->SetImageCenter(image2->ImageCenter());
     image1->SetFlags(image2->Flags());
     R3SurfelScan *scan2 = image2->Scan();
-    R3SurfelScan *scan1 = scans1.Kth(scan2->SceneIndex());
+    R3SurfelScan *scan1 = (scan2) ? scans1.Kth(scan2->SceneIndex()) : NULL;
     image1->SetScan(scan1);
     scene1.InsertImage(image1);
   }
