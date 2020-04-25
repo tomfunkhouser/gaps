@@ -43,6 +43,7 @@ R3SurfelScene(const char *name)
     scans(),
     images(),
     features(),
+    transformation(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0),
     filename(NULL),
     rwaccess(NULL),
     name((name) ? RNStrdup(name) : NULL),
@@ -275,6 +276,60 @@ SetName(const char *name)
 
   // Mark scene as dirty
   flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+}
+
+
+
+void R3SurfelScene::
+SetTransformation(const R3Affine& transformation, RNBoolean update_surfels)
+{
+  // Set transformation (does not change surfels)
+  this->transformation = transformation;
+}
+
+
+
+void R3SurfelScene::
+Transform(const R3Affine& transformation, RNBoolean update_surfels)
+{
+  // Check if should update surfels
+  if (update_surfels) {
+    // Compute total transformation
+    R3Affine t = R3identity_affine;
+    t.Transform(transformation);
+    t.Transform(this->transformation);
+    this->transformation = R3identity_affine;
+    
+    // Transform all nodes                                                                                                     
+    R3SurfelTree *tree = Tree();
+    for (int i = 0; i < tree->NNodes(); i++) {
+      R3SurfelNode *node = tree->Node(i);
+      node->Transform(t);
+    }
+
+    // Transform all scan poses                                                                                                
+    for (int i = 0; i < NScans(); i++) {
+      R3SurfelScan *scan = Scan(i);
+      R3CoordSystem pose = scan->Pose();
+      pose.Transform(t);
+      scan->SetPose(pose);
+    }
+
+    // Transform all image poses                                                                                               
+    for (int i = 0; i < NImages(); i++) {
+      R3SurfelImage *image = Image(i);
+      R3CoordSystem pose = image->Pose();
+      pose.Transform(t);
+      image->SetPose(pose);
+    }
+  }
+  else {
+    // Update transformation only
+    R3Affine t = R3identity_affine;
+    t.Transform(transformation);
+    t.Transform(this->transformation);
+    this->transformation = t;
+  }
 }
 
 
@@ -1230,6 +1285,9 @@ InsertScene(const R3SurfelScene& scene2,
     R3SurfelScan *scan1 = (scan2) ? scans1.Kth(scan2->SceneIndex()) : NULL;
     image1->SetScan(scan1);
     scene1.InsertImage(image1);
+
+    // Copy image channels?
+    // XXX
   }
 }
 
@@ -1529,6 +1587,13 @@ ReadAsciiFile(const char *filename)
     &nobject_properties, &nlabel_properties, &nimages);
   for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
 
+  // Read transformation (not present in version 1.0)
+  if (strcmp(version, "1.0")) {
+    double m[16];
+    for (int i = 0; i < 16; i++) fscanf(fp, "%lf", &m[i]);
+    SetTransformation(R3Affine(R4Matrix(m), 0));
+  }
+
   // Create nodes
   RNArray<R3SurfelNode *> read_nodes;
   read_nodes.Insert(tree->RootNode());
@@ -1762,7 +1827,7 @@ ReadAsciiFile(const char *filename)
     int scan_index, width, height;
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
-    if (strcmp(buffer, "S")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
+    if (strcmp(buffer, "S") && strcmp(buffer, "I")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
     ReadAsciiName(fp, image_name); 
     fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &xfocal, &yfocal, &xcenter, &ycenter, &flags);
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
@@ -1849,7 +1914,7 @@ WriteAsciiFile(const char *filename)
   }
 
   // Write header
-  fprintf(fp, "SSA 1.0\n");
+  fprintf(fp, "SSA 1.1\n");
 
   // Write scene header
   WriteAsciiName(fp, name);
@@ -1859,6 +1924,15 @@ WriteAsciiFile(const char *filename)
     NLabelAssignments(), NScans(), 
     NObjectProperties(), NLabelProperties(), NImages());
   for (int j = 0; j < 4; j++) fprintf(fp, " 0");
+  fprintf(fp, "\n");
+
+  // Write transformation
+  fprintf(fp, "T");
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      fprintf(fp, " %g", Transformation().Matrix()[i][j]);
+    }
+  }
   fprintf(fp, "\n");
 
   // Write nodes
@@ -1988,7 +2062,7 @@ WriteAsciiFile(const char *filename)
     R3Point viewpoint = image->Viewpoint();
     R3Vector towards = image->Towards();
     R3Vector up = image->Up();
-    fprintf(fp, "S ");
+    fprintf(fp, "I ");
     WriteAsciiName(fp, image->Name());
     fprintf(fp, " %g %g %g", viewpoint.X(), viewpoint.Y(), viewpoint.Z());
     fprintf(fp, " %g %g %g", towards.X(), towards.Y(), towards.Z());
@@ -2153,7 +2227,7 @@ ReadBinaryFile(const char *filename)
   }
 
   // Check file header
-  if (strcmp(magic, "SSB 1.0")) {
+  if (strncmp(magic, "SSB", 3)) {
     RNFail("Invalid header in %s\n", filename);
     return 0;
   }
@@ -2178,6 +2252,13 @@ ReadBinaryFile(const char *filename)
   ReadBinaryInteger(fp, &nlabel_properties);
   ReadBinaryInteger(fp, &nimages);
   for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
+
+  // Read transformation (not present in version 1.0)
+  if (strcmp(magic, "SSB 1.0")) {
+    double m[16];
+    for (int i = 0; i < 16; i++) ReadBinaryDouble(fp, &m[i]);
+    SetTransformation(R3Affine(R4Matrix(m), 0));
+  }
 
   // Create nodes
   RNArray<R3SurfelNode *> read_nodes;
@@ -2443,8 +2524,8 @@ ReadBinaryFile(const char *filename)
     ReadBinaryDouble(fp, &uy);
     ReadBinaryDouble(fp, &uz);
     ReadBinaryDouble(fp, &timestamp);
-    ReadBinaryInteger(fp, &width);
     ReadBinaryInteger(fp, &scan_index);
+    ReadBinaryInteger(fp, &width);
     ReadBinaryInteger(fp, &height);
     ReadBinaryDouble(fp, &xfocal);
     ReadBinaryDouble(fp, &yfocal);
@@ -2534,7 +2615,7 @@ WriteBinaryFile(const char *filename)
   }
 
   // Write file header
-  if (!WriteBinaryName(fp, "SSB 1.0", 16)) {
+  if (!WriteBinaryName(fp, "SSB 1.1", 16)) {
     RNFail("Unable to write to %s\n", filename);
     return 0;
   }
@@ -2553,6 +2634,13 @@ WriteBinaryFile(const char *filename)
   WriteBinaryInteger(fp, NLabelProperties());
   WriteBinaryInteger(fp, NImages());
   for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
+
+  // Write transformation
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      WriteBinaryDouble(fp, Transformation().Matrix()[i][j]);
+    }
+  }
 
   // Write nodes
   for (int i = 0; i < tree->NNodes(); i++) {

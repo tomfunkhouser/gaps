@@ -1117,64 +1117,6 @@ LoadScene(R3SurfelScene *scene1,
 // ALIGNMENT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-#if 0
-
-static R3CoordSystem
-PrinciplePlanarCoordSystem(R3SurfelScene *scene)
-{
-}
-
-
-static int
-Transform(R3SurfelScene *scene, const R3Affine& transformation)
-{
-  // Transform all nodes
-  R3SurfelTree *tree = scene->Tree();
-  for (int i = 0; i < tree->NNodes(); i++) {
-    R3SurfelNode *node = tree->Node(i);
-    node->Transform(transformation);
-  }
-
-  // Transform all scan poses
-  for (int i = 0; i < scene->NScans(); i++) {
-    R3SurfelScan *scan = scene->Scan(i);
-    R3CoordSystem pose = scan->Pose();
-    pose.Transform(transformation);
-    scan->SetPose(pose);
-  }
-      
-  // Transform all image poses
-  for (int i = 0; i < scene->NImages(); i++) {
-    R3SurfelImage *image = scene->Image(i);
-    R3CoordSystem pose = image->Pose();
-    pose.Transform(transformation);
-    image->SetPose(pose);
-  }
-      
-  // Return success
-  return 1;
-}
-
-
-
-static int
-AlignPrinciplePlanarAxes(R3SurfelScene *scene)
-{
-  // Determine principle planar coordinate system
-  R3CoordSystem cs = PrinciplePlanarCoordSystem(scene);
-
-  // Determine transformation
-  R4Matrix matrix = cs.InverseMatrix();
-  R3Affine transformation(matrix, 0);
-
-  // Apply transformation
-  return Transform(scene, transformation);
-}
-
-#endif
-
-
-
 static int
 TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoolean invert = FALSE)
 {

@@ -336,7 +336,7 @@ void GLUTStop(void)
   if (scene) CloseScene(scene);
 
   // Destroy window 
-  glutDestroyWindow(GLUTwindow);
+  // glutDestroyWindow(GLUTwindow);
 
   // Exit
   exit(0);

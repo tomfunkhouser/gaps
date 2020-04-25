@@ -38,6 +38,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Transformation property functions
+  const R3Affine& Transformation(void) const;
+
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
   
@@ -114,7 +117,11 @@ public:
   // Name manipulation functions
   virtual void SetName(const char *name);
 
+  // Transformation functions
+  void SetTransformation(const R3Affine& transformation, RNBoolean update_surfels = FALSE);
+  void Transform(const R3Affine& transformation, RNBoolean update_surfels = FALSE);
 
+  
   //////////////////////////////////////////
   //// STRUCTURE MANIPULATION FUNCTIONS ////
   //////////////////////////////////////////
@@ -222,6 +229,9 @@ protected:
   RNArray<R3SurfelScan *> scans;
   RNArray<R3SurfelImage *> images;
   RNArray<R3SurfelFeature *> features;
+
+  // Transformation stuff (from surfel to world)
+  R3Affine transformation;
   
   // File stuff
   char *filename;
@@ -278,6 +288,15 @@ Name(void) const
 {
   // Return name
   return name;
+}
+
+
+
+inline const R3Affine& R3SurfelScene::
+Transformation(void) const
+{
+  // Return global scene transformation from surfel to world coordinates
+  return transformation;
 }
 
 
