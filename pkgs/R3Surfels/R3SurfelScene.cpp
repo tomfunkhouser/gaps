@@ -1590,6 +1590,8 @@ ReadAsciiFile(const char *filename)
   // Read transformation (not present in version 1.0)
   if (strcmp(version, "1.0")) {
     double m[16];
+    fscanf(fp, "%s", buffer);
+    if (strcmp(buffer, "T")) { RNFail("Error reading xform in %s\n", filename); return 0; }
     for (int i = 0; i < 16; i++) fscanf(fp, "%lf", &m[i]);
     SetTransformation(R3Affine(R4Matrix(m), 0));
   }
