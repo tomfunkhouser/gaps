@@ -1569,7 +1569,7 @@ ReadAsciiFile(const char *filename)
   }
 
   // Check header
-  if (strcmp(buffer, "SSA") || strcmp(version, "1.0")) {
+  if (strcmp(buffer, "SSA")) {
     RNFail("Wrong header line in Scene file %s\n", filename);
     return 0;
   }
