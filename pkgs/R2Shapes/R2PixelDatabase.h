@@ -23,7 +23,8 @@ public:
   RNBoolean IsOpen(void) const;
   
   // Entry access functions
-  int NEntries() const;
+  int NKeys(void) const;
+  const char *Key(int k) const;
   virtual int FindImage(const char *key, R2Image *image) const;
   virtual int FindGrid(const char *key, R2Grid *grid) const;
 
@@ -40,6 +41,10 @@ public:
   // I/O functions
   virtual int OpenFile(const char *filename, const char *rwaccess = NULL);
   virtual int CloseFile(void);
+
+public:
+  // For backward compatibility
+  int NEntries() const;
 
 protected:
   // Internal I/O functions
@@ -59,6 +64,7 @@ private:
   unsigned int entries_count;
   unsigned long long entries_seek;
   RNSymbolTable<struct R2PixelDatabaseEntry> map;
+  std::vector<std::string> keys;
 };
 
 
@@ -77,13 +83,24 @@ Name(void) const
 
   
 inline int R2PixelDatabase::
-NEntries(void) const
+NKeys(void) const
 {
   // Return number of entries
-  return map.NEntries();
+  assert(entries_count == keys.size());
+  assert((int) entries_count == map.NEntries());
+  return (int) entries_count;
 }
 
 
+  
+inline const char *R2PixelDatabase::
+Key(int k) const
+{
+  // Return kth key
+  return keys[k].c_str();
+}
+  
+  
   
 inline RNBoolean R2PixelDatabase::
 IsOpen(void) const
@@ -94,6 +111,17 @@ IsOpen(void) const
 
 
 
+inline int R2PixelDatabase::
+NEntries(void) const
+{
+  // Return number of entries
+  // Same as NKeys
+  // Remains for backward compatibility
+  return NKeys();
+}
+
+
+  
 // End namespace
 }
 

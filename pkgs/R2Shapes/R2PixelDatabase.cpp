@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "R2Shapes.h"
+#include <algorithm>
 
 
 
@@ -78,7 +79,8 @@ R2PixelDatabase(void)
     swap_endian(0),
     entries_count(0),
     entries_seek(0),
-    map()
+    map(),
+    keys()
 {
 }
 
@@ -95,7 +97,8 @@ R2PixelDatabase(const R2PixelDatabase& database)
     swap_endian(0),
     entries_count(0),
     entries_seek(0),
-    map()
+    map(),
+    keys()
 {
   RNAbort("Not implemented");
 }
@@ -221,6 +224,9 @@ InsertImage(const char *key, const R2Image& image)
   // Insert entry into map
   R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_3_8_PNG_FORMAT, size, seek);
   map.Insert(key, entry);
+
+  // Insert key
+  keys.push_back(key);
   
   // Increment number of entries
   entries_count++;
@@ -262,6 +268,9 @@ InsertGrid(const char *key, const R2Grid& grid,
   R2PixelDatabaseEntry entry(key, R2_PIXEL_DATABASE_1_16_PNG_FORMAT, size, seek, offset, scale, exponent);
   map.Insert(key, entry);
   
+  // Insert key
+  keys.push_back(key);
+  
   // Increment number of entries
   entries_count++;
 
@@ -277,6 +286,10 @@ Remove(const char *key)
   // Remove entry from map
   map.Remove(key);
 
+  // Remove key
+  std::vector<std::string>::iterator it = std::find(keys.begin(), keys.end(), key);
+  if (it != keys.end()) keys.erase(it);
+  
   // Leaves hole in file where pixels were :(
 
   // Decrement number of entries
@@ -459,6 +472,7 @@ ReadEntries(FILE *fp, int swap_endian)
     if (!RNReadDouble(fp, &entry.exponent, 1, swap_endian)) return 0;
     for (int j = 0; j < 12; j++) RNReadInt(fp, &dummy, 1, swap_endian);
     map.Insert(entry.key, entry);
+    keys.push_back(entry.key);
   }
 
   // Return success
