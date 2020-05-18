@@ -18,8 +18,8 @@ namespace gaps {
 
 const R2Box R2zero_box(0.0, 0.0, 0.0, 0.0);
 const R2Box R2unit_box(-1.0, -1.0, 1.0, 1.0);
-const R2Box R2infinite_box(-RN_INFINITY, -RN_INFINITY, RN_INFINITY, RN_INFINITY);
-const R2Box R2null_box( RN_INFINITY, RN_INFINITY, -RN_INFINITY, -RN_INFINITY);
+const R2Box R2infinite_box(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
+const R2Box R2null_box( FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 
 

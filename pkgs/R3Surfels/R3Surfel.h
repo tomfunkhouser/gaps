@@ -584,7 +584,9 @@ inline void R3Surfel::
 SetRadius(float radius)
 {
   // Set radius
-  this->radius[0] = (RNUInt16) (8192.0 * radius + 0.5);
+  float r = 8192.0 * radius + 0.5;
+  if (r > 65535) r = 65535;
+  this->radius[0] = (RNUInt16) r;
   this->radius[1] = this->radius[0];
 }
 
@@ -595,7 +597,9 @@ SetRadius(int axis, float radius)
 {
   // Set radius
   assert((axis >= 0) && (axis <= 1));
-  this->radius[axis] = (RNUInt16) (8192.0 * radius + 0.5);
+  float r = 8192.0 * radius + 0.5;
+  if (r > 65535) r = 65535;
+  this->radius[axis] = (RNUInt16) r;
 }
 
 

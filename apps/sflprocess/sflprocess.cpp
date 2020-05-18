@@ -2478,6 +2478,9 @@ int main(int argc, char **argv)
   // Close scene
   if (!CloseScene(scene)) exit(-1);
 
+  // Delete scene
+  delete scene;
+  
   // Return success 
   return 0;
 }

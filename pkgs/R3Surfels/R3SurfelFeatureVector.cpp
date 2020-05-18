@@ -40,7 +40,8 @@ R3SurfelFeatureVector(int nvalues)
 
 R3SurfelFeatureVector::
 R3SurfelFeatureVector(const R3SurfelFeatureVector& vector)
-  : nvalues(vector.nvalues)
+  : values(NULL),
+    nvalues(vector.nvalues)
 {
   // Allocate values
   if (nvalues > 0) {
@@ -74,6 +75,7 @@ operator=(const R3SurfelFeatureVector& vector)
     nvalues = vector.nvalues;
     if (values) delete [] values;
     if (nvalues > 0) values = new RNScalar [ nvalues ];
+    else values = NULL;
   }
 
   // Copy values

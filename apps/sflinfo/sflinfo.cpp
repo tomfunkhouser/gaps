@@ -272,7 +272,8 @@ PrintInfo(R3SurfelScene *scene)
   printf("  # Nodes = %d\n", tree->NNodes());
   printf("  # Blocks = %d\n", database->NBlocks());
   printf("  # Surfels = %lld\n", database->NSurfels());
- 
+  printf("\n\n");
+  
   // Print label info
   if (print_labels) {
     printf("Labels:\n");
@@ -324,15 +325,17 @@ PrintInfo(R3SurfelScene *scene)
       RNInterval timestamp_range = object->TimestampRange();
       R3SurfelLabel *predicted_label = object->PredictedLabel();
       R3SurfelLabel *ground_truth_label = object->GroundTruthLabel();
-      const R3SurfelFeatureVector& vector = object->FeatureVector();
+      // const R3SurfelFeatureVector& vector = object->FeatureVector();
       printf("%s Object %d\n", prefix, object->SceneIndex());
       printf("%s Name = %s\n", prefix, (object->Name()) ? object->Name() : "None");
       printf("%s Identifier = %d\n", prefix, object->Identifier());
       printf("%s Complexity = %g\n", prefix, object->Complexity());
       printf("%s Part hierarchy level = %d\n", prefix, object->PartHierarchyLevel());
       printf("%s Centroid = ( %g %g %g )\n", prefix, centroid[0], centroid[1], centroid[2]);
-      printf("%s Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
-      printf("%s Timestamp Range = %.6f %.6f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
+      if (!bbox.IsEmpty())
+        printf("%s Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+      if (!timestamp_range.IsEmpty())
+        printf("%s Timestamp Range = %.6f %.6f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("%s # Nodes = %d\n", prefix, object->NNodes());
       printf("%s # Parts = %d\n", prefix, object->NParts());
       printf("%s # Object Properties = %d\n", prefix, object->NObjectProperties());
@@ -340,9 +343,9 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s # Assignments = %d\n", prefix, object->NLabelAssignments());
       printf("%s Predicted Label = %s\n", prefix, (predicted_label) ? predicted_label->Name() : "None");
       printf("%s Ground Truth Label = %s\n", prefix, (ground_truth_label) ? ground_truth_label->Name() : "None");
-      printf("%s Feature Vector = ", prefix);
-      for (int i = 0; i < vector.NValues(); i++) printf("%12.6f ", vector.Value(i));
-      printf("\n");
+      // printf("%s Feature Vector = ", prefix);
+      // for (int i = 0; i < vector.NValues(); i++) printf("%12.6f ", vector.Value(i));
+      // printf("\n");
       printf("\n");
     }
     printf("\n");
