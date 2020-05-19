@@ -880,7 +880,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'F':
     case 'f':
-      // SetBackfacingVisibility(-1);
+      SetBackfacingVisibility(-1);
       break;
       
     case 'I':
