@@ -37,7 +37,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
-    backfacing_visibility(0),
+    backfacing_visibility(1),
     aerial_visibility(1),
     terrestrial_visibility(1),
     object_property_visibility(0),
@@ -438,12 +438,6 @@ Redraw(void)
             // Check surfel type
             if (!aerial_visibility && surfel->IsAerial()) continue;
             if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-
-            // Check backfacing
-            if (!backfacing_visibility) {
-              R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
-              if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
-            }
 
             // Set color
             glColor4ub(surfel->R(), surfel->G(), surfel->B(), alpha);
@@ -886,7 +880,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'F':
     case 'f':
-      SetBackfacingVisibility(-1);
+      // SetBackfacingVisibility(-1);
       break;
       
     case 'I':
@@ -1583,7 +1577,7 @@ R3SurfelImage *R3SurfelViewer::
 PickImage(int x, int y, R3Point *picked_position) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 10;
+  int pick_tolerance = 0.02 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1668,7 +1662,7 @@ PickNode(int x, int y, R3Point *picked_position,
   RNBoolean exclude_nonobjects) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 10;
+  int pick_tolerance = 0.02 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
