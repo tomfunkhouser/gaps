@@ -1581,7 +1581,7 @@ R3SurfelImage *R3SurfelViewer::
 PickImage(int x, int y, R3Point *picked_position) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 0.02 * Viewport().Width() + 1;
+  int pick_tolerance = 0.015 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1666,7 +1666,7 @@ PickNode(int x, int y, R3Point *picked_position,
   RNBoolean exclude_nonobjects) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 0.02 * Viewport().Width() + 1;
+  int pick_tolerance = 0.015 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
