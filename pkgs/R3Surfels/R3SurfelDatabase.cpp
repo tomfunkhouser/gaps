@@ -628,7 +628,6 @@ int R3SurfelDatabase::
 InternalReleaseBlock(R3SurfelBlock *block)
 {
   // Just checking
-  assert(fp);
   assert(block->database == this);
 
   // Write block
@@ -677,6 +676,9 @@ InternalReleaseBlock(R3SurfelBlock *block)
 int R3SurfelDatabase::
 InternalSyncBlock(R3SurfelBlock *block)
 {
+  // Check file
+  if (!fp) return 1;
+
   // Check number of surfels
   if (block->NSurfels() == 0) return 1;
 
@@ -693,7 +695,6 @@ InternalSyncBlock(R3SurfelBlock *block)
   }
 
   // Just checking
-  assert(fp);
   assert(block->database == this);
 
   // Check if surfels can be put at original offset in file
