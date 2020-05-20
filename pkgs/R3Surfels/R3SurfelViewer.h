@@ -248,7 +248,6 @@ protected:
   int terrestrial_visibility;
   int object_property_visibility;
   int object_relationship_visibility;
-  int object_label_visibility;
   int node_bbox_visibility;
   int block_bbox_visibility;
   int scan_viewpoint_visibility;

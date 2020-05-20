@@ -889,6 +889,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SelectImage(selected_image, FALSE, FALSE);
       break;
 
+    // case 'L': // Reserve for toggling "labels" in app
+    // case 'l':
+    //  break;
+      
     // case 'M': // Reserve for toggling "model" in app
     // case 'm':
     //  break;
