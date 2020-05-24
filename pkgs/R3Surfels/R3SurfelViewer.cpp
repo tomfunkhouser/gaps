@@ -33,7 +33,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_point(NULL),
     selected_image(NULL),
     current_image_texture(),
-    image_pixels_depth(10),
+    image_plane_depth(10),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -46,7 +46,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     block_bbox_visibility(0),
     scan_viewpoint_visibility(0),
     image_viewpoint_visibility(1),
-    image_pixels_visibility(0),
+    image_plane_visibility(0),
+    image_inset_visibility(0),
     image_points_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
@@ -563,9 +564,39 @@ Redraw(void)
     }
   }
 
-  // Draw image pixels
-  if ((image_pixels_visibility) && (current_image_texture.Image()) && selected_image) {
-    RNLength depth = image_pixels_depth;
+  // Draw image inset
+  if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
+    glDisable(GL_LIGHTING);
+    RNLoadRgb(1.0, 1.0, 1.0);
+    R3SurfelImage *image = selected_image;
+    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      RNLength depth = 1E-1;
+      RNScalar fraction = 0.9;
+      R3Ray ray = viewer.WorldRay(fraction*Viewport().Width(), fraction*Viewport().Height());
+      RNScalar dot = ray.Vector().Dot(Camera().Towards());
+      R3Point c = (dot > 0) ? ray.Point(depth/dot) : ray.Point(depth); 
+      RNLength w = 2.0 * (1.0-fraction) * depth * tan(Camera().XFOV());
+      RNLength h = w * image->ImageHeight() / image->ImageWidth();
+      R3Vector dx = w * Camera().Right();
+      R3Vector dy = h * Camera().Up();
+      current_image_texture.Draw();
+      glBegin(GL_QUADS);
+      R3LoadTextureCoords(0.0, 0.0);
+      R3LoadPoint(c - dx - dy);
+      R3LoadTextureCoords(1.0, 0.0);
+      R3LoadPoint(c + dx - dy);
+      R3LoadTextureCoords(1.0, 1.0);
+      R3LoadPoint(c + dx + dy);
+      R3LoadTextureCoords(0.0, 1.0);
+      R3LoadPoint(c - dx + dy);
+      glEnd();
+      R2null_texture.Draw();
+    }
+  }
+
+  // Draw image plane
+  if ((image_plane_visibility) && (current_image_texture.Image()) && selected_image) {
+    RNLength depth = image_plane_depth;
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
     R3SurfelImage *image = selected_image;
@@ -884,8 +915,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case 'I':
+      SetImagePlaneVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
+      break;
+
     case 'i':
-      SetImagePixelsVisibility(-1);
+      SetImageInsetVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);
       break;
 
@@ -1046,11 +1081,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case '_': 
-      SetImagePixelsDepth(0.9 * ImagePixelsDepth());
+      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
       break;
 
     case '+': 
-      SetImagePixelsDepth(1.1 * ImagePixelsDepth());
+      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
       break;
 
     case '-': 
@@ -1186,7 +1221,7 @@ SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_t
   
   // Update image texture
   static R3SurfelImage *previous_image = NULL;
-  if (image && (image != previous_image) && image_pixels_visibility) {
+  if (image && (image != previous_image) && (image_plane_visibility || image_inset_visibility)) {
     previous_image = image;
     static R2Image color_image;
     color_image = image->ColorChannels();

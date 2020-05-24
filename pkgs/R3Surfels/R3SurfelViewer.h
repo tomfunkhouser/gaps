@@ -63,7 +63,7 @@ public:
   const R2Viewport& Viewport(void) const;
   const R3Box& ViewingExtent(void) const;
   const R3Point& CenterPoint(void) const;
-  RNLength ImagePixelsDepth(void) const;
+  RNLength ImagePlaneDepth(void) const;
   RNScalar SurfelSize(void) const;
 
   // Visibility properties (0=off, 1=on)
@@ -78,7 +78,8 @@ public:
   int BlockBBoxVisibility(void) const;
   int ScanViewpointVisibility(void) const;
   int ImageViewpointVisibility(void) const;
-  int ImagePixelsVisibility(void) const;
+  int ImagePlaneVisibility(void) const;
+  int ImageInsetVisibility(void) const;
   int ImagePointsVisibility(void) const;
   int CenterPointVisibility(void) const;
   int AxesVisibility(void) const;
@@ -121,7 +122,7 @@ public:
   void SetViewport(const R2Viewport& viewport);
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
-  void SetImagePixelsDepth(RNLength depth);
+  void SetImagePlaneDepth(RNLength depth);
   void SetSurfelSize(RNScalar npixels);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
@@ -136,7 +137,8 @@ public:
   void SetBlockBBoxVisibility(int visibility);
   void SetScanViewpointVisibility(int visibility);
   void SetImageViewpointVisibility(int visibility);
-  void SetImagePixelsVisibility(int visibility);
+  void SetImagePlaneVisibility(int visibility);
+  void SetImageInsetVisibility(int visibility);
   void SetImagePointsVisibility(int visibility);
   void SetCenterPointVisibility(int visibility);
   void SetAxesVisibility(int visibility);
@@ -237,7 +239,7 @@ protected:
   R3SurfelPoint *selected_point;
   R3SurfelImage *selected_image;
   R2Texture current_image_texture;
-  RNLength image_pixels_depth;
+  RNLength image_plane_depth;
   RNScalar surfel_size;
 
   // Visibility properties
@@ -252,7 +254,8 @@ protected:
   int block_bbox_visibility;
   int scan_viewpoint_visibility;
   int image_viewpoint_visibility;
-  int image_pixels_visibility;
+  int image_plane_visibility;
+  int image_inset_visibility;
   int image_points_visibility;
   int center_point_visibility;
   int axes_visibility;
@@ -393,10 +396,10 @@ CenterPoint(void) const
 
 
 inline RNLength R3SurfelViewer::
-ImagePixelsDepth(void) const
+ImagePlaneDepth(void) const
 {
-  // Return depth at which image pixels will be drawn
-  return image_pixels_depth;
+  // Return depth at which image plane will be drawn
+  return image_plane_depth;
 }
 
 
@@ -510,10 +513,19 @@ ImageViewpointVisibility(void) const
 
 
 inline int R3SurfelViewer::
-ImagePixelsVisibility(void) const
+ImagePlaneVisibility(void) const
 {
-  // Return image pixels visibililty
-  return image_pixels_visibility;
+  // Return image plane visibililty
+  return image_plane_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ImageInsetVisibility(void) const
+{
+  // Return image inset visibililty
+  return image_inset_visibility;
 }
 
 
@@ -720,10 +732,10 @@ SetCenterPoint(const R3Point& point)
 
 
 inline void R3SurfelViewer::
-SetImagePixelsDepth(RNLength depth)
+SetImagePlaneDepth(RNLength depth)
 {
-  // Set depth at which image pixels will be drawn
-  this->image_pixels_depth = depth;
+  // Set depth at which image plane will be drawn
+  this->image_plane_depth = depth;
 }
 
 
@@ -859,12 +871,23 @@ SetImageViewpointVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
-SetImagePixelsVisibility(int visibility)
+SetImagePlaneVisibility(int visibility)
 {
-  // Set image pixels visibililty
-  if (visibility == -1) image_pixels_visibility = 1 - image_pixels_visibility;
-  else if (visibility == 0) image_pixels_visibility = 0;
-  else image_pixels_visibility = 1;
+  // Set image plane visibililty
+  if (visibility == -1) image_plane_visibility = 1 - image_plane_visibility;
+  else if (visibility == 0) image_plane_visibility = 0;
+  else image_plane_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetImageInsetVisibility(int visibility)
+{
+  // Set image inset visibililty
+  if (visibility == -1) image_inset_visibility = 1 - image_inset_visibility;
+  else if (visibility == 0) image_inset_visibility = 0;
+  else image_inset_visibility = 1;
 }
 
 
