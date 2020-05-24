@@ -280,7 +280,6 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
       RNScalar image_depth = depth_channel->GridValue(ix, iy);
       if (image_depth != R2_GRID_UNKNOWN_VALUE) {
         RNScalar delta_depth = fabs(image_depth - point_depth);
-        printf("    %g %g %g\n", image_depth, point_depth, delta_depth);
         if (delta_depth > 0.1 * point_depth) continue;
       }
     }
