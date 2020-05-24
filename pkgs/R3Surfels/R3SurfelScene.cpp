@@ -244,6 +244,61 @@ FindImageByName(const char *image_name) const
 
 
 
+R3SurfelImage *R3SurfelScene::
+FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
+{
+  // Search for image with best view of a point
+  RNScalar best_score = 0;
+  R3SurfelImage *best_image = NULL;
+  for (int i = 0; i < NImages(); i++) {
+    R3SurfelImage *image = Image(i);
+
+    // Get/check NdotV
+    RNScalar NdotV = 1.0;
+    if (!query_normal.IsZero()) {
+      R3Vector V = image->Viewpoint() - query_position;
+      V.Normalize();
+      RNScalar NdotV = query_normal.Dot(V);
+      if (RNIsNegativeOrZero(NdotV)) continue;
+    }
+    
+    // Get/check point depth
+    R3Point camera_position = image->TransformFromWorldToCamera(query_position);
+    RNScalar point_depth = -camera_position.Z();
+    if (RNIsNegativeOrZero(point_depth)) continue;
+
+    // Get/check projection into image
+    R2Point image_position = image->TransformFromCameraToImage(camera_position);
+    int ix = (int) (image_position.X() + 0.5);
+    if ((ix < 0) || (ix >= image->ImageWidth())) continue;
+    int iy = (int) (image_position.Y() + 0.5);
+    if ((iy < 0) || (iy >= image->ImageHeight())) continue;
+
+    // Get/check image depth
+    const R2Grid *depth_channel = image->DepthChannel();
+    if (depth_channel) {
+      RNScalar image_depth = depth_channel->GridValue(ix, iy);
+      if (image_depth != R2_GRID_UNKNOWN_VALUE) {
+        RNScalar delta_depth = fabs(image_depth - point_depth);
+        printf("    %g %g %g\n", image_depth, point_depth, delta_depth);
+        if (delta_depth > 0.1 * point_depth) continue;
+      }
+    }
+
+    // Get/check score
+    RNScalar score = NdotV / (point_depth * point_depth);
+    if (score > best_score) {
+      best_image = image;
+      best_score = score;
+    }
+  }
+
+  // Return best image
+  return best_image;
+}
+
+
+
 R3SurfelFeature *R3SurfelScene::
 FindFeatureByName(const char *feature_name) const
 {

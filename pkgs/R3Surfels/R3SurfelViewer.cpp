@@ -1189,6 +1189,12 @@ SelectPoint(R3SurfelBlock *block, int surfel_index)
     selected_point = new R3SurfelPoint(block, surfel_index);
   }
 
+  // Select image
+  if (selected_point) {
+    R3SurfelImage *image = scene->FindImageByBestView(selected_point->Position(), selected_point->Normal());
+    SelectImage(image, FALSE, FALSE);
+  }
+
   // Delete previously selected point
   if (previous_selected_point) delete previous_selected_point;
 }

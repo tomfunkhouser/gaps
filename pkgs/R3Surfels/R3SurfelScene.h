@@ -103,6 +103,7 @@ public:
   int NImages(void) const;
   R3SurfelImage *Image(int k) const;
   R3SurfelImage *FindImageByName(const char *image_name) const;
+  R3SurfelImage *FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal);
 
   // Feature access functions
   int NFeatures(void) const;
