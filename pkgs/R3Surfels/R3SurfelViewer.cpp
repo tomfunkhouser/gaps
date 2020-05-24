@@ -1622,7 +1622,7 @@ R3SurfelImage *R3SurfelViewer::
 PickImage(int x, int y, R3Point *picked_position) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 0.015 * Viewport().Width() + 1;
+  int pick_tolerance = 0.01 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1707,7 +1707,7 @@ PickNode(int x, int y, R3Point *picked_position,
   RNBoolean exclude_nonobjects) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 0.015 * Viewport().Width() + 1;
+  int pick_tolerance = 0.01 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1844,8 +1844,9 @@ PickNode(int x, int y, R3Point *picked_position,
   if (picked_block || picked_surfel_index) {
     // Create pointset in vicinity of picked position
     R3Point position(p[0], p[1], p[2]);
-    R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, 0.2));
-    R3SurfelPointSet *pointset = CreatePointSet(scene, NULL, &sphere_constraint);
+    RNScalar radius = 0.1 * R3Distance(position, viewer.Camera().Origin());
+    R3SurfelSphereConstraint sphere_constraint(R3Sphere(position, radius));
+    R3SurfelPointSet *pointset = CreatePointSet(scene, hit_node, &sphere_constraint);
     if (pointset) {
       // Find surfel point closest to picked position
       R3SurfelPoint *closest_point = NULL;
