@@ -1734,7 +1734,11 @@ PickNode(int x, int y, R3Point *picked_position,
     rgba[3] = 0xFE;
     glColor4ubv(rgba);
 
-    // Draw blocks
+#if 1
+    // Draw node
+    node->Draw(shape_draw_flags);
+#else
+    // Draw node
     for (int j = 0; j < node->NBlocks(); j++) {
       R3SurfelBlock *block = node->Block(j);
       glPushMatrix();
@@ -1754,6 +1758,7 @@ PickNode(int x, int y, R3Point *picked_position,
       glEnd();
       glPopMatrix();
     }
+#endif
   }
 
   // Reset OpenGL stuff

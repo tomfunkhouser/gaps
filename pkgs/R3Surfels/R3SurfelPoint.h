@@ -227,7 +227,7 @@ TX(void) const
 {
   // Return X tangent of surfel 
   assert(block && surfel);
- return surfel->NX();
+ return surfel->TX();
 }
 
 
@@ -237,7 +237,7 @@ TY(void) const
 {
   // Return Y tangent of surfel 
   assert(block && surfel);
-  return surfel->NY();
+  return surfel->TY();
 }
 
 
@@ -247,7 +247,7 @@ TZ(void) const
 {
   // Return Z tangent of surfel 
   assert(block && surfel);
-  return surfel->NZ();
+  return surfel->TZ();
 }
 
 
