@@ -1044,17 +1044,18 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     // Process other keyboard events
     switch (key) {
     case R3_SURFEL_VIEWER_F1_KEY: 
-      RecenterCamera();
-      break; 
-
     case R3_SURFEL_VIEWER_F2_KEY:
     case R3_SURFEL_VIEWER_F3_KEY:
     case R3_SURFEL_VIEWER_F4_KEY: 
     case R3_SURFEL_VIEWER_F5_KEY: {
       int scale = key - R3_SURFEL_VIEWER_F2_KEY + 1;
-      ZoomCamera(0.25 + 0.25 * scale*scale);
+      ZoomCamera(0.1 + 0.25*scale*scale);
       break; }
 
+    case R3_SURFEL_VIEWER_F9_KEY:
+      RecenterCamera();
+      break;
+      
     case R3_SURFEL_VIEWER_UP_KEY:
       SetTargetResolution(1.5 * TargetResolution());
       break;
