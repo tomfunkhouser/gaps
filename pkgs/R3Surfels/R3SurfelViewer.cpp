@@ -1048,11 +1048,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case R3_SURFEL_VIEWER_F3_KEY:
     case R3_SURFEL_VIEWER_F4_KEY: {
       int scale = key - R3_SURFEL_VIEWER_F2_KEY + 1;
-      ZoomCamera(0.1 + 0.25*scale*scale);
+      ZoomCamera(0.05 + 0.25*scale*scale);
       break; }
 
     case R3_SURFEL_VIEWER_F5_KEY:
-      RecenterCamera();
+      ResetCamera();
       break;
       
     case R3_SURFEL_VIEWER_UP_KEY:
@@ -1173,11 +1173,14 @@ Terminate(void)
 
 
 void R3SurfelViewer::
-RecenterCamera(void)
+ResetCamera(void)
 {
   // Move center point to scene centroid
   if (!scene) return;
-  SetCenterPoint(scene->BBox().Centroid());
+  SetCenterPoint(scene->Centroid());
+  R3Point eye = CenterPoint() - 1.5 * scene->BBox().DiagonalRadius() * viewer.Camera().Towards();
+  viewer.RepositionCamera(eye);
+  viewer.ReorientCamera(R3negz_vector, R3posy_vector);
 }
 
 
@@ -1304,7 +1307,7 @@ SetScene(R3SurfelScene *scene)
   RNLength r = bbox.DiagonalRadius();
   static const R3Vector up(0, 1, 0);
   static const R3Vector towards(0, 0, -1);
-  R3Point eye = scene->Centroid() - towards * (2 * r); 
+  R3Point eye = scene->Centroid() - towards * (1.5 * r); 
   R3Camera camera(eye, towards, up, 0.4, 0.4, 0.01, 100000.0);
   R2Viewport viewport(0, 0, window_width, window_height);
   viewer.SetViewport(viewport);

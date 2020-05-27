@@ -117,9 +117,9 @@ public:
   /////////////////////////////////////////
 
   // Viewing property manipulation
+  void ResetCamera(void);
   void SetCamera(const R3Camera& camera);
   void ZoomCamera(RNScalar scale = 10);
-  void RecenterCamera(void);
   void SetViewport(const R2Viewport& viewport);
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
