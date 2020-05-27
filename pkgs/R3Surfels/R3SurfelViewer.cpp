@@ -1046,13 +1046,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case R3_SURFEL_VIEWER_F1_KEY: 
     case R3_SURFEL_VIEWER_F2_KEY:
     case R3_SURFEL_VIEWER_F3_KEY:
-    case R3_SURFEL_VIEWER_F4_KEY: 
-    case R3_SURFEL_VIEWER_F5_KEY: {
+    case R3_SURFEL_VIEWER_F4_KEY: {
       int scale = key - R3_SURFEL_VIEWER_F2_KEY + 1;
       ZoomCamera(0.1 + 0.25*scale*scale);
       break; }
 
-    case R3_SURFEL_VIEWER_F9_KEY:
+    case R3_SURFEL_VIEWER_F5_KEY:
       RecenterCamera();
       break;
       
@@ -1179,8 +1178,6 @@ RecenterCamera(void)
   // Move center point to scene centroid
   if (!scene) return;
   SetCenterPoint(scene->BBox().Centroid());
-  R3Point eye = center_point - 2 * scene->BBox().DiagonalRadius() * viewer.Camera().Towards();
-  viewer.RepositionCamera(eye);
 }
 
 
