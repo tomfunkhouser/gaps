@@ -259,7 +259,7 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
       R3Vector V = image->Viewpoint() - query_position;
       V.Normalize();
       RNScalar NdotV = query_normal.Dot(V);
-      if (RNIsNegativeOrZero(NdotV)) continue;
+      if (RNIsNegativeOrZero(NdotV)) NdotV = RN_EPSILON; // continue;
     }
     
     // Get/check point depth
@@ -279,8 +279,8 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
     if (depth_channel) {
       RNScalar image_depth = depth_channel->GridValue(ix, iy);
       if (image_depth != R2_GRID_UNKNOWN_VALUE) {
-        RNScalar delta_depth = fabs(image_depth - point_depth);
-        if (delta_depth > 0.1 * point_depth) continue;
+        // RNScalar delta_depth = fabs(image_depth - point_depth);
+        // if (delta_depth > 0.1 * point_depth) continue;
       }
     }
 

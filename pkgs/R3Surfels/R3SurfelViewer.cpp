@@ -1178,7 +1178,7 @@ ResetCamera(void)
   // Move center point to scene centroid
   if (!scene) return;
   SetCenterPoint(scene->Centroid());
-  R3Point eye = CenterPoint() - 1.5 * scene->BBox().DiagonalRadius() * viewer.Camera().Towards();
+  R3Point eye = CenterPoint() - 2 * scene->BBox().DiagonalRadius() * viewer.Camera().Towards();
   viewer.RepositionCamera(eye);
   viewer.ReorientCamera(R3negz_vector, R3posy_vector);
 }
@@ -1307,14 +1307,14 @@ SetScene(R3SurfelScene *scene)
   RNLength r = bbox.DiagonalRadius();
   static const R3Vector up(0, 1, 0);
   static const R3Vector towards(0, 0, -1);
-  R3Point eye = scene->Centroid() - towards * (1.5 * r); 
+  R3Point eye = scene->Centroid() - towards * (2 * r); 
   R3Camera camera(eye, towards, up, 0.4, 0.4, 0.01, 100000.0);
   R2Viewport viewport(0, 0, window_width, window_height);
   viewer.SetViewport(viewport);
   viewer.SetCamera(camera);
 
   // Lock coarsest blocks in memory (~500MB)
-  // ReadCoarsestBlocks(32 * 1024 * 1024);
+  // ReadCoarsestBlocks(1 * 1024 * 1024);
 
   // Update working set
   UpdateWorkingSet();
