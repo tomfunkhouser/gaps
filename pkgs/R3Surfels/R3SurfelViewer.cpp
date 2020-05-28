@@ -47,7 +47,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     scan_viewpoint_visibility(0),
     image_viewpoint_visibility(1),
     image_plane_visibility(0),
-    image_inset_visibility(0),
+    image_inset_visibility(1),
     image_points_visibility(0),
     center_point_visibility(0),
     axes_visibility(0),
