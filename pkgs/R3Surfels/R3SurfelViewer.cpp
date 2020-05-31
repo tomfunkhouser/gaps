@@ -427,7 +427,7 @@ Redraw(void)
             const R3Surfel *surfel = block->Surfel(k);
             double z = block_origin.Z() + surfel->Z();
             double dz = (z > z0) ? z - z0 : 0;
-            double value = 0.5 * sqrt(dz);
+            double value = 0.25 * sqrt(dz);
             LoadColor(value);
             glVertex3fv(surfel->PositionPtr());
           }
@@ -619,6 +619,7 @@ Redraw(void)
     RNLoadRgb(1.0, 1.0, 1.0);
     R3SurfelImage *image = selected_image;
     if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      // Draw image
       RNLength depth = 1E-1;
       RNScalar fraction = 0.9;
       R3Ray ray = viewer.WorldRay(fraction*Viewport().Width(), fraction*Viewport().Height());
@@ -640,6 +641,16 @@ Redraw(void)
       R3LoadPoint(c - dx + dy);
       glEnd();
       R2null_texture.Draw();
+
+      // Draw projected center point
+      R2Point p = image->ImagePosition(center_point);
+      if ((p.X() >= 0) && (p.Y() >= 0) && (p.X() <= image->ImageWidth()-0.5) && (p.Y() <= image->ImageHeight()-0.5)) {
+        RNLoadRgb(1.0, 0.0, 0.0);
+        R3Point plane_position = c;
+        plane_position += dx * (2*p.X()/image->ImageWidth() - 1);
+        plane_position += dy * (2*p.Y()/image->ImageHeight() - 1);
+        R3Sphere(plane_position, 0.025*w).Draw();
+      }
     }
   }
 
