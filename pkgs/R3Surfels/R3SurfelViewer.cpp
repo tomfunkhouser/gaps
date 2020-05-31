@@ -50,6 +50,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     image_inset_visibility(1),
     image_points_visibility(0),
     center_point_visibility(0),
+    viewing_extent_visibility(1),
     axes_visibility(0),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
     normal_color(0,1,0),
@@ -223,6 +224,25 @@ LoadColor(double value) const
 
 
 void R3SurfelViewer::
+DrawViewingExtent(void) const
+{
+  // Check extent visibility
+  if (!viewing_extent_visibility) return;
+  
+  // Check extent
+  const R3Box& bbox = scene->BBox();  
+  const R3Box& extent = ViewingExtent();
+  if (extent.IsEmpty() || R3Contains(extent, bbox)) return;
+
+  // Draw extent
+  glDisable(GL_LIGHTING);
+  glColor3d(0.5, 0.5, 0.5);
+  extent.Outline();
+}
+
+  
+
+void R3SurfelViewer::
 EnableViewingExtent(void) const
 {
   // Check extent
@@ -293,6 +313,7 @@ Redraw(void)
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
 
   // Set viewing extent
+  DrawViewingExtent();
   EnableViewingExtent();
 
   // Set draw modes
@@ -1018,6 +1039,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetScanViewpointVisibility(-1);
       break;
       
+    case 'Z':
+    case 'z':
+      SetViewingExtentVisibility(-1);
+      break;
+      
     case 'Q': 
     case 'q': {
       R3Point pick_position(0,0,0);
@@ -1045,16 +1071,21 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       }
       break; }
 
-    case '.':
-    case ',': {
-      // Select next/prev image
-      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key == '.') image_index++;
-      else if (key == ',') image_index--;
-      if (image_index < 0) image_index = 0;
-      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
-      SelectImage(scene->Image(image_index), TRUE, TRUE);
-      break; }
+    case '_': 
+      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
+      break;
+
+    case '+': 
+      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
+      break;
+
+    case '-': 
+      SetSurfelSize(0.9 * SurfelSize());
+      break;
+
+    case '=': 
+      SetSurfelSize(1.1 * SurfelSize());
+      break;
 
     case '`':
       surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
@@ -1067,6 +1098,17 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
   }
   else if (ctrl) {
     switch(key) {
+    case '.':
+    case ',': {
+      // Select next/prev image
+      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
+      if (key == '.') image_index++;
+      else if (key == ',') image_index--;
+      if (image_index < 0) image_index = 0;
+      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
+      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      break; }
+
     default:
       redraw = 0;
       break;
@@ -1119,22 +1161,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       if (shift) viewing_extent[RN_LO][RN_Z] -= 0.01 * scene->BBox().ZLength();
       else viewing_extent[RN_HI][RN_Z] -= 0.01 * scene->BBox().ZLength();
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
-      break;
-
-    case '_': 
-      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
-      break;
-
-    case '+': 
-      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
-      break;
-
-    case '-': 
-      SetSurfelSize(0.9 * SurfelSize());
-      break;
-
-    case '=': 
-      SetSurfelSize(1.1 * SurfelSize());
       break;
 
     default:

@@ -82,6 +82,7 @@ public:
   int ImageInsetVisibility(void) const;
   int ImagePointsVisibility(void) const;
   int CenterPointVisibility(void) const;
+  int ViewingExtentVisibility(void) const;
   int AxesVisibility(void) const;
 
   // Color properties
@@ -143,6 +144,7 @@ public:
   void SetImageInsetVisibility(int visibility);
   void SetImagePointsVisibility(int visibility);
   void SetCenterPointVisibility(int visibility);
+  void SetViewingExtentVisibility(int visibility);
   void SetAxesVisibility(int visibility);
 
   // Color manipulation
@@ -192,6 +194,7 @@ public:
   void LoadColor(double value) const;
   void EnableViewingExtent(void) const;
   void DisableViewingExtent(void) const;
+  void DrawViewingExtent(void) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -260,6 +263,7 @@ protected:
   int image_inset_visibility;
   int image_points_visibility;
   int center_point_visibility;
+  int viewing_extent_visibility;
   int axes_visibility;
 
   // Color properties
@@ -555,6 +559,15 @@ AxesVisibility(void) const
 {
   // Return axes visibililty
   return axes_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ViewingExtentVisibility(void) const
+{
+  // Return viewing extent visibililty
+  return viewing_extent_visibility;
 }
 
 
@@ -917,9 +930,20 @@ SetCenterPointVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
+SetViewingExtentVisibility(int visibility)
+{
+  // Set viewing extent visibililty
+  if (visibility == -1) viewing_extent_visibility = 1 - viewing_extent_visibility;
+  else if (visibility == 0) viewing_extent_visibility = 0;
+  else viewing_extent_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
 SetAxesVisibility(int visibility)
 {
-  // Set center point visibililty
+  // Set axes visibililty
   if (visibility == -1) axes_visibility = 1 - axes_visibility;
   else if (visibility == 0) axes_visibility = 0;
   else axes_visibility = 1;
