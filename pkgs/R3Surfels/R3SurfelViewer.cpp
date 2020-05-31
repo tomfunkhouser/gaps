@@ -956,11 +956,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SelectImage(selected_image, FALSE, FALSE);
       break;
 
-    // case 'L': // Reserve for toggling "labels" in app
+    // case 'L': // Reserve for toggling "labels" in sfllabel
     // case 'l':
     //  break;
       
-    // case 'M': // Reserve for toggling "model" in app
+    // case 'M': // Reserve for toggling "model" in sfllabel
     // case 'm':
     //  break;
       
@@ -976,7 +976,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'P':
     case 'p':
-      SetObjectPropertyVisibility(-1);
+      SetSurfelVisibility(-1);
       break;
 
     case 'R':
@@ -984,10 +984,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetObjectRelationshipVisibility(-1);
       break;
 
-    case 'S':
-    case 's':
-      SetSurfelVisibility(-1);
-      break;
+    // case 'S': // Save for toggling "selection" in sfllabel
+    // case 's':
+    //   break;
 
     case 'V':
     case 'v':
