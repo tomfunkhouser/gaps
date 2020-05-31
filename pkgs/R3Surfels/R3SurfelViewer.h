@@ -86,6 +86,7 @@ public:
 
   // Color properties
   int SurfelColorScheme(void) const;
+  const char *SurfelColorSchemeName(void) const;
   const RNRgb& NormalColor(void) const;
   const RNRgb& BackgroundColor(void) const;
   const RNRgb& ObjectPropertyColor(void) const;

@@ -108,6 +108,32 @@ R3SurfelViewer::
 
 
 ////////////////////////////////////////////////////////////////////////
+// Property functions
+////////////////////////////////////////////////////////////////////////
+
+const char *R3SurfelViewer::
+SurfelColorSchemeName(void) const
+{
+  // Return name of color scheme
+  switch (surfel_color_scheme) {
+  case R3_SURFEL_VIEWER_COLOR_BY_RGB: return "RGB";
+  case R3_SURFEL_VIEWER_COLOR_BY_SHADING: return "Shading";
+  case R3_SURFEL_VIEWER_COLOR_BY_HEIGHT: return "Height";
+  case R3_SURFEL_VIEWER_COLOR_BY_NORMAL: return "Normal";
+  case R3_SURFEL_VIEWER_COLOR_BY_SCAN: return "Scan";
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT: return "Objecxt";
+  case R3_SURFEL_VIEWER_COLOR_BY_NODE: return "Node";
+  case R3_SURFEL_VIEWER_COLOR_BY_BLOCK: return "Block";
+  case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL: return "Current Label";
+  case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL: return "Ground Truth Label";
+  case R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT: return "Viewpoint";
+  default: return "Unknown";
+  }
+}
+
+
+ 
+////////////////////////////////////////////////////////////////////////
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
 
