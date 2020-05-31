@@ -393,6 +393,7 @@ Redraw(void)
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) {
       // Draw with colors based on heights
+      double z0 = center_point.Z();
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         for (int j = 0; j < node->NBlocks(); j++) {
@@ -404,7 +405,8 @@ Redraw(void)
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
             double z = block_origin.Z() + surfel->Z();
-            double value = 0.1 * (z - center_point.Z() - 1.0);
+            double dz = (z > z0) ? z - z0 : 0;
+            double value = 0.1 * sqrt(dz);
             LoadColor(value);
             glVertex3fv(surfel->PositionPtr());
           }
