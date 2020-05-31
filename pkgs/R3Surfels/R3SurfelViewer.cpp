@@ -920,7 +920,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case 'C':
     case 'c':
-      SetImageViewpointVisibility(-1);
+      if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_HEIGHT);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
+      else SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_RGB);
       break;
       
     case 'D':
@@ -983,14 +989,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetSurfelVisibility(-1);
       break;
 
-    case 'T':
-    case 't':
-      surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
-      break;
-
     case 'V':
     case 'v':
-      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
+      SetImageViewpointVisibility(-1);
       break;
       
     case 'W':
@@ -1054,6 +1055,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SelectImage(scene->Image(image_index), TRUE, TRUE);
       break; }
 
+    case '`':
+      surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
+      break;
+
     default:
       redraw = 0;
       break;
@@ -1073,12 +1078,16 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case R3_SURFEL_VIEWER_F2_KEY:
     case R3_SURFEL_VIEWER_F3_KEY:
     case R3_SURFEL_VIEWER_F4_KEY: {
-      int scale = key - R3_SURFEL_VIEWER_F2_KEY + 1;
+      int scale = key - R3_SURFEL_VIEWER_F1_KEY + 1;
       ZoomCamera(0.05 + 0.25*scale*scale);
       break; }
 
-    case R3_SURFEL_VIEWER_F5_KEY:
+    case R3_SURFEL_VIEWER_F12_KEY:
       ResetCamera();
+      break;
+      
+    case R3_SURFEL_VIEWER_F11_KEY:
+      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
       break;
       
     case R3_SURFEL_VIEWER_UP_KEY:
@@ -1099,15 +1108,15 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
-      if (shift) viewing_extent[RN_LO][RN_Z] += 0.25;
-      else viewing_extent[RN_HI][RN_Z] += 0.25;
+      if (shift) viewing_extent[RN_LO][RN_Z] += 0.01 * scene->BBox().ZLength();
+      else viewing_extent[RN_HI][RN_Z] += 0.01 * scene->BBox().ZLength();
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
       break;
 
     case R3_SURFEL_VIEWER_PAGE_DOWN_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
-      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.25;
-      else viewing_extent[RN_HI][RN_Z] -= 0.25;
+      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.01 * scene->BBox().ZLength();
+      else viewing_extent[RN_HI][RN_Z] -= 0.01 * scene->BBox().ZLength();
       if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
       break;
 
