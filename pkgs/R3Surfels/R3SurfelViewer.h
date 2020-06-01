@@ -72,6 +72,7 @@ public:
   int BackfacingVisibility(void) const;
   int AerialVisibility(void) const;
   int TerrestrialVisibility(void) const;
+  int HumanLabeledObjectVisibility(void) const;
   int ObjectPropertyVisibility(void) const;
   int ObjectRelationshipVisibility(void) const;
   int NodeBBoxVisibility(void) const;
@@ -134,6 +135,7 @@ public:
   void SetBackfacingVisibility(int visibility);
   void SetAerialVisibility(int visibility);
   void SetTerrestrialVisibility(int visibility);
+  void SetHumanLabeledObjectVisibility(int visibility);
   void SetObjectPropertyVisibility(int visibility);
   void SetObjectRelationshipVisibility(int visibility);
   void SetNodeBBoxVisibility(int visibility);
@@ -195,6 +197,8 @@ public:
   void EnableViewingExtent(void) const;
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;
+  void DrawNode(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
+  int CheckNodeVisibility(R3SurfelNode *node) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -253,6 +257,7 @@ protected:
   int backfacing_visibility;
   int aerial_visibility;
   int terrestrial_visibility;
+  int human_labeled_object_visibility;
   int object_property_visibility;
   int object_relationship_visibility;
   int node_bbox_visibility;
@@ -460,6 +465,15 @@ TerrestrialVisibility(void) const
 {
   // Return background visibililty
   return terrestrial_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+HumanLabeledObjectVisibility(void) const
+{
+  // Return human labeled object visibililty
+  return human_labeled_object_visibility;
 }
 
 
@@ -815,6 +829,17 @@ SetTerrestrialVisibility(int visibility)
   if (visibility == -1) terrestrial_visibility = 1 - terrestrial_visibility;
   else if (visibility == 0) terrestrial_visibility = 0;
   else terrestrial_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetHumanLabeledObjectVisibility(int visibility)
+{
+  // Set human labeled object visibililty
+  if (visibility == -1) human_labeled_object_visibility = 1 - human_labeled_object_visibility;
+  else if (visibility == 0) human_labeled_object_visibility = 0;
+  else human_labeled_object_visibility = 1;
 }
 
 

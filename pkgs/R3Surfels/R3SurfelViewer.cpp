@@ -40,6 +40,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     backfacing_visibility(1),
     aerial_visibility(1),
     terrestrial_visibility(1),
+    human_labeled_object_visibility(1),
     object_property_visibility(0),
     object_relationship_visibility(0),
     node_bbox_visibility(0),
@@ -288,7 +289,37 @@ DisableViewingExtent(void) const
 }
 
 
-    
+
+int R3SurfelViewer::
+CheckNodeVisibility(R3SurfelNode *node) const
+{
+  // Check node
+  if (!node) return 0;
+
+  // Check if drawing human labeled objects
+  if (!human_labeled_object_visibility) {
+    R3SurfelObject *object = node->Object();
+    if (object && object->HumanLabel()) return 0;
+  }
+  
+  // Passed all tests
+  return 1;
+}
+
+
+
+void R3SurfelViewer::
+DrawNode(R3SurfelNode *node, RNFlags color_draw_flags) const
+{
+  // Check node
+  if (!CheckNodeVisibility(node)) return;
+
+  // Draw node
+  node->Draw(shape_draw_flags | color_draw_flags);
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // UI event handler functions
 ////////////////////////////////////////////////////////////////////////
@@ -347,7 +378,7 @@ Redraw(void)
         R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
-        node->Draw(shape_draw_flags);
+        DrawNode(node);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL) {
@@ -358,7 +389,7 @@ Redraw(void)
         R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
         int label_index = (label) ? label->SceneIndex() : 0;
         LoadColor(label_index);
-        node->Draw(shape_draw_flags); 
+        DrawNode(node);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SCAN) {
@@ -368,7 +399,7 @@ Redraw(void)
         R3SurfelScan *scan = node->Scan();
         int scan_index = (scan) ? scan->SceneIndex() : 0;
         LoadColor(scan_index);
-        node->Draw(shape_draw_flags); 
+        DrawNode(node);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) {
@@ -379,7 +410,7 @@ Redraw(void)
         while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
         int object_index = (object) ? object->SceneIndex() : 0;
         LoadColor(object_index);
-        node->Draw(shape_draw_flags); 
+        DrawNode(node);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_NODE) {
@@ -387,7 +418,7 @@ Redraw(void)
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         LoadColor(i);
-        node->Draw(shape_draw_flags); 
+        DrawNode(node);
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_BLOCK) {
@@ -395,6 +426,7 @@ Redraw(void)
       int count = 0;
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           LoadColor(count++);
@@ -408,7 +440,7 @@ Redraw(void)
       glColor3d(0.8, 0.8, 0.8);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        node->Draw(R3_SURFEL_NORMAL_DRAW_FLAG | shape_draw_flags);
+        DrawNode(node, R3_SURFEL_NORMAL_DRAW_FLAG);
       }
       glDisable(GL_LIGHTING);
     }
@@ -417,6 +449,7 @@ Redraw(void)
       double z0 = center_point.Z();
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
@@ -440,6 +473,7 @@ Redraw(void)
       // Draw with colors based on normals
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
@@ -463,6 +497,7 @@ Redraw(void)
       // Draw with RGB surfel colors, with alpha based on distance to viewpoint
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
         R3SurfelScan *scan = node->Scan();
         if (!scan) continue;
 
@@ -504,7 +539,7 @@ Redraw(void)
       // Draw with RGB surfel colors
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        node->Draw(R3_SURFEL_COLOR_DRAW_FLAG | shape_draw_flags);
+        DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
       }
     }
   }
@@ -519,6 +554,7 @@ Redraw(void)
     RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
+      if (!CheckNodeVisibility(node)) continue;
       for (int j = 0; j < node->NBlocks(); j++) {
         R3SurfelBlock *block = node->Block(j);
         const R3Point& block_origin = block->PositionOrigin();
@@ -990,9 +1026,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SelectImage(selected_image, FALSE, FALSE);
       break;
 
-    // case 'L': // Reserve for toggling "labels" in sfllabel
-    // case 'l':
-    //  break;
+    case 'L': 
+    case 'l':
+      SetHumanLabeledObjectVisibility(-1);
+      break;
       
     // case 'M': // Reserve for toggling "model" in sfllabel
     // case 'm':
@@ -1022,6 +1059,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     // case 's':
     //   break;
 
+    // case 'T': // Reserve for toggling object label text in sfllabel
+    // case 't':
+    //  break;
+      
     case 'V':
     case 'v':
       SetImageViewpointVisibility(-1);
@@ -1816,6 +1857,7 @@ PickNode(int x, int y, R3Point *picked_position,
   // Draw everything
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
+    if (!CheckNodeVisibility(node)) continue;
 
     // Set color
     unsigned char rgba[4];
