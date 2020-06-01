@@ -918,14 +918,13 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     last_mouse_down_time.Read();
 
     // Select stuff on left click 
-    if ((button == 0) && !drag) {
+    if (!drag) {
       // Select image
       R3Point pick_position;
       R3SurfelImage *image = PickImage(x, y, &pick_position);
-      SelectImage(image, FALSE, FALSE);
+      if (button == 0) SelectImage(image, FALSE, FALSE);
       if (image) {
-        // Set center point and update working set around picked image
-        printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
+        // printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
         SetCenterPoint(pick_position);
         redraw = TRUE;
       }
@@ -935,13 +934,15 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
         R3SurfelBlock *picked_block = NULL;
         if (PickNode(x, y, &pick_position, &picked_block, &picked_surfel_index)) {
           // Hit
-          if (picked_surfel_index >= 0) SelectPoint(picked_block, picked_surfel_index);
+          if ((button == 0) && (picked_surfel_index >= 0))
+            SelectPoint(picked_block, picked_surfel_index);
           SetCenterPoint(pick_position);
           redraw = TRUE;
         }
         else {
           // Miss
           SelectPoint(NULL, -1);
+          redraw = TRUE;
         }
       }
     }
