@@ -1136,12 +1136,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       ZoomCamera(0.05 + 0.25*scale*scale);
       break; }
 
-    case R3_SURFEL_VIEWER_F12_KEY:
-      ResetCamera();
+    case R3_SURFEL_VIEWER_F7_KEY:
+      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
       break;
       
-    case R3_SURFEL_VIEWER_F11_KEY:
-      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
+    case R3_SURFEL_VIEWER_F8_KEY:
+      ResetCamera();
       break;
       
     case R3_SURFEL_VIEWER_UP_KEY:
