@@ -460,7 +460,7 @@ Redraw(void)
             const R3Surfel *surfel = block->Surfel(k);
             double z = block_origin.Z() + surfel->Z();
             double dz = (z > z0) ? z - z0 : 0;
-            double value = 0.25 * sqrt(dz);
+            double value = 0.5 * sqrt(dz);
             LoadColor(value);
             glVertex3fv(surfel->PositionPtr());
           }
