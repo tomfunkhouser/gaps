@@ -902,6 +902,12 @@ ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
     sprintf(filename, "%s/color_images/%s.png", image_directory, image->Name());
     if (!RNFileExists(filename)) {
       sprintf(filename, "%s/color_images/%s.jpg", image_directory, image->Name());
+      if (!RNFileExists(filename)) {
+        sprintf(filename, "%s/color_channels/%s.png", image_directory, image->Name());
+        if (!RNFileExists(filename)) {
+          sprintf(filename, "%s/color_channels/%s.jpg", image_directory, image->Name());
+        }
+      }
     }
 
     // Read color image 
@@ -911,8 +917,13 @@ ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
       image->SetColorChannels(color_image);
     }
 
-    // Read depth image
+    // Get depth image name
     sprintf(filename, "%s/depth_images/%s.png", image_directory, image->Name());
+    if (!RNFileExists(filename)) {
+      sprintf(filename, "%s/depth_channel/%s.png", image_directory, image->Name());
+    }
+
+    // Read depth image
     if (RNFileExists(filename)) {
       R2Grid depth_image;
       if (!depth_image.ReadFile(filename)) return 0;
