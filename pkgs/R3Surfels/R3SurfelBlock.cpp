@@ -1346,7 +1346,7 @@ Draw(RNFlags flags) const
       const R3Surfel& surfel = surfels[i];
       R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
       R3Vector tangent1(surfel.TX(), surfel.TY(), surfel.TZ());
-      R3Vector tangent2 = tangent1 % normal;
+      R3Vector tangent2 = normal % tangent1;
       double r1 = surfel.Radius(0);
       double r2 = surfel.Radius(1);
       if (r1 <= 0) r1 = 0.1;
@@ -1363,8 +1363,8 @@ Draw(RNFlags flags) const
       }
       for (int j = 0; j < nsides; j++) {
         glVertex3fv(surfel.PositionPtr());
-        R3LoadPoint(p[(j+1)%nsides]);
         R3LoadPoint(p[j]);
+        R3LoadPoint(p[(j+1)%nsides]);
       }
     }
     glEnd();        

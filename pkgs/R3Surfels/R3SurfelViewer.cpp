@@ -299,7 +299,10 @@ CheckNodeVisibility(R3SurfelNode *node) const
   // Check if drawing human labeled objects
   if (!human_labeled_object_visibility) {
     R3SurfelObject *object = node->Object();
-    if (object && object->HumanLabel()) return 0;
+    while (object) {
+      if (object->HumanLabel()) return 0;
+      object = object->Parent();
+    }
   }
   
   // Passed all tests
@@ -721,18 +724,21 @@ Redraw(void)
   if ((image_points_visibility) && (selected_image)) {
     R3SurfelImage *image = selected_image;
     const R2Grid *depth_channel = image->DepthChannel();
+    const R2Image color_channels = image->ColorChannels();
     if (depth_channel) {
       glDisable(GL_LIGHTING);
-      RNLoadRgb(1.0, 1.0, 0.0);
+      glPointSize(surfel_size);
       glBegin(GL_POINTS);
-      for (int iy = 0; iy < image->ImageHeight(); iy += 2) {
-        for (int ix = 0; ix < image->ImageWidth(); ix += 2) {
+      for (int iy = 0; iy < image->ImageHeight(); iy++) {
+        for (int ix = 0; ix < image->ImageWidth(); ix++) {
           R2Point image_position(ix, iy);
           R3Point world_position = image->TransformFromImageToWorld(image_position);
+          RNLoadRgb(color_channels.PixelRGB(ix, iy));
           R3LoadPoint(world_position);
         }
       }
       glEnd();
+      glPointSize(1);
     }
   }
   
@@ -921,10 +927,9 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     if (!drag) {
       // Select image
       R3Point pick_position;
-      R3SurfelImage *image = PickImage(x, y, &pick_position);
-      if (button == 0) SelectImage(image, FALSE, FALSE);
-      if (image) {
-        // printf("Picked image: %s\n", (image->Name()) ? image->Name() : "-");
+      R3SurfelImage *picked_image = PickImage(x, y, &pick_position);
+      if (picked_image) {
+        if (button == 0) SelectImage(picked_image, FALSE, FALSE);
         SetCenterPoint(pick_position);
         redraw = TRUE;
       }
@@ -1144,13 +1149,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
       break;
 
-    default:
-      redraw = 0;
-      break;
-    }
-  }
-  else if (ctrl) {
-    switch(key) {
     case '.':
     case ',': {
       // Select next/prev image
@@ -1162,6 +1160,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SelectImage(scene->Image(image_index), TRUE, TRUE);
       break; }
 
+    default:
+      redraw = 0;
+      break;
+    }
+  }
+  else if (ctrl) {
+    switch(key) {
     default:
       redraw = 0;
       break;
@@ -1323,12 +1328,14 @@ SelectPoint(R3SurfelBlock *block, int surfel_index)
     selected_point = new R3SurfelPoint(block, surfel_index);
   }
 
+#if 0
   // Select image
   if (selected_point) {
     R3SurfelImage *image = scene->FindImageByBestView(selected_point->Position(), selected_point->Normal());
     SelectImage(image, FALSE, FALSE);
   }
-
+#endif
+  
   // Delete previously selected point
   if (previous_selected_point) delete previous_selected_point;
 }
@@ -1841,7 +1848,7 @@ PickNode(int x, int y, R3Point *picked_position,
   RNBoolean exclude_nonobjects) 
 {
   // How close the cursor has to be to a point (in pixels)
-  int pick_tolerance = 0.01 * Viewport().Width() + 1;
+  int pick_tolerance = 0.005 * Viewport().Width() + 1;
 
   // Clear window 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -221,8 +221,27 @@ int RGBDCreateBoundaryChannel(
 
 
 int RGBDCreateNormalChannels(const R2Grid& input_depth_image, 
-  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image, const R2Grid& boundary_image,
+  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image,
+  const R2Grid& input_boundary_image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image, R2Grid& output_radius_image,
+  const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up,
+  RNLength neighborhood_world_radius, int neighborhood_pixel_radius, RNBoolean neighborhood_search)
+{
+  // Create normal images
+  R2Grid tx_image, ty_image, tz_image, r2_image;
+  return RGBDCreateTangentChannels(input_depth_image, input_px_image, input_py_image, input_pz_image, input_boundary_image,
+    output_nx_image, output_ny_image, output_nz_image, tx_image, ty_image, tz_image, output_radius_image, r2_image,
+    viewpoint, towards, up, neighborhood_world_radius, neighborhood_pixel_radius, neighborhood_search);
+}
+
+
+
+int RGBDCreateTangentChannels(const R2Grid& input_depth_image, 
+  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image,
+  const R2Grid& input_boundary_image,
+  R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
+  R2Grid& output_tx_image, R2Grid& output_ty_image, R2Grid& output_tz_image,
+  R2Grid& output_r1_image, R2Grid& output_r2_image,
   const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up,
   RNLength neighborhood_world_radius, int neighborhood_pixel_radius, RNBoolean neighborhood_search)
 {
@@ -231,7 +250,11 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
   output_nx_image.Clear(R2_GRID_UNKNOWN_VALUE);
   output_ny_image = output_nx_image;
   output_nz_image = output_nx_image;
-  output_radius_image = output_nx_image;
+  output_tx_image = output_nx_image;
+  output_ty_image = output_nx_image;
+  output_tz_image = output_nx_image;
+  output_r1_image = output_nx_image;
+  output_r2_image = output_nx_image;
 
   // Allocate array of neighborhood points
   int pixel_radius = neighborhood_pixel_radius * input_depth_image.XResolution() / 640.0 + 0.5;
@@ -286,7 +309,7 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
           RNScalar current_y = input_py_image.GridValue(ix, iy);
           RNScalar current_z = input_pz_image.GridValue(ix, iy);
           R3Point current_position(current_x, current_y, current_z);
-          RNScalar current_boundary_value = boundary_image.GridValue(ix, iy);
+          RNScalar current_boundary_value = input_boundary_image.GridValue(ix, iy);
           int current_boundary = (int) (current_boundary_value + 0.5);
         
           // Add point to array
@@ -321,7 +344,7 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
               }
 
               // Check if neighbor is across boundary
-              int neighbor_boundary = (int) (boundary_image.GridValue(inx, iny) + 0.5);
+              int neighbor_boundary = (int) (input_boundary_image.GridValue(inx, iny) + 0.5);
               if ((current_boundary == RGBD_SHADOW_BOUNDARY) && (neighbor_boundary == RGBD_SILHOUETTE_BOUNDARY)) continue;
               if ((current_boundary == RGBD_SILHOUETTE_BOUNDARY) && (neighbor_boundary == RGBD_SHADOW_BOUNDARY)) continue;
         
@@ -368,7 +391,8 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
       R3Point centroid = R3Centroid(neighborhood_npoints, neighborhood_points);
       R3Triad triad = R3PrincipleAxes(centroid, neighborhood_npoints, neighborhood_points, NULL, variances);
       R3Vector normal = triad[2];
-
+      R3Vector tangent = triad[0];
+      
       // Flip normal to point towards camera
       R3Plane plane(world_position, normal);
       if (R3SignedDistance(plane, viewpoint) < 0) normal.Flip(); 
@@ -378,10 +402,18 @@ int RGBDCreateNormalChannels(const R2Grid& input_depth_image,
       output_ny_image.SetGridValue(i, j, normal.Y());
       output_nz_image.SetGridValue(i, j, normal.Z());
 
-      // Fill radius image
-      RNScalar r = sqrt(variances[0]);
-      if (neighborhood_pixel_radius > 1) r /= neighborhood_pixel_radius;
-      output_radius_image.SetGridValue(i, j, r);
+      // Fill tangent images
+      output_tx_image.SetGridValue(i, j, tangent.X());
+      output_ty_image.SetGridValue(i, j, tangent.Y());
+      output_tz_image.SetGridValue(i, j, tangent.Z());
+
+      // Fill radius images
+      RNScalar r1 = sqrt(variances[0]);
+      RNScalar r2 = sqrt(variances[0]);
+      if (neighborhood_pixel_radius > 1) r1 /= neighborhood_pixel_radius;
+      if (neighborhood_pixel_radius > 1) r2 /= neighborhood_pixel_radius;
+      output_r1_image.SetGridValue(i, j, r1);
+      output_r2_image.SetGridValue(i, j, r2);
     }
   }
 

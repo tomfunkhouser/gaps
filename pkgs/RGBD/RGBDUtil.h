@@ -28,6 +28,13 @@ int RGBDCreateNormalChannels(RGBDImage *image,
   RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE,
   RNBoolean world_coordinates = TRUE);
 
+int RGBDCreateTangentChannels(RGBDImage *image,
+  R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
+  R2Grid& output_tx_image, R2Grid& output_ty_image, R2Grid& output_tz_image,
+  R2Grid& output_r1_image, R2Grid& output_r2_image,
+  RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE,
+  RNBoolean world_coordinates = TRUE);
+
 int RGBDCreateBoundaryChannel(RGBDImage *image,
   R2Grid& output_boundary_image,
   RNScalar depth_threshold = 0.1);
@@ -44,8 +51,18 @@ int RGBDCreatePositionChannels(
   const R3Matrix& intrinsics_matrix, const R4Matrix& camera_to_world_matrix);
 
 int RGBDCreateNormalChannels(const R2Grid& input_depth_image, 
-  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image, const R2Grid& boundary_image,
+  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image,
+  const R2Grid& input_boundary_image,
   R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image, R2Grid& output_radius_image,
+  const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up,
+  RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE);
+
+int RGBDCreateTangentChannels(const R2Grid& input_depth_image, 
+  const R2Grid& input_px_image, const R2Grid& input_py_image, const R2Grid& input_pz_image,
+  const R2Grid& input_boundary_image,
+  R2Grid& output_nx_image, R2Grid& output_ny_image, R2Grid& output_nz_image,
+  R2Grid& output_tx_image, R2Grid& output_ty_image, R2Grid& output_tz_image,
+  R2Grid& output_r1_image, R2Grid& output_r2_image,
   const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up,
   RNLength neighborhood_world_radius = 0.1, int neighborhood_pixel_radius = 2, RNBoolean neighborhood_search = TRUE);
 

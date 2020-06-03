@@ -533,7 +533,7 @@ SetNormal(float x, float y, float z)
   normal[2] = (RNInt16) (32767.0 * z + 0.5);
 
   // Update flags
-  flags |= R3_SURFEL_NORMAL_FLAG;
+  if ((x != 0) || (y != 0) || (z != 0)) flags |= R3_SURFEL_NORMAL_FLAG;
 }
 
 
@@ -542,12 +542,7 @@ inline void R3Surfel::
 SetNormal(const float *xyz)
 {
   // Set normal
-  normal[0] = (RNInt16) (32767.0 * xyz[0] + 0.5);
-  normal[1] = (RNInt16) (32767.0 * xyz[1] + 0.5);
-  normal[2] = (RNInt16) (32767.0 * xyz[2] + 0.5);
-
-  // Update flags
-  flags |= R3_SURFEL_NORMAL_FLAG;
+  SetNormal(xyz[0], xyz[1], xyz[2]);
 }
 
 
@@ -561,7 +556,7 @@ SetTangent(float x, float y, float z)
   tangent[2] = (RNInt16) (32767.0 * z + 0.5);
 
   // Update flags
-  flags |= R3_SURFEL_TANGENT_FLAG;
+  if ((x != 0) || (y != 0) || (z != 0)) flags |= R3_SURFEL_TANGENT_FLAG;
 }
 
 
@@ -570,12 +565,7 @@ inline void R3Surfel::
 SetTangent(const float *xyz)
 {
   // Set tangent
-  tangent[0] = (RNInt16) (32767.0 * xyz[0] + 0.5);
-  tangent[1] = (RNInt16) (32767.0 * xyz[1] + 0.5);
-  tangent[2] = (RNInt16) (32767.0 * xyz[2] + 0.5);
-
-  // Update flags
-  flags |= R3_SURFEL_TANGENT_FLAG;
+  SetTangent(xyz[0], xyz[1], xyz[2]);
 }
 
 
