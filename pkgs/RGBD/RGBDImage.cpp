@@ -1357,7 +1357,7 @@ ReadDepthChannel(void)
           depth_image.Multiply(0.2);
         }
         else if (!strcmp(configuration->DatasetFormat(), "gsv")) {
-          depth_image.Multiply(0.0005);
+          depth_image.Multiply(0.5);
           depth_image.Pow(2);
         }
         else if (!strcmp(configuration->DatasetFormat(), "icl")) {
