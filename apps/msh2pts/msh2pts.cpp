@@ -1739,8 +1739,8 @@ ParseArgs (int argc, char **argv)
   argc--; argv++;
   while (argc > 0) {
     if ((*argv)[0] == '-') {
-      if (!strcmp(*argv, "-npoints")) { argv++; argc--; min_points = max_points = num_points = atoi(*argv); }
-      else if (!strcmp(*argv, "-num_points")) { argv++; argc--; num_points = atoi(*argv); }
+      if (!strcmp(*argv, "-num_points")) { argv++; argc--; min_points = max_points = num_points = atoi(*argv); }
+      else if (!strcmp(*argv, "-npoints")) { argv++; argc--; num_points = atoi(*argv); }
       else if (!strcmp(*argv, "-min_points")) { argv++; argc--; min_points = atoi(*argv); }
       else if (!strcmp(*argv, "-max_points")) { argv++; argc--; max_points = atoi(*argv); }
       else if (!strcmp(*argv, "-min_spacing")) { argc--; argv++; min_spacing = atof(*argv); }
