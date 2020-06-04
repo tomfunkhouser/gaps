@@ -714,7 +714,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Close points file
     fclose(fp);
   }
-  else if (!strcmp(extension, ".sdf")) {
+  else if (!strcmp(extension, ".sdf") || !strcmp(extension, ".sf")) {
     // Open points file
     FILE *fp = fopen(filename, "rb");
     if (!fp) {
@@ -897,8 +897,11 @@ int ParseArgs(int argc, char **argv)
     }
     else {
       char *ext = strrchr(*argv, '.');
-      if (ext && (!strcmp(ext, ".pts") || !strcmp(ext, ".xyz") || !strcmp(ext, ".xyzn")  || !strcmp(ext, ".sdf") || !strcmp(ext, ".vts") || !strcmp(ext, ".pid"))) point_names.Insert(*argv);
-      else if (ext && (!strcmp(ext, ".off") || !strcmp(ext, ".ply") || !strcmp(ext, ".obj"))) mesh_names.Insert(*argv);
+      if (ext && (!strcmp(ext, ".pts") || !strcmp(ext, ".xyz") || !strcmp(ext, ".xyzn") ||
+        !strcmp(ext, ".sdf") || !strcmp(ext, ".sf") || !strcmp(ext, ".vts") || !strcmp(ext, ".pid")))
+        point_names.Insert(*argv);
+      else if (ext && (!strcmp(ext, ".off") || !strcmp(ext, ".ply") || !strcmp(ext, ".obj")))
+        mesh_names.Insert(*argv);
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
@@ -956,20 +959,4 @@ int main(int argc, char **argv)
   // Return success 
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
