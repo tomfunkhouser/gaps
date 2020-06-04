@@ -714,7 +714,7 @@ ReadPoints(R3Mesh *mesh, const char *filename)
     // Close points file
     fclose(fp);
   }
-  else if (!strcmp(extension, ".sdf") || !strcmp(extension, ".sf")) {
+  else if (!strcmp(extension, ".sdf")) {
     // Open points file
     FILE *fp = fopen(filename, "rb");
     if (!fp) {
