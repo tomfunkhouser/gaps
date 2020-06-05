@@ -1756,6 +1756,7 @@ ParseArgs (int argc, char **argv)
       else if (!strcmp(*argv, "-random_surface_points")) { selection_method = RANDOM_SURFACE_POINTS; }
       else if (!strcmp(*argv, "-exterior_surface_points")) { selection_method = EXTERIOR_SURFACE_POINTS; }
       else if (!strcmp(*argv, "-visible_surface_points")) { selection_method = VISIBLE_SURFACE_POINTS; }
+      else if (!strcmp(*argv, "-near_surface")) { selection_method = NEAR_SURFACE_POINTS; }
       else if (!strcmp(*argv, "-near_surface_points")) { selection_method = NEAR_SURFACE_POINTS; }
       else if (!strcmp(*argv, "-random_vertices")) { selection_method = RANDOM_VERTICES; }
       else if (!strcmp(*argv, "-iterative_furthest_vertex")) { selection_method = ITERATIVE_FURTHEST_VERTEX; }
