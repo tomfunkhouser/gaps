@@ -275,7 +275,7 @@ ParameterizeSegments(R3Mesh *mesh, const RNArray<Segment *>& segments)
   // Initialize location of segment in texture coordinates
   R2Point origin(0,0);
   RNLength max_xlength = 0;
-  RNLength max_yorigin = 10;
+  RNLength max_yorigin = mesh->BBox().LongestAxisLength();
 
   // Parameterize each segment
   for (int i = 0; i < segments.NEntries(); i++) {

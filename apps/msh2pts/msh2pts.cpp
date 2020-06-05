@@ -48,6 +48,7 @@ static int selection_method = RANDOM_SURFACE_POINTS;
 static int min_points = -1;
 static int max_points = -1;
 static int num_points = -1;
+static R3Box bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 static double min_spacing = -1;
 static double min_normalized_spacing = -1;
 static double min_relative_spacing = -1;
@@ -1431,7 +1432,7 @@ SelectNearSurfacePoints(R3Mesh *mesh, R3MeshProperty *property, int npoints)
 
       // Create point on outside
       R3Point positionA = position + t * normal;
-      if (1) {
+      if (bbox.IsEmpty() || R3Contains(bbox, positionA)) {
         // Compute sdf
         RNScalar sdfA = 1;
         if (!binary_sdf) {
@@ -1451,7 +1452,7 @@ SelectNearSurfacePoints(R3Mesh *mesh, R3MeshProperty *property, int npoints)
 
       // Create point on inside
       R3Point positionB = position - t * normal;
-      if (1) {
+      if (bbox.IsEmpty() || R3Contains(bbox, positionB)) {
         // Compute sdf
         RNScalar sdfB = -1;
         if (!binary_sdf) {
@@ -1486,7 +1487,7 @@ static RNArray<Point *> *
 SelectPointsUniformInBBox(R3Mesh *mesh, int npoints)
 {
   // Get bounding box
-  R3Box b = mesh->BBox();
+  R3Box b = bbox;
   if (b.IsEmpty()) {
     b = mesh->BBox();
     b.Inflate(1.1);
@@ -1770,6 +1771,14 @@ ParseArgs (int argc, char **argv)
       else if (!strcmp(*argv, "-binary_sdf")) { binary_sdf = TRUE; }
       else if (!strcmp(*argv, "-v")) { print_verbose = TRUE; }
       else if (!strcmp(*argv, "-debug")) { print_debug = TRUE; }
+      else if (!strcmp(*argv, "-bbox")) {
+        argc--; argv++; bbox[0][0] = atof(*argv);
+        argc--; argv++; bbox[0][1] = atof(*argv);
+        argc--; argv++; bbox[0][2] = atof(*argv);
+        argc--; argv++; bbox[1][0] = atof(*argv);
+        argc--; argv++; bbox[1][1] = atof(*argv);
+        argc--; argv++; bbox[1][2] = atof(*argv);
+      }
       else { RNFail("Invalid program argument: %s\n", *argv); return 0; }
       argv++; argc--;
     }
