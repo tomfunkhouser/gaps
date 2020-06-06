@@ -443,18 +443,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_backfacing = !show_backfacing;
     break;
 
-  case 'C': 
-  case 'c': {
-    // Print camera
-    const R3Camera& camera = viewer->Camera();
-    printf("#camera  %g %g %g  %g %g %g  %g %g %g  %g \n",
-           camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
-           camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
-           camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
-           camera.YFOV());
-    }
+  case 'C':
+  case 'c':
+    show_values = !show_values;
     break;
-      
+
   case 'E':
   case 'e':
     show_edges = !show_edges;
@@ -500,11 +493,17 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_vertices = !show_vertices;
     break;
 
-  case 'Y':
-  case 'y':
-    show_values = !show_values;
+  case ' ': {
+    // Print camera
+    const R3Camera& camera = viewer->Camera();
+    printf("#camera  %g %g %g  %g %g %g  %g %g %g  %g \n",
+           camera.Origin().X(), camera.Origin().Y(), camera.Origin().Z(),
+           camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
+           camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
+           camera.YFOV());
+    }
     break;
-
+      
   case 27: // ESCAPE
     exit(0);
     break;
