@@ -298,39 +298,6 @@ RefineDistanceUsingKdtree(R3Grid *grid, R3Mesh *mesh, int refinement_radius)
 // -1=interior, 1=exterior
 ////////////////////////////////////////////////////////////////////////
 
-#if 0
-
-static int
-EstimateSignUsingScanViewpoint(R3Grid *grid, R3Mesh *mesh)
-{
-  // Initialize the sign grid
-  R3Grid sign_grid(*grid);
-  sign_grid.Clear(0);
-
-  // Trace ray through every vertex
-  for (int i = 0; i < mesh->NVertices(); i++) {
-    R3MeshVertex *vertex = mesh->Vertex(i);
-    const R3Point& vertex_position = mesh->VertexPosition(i);
-    R3Span freespace_span(scan_viewpoint, vertex_position);
-    R3Span occluded_span(vertex_position, vertex_position);
-  
-  // Apply signs
-  sign_grid.Threshold(0, -1, 1);
-  grid->Multiply(sign_grid);
-
-#if 0
-  // Write some debug info
-  if (print_debug) sign_grid.WriteFile("sign.grd");
-#endif
-  
-  // Return success
-  return 1;
-}
-
-#endif
-
-  
-
 static int
 EstimateSignUsingNormals(R3Grid *grid, R3Mesh *mesh)
 {
