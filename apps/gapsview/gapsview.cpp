@@ -392,16 +392,20 @@ DrawPointSet(R3PointSet *pointset)
 {
   // Draw points
   if (show_points) {
-    glEnable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0);
+    glPointSize(3);
+    glDisable(GL_LIGHTING);    
+    if (!show_colors) glColor3d(0.0, 1.0, 0.0);
     glBegin(GL_POINTS);
     for (int i = 0; i < pointset->NPoints(); i++) {
       const R3Point& position = pointset->PointPosition(i);
       const R3Vector& normal = pointset->PointNormal(i);
-      R3LoadNormal(normal);
+      RNScalar value = pointset->PointValue(i);
+      if (show_colors) glColor3d(-10*value, 0, 10*value);
+      else R3LoadNormal(normal);
       R3LoadPoint(position);
     }
     glEnd();
+    glPointSize(1);
   }
   
   // Draw normals
@@ -1070,7 +1074,7 @@ ParseArgs(int argc, char **argv)
           nmodels = meshes.NEntries();
         }
       }
-      else if (ext && (!strcmp(ext, ".xyzn") || !strcmp(ext, ".pts"))) {
+      else if (ext && (!strcmp(ext, ".xyzn") || !strcmp(ext, ".pts") || !strcmp(ext, ".sdf"))) {
         R3PointSet *pointset = ReadPointSet(*argv);
         if (!pointset) return 0;
         pointsets.Insert(pointset);

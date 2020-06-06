@@ -12,6 +12,7 @@ R3PointSet::
 R3PointSet(void)
   : points(),
     normals(),
+    values(),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
 }
@@ -60,16 +61,19 @@ RemovePoint(int index)
 {
   // Remove point at given index
   points.erase(points.begin()+index);
+  normals.erase(normals.begin()+index);
+  values.erase(values.begin()+index);
 }
 
 
 
 void R3PointSet::
-InsertPoint(const R3Point& position, const R3Vector& normal)
+InsertPoint(const R3Point& position, const R3Vector& normal, RNScalar value)
 {
   // Insert point
   points.push_back(position);
   normals.push_back(normal);
+  values.push_back(value);
   bbox.Union(position);
 }
 
@@ -94,6 +98,15 @@ SetPointNormal(int index, const R3Vector& normal)
 
 
 
+void R3PointSet::
+SetPointValue(int index, RNScalar value)
+{
+  // Set value for point with given index
+  values[index] = value;
+}
+
+
+
 int R3PointSet::
 ReadFile(const char *filename)
 {
@@ -107,6 +120,7 @@ ReadFile(const char *filename)
   // Read file of appropriate type
   if (!strcmp(extension, ".xyzn")) return ReadASCIIFile(filename);
   else if (!strcmp(extension, ".pts")) return ReadBinaryFile(filename);
+  else if (!strcmp(extension, ".sdf")) return ReadSDFFile(filename);
   else return ReadMeshFile(filename);
 
   // Should not get here
@@ -128,6 +142,8 @@ WriteFile(const char *filename) const
   // Write file of appropriate type
   if (!strcmp(extension, ".xyzn")) return WriteASCIIFile(filename);
   else if (!strcmp(extension, ".pts")) return WriteBinaryFile(filename);
+  else if (!strcmp(extension, ".sdf")) return WriteSDFFile(filename);
+  else return WriteMeshFile(filename);
 
   // Should not get here
   RNFail("Unrecognized file extension in %s\n", filename);
@@ -257,6 +273,65 @@ WriteBinaryFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3PointSet::
+ReadSDFFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Read points
+  float buf[4];
+  while (fread(buf, sizeof(float), 4, fp) == (unsigned int) 4) {
+    R3Point position(buf[0], buf[1], buf[2]);
+    InsertPoint(position, R3zero_vector, buf[3]);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3PointSet::
+WriteSDFFile(const char *filename) const
+{
+ // Open file
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Write points
+  float buf[4];
+  for (int i = 0; i < NPoints(); i++) {
+    const R3Point& p = PointPosition(i);
+    buf[0] = p[0]; buf[1] = p[1]; buf[2] = p[2];
+    buf[3] = PointValue(i);
+    if (fwrite(buf, sizeof(float), 4, fp) != (unsigned int) 4) {
+      RNFail("Unable to write point %d to %s\n", i, filename);
+      return 0;
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+int R3PointSet::
 ReadMeshFile(const char *filename)
 {
   // Read mesh file
@@ -280,3 +355,15 @@ ReadMeshFile(const char *filename)
 
 
 
+int R3PointSet::
+WriteMeshFile(const char *filename) const
+{
+  // Create mesh
+  R3Mesh mesh;
+  for (int i = 0; i < NPoints(); i++) {
+    mesh.CreateVertex(PointPosition(i), PointNormal(i));
+  }
+
+  // Write mesh
+  return mesh.WriteFile(filename);
+}
