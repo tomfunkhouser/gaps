@@ -408,8 +408,8 @@ int RGBDCreateTangentChannels(const R2Grid& input_depth_image,
       output_tz_image.SetGridValue(i, j, tangent.Z());
 
       // Fill radius images
-      RNScalar r1 = sqrt(variances[0]);
-      RNScalar r2 = sqrt(variances[0]);
+      RNScalar r1 = 3 * sqrt(variances[0]);
+      RNScalar r2 = 3 * sqrt(variances[1]);
       if (neighborhood_pixel_radius > 1) r1 /= neighborhood_pixel_radius;
       if (neighborhood_pixel_radius > 1) r2 /= neighborhood_pixel_radius;
       output_r1_image.SetGridValue(i, j, r1);

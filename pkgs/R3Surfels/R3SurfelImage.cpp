@@ -194,7 +194,7 @@ SetChannel(int channel_index, const R2Grid& channel)
 
   // Resample if necessary
   if ((image_width != channel.XResolution()) || (image_height != channel.YResolution())) {
-    channels[channel_index]->Resample(image_width, image_height);
+    channels[channel_index]->Resample(image_width, image_height, TRUE);
   }
 }
 

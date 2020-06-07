@@ -117,7 +117,7 @@ public:
   void Voronoi(R2Grid *squared_distance_grid = NULL);
   void PointSymmetryTransform(int radius = -1);
   void Gauss(RNLength sigma = sqrt(8.0), RNBoolean square = TRUE);
-  void Resample(int xres, int yres);
+  void Resample(int xres, int yres, RNBoolean nearest_point_sampling = FALSE);
   void PadWithZero(int xres, int yres);
   void SetGridValue(int index, RNScalar value);
   void SetGridValue(int i, int j, RNScalar value);

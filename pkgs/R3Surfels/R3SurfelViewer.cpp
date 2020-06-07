@@ -351,8 +351,7 @@ Redraw(void)
   EnableViewingExtent();
 
   // Set draw modes
-  if (shape_draw_flags == 0) glDisable(GL_LIGHTING);
-  else glEnable(GL_LIGHTING);
+  glDisable(GL_LIGHTING);
   glPointSize(surfel_size);
   glLineWidth(1);
   if (backfacing_visibility) glDisable(GL_CULL_FACE);
@@ -497,7 +496,15 @@ Redraw(void)
       }
     }
     else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT) {
+      // Draw with RGB surfel colors (to produce a reasonable background for blending)
+      for (int i = 0; i < resident_nodes.NNodes(); i++) {
+        R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
+        DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
+      }
+      
       // Draw with RGB surfel colors, with alpha based on distance to viewpoint
+      glDepthRange(0, 0.9);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
         if (!CheckNodeVisibility(node)) continue;
@@ -508,8 +515,8 @@ Redraw(void)
         unsigned char alpha = 255;
         if (distance_to_closest_scan < FLT_MAX) {
           RNLength d = R3Distance(viewer.Camera().Origin(), scan->Viewpoint());
-          // if (d > distance_to_closest_scan + 0.25) continue;
-          RNScalar a = (d > 1.0) ? distance_to_closest_scan / d : 1.0;
+          // if (d > 2 * distance_to_closest_scan) continue;
+          RNScalar a = (d > distance_to_closest_scan) ? distance_to_closest_scan / d : 1.0;
           alpha = 255 * a*a;
         }
 
@@ -517,8 +524,6 @@ Redraw(void)
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
           glBegin(GL_POINTS);
           for (int k = 0; k < block->NSurfels(); k++) {
             const R3Surfel *surfel = block->Surfel(k);
@@ -527,6 +532,15 @@ Redraw(void)
             if (!aerial_visibility && surfel->IsAerial()) continue;
             if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
 
+            // Get position
+            R3Point position(surfel->X(), surfel->Y(), surfel->Z());
+            position += block_origin.Vector();
+
+            // Check position
+            // RNScalar max_dd = 9;
+            // RNScalar dd = R3SquaredDistance(position, scan->Viewpoint());
+            // if (dd > max_dd) continue;
+            
             // Set color
             glColor4ub(surfel->R(), surfel->G(), surfel->B(), alpha);
 
@@ -534,14 +548,15 @@ Redraw(void)
             glVertex3fv(surfel->PositionPtr());
           }
           glEnd();
-          glPopMatrix();
         }
       }
+      glDepthRange(0, 1);
     }
     else {
       // Draw with RGB surfel colors
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
+        if (!CheckNodeVisibility(node)) continue;
         DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
       }
     }
@@ -724,13 +739,15 @@ Redraw(void)
   if ((image_points_visibility) && (selected_image)) {
     R3SurfelImage *image = selected_image;
     const R2Grid *depth_channel = image->DepthChannel();
-    const R2Image color_channels = image->ColorChannels();
     if (depth_channel) {
       glDisable(GL_LIGHTING);
       glPointSize(surfel_size);
       glBegin(GL_POINTS);
+      const R2Image color_channels = image->ColorChannels();
       for (int iy = 0; iy < image->ImageHeight(); iy++) {
         for (int ix = 0; ix < image->ImageWidth(); ix++) {
+          RNScalar depth = depth_channel->GridValue(ix, iy);
+          if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
           R2Point image_position(ix, iy);
           R3Point world_position = image->TransformFromImageToWorld(image_position);
           RNLoadRgb(color_channels.PixelRGB(ix, iy));

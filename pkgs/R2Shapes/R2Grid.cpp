@@ -2134,7 +2134,7 @@ PadWithZero(int xresolution, int yresolution)
 
 
 void R2Grid::
-Resample(int xresolution, int yresolution)
+Resample(int xresolution, int yresolution, RNBoolean nearest_point_sampling)
 {
   // Resample grid values at new resolution
   RNScalar *new_grid_values = NULL;
@@ -2150,7 +2150,18 @@ Resample(int xresolution, int yresolution)
         RNScalar y = (j == yresolution-1) ? grid_resolution[1]-1 : j * yscale;
         for (int i = 0; i < xresolution; i++) {
           RNScalar x = (i == xresolution-1) ? grid_resolution[0]-1 : i * xscale;
-          *(new_grid_valuesp++) = GridValue(x, y);
+          if (!nearest_point_sampling) {
+            // Sample with bilinear interpolation
+            *(new_grid_valuesp++) = GridValue(x, y);
+          }
+          else {
+            // Sample at nearest point 
+            int ix = (int) (x + 0.5);
+            int iy = (int) (y + 0.5);
+            if (ix > grid_resolution[0]-1) ix = grid_resolution[0]-1;
+            if (iy > grid_resolution[1]-1) iy = grid_resolution[1]-1;
+            *(new_grid_valuesp++) = GridValue(ix, iy);
+          }
         }
       }
     }
