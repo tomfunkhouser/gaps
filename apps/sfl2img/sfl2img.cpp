@@ -188,7 +188,7 @@ WriteGrid(const R2Grid& grid,
   const char *directory_name, const char *category_name, const char *field_name)
 {
   // Create filename
-  char filename[1024];
+  char filename[4096];
   sprintf(filename, "%s/%s_%s.grd", directory_name, category_name, field_name);
 
   // Write grid
@@ -621,7 +621,7 @@ WriteSliceGrids(R3SurfelScene *scene, const char *directory_name)
 
   // Write grids
   for (int i = 0; i < nslices; i++) {
-    char buffer[4096];
+    char buffer[1024];
     sprintf(buffer, "%d", i);
     if (!WriteGrid(slice_grids[i], directory_name, "Slice", buffer)) return 0;
   }
