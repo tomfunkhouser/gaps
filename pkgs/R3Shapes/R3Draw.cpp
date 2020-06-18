@@ -451,7 +451,7 @@ Draw(const R3DrawFlags draw_flags) const
 	    // Begin polygon
 	    R3BeginPolygon();
 
-	    // Load polygon normal
+            // Load polygon normal
 	    if ((flags[R3_SURFACE_NORMALS_DRAW_FLAG]) &&
 		(!flags[R3_VERTEX_NORMALS_DRAW_FLAG]))
 	        R3LoadNormal(Normal());

@@ -4733,10 +4733,15 @@ ReadObjFile(const char *filename)
   // Read body
   char buffer[1024];
   int line_count = 0;
+  int material_index = -1;
+  int segment_index = -1;
+  RNSymbolTable<int> material_table;
   RNArray<R2Point *> texture_coords;
   RNArray<R3Vector *> normals;
   RNArray<R3MeshVertex *> verts;
   RNArray<R3MeshVertex *> degenerate_triangle_vertices;
+  std::vector<int> degenerate_triangle_materials;
+  std::vector<int> degenerate_triangle_segments;
   while (fgets(buffer, 1023, fp)) {
     // Increment line counter
     line_count++;
@@ -4838,12 +4843,20 @@ ReadObjFile(const char *filename)
       if (RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[1]))) &&
           RNIsPositive(R3Distance(VertexPosition(v[1]), VertexPosition(v[2]))) &&
           RNIsPositive(R3Distance(VertexPosition(v[2]), VertexPosition(v[0])))) {
-        if (!CreateFace(v[0], v[1], v[2])) {
+        R3MeshFace *face = CreateFace(v[0], v[1], v[2]);
+        if (face) {
+          // Set segment and face
+          SetFaceSegment(face, segment_index);
+          SetFaceMaterial(face, material_index);
+        }
+        else {
           // Must have been degeneracy (e.g., flips or three faces sharing an edge)
           // Remember for later processing (to preserve vertex indices)
           degenerate_triangle_vertices.Insert(v[0]);
           degenerate_triangle_vertices.Insert(v[1]);
           degenerate_triangle_vertices.Insert(v[2]);
+          degenerate_triangle_materials.push_back(material_index);
+          degenerate_triangle_segments.push_back(segment_index);
         }
       }
 
@@ -4852,31 +4865,76 @@ ReadObjFile(const char *filename)
         if (RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[2]))) &&
             RNIsPositive(R3Distance(VertexPosition(v[2]), VertexPosition(v[3]))) &&
             RNIsPositive(R3Distance(VertexPosition(v[0]), VertexPosition(v[3])))) {
-          if (!CreateFace(v[0], v[2], v[3])) {
+          R3MeshFace *face = CreateFace(v[0], v[2], v[3]);
+          if (face) {
+            // Set segment and face
+            SetFaceSegment(face, segment_index);
+            SetFaceMaterial(face, material_index);
+          }
+          else {
             // Must have been degeneracy (e.g., flips or three faces sharing an edge)
             // Remember for later processing (to preserve vertex indices)
             degenerate_triangle_vertices.Insert(v[0]);
             degenerate_triangle_vertices.Insert(v[2]);
             degenerate_triangle_vertices.Insert(v[3]);
+            degenerate_triangle_materials.push_back(material_index);
+            degenerate_triangle_segments.push_back(segment_index);
           }
         }
       }
+    }
+    else if (!strcmp(keyword, "usemtl")) {
+      // Read fields
+      char mtlname[1024];
+      if (sscanf(bufferp, "%s%s", keyword, mtlname) != 2) {
+        RNFail("Syntax error on line %d in OBJ file", line_count);
+        return 0;
+      }
+
+      // Find/insert material index
+      if (!material_table.Find(mtlname, &material_index)) {
+        material_table.Insert(mtlname, ++material_index);
+      }
+    }
+    else if (!strcmp(keyword, "g") || !strcmp(keyword, "o")) {
+      // Read name
+      char name[1024];
+      if (sscanf(bufferp, "%s%s", keyword, name) != 2) {
+        RNFail("Syntax error on line %d in OBJ file", line_count);
+        return 0;
+      }
+
+      // Increment the segment index
+      segment_index++;
     }
   }
 
   // Create degenerate triangles
   for (int i = 0; i <= degenerate_triangle_vertices.NEntries()-3; i+=3) {
+    // Get vertices
     R3MeshVertex *v1 = degenerate_triangle_vertices.Kth(i+0);
     R3MeshVertex *v2 = degenerate_triangle_vertices.Kth(i+1);
     R3MeshVertex *v3 = degenerate_triangle_vertices.Kth(i+2);
-    if (!CreateFace(v1, v2, v3)) {
-      if (!CreateFace(v1, v3, v2)) {
+
+    // Create face
+    R3MeshFace *face = CreateFace(v1, v2, v3);
+    if (!face) {
+      face = CreateFace(v1, v3, v2);
+      if (!face) {
         // Note: these vertices are allocated separately, and so they will not be deleted (memory leak)
         R3MeshVertex *v1a = CreateVertex(VertexPosition(v1));
         R3MeshVertex *v2a = CreateVertex(VertexPosition(v2));
         R3MeshVertex *v3a = CreateVertex(VertexPosition(v3));
-        CreateFace(v1a, v2a, v3a);
+        face = CreateFace(v1a, v2a, v3a);
       }
+    }
+
+    // Set material and segment
+    if (face) {
+      if ((int) degenerate_triangle_materials.size() > i/3) 
+        SetFaceMaterial(face, degenerate_triangle_materials[i/3]);
+      if ((int) degenerate_triangle_segments.size() > i/3) 
+        SetFaceSegment(face, degenerate_triangle_segments[i/3]);
     }
   }
 

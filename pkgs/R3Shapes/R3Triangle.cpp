@@ -611,6 +611,15 @@ Update(void)
     bbox.Union(v[2]->Position());
 
     // Recompute flags
+    UpdateFlags();
+}
+
+
+
+void R3Triangle::
+UpdateFlags(void)
+{
+    // Recompute flags
     flags.Add(R3_EVERYTHING_DRAW_FLAGS);
     for (int i = 0; i < 3; i++) {
 	RNFlags vertex_flags = v[i]->Flags();

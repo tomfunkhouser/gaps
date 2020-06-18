@@ -114,6 +114,7 @@ class R3Triangle : public R3Surface {
 	virtual void Reset(R3TriangleVertex *v1, R3TriangleVertex *v2, R3TriangleVertex *v3);
 	virtual void Reset(R3TriangleVertex *vertices[3]);
         virtual void SetMark(RNMark mark);
+        virtual void UpdateFlags(void);  
 	virtual void Update(void);  
 
         // Draw functions/operators
