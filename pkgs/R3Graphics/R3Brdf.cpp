@@ -368,23 +368,23 @@ Draw(RNBoolean force) const
     c[1] = Ambient().G();
     c[2] = Ambient().B();
     c[3] = Opacity();
-    glMaterialfv(GL_FRONT, GL_AMBIENT, c);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
     c[0] = Diffuse().R();
     c[1] = Diffuse().G();
     c[2] = Diffuse().B();
     c[3] = Opacity();
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, c);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, c);
     c[0] = Specular().R();
     c[1] = Specular().G();
     c[2] = Specular().B();
     c[3] = Opacity();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, c);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
     c[0] = Emission().R();
     c[1] = Emission().G();
     c[2] = Emission().B();
     c[3] = Opacity();
-    glMaterialfv(GL_FRONT, GL_EMISSION, c);
-    glMaterialf(GL_FRONT, GL_SHININESS, Shininess());
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, c);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, Shininess());
     if (IsTransparent()) {
       glDepthMask(FALSE);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

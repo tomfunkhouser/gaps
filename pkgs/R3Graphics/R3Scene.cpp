@@ -2453,7 +2453,7 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       if (bufferp) *(bufferp+1) = '\0';
       else buffer[0] = '\0';
       strcat(buffer, scenename);
-
+      
       // Read scene from included file
       if (!ReadFile(buffer, group_nodes[depth])) {
         RNFail("Unable to read included scene: %s\n", buffer);

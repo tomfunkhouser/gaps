@@ -301,6 +301,9 @@ Draw(RNBoolean force) const
   if (id == 0) {
     // Disable texture
     glDisable(GL_TEXTURE_2D);
+
+    // Disable polygon offset
+    glDisable(GL_POLYGON_OFFSET_FILL);
   }
   else {
     // Load texture
@@ -311,6 +314,10 @@ Draw(RNBoolean force) const
 
     // Enable texture
     glEnable(GL_TEXTURE_2D);
+
+    // Enable polygon offset (for decals)
+    glPolygonOffset(-1, -1);
+    glEnable(GL_POLYGON_OFFSET_FILL);
   }
 
   // Remember current texture
