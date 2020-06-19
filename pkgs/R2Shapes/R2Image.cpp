@@ -1592,6 +1592,7 @@ ReadPNGStream(FILE *fp)
   png_read_info(png_ptr, info_ptr);
 
   // Extract image info 
+  png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
   png_byte color_type = png_get_color_type(png_ptr, info_ptr);
   width = png_get_image_width(png_ptr, info_ptr);
   height = png_get_image_height(png_ptr, info_ptr);
@@ -1599,9 +1600,11 @@ ReadPNGStream(FILE *fp)
   if ((rowsize % 4) != 0) rowsize = (rowsize / 4 + 1) * 4;
 
   // Set ncomponents
+  // ncomponents = bit_depth/8; ???
   ncomponents = 0;
   if (color_type == PNG_COLOR_TYPE_GRAY) ncomponents = 1;
   else if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA) ncomponents = 2;
+  else if (color_type == PNG_COLOR_TYPE_PALETTE) ncomponents = bit_depth/8;
   else if (color_type == PNG_COLOR_TYPE_RGB) ncomponents = 3;
   else if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) ncomponents = 4;
   else { 
