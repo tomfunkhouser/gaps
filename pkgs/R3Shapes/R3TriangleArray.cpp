@@ -437,6 +437,71 @@ Subdivide(RNLength max_edge_length)
 
 
 void R3TriangleArray::
+CreateVertexNormals(RNAngle max_angle)
+{
+  // Create data for computing vertex normals
+  R3Vector *normals = new R3Vector [ vertices.NEntries() ];
+  RNBoolean *smooth = new RNBoolean [ vertices.NEntries() ];
+  for (int i = 0; i < vertices.NEntries(); i++) {
+    R3TriangleVertex *vertex = vertices.Kth(i);
+    normals[i] = R3zero_vector;
+    smooth[i] = TRUE;
+    vertex->SetMark(i);
+  }
+
+  // Aggregate info for vertex normals
+  for (int i = 0; i < triangles.NEntries(); i++) {
+    R3Triangle *triangle = triangles.Kth(i);
+    RNArea weight = triangle->Area();
+    const R3Vector& normal = triangle->Normal();
+    for (int j = 0; j < 3; j++) {
+      R3TriangleVertex *vertex = triangle->Vertex(j);
+      int index = vertex->Mark();
+      normals[index] += weight * normal;
+    }
+  }
+
+  // Normalize vertex normals
+  for (int i = 0; i < vertices.NEntries(); i++) {
+    normals[i].Normalize();
+  }
+
+  // Mark smooth vertices
+  RNScalar min_dot = (max_angle < RN_PI) ? cos(max_angle) : -1;
+  for (int i = 0; i < triangles.NEntries(); i++) {
+    R3Triangle *triangle = triangles.Kth(i);
+    const R3Vector& normal = triangle->Normal();
+    for (int j = 0; j < 3; j++) {
+      R3TriangleVertex *vertex = triangle->Vertex(j);
+      int index = vertex->Mark();
+      if (normal.Dot(normals[index]) > min_dot) continue;
+      smooth[index] = FALSE;
+    }
+  }
+        
+  // Update vertex normals
+  for (int i = 0; i < vertices.NEntries(); i++) {
+    R3TriangleVertex *vertex = vertices.Kth(i);
+    if (vertex->HasNormal()) continue;
+    if (normals[i].IsZero()) continue;
+    if (!smooth[i]) continue;
+    vertex->SetNormal(normals[i]);
+  }
+
+  // Update triangle flags
+  for (int i = 0; i < triangles.NEntries(); i++) {
+    R3Triangle *triangle = triangles.Kth(i);
+    triangle->UpdateFlags();
+  }
+
+  // Delete temporary data
+  delete [] normals;
+  delete [] smooth;
+}
+
+
+
+void R3TriangleArray::
 MoveVertex(R3TriangleVertex *vertex, const R3Point& position)
 {
     // Move vertex
@@ -474,68 +539,6 @@ Update(void)
     R3TriangleVertex *v = vertices.Kth(i);
     bbox.Union(v->Position());
   }
-
-#if 1
-  // Create data for computing vertex normals
-  R3Vector *normals = new R3Vector [ vertices.NEntries() ];
-  RNBoolean *smooth = new RNBoolean [ vertices.NEntries() ];
-  for (int i = 0; i < vertices.NEntries(); i++) {
-    R3TriangleVertex *vertex = vertices.Kth(i);
-    normals[i] = R3zero_vector;
-    smooth[i] = TRUE;
-    vertex->SetMark(i);
-  }
-
-  // Aggregate info for vertex normals
-  for (int i = 0; i < triangles.NEntries(); i++) {
-    R3Triangle *triangle = triangles.Kth(i);
-    RNArea area = triangle->Area();
-    const R3Vector& normal = triangle->Normal();
-    for (int j = 0; j < 3; j++) {
-      R3TriangleVertex *vertex = triangle->Vertex(j);
-      int index = vertex->Mark();
-      normals[index] += area * normal;
-    }
-  }
-
-  // Normalize vertex normals
-  for (int i = 0; i < vertices.NEntries(); i++) {
-    normals[i].Normalize();
-  }
-
-  // Mark smooth vertices
-  const RNAngle max_angle = RN_PI / 4.5;
-  const RNScalar min_dot = cos(max_angle);
-  for (int i = 0; i < triangles.NEntries(); i++) {
-    R3Triangle *triangle = triangles.Kth(i);
-    const R3Vector& normal = triangle->Normal();
-    for (int j = 0; j < 3; j++) {
-      R3TriangleVertex *vertex = triangle->Vertex(j);
-      int index = vertex->Mark();
-      if (fabs(normal.Dot(normals[index])) > min_dot) continue;
-      smooth[index] = FALSE;
-    }
-  }
-        
-  // Update vertex normals
-  for (int i = 0; i < vertices.NEntries(); i++) {
-    R3TriangleVertex *vertex = vertices.Kth(i);
-    if (vertex->HasNormal()) continue;
-    if (normals[i].IsZero()) continue;
-    if (!smooth[i]) continue;
-    vertex->SetNormal(normals[i]);
-  }
-
-  // Update triangle flags
-  for (int i = 0; i < triangles.NEntries(); i++) {
-    R3Triangle *triangle = triangles.Kth(i);
-    triangle->UpdateFlags();
-  }
-  
-  // Delete temporary data
-  delete [] normals;
-  delete [] smooth;
-#endif
 }
 
 

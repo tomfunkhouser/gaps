@@ -57,6 +57,7 @@ class R3TriangleArray : public R3Surface {
 	virtual void Mirror(const R3Plane& plane);
 	virtual void Transform(const R3Transformation& transformation);
         virtual void Subdivide(RNLength max_edge_length);
+        virtual void CreateVertexNormals(RNAngle max_angle = RN_PI/4.0);
 	virtual void MoveVertex(R3TriangleVertex *vertex, const R3Point& position);
 	virtual void Update(void);
         R3TriangleArray& operator=(const R3TriangleArray& array);

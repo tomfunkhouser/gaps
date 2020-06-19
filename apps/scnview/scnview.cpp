@@ -592,7 +592,7 @@ void GLUTMouse(int button, int state, int x, int y)
         R3Point position;
         R3Vector normal;
         selected_node = NULL;;
-#if 1
+#if 0
         if (Pick(scene, x, y, &selected_node, &position)) {
           printf("Selected %s    %g %g %g\n", (selected_node->Name()) ? selected_node->Name() : "NoName",
             position.X(), position.Y(), position.Z());

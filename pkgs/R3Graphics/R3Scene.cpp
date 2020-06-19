@@ -981,7 +981,8 @@ WriteFile(const char *filename) const
 
 static int
 InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material, 
-  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris)
+  const RNArray<R3TriangleVertex *>& verts, const RNArray<R3Triangle *>& tris,
+  RNBoolean smooth_normals = FALSE)
 {
   // Create material if none
   if (!material) {
@@ -1029,7 +1030,10 @@ InsertSceneElement(R3Scene *scene, R3SceneNode *node, R3Material *material,
 
   // Create shape (triangle array)
   R3TriangleArray *shape = new R3TriangleArray(element_verts, element_tris);
-        
+
+  // Create smooth normals
+  if (smooth_normals) shape->CreateVertexNormals();
+
   // Insert shape
   element->InsertShape(shape);
         
@@ -1271,6 +1275,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
   // Read body
   char buffer[1024];
   int line_count = 0;
+  RNBoolean smooth_normals = FALSE;
   R3Material *material = NULL;
   RNSymbolTable<R3Material *> material_symbol_table;
   RNArray<R2Point *> texture_coords;
@@ -1446,7 +1451,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Process triangles from previous material
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-        InsertSceneElement(scene, node, material, verts, tris);
+        InsertSceneElement(scene, node, material, verts, tris, smooth_normals);
         for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
         tris.Empty();
       }
@@ -1457,7 +1462,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
         return 0;
       }
     }
-    else if (!strcmp(keyword, "g") || !strcmp(keyword, "o")) {
+    else if (!strcmp(keyword, "g") || !strcmp(keyword, "o") || !strcmp(keyword, "s")) {
       // Read name
       char name[1024];
       if (sscanf(bufferp, "%s%s", keyword, name) != 2) {
@@ -1467,21 +1472,30 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Process triangles from previous object
       if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-        InsertSceneElement(scene, node, material, verts, tris);
+        InsertSceneElement(scene, node, material, verts, tris, smooth_normals);
         for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
         tris.Empty();
       }
 
       // Create child node
-      node = new R3SceneNode(scene);
-      node->SetName(name);
-      top_node->InsertChild(node);
+      if (!strcmp(keyword, "g") || !strcmp(keyword, "o")) {
+        node = new R3SceneNode(scene);
+        node->SetName(name);
+        top_node->InsertChild(node);
+      }
+
+      // Update smooth normal parameter
+      if (!strcmp(keyword, "s")) {
+        if (!strcmp(name, "off")) smooth_normals = FALSE;
+        else if (!strcmp(name, "0")) smooth_normals = FALSE;
+        else smooth_normals = TRUE; 
+      }
     }
   }
 
   // Process triangles from previous material
   if ((verts.NEntries() > 0) && (tris.NEntries() > 0)) {
-    InsertSceneElement(scene, node, material, verts, tris);
+    InsertSceneElement(scene, node, material, verts, tris, smooth_normals);
     for (int i = 0; i < tris.NEntries(); i++) delete tris[i];
     tris.Empty();
   }
