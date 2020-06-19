@@ -809,6 +809,7 @@ void Redraw(void)
 
   // Initialize lighting
   glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
   glEnable(GL_NORMALIZE);
   if (headlight) {
     static GLfloat light0_diffuse[] = { 0.5, 0.5, 0.5, 1.0 };
