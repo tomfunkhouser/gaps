@@ -313,16 +313,21 @@ private:
 class R3SurfelViewConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions
+  R3SurfelViewConstraint(const R3Viewer& viewer,
+    const R2Grid *image_mask = NULL,
+    RNBoolean must_be_inside_frustum = TRUE);
   R3SurfelViewConstraint(const R3SurfelImage& image,
     RNLength neardist = RN_EPSILON, RNLength fardist = RN_INFINITY, 
-    const R2Grid *image_mask = NULL);
+    const R2Grid *image_mask = NULL,
+    RNBoolean must_be_inside_frustum = TRUE);
   R3SurfelViewConstraint(const R3Point& world_viewpoint,
     const R3Vector& world_towards, const R3Vector& world_up,
     int image_width, int image_height, // in pixels
     RNScalar image_xfocal, RNScalar image_yfocal, // in pixels
     RNScalar image_xcenter = -1, RNScalar image_ycenter = -1,
     RNLength neardist = RN_EPSILON, RNLength fardist = RN_INFINITY, 
-    const R2Grid *image_mask = NULL);
+    const R2Grid *image_mask = NULL,
+    RNBoolean must_be_inside_frustum = TRUE);
 
   // Surfel check functions
   virtual int Check(const R3Box& box) const;
@@ -335,6 +340,7 @@ private:
   RNScalar neardist, fardist;
   R3Halfspace frustum[2][3];
   const R2Grid *image_mask;
+  RNBoolean must_be_inside_frustum;
 };
 
 
