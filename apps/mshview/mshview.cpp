@@ -270,12 +270,15 @@ void GLUTRedraw(void)
     if (show_vertex_names) {
       glDisable(GL_LIGHTING);
       glColor3f(0.5, 0.3, 0.1);
+      RNLength r = 1E-5 * mesh->BBox().DiagonalRadius();
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
+        R3Point position = mesh->VertexPosition(vertex);
+        R3Vector normal = mesh->VertexNormal(vertex);        
         char buffer[256];
         sprintf(buffer, "%d", mesh->VertexID(vertex));
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
-        GLUTDrawText(mesh->VertexPosition(vertex), buffer);
+        GLUTDrawText(position + r * normal, buffer);
       }
     }
 

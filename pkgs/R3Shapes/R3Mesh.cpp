@@ -4796,6 +4796,7 @@ ReadObjFile(const char *filename)
 
       // Create normal
       R3Vector *vn = new R3Vector(x, y, z);
+      vn->Normalize();
       normals.Insert(vn);
     }
     else if (!strcmp(keyword, "f")) {

@@ -472,8 +472,13 @@ Draw(const R3DrawFlags draw_flags) const
  		}
 
 		// Load vertex normal
-		if (flags[R3_VERTEX_NORMALS_DRAW_FLAG])
-		    R3LoadNormal(v[i]->normal);
+		if (flags[R3_VERTEX_NORMALS_DRAW_FLAG]) {
+                  const R3Vector& normal = (v[i]->HasNormal()) ? v[i]->Normal() : Normal();
+                  RNScalar dot = normal.Dot(Normal());
+                  if (dot > 0.25) R3LoadNormal(normal);
+                  else if (dot < -0.25) R3LoadNormal(-normal);
+                  else R3LoadNormal(Normal());
+                }
 
 		// Load vertex texture coordinates 
 		if (draw_flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]) {

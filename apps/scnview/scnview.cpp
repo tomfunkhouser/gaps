@@ -62,6 +62,7 @@ static int show_edges = 0;
 static int show_cameras = 0;
 static int show_lights = 0;
 static int show_materials = 0;
+static int show_normals = 0;
 static int show_bboxes = 0;
 static int show_axes = 0;
 static int show_rays = 0;
@@ -199,6 +200,56 @@ DrawLights(R3Scene *scene)
       return;
     }
   }
+}
+
+
+
+static void 
+DrawNormals(R3Scene *scene, R3SceneNode *node)
+{
+  // Push transformation
+  node->Transformation().Push();
+
+  // Draw children normals
+  for (int i = 0; i < node->NChildren(); i++) {
+    R3SceneNode *child = node->Child(i);
+    DrawNormals(scene, child);
+  }
+
+  // Draw reference normals
+  for (int i = 0; i < node->NReferences(); i++) {
+    R3SceneReference *reference = node->Reference(i);
+    R3Scene *referenced_scene = reference->ReferencedScene();
+    DrawNormals(referenced_scene, referenced_scene->Root());
+  }
+
+  // Draw element normals
+  glBegin(GL_LINES);
+  double r = 0.01 * scene->BBox().DiagonalRadius();
+  for (int i = 0; i < node->NElements(); i++) {
+    R3SceneElement *element = node->Element(i);
+    for (int j = 0; j < element->NShapes(); j++) {
+      R3Shape *shape = element->Shape(j);
+      if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+        R3TriangleArray *triangles = (R3TriangleArray *) shape;
+        for (int k = 0; k < triangles->NTriangles(); k++) {
+          R3Triangle *triangle = triangles->Triangle(k);
+          // R3LoadPoint(triangle->Centroid());
+          // R3LoadPoint(triangle->Centroid() + r * triangle->Normal());
+          for (int v = 0; v < 3; v++) {
+            R3TriangleVertex *vertex = triangle->Vertex(v);
+            if (!vertex->HasNormal()) continue;
+            R3LoadPoint(vertex->Position());
+            R3LoadPoint(vertex->Position() + r * vertex->Normal());
+          }
+        }
+      }
+    }
+  }
+  glEnd();
+  
+  // Pop transformation
+  node->Transformation().Pop();
 }
 
 
@@ -405,6 +456,13 @@ void GLUTRedraw(void)
     glLineWidth(1);
   }
 
+  // Draw normals
+  if (show_normals) {
+    glDisable(GL_LIGHTING);
+    glColor3d(0.0, 1.0, 1.0);
+    DrawNormals(scene, scene->Root());
+  }
+
   // Draw rays
   if (show_rays) {
     glDisable(GL_LIGHTING);
@@ -425,6 +483,17 @@ void GLUTRedraw(void)
     selected_node->Draw(R3_EDGES_DRAW_FLAG);
     glLineWidth(1.0);
     transformation.Pop();
+  }
+
+  // Draw front faces in front of scene
+  if (show_faces && (show_backfacing == 2)) {
+    glEnable(GL_LIGHTING);
+    scene->LoadLights(headlight);
+    glDepthRange(0, 0.9999);
+    glEnable(GL_CULL_FACE);
+    scene->Draw();
+    glDisable(GL_CULL_FACE);
+    glDepthRange(0, 1);
   }
 
   // Draw faces
@@ -685,7 +754,8 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'B':
   case 'b':
-    show_backfacing = !show_backfacing;
+    if (show_backfacing == 0) show_backfacing = 1;
+    else show_backfacing = 0;
     break;
 
   case 'C':
@@ -716,6 +786,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'M':
   case 'm':
     show_materials = !show_materials;
+    break;
+
+  case 'N':
+  case 'n':
+    show_normals = !show_normals;
     break;
 
   case 'R':
@@ -1019,6 +1094,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1;
       else if (!strcmp(*argv, "-show_rays")) show_rays = 1;
       else if (!strcmp(*argv, "-show_backfacing")) show_backfacing = 1;
+      else if (!strcmp(*argv, "-show_backfacing_in_second_pass")) show_backfacing = 2;
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;

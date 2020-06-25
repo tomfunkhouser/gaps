@@ -1344,6 +1344,7 @@ ReadObj(R3Scene *scene, R3SceneNode *node, const char *dirname, FILE *fp, RNArra
 
       // Create normal
       R3Vector *vn = new R3Vector(x, y, z);
+      vn->Normalize();
       normals.Insert(vn);
 
       // Not sure about this ...
