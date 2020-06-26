@@ -1094,7 +1094,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-show_axes")) show_axes = 1;
       else if (!strcmp(*argv, "-show_rays")) show_rays = 1;
       else if (!strcmp(*argv, "-show_backfacing")) show_backfacing = 1;
-      else if (!strcmp(*argv, "-show_backfacing_in_second_pass")) show_backfacing = 2;
+      else if (!strcmp(*argv, "-draw_backfacing_in_second_pass")) show_backfacing = 2;
       else if (!strcmp(*argv, "-remove_references")) remove_references = 1;
       else if (!strcmp(*argv, "-remove_hierarchy")) remove_hierarchy = 1;
       else if (!strcmp(*argv, "-remove_transformations")) remove_transformations = 1;
