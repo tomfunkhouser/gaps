@@ -697,6 +697,24 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
 
 
 
+static void
+DrawRootWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RNBoolean omit_objects = FALSE)
+{
+  // This is a hack to account for coincident front and back faces
+  glDepthRange(0, 0.999999);
+  glEnable(GL_CULL_FACE);
+  R3null_material.Draw();
+  DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
+  glDisable(GL_CULL_FACE);
+  glDepthRange(0, 1);
+  R3null_material.Draw();
+  DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
+  R3null_material.Draw();
+}
+
+
+
+
 static int
 DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RNBoolean omit_objects = FALSE)
 {
@@ -709,9 +727,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     // Draw scene
     glEnable(GL_LIGHTING);
     scene->LoadLights(headlight);
-    R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
-    R3null_material.Draw();
+    DrawRootWithOpenGL(camera, scene, color_scheme, omit_objects);
   }
   else if (color_scheme == ALBEDO_COLOR_SCHEME) {
     // Load ambient light
@@ -741,9 +757,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     // Draw scene with only ambient light
     glColor3d(1.0, 1.0, 1.0);
     glEnable(GL_LIGHTING);
-    R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
-    R3null_material.Draw();
+    DrawRootWithOpenGL(camera, scene, color_scheme, omit_objects);
 
     // Restore lights
     if (headlight) {
@@ -763,9 +777,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     // Draw scene
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 1.0);
-    R3null_material.Draw();
-    DrawNodeWithOpenGL(camera, scene, scene->Root(), color_scheme, omit_objects);
-    R3null_material.Draw();
+    DrawRootWithOpenGL(camera, scene, color_scheme, omit_objects);
   }
 
   // Return success
@@ -821,7 +833,7 @@ void Redraw(void)
 
   // Initialize depth test
   glEnable(GL_DEPTH_TEST);
-
+  
   // Load camera and viewport
   camera->Load();
   glViewport(0, 0, width, height);
