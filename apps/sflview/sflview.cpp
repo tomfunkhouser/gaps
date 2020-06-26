@@ -158,9 +158,21 @@ ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
 
   // Print statistics
   if (print_verbose) {
-    printf("Read all image channels from %s ...\n", pixel_database);
+    // Gather statistics
+    int color_count = 0;
+    int depth_count = 0;
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      if (image->RedChannel()) color_count++;
+      if (image->DepthChannel()) depth_count++;
+    }
+
+    // Print statistics
+    printf("Read image channels from %s ...\n", pixel_database);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", scene->NImages());
+    printf("  # Color Reads = %d\n", color_count);
+    printf("  # Depth Reads = %d\n", depth_count);
     fflush(stdout);
   }
 
@@ -183,9 +195,21 @@ ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
 
   // Print statistics
   if (print_verbose) {
-    printf("Read all image channels from %s ...\n", image_directory);
+    // Gather statistics
+    int color_count = 0;
+    int depth_count = 0;
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      if (image->RedChannel()) color_count++;
+      if (image->DepthChannel()) depth_count++;
+    }
+
+    // Print statistics
+    printf("Read image channels from %s ...\n", image_directory);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", scene->NImages());
+    printf("  # Color Reads = %d\n", color_count);
+    printf("  # Depth Reads = %d\n", depth_count);
     fflush(stdout);
   }
 

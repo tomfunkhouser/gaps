@@ -953,17 +953,37 @@ ReadPixelDatabase(R3SurfelScene *scene, const char *filename)
 
     // Get color image
     R2Image color_image;
+    RNBoolean color_image_found = TRUE;
     sprintf(imagekey, "color_images/%s.png", image->Name());
-    if (database.FindImage(imagekey, &color_image)) {
-      image->SetColorChannels(color_image);
+    if (!database.FindImage(imagekey, &color_image)) {
+      sprintf(imagekey, "color_images/%s.jpg", image->Name());
+      if (!database.FindImage(imagekey, &color_image)) {
+        sprintf(imagekey, "color_channels/%s.png", image->Name());
+        if (!database.FindImage(imagekey, &color_image)) {
+          sprintf(imagekey, "color_channels/%s.jpg", image->Name());
+          if (!database.FindImage(imagekey, &color_image)) {
+            color_image_found = FALSE;
+          }
+        }
+      }
     }
+
+    // Set color channel
+    if (color_image_found) image->SetColorChannels(color_image);
 
     // Get depth image
     R2Grid depth_image;
+    RNBoolean depth_image_found = TRUE;
     sprintf(imagekey, "depth_images/%s.png", image->Name());
-    if (database.FindGrid(imagekey, &depth_image)) {
-      image->SetDepthChannel(depth_image);
+    if (!database.FindGrid(imagekey, &depth_image)) {
+      sprintf(imagekey, "depth_channel/%s.png", image->Name());
+      if (!database.FindGrid(imagekey, &depth_image)) {
+        depth_image_found = FALSE;
+      }
     }
+
+    // Set depth channel
+    if (depth_image_found) image->SetDepthChannel(depth_image);
   }
 
   // Close pixel database
