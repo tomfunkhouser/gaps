@@ -6429,7 +6429,6 @@ WritePlyStream(FILE *fp, RNBoolean binary)  const
     ply_vertex.nz = n.Z();
     ply_vertex.tx = t.X();
     ply_vertex.ty = t.Y();
-    ply_vertex.red = n.X();
     ply_vertex.red = (unsigned char) (255.0 * c.R());
     ply_vertex.green = (unsigned char) (255.0 * c.G());
     ply_vertex.blue = (unsigned char) (255.0 * c.B());
