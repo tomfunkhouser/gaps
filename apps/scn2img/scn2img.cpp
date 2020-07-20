@@ -44,6 +44,7 @@ static int capture_ndotv_images = 0;
 static int capture_albedo_images = 0;
 static int capture_brdf_images = 0;
 static int capture_material_images = 0;
+static int capture_face_images = 0;
 static int capture_node_images = 0;
 static int capture_category_images = 0;
 static int capture_boundary_images = 0;
@@ -97,6 +98,7 @@ enum {
   ALBEDO_COLOR_SCHEME,
   BRDF_COLOR_SCHEME,
   MATERIAL_COLOR_SCHEME,
+  FACE_COLOR_SCHEME,
   NODE_COLOR_SCHEME,
   CATEGORY_COLOR_SCHEME,
   ROOM_SURFACE_COLOR_SCHEME,
@@ -628,6 +630,25 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
         element->Draw(R3_SURFACES_DRAW_FLAG);
       }
     }
+    else if (color_scheme == FACE_COLOR_SCHEME) {
+      // Draw integer values per triangle
+      int face_count = 0;
+      for (int i = 0; i < node->NElements(); i++) {
+        R3SceneElement *element = node->Element(i);
+        for (int j = 0; j < element->NShapes(); j++) {
+          R3Shape *shape = element->Shape(j);
+          if (shape->ClassID() == R3TriangleArray::CLASS_ID()) {
+            R3TriangleArray *triangles = (R3TriangleArray *) shape;
+            for (int k = 0; k < triangles->NTriangles(); k++) {
+              R3Triangle *triangle = triangles->Triangle(k);
+              LoadInteger(face_count + 1);
+              triangle->Draw(R3_SURFACES_DRAW_FLAG);
+              face_count++;
+            }
+          }
+        }
+      }
+    }    
     else if ((color_scheme == ANGLE_COLOR_SCHEME) || 
       (color_scheme == XNORMAL_COLOR_SCHEME) || (color_scheme == YNORMAL_COLOR_SCHEME) || (color_scheme == ZNORMAL_COLOR_SCHEME)) {
       // Draw integer values per triangle
@@ -944,6 +965,18 @@ void Redraw(void)
         char output_image_filename[1024];
         sprintf(output_image_filename, "%s/%s_material.png", output_image_directory, name);
         image.WriteFile(output_image_filename);
+      }
+    }
+  }
+
+  // Capture and write face image 
+  if (capture_face_images) {
+    if (DrawSceneWithOpenGL(*camera, scene, FACE_COLOR_SCHEME)) {
+      R2Image face_image(width, height, 3);
+      if (CaptureColor(face_image)) {
+        char output_image_filename[1024];
+        sprintf(output_image_filename, "%s/%s_face.png", output_image_directory, name);
+        face_image.Write(output_image_filename);
       }
     }
   }
@@ -1519,6 +1552,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_albedo_images")) { capture_images = capture_albedo_images = 1; }
       else if (!strcmp(*argv, "-capture_brdf_images")) { capture_images = capture_brdf_images = 1; }
       else if (!strcmp(*argv, "-capture_material_images")) { capture_images = capture_material_images = 1; }
+      else if (!strcmp(*argv, "-capture_face_images")) { capture_images = capture_face_images = 1; }
       else if (!strcmp(*argv, "-capture_node_images")) { capture_images = capture_node_images = 1; }
       else if (!strcmp(*argv, "-capture_instance_images")) { capture_images = capture_node_images = 1; }
       else if (!strcmp(*argv, "-capture_category_images")) { capture_images = capture_category_images = 1; }
@@ -1567,6 +1601,7 @@ ParseArgs(int argc, char **argv)
     capture_albedo_images = 1;
     capture_brdf_images = 1;
     capture_material_images = 1;
+    capture_face_images = 1;
     capture_node_images = 1;
     capture_category_images = 1;
     capture_boundary_images = 1;
