@@ -718,123 +718,6 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
 
 
 
-#if 0
-int MPHouse::
-ReadCategoryFile(R3SurfelScene *scene, const char *filename, const char *root_name)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-  int count = 0;
-
-  // Find root
-  R3SurfelLabel *root = NULL;
-  if (root_name && strcmp(root_name, "Null")) {
-    root = scene->FindLabelByName(root_name);
-    if (!root) {
-      RNFail("Unable to find root label %s\n", root_name);
-      return 0;
-    }
-  }
- 
-  // Open file
-  FILE* fp = fopen(filename, "r");
-  if (!fp) {
-    RNFail("Unable to open category file %s\n", filename);
-    return 0;
-  }
-
-  // Read keys from first line
-  RNArray<char *> keys;
-  char key_buffer[4096];
-  if (fgets(key_buffer, 4096, fp)) {
-    char *token = key_buffer;
-    while (*token &&  (*token != '\r') && (*token != '\n')) {
-      while (*token == ' ') token++;
-      keys.Insert(token);
-      while (*token && (*token != '\t') && (*token != '\r') && (*token != '\n')) token++;
-      *(token++) = '\0';
-    }
-  }
-  
-  // Extract indices of interesting info
-  int label_id_k = -1;
-  int label_name_k = -1;
-  int mpcat40_id_k = -1;
-  int mpcat40_name_k = -1;
-  for (int i = 0; i < keys.NEntries(); i++) {
-    if (!strcmp(keys[i], "index")) label_id_k = i;
-    else if (!strcmp(keys[i], "raw_category")) label_name_k = i; 
-    else if (!strcmp(keys[i], "mpcat40index")) mpcat40_id_k = i; 
-    else if (!strcmp(keys[i], "mpcat40")) mpcat40_name_k = i; 
-  }
-
-  // Check if found id field in header
-  if ((label_id_k < 0) && (mpcat40_id_k < 0) {
-    RNFail("Did not find index or mpcat40index in header of %s\n", filename);
-    return 0;
-  }
-
-  // Check if found name field in header
-  if ((label_name_k < 0) && (mpcat40_name_k < 0) {
-    RNFail("Did not find raw_category or mpcat40 in header of %s\n", filename);
-    return 0;
-  }
-
-  // Read subsequent lines of file
-  char value_buffer[4096];
-  while (fgets(value_buffer, 4096, fp)) {
-    // Read values
-    RNArray<char *> values;
-    char *token = value_buffer;
-    while (*token &&  (*token != '\r') && (*token != '\n')) {
-      while (*token == ' ') token++;
-      values.Insert(token);
-      while (*token && (*token != '\t') && (*token != '\r') && (*token != '\n')) token++;
-      *(token++) = '\0';
-    }
-
-    // Create category
-    int label_id = (mpcat40_name_k >= 0) ? atoi(values[label_id_k]) : -1;
-    char *label_name =(mpcat40_name_k >= 0) ? RNStrdup(values[label_name_k]) : NULL;
-    int mpcat40_id = (mpcat40_name_k >= 0) ? atoi(values[mpcat40_id_k]) : -1;
-    char *mpcat40_name = (mpcat40_name_k >= 0) ? RNStrdup(values[mpcat40_name_k]) : NULL;
-    int id = (mpcat40_id > 0) ? mpcat40_id : label_id;
-    char *name = (mpcat40_name) ? mpcat40_name : label_name;
-              
-    // Insert labels up to id, so that id matches index
-    while (scene->NLabels() < id) {
-      scene->InsertLabel(new R3SurfelLabel());
-    }
-    
-    // Set label info
-    R3SurfelLabel *label = scene->Label(id);
-    label->SetName(name);
-    label->SetIdentifier(id);
-    label->SetColor(RNRgb(RNRandomScalar(), RNRandomScalar(), RNRandomScalar()));
-    
-    // Update stats
-    count++;
-  }
-  
-  // Close file
-  fclose(fp);
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Read categories from %s ...\n", filename);
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Labels = %d\n", count);
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-#endif
-
-
-
 static int
 LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_name)
 {
@@ -1356,6 +1239,118 @@ TransferLabels(R3SurfelScene *scene1,
 }
 
 #endif
+
+
+
+////////////////////////////////////////////////////////////////////////
+// MASKING FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelNode *
+FindClosestLeafNode(R3SurfelTree *tree, const R3Point& query_position, RNLength max_distance)
+{
+  // Find closest node
+  R3SurfelNode *closest_node = NULL;
+  RNLength closest_distance = max_distance;
+  RNVolume closest_volume = FLT_MAX;
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    RNLength distance = R3Distance(node->BBox(), query_position);
+    if (distance <= closest_distance) {
+      RNVolume volume = node->BBox().Volume();
+      if ((distance < closest_distance) || (volume < closest_volume)) {
+        closest_distance = distance;
+        closest_volume = volume;
+        closest_node = node;
+      }
+    }
+  }
+
+  // Return closest node
+  return closest_node;
+}
+
+
+
+static int
+CreateLoResNodes(R3SurfelScene *scene,
+  const char *lores_scene_filename, const char *lores_database_filename,
+  RNLength max_distance = FLT_MAX)
+{
+  // Open lores scene
+  R3SurfelScene lores_scene;
+  if (!lores_scene.OpenFile(lores_scene_filename, lores_database_filename, "r", "r"))
+    return 0;
+
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) { lores_scene.CloseFile(); return 0; }
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) { lores_scene.CloseFile(); return 0; }
+  R3SurfelTree *lores_tree = lores_scene.Tree();
+  if (!lores_tree) { lores_scene.CloseFile(); return 0; }
+  R3SurfelDatabase *lores_database = lores_tree->Database();
+  if (!lores_database) { lores_scene.CloseFile(); return 0; }
+
+  // Allocate pointset for each node
+  if (tree->NNodes() == 0) { lores_scene.CloseFile(); return 0; }
+  R3SurfelPointSet *pointsets = new R3SurfelPointSet [ tree->NNodes() ];
+  if (!pointsets) { lores_scene.CloseFile(); return 0; }
+  
+  // Associate each lores surfel with a leaf node
+  for (int i = 0; i < lores_tree->NNodes(); i++) {
+    R3SurfelNode *lores_node = lores_tree->Node(i);
+    for (int j = 0; j < lores_node->NBlocks(); j++) {
+      R3SurfelBlock *lores_block = lores_node->Block(j);
+
+      // Read source block
+      lores_database->ReadBlock(lores_block);
+
+      // Update pointsets associated with leaf nodes
+      for (int k = 0; k < lores_block->NSurfels(); k++) {
+        const R3Surfel *lores_surfel = lores_block->Surfel(k);
+        R3Point lores_position = lores_block->SurfelPosition(k);
+        R3SurfelNode *closest_node = FindClosestLeafNode(tree, lores_position, max_distance);
+        if (!closest_node) continue;
+        int node_index = closest_node->TreeIndex();
+        pointsets[node_index].InsertPoint(R3SurfelPoint(lores_block, lores_surfel));
+      }
+
+      // Release source block
+      lores_database->ReleaseBlock(lores_block);
+    }
+  }
+      
+  // Create parents for leaf nodes with lores surfels
+  RNArray<R3SurfelNode *> original_nodes;
+  for (int i = 0; i < tree->NNodes(); i++) 
+    original_nodes.Insert(tree->Node(i));
+  for (int i = 0; i < original_nodes.NEntries(); i++) {
+    R3SurfelNode *node = original_nodes.Kth(i);
+    if (node->NParts() > 0) continue;
+    if (node == tree->RootNode()) continue;
+    if (pointsets[i].NPoints() <= 0) continue;
+    R3SurfelNode *parent_node = node->Parent();
+    if (!parent_node) continue;
+    printf("%d %.0f\n", pointsets[i].NPoints(), node->Complexity());
+    char node_name[1024] = { '\0' };
+    if (node->Name()) sprintf(node_name, "%s_LORES", node->Name());
+    else sprintf(node_name, "LORES");
+    R3SurfelNode *interior_node = CreateNode(scene, &pointsets[i], parent_node, node_name, TRUE);
+    if (!interior_node) continue;
+    node->SetParent(interior_node);
+  }
+
+  // Delete pointsets
+  delete [] pointsets;
+  
+  // Close lores scene file
+  lores_scene.CloseFile();   
+
+  // Return success
+  return 1;
+}
 
 
 
@@ -2223,7 +2218,7 @@ int main(int argc, char **argv)
     }
     else if (!strcmp(*argv, "-create_label")) { 
       argc--; argv++; char *label_name = *argv; 
-      argc--; argv++; char *parent_name = *argv; 
+     argc--; argv++; char *parent_name = *argv; 
       if (!CreateLabel(scene, label_name, parent_name)) exit(-1);
       noperations++;
     }
@@ -2351,6 +2346,13 @@ int main(int argc, char **argv)
       argc--; argv++; double max_normal_angle = atof(*argv);
       argc--; argv++; double min_overlap = atof(*argv);
       if (!CreateObjectRelationships(scene, max_gap_distance, max_plane_offset, max_normal_angle, min_overlap)) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-create_lores_nodes")) { 
+      argc--; argv++; char *lores_scene_filename = *argv; 
+      argc--; argv++; char *lores_database_filename = *argv; 
+      argc--; argv++; double max_distance = atof(*argv); 
+      if (!CreateLoResNodes(scene, lores_scene_filename, lores_database_filename, max_distance)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-create_cluster_objects")) { 
