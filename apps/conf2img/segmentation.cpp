@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 // Source file for code that does segmentation of points
 ////////////////////////////////////////////////////////////////////////
 
@@ -1348,7 +1348,7 @@ UpdatePoints(void)
     RNArray<R3Point *> positions;
     positions.Insert(&point->position);
     for (int j = 0; j < point->neighbors.NEntries(); j++) {
-      positions.Insert(&point->neighbors[j].position);
+      positions.Insert(&point->neighbors[j]->position);
     }
 
     // Compute principle axes
