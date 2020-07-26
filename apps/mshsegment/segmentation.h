@@ -176,6 +176,7 @@ public:
     double max_neighbor_color_difference = 0,
     double max_neighbor_distance_factor = 10,
     double max_timestamp_difference = 0);
+  int UpdatePoints(void);
 public:
   int AssignPoints(void);  
   int CreateClusters(int primitive_type);

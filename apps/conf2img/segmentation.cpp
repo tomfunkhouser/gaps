@@ -1335,6 +1335,43 @@ CreateNeighbors(
 
 
 int Segmentation::
+UpdatePoints(void)
+{
+  // Update normal, tangent, radii, and area from neighbors
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    if (point->neighbors.NEntries() < 2) continue;
+    if (!point->normal.IsZero() && !point->tangent.IsZero() &&
+        (point->radius1 > 0) && (point->radius2 > 0)) continue;
+
+    // Create array of neighborhood positions
+    RNArray<R3Point *> positions;
+    positions.Insert(&point->position);
+    for (int j = 0; j < point->neighbors.NEntries(); j++) {
+      positions.Insert(&point->neighbors[j].position);
+    }
+
+    // Compute principle axes
+    RNScalar variances[3];
+    R3Point centroid = R3Centroid(positions);
+    R3Triad axes = R3PrincipleAxes(centroid, positions, NULL, variances);
+    if (RNIsZero(variances[1])) continue;
+
+    // Update point
+    point->normal = axes[2];
+    point->tangent = axes[0];
+    point->radius1 = sqrt(variances[0]);
+    point->radius2 = sqrt(variances[1]);
+    point->area = point->radius1 * point->radius2;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int Segmentation::
 CreateSingletonClusters(int primitive_type)
 {
   // Create cluster for every point
