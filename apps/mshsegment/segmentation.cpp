@@ -1452,7 +1452,6 @@ CreateNeighbors(
           int max_dz = zscale*max_d + 1;
           int max_dy = yscale*max_d + 1;
           int max_dx = xscale*max_d + 1;
-          printf("%d %d %d\n", max_dx, max_dy, max_dz);
           
           // Check candidate neighbor points
           for (int dz = -max_dz; dz <= max_dz; dz++) {
