@@ -1271,6 +1271,27 @@ NUnclusteredPoints(void) const
 }
 
 
+
+RNScalar Segmentation::
+AverageNeighborCount(void) const
+{
+  // Compute count
+  int count = points.NEntries();
+  if (count == 0) return 0;
+
+  // Compute sum
+  int sum = 0;
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    sum += point->neighbors.NEntries();
+  }
+
+  // Return mean
+  return (double) sum / (double) count;
+}
+
+
+
 #if 1
 
 static RNScalar
@@ -1355,7 +1376,8 @@ CreateNeighbors(
   double max_neighbor_normal_angle,
   double max_neighbor_color_difference,
   double max_neighbor_distance_factor,
-  double max_neighbor_timestamp_difference)
+  double max_neighbor_timestamp_difference,
+  RNBoolean partition_identifiers)
 {
   // Compute bounding box
   R3Box bbox = R3null_box;
@@ -1448,6 +1470,11 @@ CreateNeighbors(
                 const RNArray<Point *>& neighbors = cells[iz*xres*yres + iy*xres + ix];
                 for (int j = 0; j < neighbors.NEntries(); j++) {
                   Point *neighbor = neighbors.Kth(j);
+
+                  // Check identifier
+                  if (partition_identifiers) {
+                    if (point->identifier != neighbor->identifier) continue;
+                  }
 
                   // Compute affinity
                   RNScalar affinity = PointAffinity(point, neighbor,

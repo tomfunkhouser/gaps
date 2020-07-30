@@ -167,6 +167,7 @@ public:
   Segmentation(void);
   ~Segmentation(void);
   RNScalar Affinity(void) const;
+  RNScalar AverageNeighborCount(void) const;
   int NUnclusteredPoints(void) const;
 public:
   int CreateNeighbors(int max_neighbor_count = 16,
@@ -175,7 +176,8 @@ public:
     double max_neighbor_normal_angle = RN_PI / 4.0,
     double max_neighbor_color_difference = 0,
     double max_neighbor_distance_factor = 10,
-    double max_timestamp_difference = 0);
+    double max_timestamp_difference = 0,
+    RNBoolean partition_identifiers = FALSE);
   int UpdatePoints(void);
 public:
   int AssignPoints(void);  
