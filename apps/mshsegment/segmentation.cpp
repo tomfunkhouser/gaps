@@ -1271,6 +1271,236 @@ NUnclusteredPoints(void) const
 }
 
 
+#if 1
+
+static RNScalar
+PointAffinity(
+  const Point *point1, const Point *point2,
+  double max_distance,
+  double max_primitive_distance,
+  double max_normal_angle,
+  double max_color_difference,
+  double max_timestamp_difference,
+  double min_affinity = 0)
+{
+  // Initialize affinity
+  RNScalar affinity = 1.0;
+
+  // Check distance
+  if (max_distance > 0) {
+    RNScalar max_dd = max_distance * max_distance;
+    RNScalar dd = R3SquaredDistance(point1->position, point2->position);
+    if (dd > max_dd) return 0;
+    affinity *= exp(dd / (-2.0 * max_dd));
+    if (affinity < min_affinity) return 0;
+  }
+
+  // Check primitive distance 
+  if (max_primitive_distance > 0) {
+    RNScalar max_d = max_primitive_distance;
+    RNLength d1 = R3Distance(R3Plane(point1->position, point1->normal), point2->position);
+    if (d1 > max_d) return 0;
+    RNLength d2 = R3Distance(R3Plane(point2->position, point2->normal), point1->position);
+    if (d2 > max_d) return 0;
+    affinity *= exp(d1*d1 / (-2.0 * 0.25 * max_d * max_d));
+    affinity *= exp(d2*d2 / (-2.0 * 0.25 * max_d * max_d));
+    if (affinity < min_affinity) return 0;
+  }
+
+  // Check normal angle
+  if (max_normal_angle > 0) {
+    RNScalar max_a = max_normal_angle;
+    RNScalar dot = point1->normal.Dot(point2->normal);
+    RNAngle a = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
+    if (a > max_a) return 0;
+    affinity *= exp(a*a / (-2.0 * 0.25 * max_a * max_a));
+    if (affinity < min_affinity) return 0;
+  }
+
+  // Check color difference
+  if (max_color_difference > 0) {
+    RNScalar max_d = max_color_difference;
+    RNLength d = 0;
+    d += fabs(point1->color.R() - point2->color.R());
+    d += fabs(point1->color.G() - point2->color.G());
+    d += fabs(point1->color.B() - point2->color.B());
+    if (d > max_d) return 0;
+    affinity *= exp(d*d / (-2.0*0.25*max_d*max_d));
+    if (affinity < min_affinity) return 0;
+  }
+
+  // Check timestamp difference
+  if (max_timestamp_difference > 0) {
+    RNScalar max_d = max_timestamp_difference;
+    RNLength d = fabs(point1->timestamp - point2->timestamp);
+    if (d > max_d) return 0;
+    affinity *= exp(d*d / (-2.0*max_d*max_d));
+    if (affinity < min_affinity) return 0;
+  }
+
+  // Just checking
+  assert(affinity >= 0);
+
+  // Return affinity
+  return affinity;
+}
+
+
+
+int Segmentation::
+CreateNeighbors(
+  int max_neighbor_count,
+  double max_neighbor_distance,
+  double max_neighbor_primitive_distance,
+  double max_neighbor_normal_angle,
+  double max_neighbor_color_difference,
+  double max_neighbor_distance_factor,
+  double max_neighbor_timestamp_difference)
+{
+  // Compute bounding box
+  R3Box bbox = R3null_box;
+  for (int i = 0; i < points.NEntries(); i++) {
+    bbox.Union(points[i]->position);
+  }
+
+  // Compute max neighbor distance
+  double max_length = bbox.LongestAxisLength();
+  if (RNIsZero(max_length)) return 1;
+  if (max_neighbor_distance == 0) max_neighbor_distance = 0.01 * max_length;
+
+  // Compute bbox dimensions
+  double xmin = bbox.XMin();
+  double ymin = bbox.YMin();
+  double zmin = bbox.ZMin();
+  double xlength = bbox.XLength() + RN_EPSILON;
+  double ylength = bbox.YLength() + RN_EPSILON;
+  double zlength = bbox.ZLength() + RN_EPSILON;
+  if (xlength < max_neighbor_distance) xlength = max_neighbor_distance;
+  if (ylength < max_neighbor_distance) ylength = max_neighbor_distance;
+  if (zlength < max_neighbor_distance) zlength = max_neighbor_distance;
+
+  // Compute grid resolution
+  int xres = xlength / max_neighbor_distance + RN_EPSILON;
+  int yres = ylength / max_neighbor_distance + RN_EPSILON;
+  int zres = zlength / max_neighbor_distance + RN_EPSILON;
+  if (xres > 512) xres = 512;
+  if (yres > 512) yres = 512;
+  if (zres > 512) zres = 512;
+
+  // Compute world-to-grid scale factor
+  double xscale = xres / xlength;
+  double yscale = yres / ylength;
+  double zscale = zres / zlength;
+  
+  // Create cells with lists of points
+  int ncells = xres * yres * zres;
+  RNArray<Point *> *cells = new RNArray<Point *> [ ncells ];
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    const R3Point& p = point->position;
+    int ix = xscale * (p.X() - xmin);
+    int iy = yscale * (p.Y() - ymin);
+    int iz = zscale * (p.Z() - zmin);
+    assert((ix >= 0) && (ix < xres));
+    assert((iy >= 0) && (iy < yres));
+    assert((iz >= 0) && (iz < zres));
+    cells[iz*xres*yres + iy*xres + ix].Insert(point);
+  }
+
+  // Create neighbors
+  for (int cz = 0; cz < zres; cz++ ) {
+    for (int cy = 0; cy < yres; cy++ ) {
+      for (int cx = 0; cx < xres; cx++ ) {
+        // Get array of points
+        const RNArray<Point *>& points = cells[cz*xres*yres + cy*xres + cx];
+        if (points.IsEmpty()) continue;
+        
+        // Create neighbors for each point
+        for (int i = 0; i < points.NEntries(); i++) {
+          Point *point = points.Kth(i);
+
+          // Refine maximum distance for this point
+          RNScalar max_d = max_neighbor_distance;
+          if ((max_neighbor_distance_factor > 0) && (point->radius1 > 0)) 
+             max_d = max_neighbor_distance_factor * point->radius1;
+          if (max_d == 0) max_d = 10 * point->radius1;
+          if (max_d == 0) max_d = 1;
+
+          // Compute search window based on max_d
+          int max_dz = zscale*max_d + 1;
+          int max_dy = yscale*max_d + 1;
+          int max_dx = xscale*max_d + 1;
+          printf("%d %d %d\n", max_dx, max_dy, max_dz);
+          
+          // Check candidate neighbor points
+          for (int dz = -max_dz; dz <= max_dz; dz++) {
+            int iz = cz + dz;
+            if ((iz < 0) || (iz >= zres)) continue;
+            for (int dy = -max_dy; dy <= max_dy; dy++) {
+              int iy = cy + dy;
+              if ((iy < 0) || (iy >= yres)) continue;
+              for (int dx = -max_dx; dx <= max_dx; dx++) {
+                int ix = cx + dx;
+                if ((ix < 0) || (ix >= xres)) continue;
+
+                // Find neighbors with highest affinity
+                double min_affinity = 0;
+                const RNArray<Point *>& neighbors = cells[iz*xres*yres + iy*xres + ix];
+                for (int j = 0; j < neighbors.NEntries(); j++) {
+                  Point *neighbor = neighbors.Kth(j);
+
+                  // Compute affinity
+                  RNScalar affinity = PointAffinity(point, neighbor,
+                    max_neighbor_distance, max_neighbor_primitive_distance,
+                    max_neighbor_normal_angle, max_neighbor_color_difference,
+                    max_neighbor_timestamp_difference, min_affinity);
+                  if (affinity <= min_affinity) continue;
+
+                  // Insert neighbor
+                  if (max_neighbor_count > 0) {
+                    // Find slot for neighbor in list sorted by affinity
+                    int slot = point->neighbors.NEntries();
+                    while (slot > 0) {
+                      RNScalar s_affinity = point->neighbors[slot-1]->cluster_affinity;
+                      if (s_affinity > affinity) break;
+                      slot--;
+                    }
+                    if (slot < max_neighbor_count) {
+                      neighbor->cluster_affinity = affinity;
+                      point->neighbors.InsertKth(neighbor, slot);
+                      point->neighbors.Truncate(max_neighbor_count);
+                    }
+                    if (point->neighbors.NEntries() == max_neighbor_count) {
+                      min_affinity = point->neighbors[point->neighbors.NEntries()-1]->cluster_affinity;
+                    }
+                  }
+                  else {
+                    // Insert neighbor at end of growing list
+                    point->neighbors.Insert(neighbor);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Delete cells
+  delete [] cells;
+
+  // Reset cluster affinities
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    point->cluster_affinity = 0;
+  }
+  
+  // Return success
+  return 1;
+}
+
+#else
 
 int Segmentation::
 CreateNeighbors(
@@ -1331,6 +1561,8 @@ CreateNeighbors(
   // Return success
   return 1;
 }
+
+#endif
 
 
 

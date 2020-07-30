@@ -438,7 +438,7 @@ EstimateSignUsingFloodFill(R3Grid *grid, R3Mesh *mesh)
               if (blocked) continue;
             }
           }
-             
+          
           // Mark cell as outside and continue DFS 
           sign_grid.IndicesToIndex(gx, gy, gz, grid_index);
           stack.Insert(&sign_grid_values[grid_index]);

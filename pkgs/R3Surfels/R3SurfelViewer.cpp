@@ -1104,11 +1104,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break; }
 
     case 'X':
-      SetTerrestrialVisibility(-1);
-      break;
-      
     case 'x':
-      SetAerialVisibility(-1);
+      SetObjectPropertyVisibility(-1);
       break;
       
     case 'Y':

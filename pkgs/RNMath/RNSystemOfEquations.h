@@ -361,7 +361,6 @@ MinimizeCERES(const RNSystemOfEquations *system, RNScalar *io, RNScalar toleranc
   // Run the solver
   // options->max_num_iterations = 128;
   options->num_threads = 12;
-  options->num_linear_solver_threads = 12; 
   // options->check_gradients = true;
   // options->gradient_check_relative_precision = 1E-1;
   // options->numeric_derivative_relative_step_size = 1E-3;
