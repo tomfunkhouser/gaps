@@ -1035,14 +1035,17 @@ WriteStream(FILE *fp)
   // Save current file offset info so that can restore afterwards
   unsigned int saved_file_blocks_count = file_blocks_count;
   unsigned long long saved_file_blocks_offset = file_blocks_offset;
+  unsigned int *saved_file_surfels_counts = new unsigned int [ blocks.NEntries() + 1];
   unsigned long long *saved_file_surfels_offsets = new unsigned long long [ blocks.NEntries() + 1];
   for (int i = 0; i < blocks.NEntries(); i++) {
+    saved_file_surfels_counts[i] = blocks[i]->file_surfels_count;
     saved_file_surfels_offsets[i] = blocks[i]->file_surfels_offset;
   }
 
   // Write file header
   RNBoolean swap_endian = FALSE;
   if (!WriteFileHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_counts;
     delete [] saved_file_surfels_offsets;
     return 0;
   }
@@ -1052,8 +1055,10 @@ WriteStream(FILE *fp)
     R3SurfelBlock *block = blocks.Kth(i);
     if (block->nsurfels == 0) continue;
     ReadBlock(block);
+    block->file_surfels_count = block->nsurfels;
     block->file_surfels_offset = RNFileTell(fp);
     if (!WriteSurfel(fp, block->surfels, block->nsurfels, swap_endian, current_major_version, current_minor_version)) {
+      delete [] saved_file_surfels_counts;
       delete [] saved_file_surfels_offsets;
       ReleaseBlock(block);
       return 0;
@@ -1067,12 +1072,14 @@ WriteStream(FILE *fp)
 
   // Write block header
   if (!WriteBlockHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_counts;
     delete [] saved_file_surfels_offsets;
     return 0;
   }
 
   // Write file header again (now that info has been filled in)
   if (!WriteFileHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_counts;
     delete [] saved_file_surfels_offsets;
     return 0;
   }
@@ -1085,10 +1092,12 @@ WriteStream(FILE *fp)
   file_blocks_offset = saved_file_blocks_offset;
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
+    block->file_surfels_count = saved_file_surfels_counts[i];
     block->file_surfels_offset = saved_file_surfels_offsets[i];
   }
 
   // Delete temporary data
+  delete [] saved_file_surfels_counts;
   delete [] saved_file_surfels_offsets;
 
   // Return success
