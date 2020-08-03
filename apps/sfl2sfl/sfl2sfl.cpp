@@ -108,17 +108,12 @@ WriteScene(R3SurfelScene *scene, const char *output_scene_name, const char *outp
   RNTime start_time;
   start_time.Read();
 
-  // Check scene type
+  // Write scene to file
+  if (!scene->WriteFile(output_scene_name)) return 0;
+
+  // Write database to file
   if (output_database_name) {
-    R3SurfelScene *output_scene = new R3SurfelScene();
-    if (!output_scene->OpenFile(output_scene_name, output_database_name, "w", "w")) return 0;
-    if (!CreateFeatures(output_scene)) return 0;
-    output_scene->InsertScene(*scene);
-    if (!output_scene->CloseFile()) return 0;
-  }
-  else {
-    // Write scene to file
-    if (!scene->WriteFile(output_scene_name)) return 0;
+    if (!scene->Tree()->Database()->WriteFile(output_database_name)) return 0;
   }
 
   // Print statistics

@@ -1051,11 +1051,13 @@ WriteStream(FILE *fp)
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
     if (block->nsurfels == 0) continue;
+    ReadBlock(block);
     block->file_surfels_offset = RNFileTell(fp);
     if (!WriteSurfel(fp, block->surfels, block->nsurfels, swap_endian, current_major_version, current_minor_version)) {
       delete [] saved_file_surfels_offsets;
       return 0;
     }
+    ReleaseBlock(block);
   }
 
   // Update block header info
