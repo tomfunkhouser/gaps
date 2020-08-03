@@ -1055,6 +1055,7 @@ WriteStream(FILE *fp)
     block->file_surfels_offset = RNFileTell(fp);
     if (!WriteSurfel(fp, block->surfels, block->nsurfels, swap_endian, current_major_version, current_minor_version)) {
       delete [] saved_file_surfels_offsets;
+      ReleaseBlock(block);
       return 0;
     }
     ReleaseBlock(block);
