@@ -108,15 +108,19 @@ public:
   //// I/O FUNCTIONS ////
   ///////////////////////
 
-  // I/O functions
+  // I/O functions for out-of-core manipulation
   virtual int OpenFile(const char *filename, const char *rwaccess = NULL);
   virtual int SyncFile(void);
   virtual int CloseFile(void);
   virtual RNBoolean IsOpen(void) const;
 
-  // I/O functions for other file formats
+  // I/O functions for files
   virtual int ReadFile(const char *filename);
-  virtual int WriteFile(const char *filename) const;
+  virtual int WriteFile(const char *filename);
+
+  // I/O functions for streams
+  virtual int ReadStream(FILE *fp);
+  virtual int WriteStream(FILE *fp);
 
 
   ///////////////////////////
@@ -140,9 +144,9 @@ public:
 
 protected:
   // Internal block I/O functions
-  virtual int InternalReadBlock(R3SurfelBlock *block);
-  virtual int InternalReleaseBlock(R3SurfelBlock *block);
-  virtual int InternalSyncBlock(R3SurfelBlock *block);
+  virtual int InternalReadBlock(R3SurfelBlock *block, FILE *fp, int swap_endian);
+  virtual int InternalReleaseBlock(R3SurfelBlock *block, FILE *fp, int swap_endian);
+  virtual int InternalSyncBlock(R3SurfelBlock *block, FILE *fp, int swap_endian);
 
   // Internal surfel I/O functions
   virtual int ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
@@ -151,7 +155,10 @@ protected:
     unsigned int major_version, unsigned int minor_version) const;
 
   // Internal header I/O functions
-  virtual int WriteHeader(FILE *fp, int swap_endian);
+  virtual int ReadFileHeader(FILE *fp, unsigned int& nblocks);
+  virtual int ReadBlockHeader(FILE *fp, unsigned int nblocks, int swap_endian);
+  virtual int WriteFileHeader(FILE *fp, int swap_endian);
+  virtual int WriteBlockHeader(FILE *fp, int swap_endian);
 
 protected:
   FILE *fp;
@@ -300,7 +307,7 @@ ReadBlock(R3SurfelBlock *block)
 {
   // Check whether block needs to be read
   if (block->file_read_count == 0) {
-    if (!InternalReadBlock(block)) return 0;
+    if (!InternalReadBlock(block, fp, swap_endian)) return 0;
   }
 
   // Increment reference count
@@ -317,7 +324,7 @@ ReleaseBlock(R3SurfelBlock *block)
 {
   // Check whether block needs to be written
   if (block->file_read_count == 1) {
-    if (!InternalReleaseBlock(block)) return 0;
+    if (!InternalReleaseBlock(block, fp, swap_endian)) return 0;
   }
 
   // Decrement reference count
@@ -342,7 +349,7 @@ SyncBlock(R3SurfelBlock *block)
 {
   // Check whether block needs to be written
   if (block->IsDirty()) {
-    if (!InternalSyncBlock(block)) return 0;
+    if (!InternalSyncBlock(block, fp, swap_endian)) return 0;
     block->SetDirty(FALSE);
   }
 

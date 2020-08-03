@@ -208,13 +208,17 @@ public:
 public:
   // File I/O functions
   virtual int ReadFile(const char *filename);
-  virtual int WriteFile(const char *filename);
   virtual int ReadAsciiFile(const char *filename);
-  virtual int WriteAsciiFile(const char *filename);
   virtual int ReadBinaryFile(const char *filename);
+  virtual int ReadAsciiStream(FILE *fp);
+  virtual int ReadBinaryStream(FILE *fp);
+  virtual int WriteFile(const char *filename);
+  virtual int WriteAsciiFile(const char *filename);
   virtual int WriteBinaryFile(const char *filename);
   virtual int WriteARFFFile(const char *filename);
   virtual int WriteTianqiangFile(const char *filename);
+  virtual int WriteAsciiStream(FILE *fp);
+  virtual int WriteBinaryStream(FILE *fp);
 
 protected:
   // Structure access stuff

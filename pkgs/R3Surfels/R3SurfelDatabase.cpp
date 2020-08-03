@@ -383,10 +383,27 @@ ReadFile(const char *filename)
   }
 
   // Read file of appropriate type
-  if (!strncmp(extension, ".list", 5)) {
+  if (!strncmp(extension, ".ssb", 5)) {
     // Open file
-    FILE *fp;
-    if (!(fp = fopen(filename, "r"))) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+      RNFail("Unable to open file %s\n", filename);
+      return 0;
+    }
+
+    // Read stream
+    if (!ReadStream(fp)) {
+      fclose(fp);
+      return 0;
+    }
+
+    // Close file
+    fclose(fp);
+  }
+  else if (!strncmp(extension, ".list", 5)) {
+    // Open file
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
       RNFail("Unable to open file %s\n", filename);
       return 0;
     }
@@ -451,7 +468,7 @@ ReadFile(const char *filename)
 
 
 int R3SurfelDatabase::
-WriteFile(const char *filename) const
+WriteFile(const char *filename)
 {
   // Parse input filename extension
   const char *extension;
@@ -461,7 +478,24 @@ WriteFile(const char *filename) const
   }
 
   // Write file of appropriate type
-  if (NBlocks() == 1) {
+  if (!strncmp(extension, ".ssb", 5)) {
+    // Open file
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+      RNFail("Unable to open file %s\n", filename);
+      return 0;
+    }
+
+    // Write stream
+    if (!WriteStream(fp)) {
+      fclose(fp);
+      return 0;
+    }
+
+    // Close file
+    fclose(fp);
+  }
+  else if (NBlocks() == 1) {
     R3SurfelDatabase *database = (R3SurfelDatabase *) this;
     R3SurfelBlock *block = Block(0);
     if (!database->ReadBlock(block)) return 0;
@@ -585,7 +619,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
 ////////////////////////////////////////////////////////////////////////
 
 int R3SurfelDatabase::
-InternalReadBlock(R3SurfelBlock *block)
+InternalReadBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
 {
   // Check number of surfels
   if (block->NSurfels() == 0) return 1;
@@ -625,7 +659,7 @@ InternalReadBlock(R3SurfelBlock *block)
 
 
 int R3SurfelDatabase::
-InternalReleaseBlock(R3SurfelBlock *block)
+InternalReleaseBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
 {
   // Just checking
   assert(block->database == this);
@@ -674,7 +708,7 @@ InternalReleaseBlock(R3SurfelBlock *block)
 
 
 int R3SurfelDatabase::
-InternalSyncBlock(R3SurfelBlock *block)
+InternalSyncBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
 {
   // Check file
   if (!fp) return 1;
@@ -731,7 +765,7 @@ InternalSyncBlock(R3SurfelBlock *block)
 ////////////////////////////////////////////////////////////////////////
 
 int R3SurfelDatabase::
-WriteHeader(FILE *fp, int swap_endian)
+WriteFileHeader(FILE *fp, int swap_endian)
 {
   // Get convenient variables
   unsigned int endian_test = 1;
@@ -740,8 +774,10 @@ WriteHeader(FILE *fp, int swap_endian)
   strncpy(magic, "R3SurfelDatabase", 32);
   char buffer[1024] = { '\0' };
 
-  // Write header
+  // Seek to start of file
   RNFileSeek(fp, 0, RN_FILE_SEEK_SET);
+
+  // Write header
   if (!RNWriteChar(fp, magic, 32, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
@@ -756,6 +792,140 @@ WriteHeader(FILE *fp, int swap_endian)
   if (!RNWriteUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
   if (!RNWriteChar(fp, buffer, 1004, swap_endian)) return 0;
   
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
+ReadFileHeader(FILE *fp, unsigned int& nblocks)
+{
+  // Seek to start of file
+  RNFileSeek(fp, 0, RN_FILE_SEEK_SET);
+
+  // Read unique string
+  char buffer[1024]; 
+  if (!RNReadChar(fp, buffer, 32, 0)) return 0;
+  if (strcmp(buffer, "R3SurfelDatabase")) {
+    RNFail("Incorrect header (%s) in database file %s\n", buffer, filename);
+    return 0;
+  }
+
+  // Read endian test
+  unsigned int endian_test1, endian_test2;
+  if (!RNReadUnsignedInt(fp, &endian_test1, 1, 0)) return 0;
+  if (endian_test1 != 1) swap_endian = 1;
+  if (!RNReadUnsignedInt(fp, &endian_test2, 1, swap_endian)) return 0;
+  if (endian_test2 != 1) {
+    RNFail("Incorrect endian (%x) in database file %s\n", endian_test1, filename);
+    return 0;
+  }
+
+  // Read version
+  if (!RNReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
+  if (!RNReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
+  if ((major_version < 2) || (major_version > 4)) {
+    RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
+    return 0;
+  }
+  
+  // Read block info
+  if (!RNReadUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
+  if (!RNReadUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
+  if (!RNReadUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
+
+  // Read number of surfels
+  if (major_version < 4) {
+    // nsurfels used to be an int
+    int nsurfels32;
+    if (!RNReadInt(fp, &nsurfels32, 1, swap_endian)) return 0;
+    nsurfels = nsurfels32;
+  }
+  else {
+    // nsurfels now is an RNInt64
+    if (!RNReadLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+  }
+
+  // Read bounding box
+  if (!RNReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
+
+  // Read timestamp range
+  if (!RNReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
+
+  // Read max identifier
+  if (!RNReadUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
+
+  // Read extra at end of header
+  if (!RNReadChar(fp, buffer, 1004, swap_endian)) return 0;
+  
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
+WriteBlockHeader(FILE *fp, int swap_endian)
+{
+  // Seek to start of blocks
+  RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
+
+  // Write blocks
+  char buffer[128] = { '\0' };
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    unsigned int block_flags = block->flags; 
+    if (!RNWriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
+    if (!RNWriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->resolution, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+    if (!RNWriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
+    if (!RNWriteUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
+    if (!RNWriteChar(fp, buffer, 32, swap_endian)) return 0;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
+ReadBlockHeader(FILE *fp, unsigned int nblocks, int swap_endian)
+{
+  // Seek to start of blocks
+  RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
+
+  // Read blocks
+  char buffer[128] = { '\0' };
+  for (unsigned int i = 0; i < nblocks; i++) {
+    R3SurfelBlock *block = new R3SurfelBlock();
+    unsigned int block_flags;
+    if (!RNReadUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
+    if (!RNReadInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &block->resolution, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
+    if (!RNReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
+    if (!RNReadUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
+    if (!RNReadChar(fp, buffer, 32, swap_endian)) return 0;
+    block->flags = block_flags;
+    block->SetDirty(FALSE);
+    block->database = this;
+    block->database_index = blocks.NEntries();
+    blocks.Insert(block);
+  }
+
   // Return success
   return 1;
 }
@@ -786,88 +956,15 @@ OpenFile(const char *filename, const char *rwaccess)
   // Check if file is new
   if (!strcmp(this->rwaccess, "w+b")) {
     // File is new -- write header
-    if (!WriteHeader(fp, 0)) return 0;
+    if (!WriteFileHeader(fp, 0)) return 0;
   }
   else {
-    // Read unique string
-    char buffer[1024]; 
-    if (!RNReadChar(fp, buffer, 32, 0)) return 0;
-    if (strcmp(buffer, "R3SurfelDatabase")) {
-      RNFail("Incorrect header (%s) in database file %s\n", buffer, filename);
-      return 0;
-    }
-
-    // Read endian test
-    unsigned int endian_test1, endian_test2;
-    if (!RNReadUnsignedInt(fp, &endian_test1, 1, 0)) return 0;
-    if (endian_test1 != 1) swap_endian = 1;
-    if (!RNReadUnsignedInt(fp, &endian_test2, 1, swap_endian)) return 0;
-    if (endian_test2 != 1) {
-      RNFail("Incorrect endian (%x) in database file %s\n", endian_test1, filename);
-      return 0;
-    }
-
-    // Read version
-    if (!RNReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
-    if (!RNReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
-    if ((major_version < 2) || (major_version > 4)) {
-      RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
-      return 0;
-    }
-  
-    // Read block info
-    unsigned int nblocks;
-    if (!RNReadUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
-    if (!RNReadUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
-    if (!RNReadUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
-
-    // Read number of surfels
-    if (major_version < 4) {
-      // nsurfels used to be an int
-      int nsurfels32;
-      if (!RNReadInt(fp, &nsurfels32, 1, swap_endian)) return 0;
-      nsurfels = nsurfels32;
-    }
-    else {
-      // nsurfels now is an RNInt64
-      if (!RNReadLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
-    }
-
-    // Read bounding box
-    if (!RNReadDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
-
-    // Read timestamp range
-    if (!RNReadDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
-
-    // Read max identifier
-    if (!RNReadUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
-
-    // Read extra at end of header
-    if (!RNReadChar(fp, buffer, 1004, swap_endian)) return 0;
-
+    // Read header
+    unsigned int nblocks = 0;
+    if (!ReadFileHeader(fp, nblocks)) return 0;
+    
     // Read blocks
-    RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
-    for (unsigned int i = 0; i < nblocks; i++) {
-      R3SurfelBlock *block = new R3SurfelBlock();
-      unsigned int block_flags;
-      if (!RNReadUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
-      if (!RNReadUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
-      if (!RNReadInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-      if (!RNReadDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
-      if (!RNReadDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
-      if (!RNReadDouble(fp, &block->resolution, 1, swap_endian)) return 0;
-      if (!RNReadUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-      if (!RNReadDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
-      if (!RNReadDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-      if (!RNReadUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
-      if (!RNReadUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
-      if (!RNReadChar(fp, buffer, 32, swap_endian)) return 0;
-      block->flags = block_flags;
-      block->SetDirty(FALSE);
-      block->database = this;
-      block->database_index = blocks.NEntries();
-      blocks.Insert(block);
-    }
+    if (!ReadBlockHeader(fp, nblocks, swap_endian)) return 0;
   }
 
   // Return success
@@ -897,27 +994,10 @@ SyncFile(void)
   }
 
   // Write blocks
-  char buffer[128] = { '\0' };
-  RNFileSeek(fp, file_blocks_offset, RN_FILE_SEEK_SET);
-  for (int i = 0; i < blocks.NEntries(); i++) {
-    R3SurfelBlock *block = blocks.Kth(i);
-    unsigned int block_flags = block->flags; 
-    if (!RNWriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
-    if (!RNWriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
-    if (!RNWriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
-    if (!RNWriteDouble(fp, &block->position_origin[0], 3, swap_endian)) return 0;
-    if (!RNWriteDouble(fp, &block->bbox[0][0], 6, swap_endian)) return 0;
-    if (!RNWriteDouble(fp, &block->resolution, 1, swap_endian)) return 0;
-    if (!RNWriteUnsignedInt(fp, &block_flags, 1, swap_endian)) return 0;
-    if (!RNWriteDouble(fp, &block->timestamp_origin, 1, swap_endian)) return 0;
-    if (!RNWriteDouble(fp, &block->timestamp_range[0], 2, swap_endian)) return 0;
-    if (!RNWriteUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
-    if (!RNWriteUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
-    if (!RNWriteChar(fp, buffer, 32, swap_endian)) return 0;
-  }
+  if (!WriteBlockHeader(fp, swap_endian)) return 0;
 
   // Write header again (now that the offset values have been filled in)
-  if (!WriteHeader(fp, swap_endian)) return 0;
+  if (!WriteFileHeader(fp, swap_endian)) return 0;
 
   // Return success
   return 1;
@@ -943,6 +1023,96 @@ CloseFile(void)
   if (rwaccess) free(rwaccess);
   rwaccess = NULL;
 
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
+WriteStream(FILE *fp)
+{
+  // Save current file offset info so that can restore afterwards
+  unsigned int saved_file_blocks_count = file_blocks_count;
+  unsigned long long saved_file_blocks_offset = file_blocks_offset;
+  unsigned long long *saved_file_surfels_offsets = new unsigned long long [ blocks.NEntries() + 1];
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    saved_file_surfels_offsets[i] = blocks[i]->file_surfels_offset;
+  }
+
+  // Write file header
+  RNBoolean swap_endian = FALSE;
+  if (!WriteFileHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_offsets;
+    return 0;
+  }
+
+  // Write blocks
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    if (block->nsurfels == 0) continue;
+    block->file_surfels_offset = RNFileTell(fp);
+    if (!WriteSurfel(fp, block->surfels, block->nsurfels, swap_endian, current_major_version, current_minor_version)) {
+      delete [] saved_file_surfels_offsets;
+      return 0;
+    }
+  }
+
+  // Update block header info
+  file_blocks_offset = RNFileTell(fp);
+  file_blocks_count = blocks.NEntries();
+
+  // Write block header
+  if (!WriteBlockHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_offsets;
+    return 0;
+  }
+
+  // Write file header again (now that info has been filled in)
+  if (!WriteFileHeader(fp, swap_endian)) {
+    delete [] saved_file_surfels_offsets;
+    return 0;
+  }
+
+  // Seek to end of stream
+  RNFileSeek(fp, 0, RN_FILE_SEEK_END);
+  
+  // Restore previous file offset info
+  file_blocks_count = saved_file_blocks_count;
+  file_blocks_offset = saved_file_blocks_offset;
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    block->file_surfels_offset = saved_file_surfels_offsets[i];
+  }
+
+  // Delete temporary data
+  delete [] saved_file_surfels_offsets;
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
+ReadStream(FILE *fp)
+{
+  // Read header
+  unsigned int nblocks = 0;
+  if (!ReadFileHeader(fp, nblocks)) return 0;
+  
+  // Read blocks
+  if (!ReadBlockHeader(fp, nblocks, swap_endian)) return 0;
+
+  // Read surfels
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    if (!InternalReadBlock(block, fp, swap_endian)) return 0;
+  }
+
+  // Seek to end of stream
+  RNFileSeek(fp, 0, RN_FILE_SEEK_END);
+  
   // Return success
   return 1;
 }

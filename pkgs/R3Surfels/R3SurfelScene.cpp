@@ -1552,6 +1552,50 @@ WriteFile(const char *filename)
 // Ascii I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+int R3SurfelScene::
+ReadAsciiFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "r"))) {
+    RNFail("Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Read ascii stream
+  int status = ReadAsciiStream(fp);
+
+  // Close file
+  fclose(fp);
+
+  // Return status
+  return status;
+}
+
+
+
+int R3SurfelScene::
+WriteAsciiFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "w"))) {
+    RNFail("Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Write ascii stream
+  int status = WriteAsciiStream(fp);
+
+  // Close file
+  fclose(fp);
+
+  // Return status
+  return status;
+}
+
+
+
 static int 
 ReadAsciiName(FILE *fp, char *buffer)
 {
@@ -1606,15 +1650,8 @@ WriteAsciiName(FILE *fp, const char *name)
 
 
 int R3SurfelScene::
-ReadAsciiFile(const char *filename)
+ReadAsciiStream(FILE *fp)
 {
-  // Open file
-  FILE *fp;
-  if (!(fp = fopen(filename, "r"))) {
-    RNFail("Unable to open file %s\n", filename);
-    return 0;
-  }
-
   // Read header
   char buffer[1024], version[1024];
   if (fscanf(fp, "%s%s", buffer, version) != (unsigned int) 2) {
@@ -1947,9 +1984,6 @@ ReadAsciiFile(const char *filename)
     if (operands) delete [] operands;
   }
 
-  // Close file
-  fclose(fp);
-
   // Mark scene as clean
   flags.Remove(R3_SURFEL_SCENE_DIRTY_FLAG);
 
@@ -1960,15 +1994,8 @@ ReadAsciiFile(const char *filename)
 
 
 int R3SurfelScene::
-WriteAsciiFile(const char *filename) 
+WriteAsciiStream(FILE *fp)
 {
-  // Open file
-  FILE *fp;
-  if (!(fp = fopen(filename, "w"))) {
-    RNFail("Unable to open file %s\n", filename);
-    return 0;
-  }
-
   // Write header
   fprintf(fp, "SSA 1.1\n");
 
@@ -2155,9 +2182,6 @@ WriteAsciiFile(const char *filename)
     fprintf(fp, "\n");
   }
 
-  // Close file
-  fclose(fp);
-
   // Mark scene as clean
   flags.Remove(R3_SURFEL_SCENE_DIRTY_FLAG);
 
@@ -2170,6 +2194,50 @@ WriteAsciiFile(const char *filename)
 ////////////////////////////////////////////////////////////////////////
 // BINARY I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
+
+int R3SurfelScene::
+ReadBinaryFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "r"))) {
+    RNFail("Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Read binary stream
+  int status = ReadBinaryStream(fp);
+
+  // Close file
+  fclose(fp);
+
+  // Return status
+  return status;
+}
+
+
+
+int R3SurfelScene::
+WriteBinaryFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "w"))) {
+    RNFail("Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Write binary stream
+  int status = WriteBinaryStream(fp);
+
+  // Close file
+  fclose(fp);
+
+  // Return status
+  return status;
+}
+
+
 
 static int 
 WriteBinaryName(FILE *fp, const char *name, int size = 256)
@@ -2266,15 +2334,8 @@ ReadBinaryDouble(FILE *fp, double *value)
 
 
 int R3SurfelScene::
-ReadBinaryFile(const char *filename) 
+ReadBinaryStream(FILE *fp) 
 {
-  // Open file
-  FILE *fp;
-  if (!(fp = fopen(filename, "rb"))) {
-    RNFail("Unable to open file %s\n", filename);
-    return 0;
-  }
-
   // Read file header
   char magic[16];
   if (!ReadBinaryName(fp, magic, 16)) {
@@ -2648,9 +2709,6 @@ ReadBinaryFile(const char *filename)
     if (operands) delete [] operands;
   }
 
-  // Close file
-  fclose(fp);
-
   // Mark scene as clean
   flags.Remove(R3_SURFEL_SCENE_DIRTY_FLAG);
 
@@ -2661,15 +2719,8 @@ ReadBinaryFile(const char *filename)
 
 
 int R3SurfelScene::
-WriteBinaryFile(const char *filename) 
+WriteBinaryStream(FILE *fp) 
 {
-  // Open file
-  FILE *fp;
-  if (!(fp = fopen(filename, "wb"))) {
-    RNFail("Unable to open file %s\n", filename);
-    return 0;
-  }
-
   // Write file header
   if (!WriteBinaryName(fp, "SSB 1.1", 16)) {
     RNFail("Unable to write to %s\n", filename);
@@ -2876,9 +2927,6 @@ WriteBinaryFile(const char *filename)
     for (int j = 0; j < property->NOperands(); j++) 
       WriteBinaryDouble(fp, property->Operand(j));
   }
-
-  // Close file
-  fclose(fp);
 
   // Mark scene as clean
   flags.Remove(R3_SURFEL_SCENE_DIRTY_FLAG);
