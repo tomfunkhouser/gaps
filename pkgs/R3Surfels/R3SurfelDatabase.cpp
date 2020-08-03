@@ -1111,6 +1111,7 @@ ReadStream(FILE *fp)
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
     if (!InternalReadBlock(block, fp, swap_endian)) return 0;
+    block->file_read_count = 1;
   }
 
   // Seek to end of stream
