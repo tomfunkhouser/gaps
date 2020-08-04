@@ -652,6 +652,62 @@ CreateObject(R3SurfelScene *scene,
 
 
 
+int
+CreateObjects(R3SurfelScene *scene,
+  const R3SurfelBlock& block, int *object_identifiers,
+  R3SurfelObject *parent_object, R3SurfelNode *parent_node,
+  RNBoolean release_blocks)
+{
+  // Get convenient variables
+  if (!scene) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+  if (!parent_object) parent_object = scene->RootObject();
+  if (!parent_object) return 0;
+  if (!parent_node) parent_node = tree->RootNode();
+  if (!parent_node) return 0;
+  if (!object_identifiers) return 0;
+
+  // Create pointset for each unique identifier
+  std::map<int, R3SurfelPointSet> pointsets;
+  for (int i = 0; i < block.NSurfels(); i++) {
+    const R3Surfel *surfel = block.Surfel(i);
+    R3SurfelPoint point((R3SurfelBlock *) &block, surfel);
+    int identifier = object_identifiers[i];
+    auto it = pointsets.find(identifier);
+    if (it == pointsets.end()) {
+      pointsets.insert({identifier, R3SurfelPointSet()});
+      it = pointsets.find(identifier);
+    }
+    it->second.InsertPoint(point);
+  }
+
+  // Create object for each pointset
+  for (auto it = pointsets.begin(); it != pointsets.end(); it++) {
+    int id = it->first;
+    R3SurfelPointSet& pointset = it->second;
+    if (pointset.NPoints() == 0) continue;
+    char object_name[1024];
+    sprintf(object_name, "OBJECT#%d", id);
+    R3SurfelObject *object = CreateObject(scene, &pointset,
+      parent_object, object_name, parent_node, object_name, TRUE);
+
+    // Create PCA object property
+    R3SurfelObjectProperty *pca = new R3SurfelObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY, object);
+    scene->InsertObjectProperty(pca);
+
+    // Release block
+    if (object && release_blocks) object->ReleaseBlocks();
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Object removal
 ////////////////////////////////////////////////////////////////////////

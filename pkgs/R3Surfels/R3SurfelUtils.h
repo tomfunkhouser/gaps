@@ -104,6 +104,10 @@ R3SurfelObject *CreateObject(R3SurfelScene *scene,
   R3SurfelObject *parent_object = NULL, const char *object_name = NULL, 
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
   RNBoolean copy_surfels = FALSE);
+int CreateObjects(R3SurfelScene *scene,
+  const R3SurfelBlock& block, int *object_identifiers,
+  R3SurfelObject *parent_object = NULL, R3SurfelNode *parent_node = NULL,
+  RNBoolean release_blocks = TRUE);
 
   
   
