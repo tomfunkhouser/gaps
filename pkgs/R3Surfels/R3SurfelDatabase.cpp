@@ -875,7 +875,8 @@ WriteBlockHeader(FILE *fp, int swap_endian)
   char buffer[128] = { '\0' };
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
-    unsigned int block_flags = block->flags; 
+    unsigned int block_flags = block->flags;
+    if (block->file_surfels_offset == 0) printf("AAAAA %d\n", i);
     if (!RNWriteUnsignedLongLong(fp, &block->file_surfels_offset, 1, swap_endian)) return 0;
     if (!RNWriteUnsignedInt(fp, &block->file_surfels_count, 1, swap_endian)) return 0;
     if (!RNWriteInt(fp, &block->nsurfels, 1, swap_endian)) return 0;
@@ -919,6 +920,7 @@ ReadBlockHeader(FILE *fp, unsigned int nblocks, int swap_endian)
     if (!RNReadUnsignedInt(fp, &block->max_identifier, 1, swap_endian)) return 0;
     if (!RNReadUnsignedInt(fp, &block->min_identifier, 1, swap_endian)) return 0;
     if (!RNReadChar(fp, buffer, 32, swap_endian)) return 0;
+    if (block->file_surfels_offset == 0) printf("BBBB %d\n", i);
     block->flags = block_flags;
     block->SetDirty(FALSE);
     block->database = this;

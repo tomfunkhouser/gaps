@@ -2676,6 +2676,7 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryInteger(fp, &type);
     ReadBinaryInteger(fp, &object_index);
     ReadBinaryInteger(fp, &noperands);
+    for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
     R3SurfelObject *object = (object_index >= 0) ? Object(object_index) : NULL;
     if (noperands > 0) {
       operands = new RNScalar [ noperands ];
