@@ -685,7 +685,8 @@ CreateObjects(R3SurfelScene *scene,
   }
 
   // Create object for each pointset
-  for (auto it = pointsets.begin(); it != pointsets.end(); it++) {
+  std::map<int, R3SurfelPointSet>::iterator it;
+  for (it = pointsets.begin(); it != pointsets.end(); it++) {
     int id = it->first;
     R3SurfelPointSet& pointset = it->second;
     if (pointset.NPoints() == 0) continue;
