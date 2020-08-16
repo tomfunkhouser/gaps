@@ -676,9 +676,9 @@ CreateObjects(R3SurfelScene *scene,
     const R3Surfel *surfel = block.Surfel(i);
     R3SurfelPoint point((R3SurfelBlock *) &block, surfel);
     int identifier = object_identifiers[i];
-    auto it = pointsets.find(identifier);
+    std::map<int, R3SurfelPointSet>::iterator it = pointsets.find(identifier);
     if (it == pointsets.end()) {
-      pointsets.insert({identifier, R3SurfelPointSet()});
+      pointsets.insert(std::pair<int, R3SurfelPointSet>(identifier, R3SurfelPointSet()));
       it = pointsets.find(identifier);
     }
     it->second.InsertPoint(point);
