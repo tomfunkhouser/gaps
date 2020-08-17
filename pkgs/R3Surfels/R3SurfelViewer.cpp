@@ -497,7 +497,7 @@ Redraw(void)
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
               unsigned int encoded_elevation = (surfel->Identifier() >> 16) & 0xFFFF;
-              double elevation = (encoded_elevation - 32768.0) / 100.0;
+              double elevation = (encoded_elevation - 32768.0) / 400.0;
               double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
               LoadColor(value);
             }
