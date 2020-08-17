@@ -130,7 +130,7 @@ SurfelColorSchemeName(void) const
   case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL: return "Ground Truth Label";
   case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: return "Surfel Label";
   case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: return "Confidence";
-  case R3_SURFEL_VIEWER_COLOR_BY_HEIGHT: return "Height";
+  case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: return "ELEVATION";
   case R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT: return "Viewpoint";
   default: return "Unknown";
   }
@@ -474,7 +474,7 @@ Redraw(void)
       }
     }
     else if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) ||
-             (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) ||
+             (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) ||
              (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) ||
              (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE)) {
       // Draw with colors based on surfel attributes
@@ -495,10 +495,10 @@ Redraw(void)
               double value = 0.5 * sqrt(dz);
               LoadColor(value);
             }
-            else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) {
-              unsigned int encoded_height = (surfel->Identifier() >> 16) & 0xFFFF;
-              double height = (encoded_height - 32768.0) / 100.0;
-              double value = (height > 0) ? 0.5 * sqrt(height) : 0;
+            else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
+              unsigned int encoded_elevation = (surfel->Identifier() >> 16) & 0xFFFF;
+              double elevation = (encoded_elevation - 32768.0) / 100.0;
+              double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
               LoadColor(value);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
@@ -1037,8 +1037,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'C':
     case 'c':
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
-        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_HEIGHT);
-      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_Z);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_Z)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT);
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
