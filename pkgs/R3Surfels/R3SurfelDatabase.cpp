@@ -581,6 +581,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
     }
   }
@@ -604,6 +605,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
     }
   }
