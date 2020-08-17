@@ -473,31 +473,6 @@ Redraw(void)
         }
       }
     }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
-      // Draw with colors based on heights
-      double z0 = center_point.Z();
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
-            const R3Surfel *surfel = block->Surfel(k);
-            double z = block_origin.Z() + surfel->Z();
-            double dz = (z > z0) ? z - z0 : 0;
-            double value = 0.5 * sqrt(dz);
-            LoadColor(value);
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-          glPopMatrix();
-        }
-      }
-    }
     else if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) ||
              (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) ||
              (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) ||
@@ -517,11 +492,14 @@ Redraw(void)
             if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
               double z = block_origin.Z() + surfel->Z();
               double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
-              LoadColor(0.5 * sqrt(dz));
+              double value = 0.5 * sqrt(dz);
+              LoadColor(value);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_HEIGHT) {
-              double height = ((surfel->Identifier() >> 16) & 0xFFFF) / 100.0;
-              LoadColor(0.5 * sqrt(height));
+              unsigned int encoded_height = (surfel->Identifier() >> 16) & 0xFFFF;
+              double height = (encoded_height - 32768.0) / 100.0;
+              double value = (height > 0) ? 0.5 * sqrt(height) : 0;
+              LoadColor(value);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
               int label_identifier = surfel->Identifier() & 0xFF;
