@@ -528,22 +528,26 @@ PrintInfo(R3SurfelScene *scene)
   // Print surfel info
   if (print_surfels) {
     printf("Surfels:\n");
-    for (int i = 0; i < database->NBlocks(); i++) {
-      R3SurfelBlock *block = database->Block(i);
-      database->ReadBlock(block);
-      printf("  Block %d\n", i);
-      printf("    # Surfels = %d\n", block->NSurfels());
-      for (int j = 0; j < block->NSurfels(); j++) {
-        const R3Surfel *surfel = block->Surfel(j);
-        printf("    Surfel %d\n", j);
-        printf("      Position = %f %f %f\n", surfel->PX(), surfel->PY(), surfel->PZ());
-        printf("      Normal = %f %f %f\n", surfel->NX(), surfel->NY(), surfel->NZ());
-        printf("      Tangent = %f %f %f\n", surfel->TX(), surfel->TY(), surfel->TZ());
-        printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
-        printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
-        printf("      Timestamp = %.6f\n", surfel->Timestamp());
-        printf("      Identifier = %u\n", surfel->Identifier());
-        printf("      Flags = %d\n", surfel->Flags());
+    for (int i = 0; i < tree->NNodes(); i++) {
+      R3SurfelNode *node = tree->Node(i);
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        database->ReadBlock(block);
+        printf("  Block %d\n", i);
+        printf("    # Surfels = %d\n", block->NSurfels());
+        for (int j = 0; j < block->NSurfels(); j++) {
+          const R3Surfel *surfel = block->Surfel(j);
+          printf("    Surfel %d\n", j);
+          printf("      Position = %f %f %f\n", surfel->PX(), surfel->PY(), surfel->PZ());
+          printf("      Normal = %f %f %f\n", surfel->NX(), surfel->NY(), surfel->NZ());
+          printf("      Tangent = %f %f %f\n", surfel->TX(), surfel->TY(), surfel->TZ());
+          printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
+          printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
+          printf("      Timestamp = %.6f\n", surfel->Timestamp());
+          printf("      Identifier = %u\n", surfel->Identifier());
+          printf("      Flags = %d\n", surfel->Flags());
+        }
+        database->ReleaseBlock(block);
       }
       printf("\n");
     }
