@@ -27,6 +27,7 @@ public:
   const char *Key(int k) const;
   virtual int FindImage(const char *key, R2Image *image) const;
   virtual int FindGrid(const char *key, R2Grid *grid) const;
+  virtual int GetFormat(const char *key) const;
 
   // Property manipulation functions
   virtual void SetName(const char *name);
@@ -68,6 +69,15 @@ private:
 };
 
 
+
+////////////////////////////////////////////////////////////////////////
+// FORMAT CONSTANTS
+////////////////////////////////////////////////////////////////////////
+
+#define R2_PIXEL_DATABASE_3_8_PNG_FORMAT  0
+#define R2_PIXEL_DATABASE_1_16_PNG_FORMAT 1
+
+  
 
 ////////////////////////////////////////////////////////////////////////
 // INLINE FUNCTION DEFINITIONS

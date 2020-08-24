@@ -26,9 +26,6 @@ namespace gaps {
 static const unsigned int current_major_version = 0;
 static const unsigned int current_minor_version = 1;
 
-static const unsigned int R2_PIXEL_DATABASE_3_8_PNG_FORMAT = 0;
-static const unsigned int R2_PIXEL_DATABASE_1_16_PNG_FORMAT = 1;
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -199,6 +196,17 @@ FindGrid(const char *key, R2Grid *grid) const
 
   // Return success
   return TRUE;
+}
+
+
+
+int R2PixelDatabase::
+GetFormat(const char *key) const
+{
+  // Find entry
+  R2PixelDatabaseEntry entry;
+  if (!map.Find(key, &entry)) return -1;
+  return entry.format;
 }
 
 
