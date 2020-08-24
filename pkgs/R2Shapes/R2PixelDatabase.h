@@ -26,7 +26,7 @@ public:
   int NKeys(void) const;
   const char *Key(int k) const;
   virtual int FindImage(const char *key, R2Image *image) const;
-  virtual int FindGrid(const char *key, R2Grid *grid) const;
+  virtual int FindGrid(const char *key, R2Grid *grid, RNBoolean apply_transformation = TRUE) const;
   virtual int GetFormat(const char *key) const;
 
   // Property manipulation functions

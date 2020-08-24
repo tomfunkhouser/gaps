@@ -161,7 +161,7 @@ FindImage(const char *key, R2Image *image) const
 
 
 int R2PixelDatabase::
-FindGrid(const char *key, R2Grid *grid) const
+FindGrid(const char *key, R2Grid *grid, RNBoolean apply_transformation) const
 {
   // Find entry
   R2PixelDatabaseEntry entry;
@@ -178,19 +178,22 @@ FindGrid(const char *key, R2Grid *grid) const
       return FALSE;
     }
 
-    // Apply offset 
-    if (entry.offset != 0) {
-      grid->Subtract(entry.offset);
-    }
+    // Check if should apply transformation
+    if (apply_transformation) {
+      // Apply offset 
+      if (entry.offset != 0) {
+        grid->Subtract(entry.offset);
+      }
 
-    // Apply scale 
-    if ((entry.scale != 0) && (entry.scale != 1)) {
-      grid->Multiply(1.0 / entry.scale);
-    }
+      // Apply scale 
+      if ((entry.scale != 0) && (entry.scale != 1)) {
+        grid->Multiply(1.0 / entry.scale);
+      }
 
-    // Apply exponent
-    if ((entry.exponent != 0) && (entry.exponent != 1)) {
-      grid->Pow(1.0 / entry.exponent);
+      // Apply exponent
+      if ((entry.exponent != 0) && (entry.exponent != 1)) {
+        grid->Pow(1.0 / entry.exponent);
+      }
     }
   }
 
