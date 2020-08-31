@@ -56,8 +56,11 @@ public:
   // Timestamp property functions
   RNScalar Timestamp(void) const;
 
-  // Identifier property functions (can be used for anything)
+  // Identifier property functions
   unsigned int Identifier(void) const;
+
+  // Attribute property functions (can be used for anything)
+  unsigned int Attribute(void) const;
 
   // Other property functions
   RNBoolean IsActive(void) const;
@@ -94,6 +97,7 @@ public:
   void SetColor(const RNRgb& color);
   void SetTimestamp(RNScalar timestamp);
   void SetIdentifier(unsigned int identifier);
+  void SetAttribute(unsigned int attribute);
   void SetActive(RNBoolean active = TRUE);
   void SetAerial(RNBoolean aerial = TRUE);
   void SetMark(RNBoolean mark);
@@ -348,6 +352,15 @@ Identifier(void) const
 {
   // Return identifier of surfel
   return surfel->Identifier();
+}
+
+
+
+inline unsigned int R3SurfelPoint::
+Attribute(void) const
+{
+  // Return attribute of surfel
+  return surfel->Attribute();
 }
 
 

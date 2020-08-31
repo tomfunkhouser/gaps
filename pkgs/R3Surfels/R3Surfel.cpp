@@ -20,6 +20,7 @@ R3Surfel::
 R3Surfel(void)
   : timestamp(0),
     identifier(0),
+    attribute(0),
     flags(0)
 {
   // Set everything
@@ -47,6 +48,7 @@ R3Surfel(float x, float y, float z,
   RNBoolean aerial)
   : timestamp(0),
     identifier(0),
+    attribute(0),
     flags(0)
 {
   // Set everything
@@ -75,6 +77,7 @@ R3Surfel(float x, float y, float z, float nx, float ny, float nz,
   unsigned char flags)
   : timestamp(0),
     identifier(0),
+    attribute(0),
     flags(flags)
 {
   // Set everything
@@ -111,6 +114,7 @@ R3Surfel(float x, float y, float z,
   unsigned char flags)
   : timestamp(timestamp),
     identifier(identifier),
+    attribute(0),
     flags(flags)
 {
   // Set everything

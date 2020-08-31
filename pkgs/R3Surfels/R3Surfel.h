@@ -65,8 +65,11 @@ public:
   // Timestamp property functions
   float Timestamp(void) const;
   
-  // Identifier property functions (can be used for anything)
+  // Identifier property functions
   unsigned int Identifier(void) const;
+
+  // Attribute property functions (can be used in any way by application)
+  unsigned int Attribute(void) const;
 
   // Other property functions
   RNBoolean IsActive(void) const;
@@ -98,6 +101,7 @@ public:
   void SetColor(const RNRgb& rgb);
   void SetTimestamp(float timestamp);
   void SetIdentifier(unsigned int identifier);
+  void SetAttribute(unsigned int attribute);
   void SetAerial(RNBoolean aerial = TRUE);
   void SetSilhouetteBoundary(RNBoolean boundary = TRUE);
   void SetShadowBoundary(RNBoolean boundary = TRUE);
@@ -145,6 +149,7 @@ private:
   RNInt16 tangent[3]; // x 2^15-1 (32767)
   RNUInt16 radius[2]; // x 2^13 (8192)
   RNUInt32 identifier;
+  RNUInt32 attribute;
   RNUChar8 color[3];
   RNUChar8 flags;
 
@@ -371,6 +376,15 @@ Identifier(void) const
 {
   // Return identifier
   return identifier;
+}
+
+
+
+inline unsigned int R3Surfel::
+Attribute(void) const
+{
+  // Return attribute
+  return attribute;
 }
 
 
@@ -641,6 +655,15 @@ SetIdentifier(unsigned int identifier)
 {
   // Set identifier
   this->identifier = identifier;
+}
+
+
+
+inline void R3Surfel::
+SetAttribute(unsigned int attribute)
+{
+  // Set attribute
+  this->attribute = attribute;
 }
 
 

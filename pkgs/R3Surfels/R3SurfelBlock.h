@@ -102,6 +102,7 @@ public:
   RNRgb SurfelColor(int surfel_index) const;
   RNScalar SurfelTimestamp(int surfel_index) const;
   unsigned int SurfelIdentifier(int surfel_index) const;
+  unsigned int SurfelAttribute(int surfel_index) const;
   RNBoolean IsSurfelActive(int surfel_index) const;
   RNBoolean IsSurfelMarked(int surfel_index) const;
   RNBoolean IsSurfelAerial(int surfel_index) const;
@@ -123,14 +124,8 @@ public:
   
   // Property manipulation functions
   void SetPositionOrigin(const R3Point& position);
-
-  // Timestamp manipulation functions
   void SetTimestampOrigin(RNScalar timestamp);
-
-  // Surfel mark manipulation functions
   void SetMarks(RNBoolean mark = TRUE);
-
-  // User data manipulation functions
   void SetData(void *data);
 
 
@@ -147,6 +142,7 @@ public:
   void SetSurfelColor(int surfel_index, const RNRgb& color);
   void SetSurfelTimestamp(int surfel_index, RNLength timestamp);
   void SetSurfelIdentifier(int surfel_index, unsigned int identifier);
+  void SetSurfelAttribute(int surfel_index, unsigned int attribute);
   void SetSurfelFlags(int surfel_index, unsigned char flags);
   void SetSurfelActive(int surfel_index, RNBoolean active = TRUE);
   void SetSurfelAerial(int surfel_index, RNBoolean aerial = TRUE);
@@ -503,6 +499,16 @@ SurfelIdentifier(int surfel_index) const
   // Return identifier of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
   return surfel.Identifier();
+}
+
+
+
+inline unsigned int R3SurfelBlock::
+SurfelAttribute(int surfel_index) const
+{
+  // Return attribute of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return surfel.Attribute();
 }
 
 

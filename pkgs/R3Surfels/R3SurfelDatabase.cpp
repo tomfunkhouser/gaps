@@ -30,8 +30,8 @@ namespace gaps {
 // Versioning variables
 ////////////////////////////////////////////////////////////////////////
 
-static unsigned int current_major_version = 4;
-static unsigned int current_minor_version = 1;
+static unsigned int current_major_version = 5;
+static unsigned int current_minor_version = 0;
 
 
 
@@ -531,21 +531,34 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
     }
   }
   else {
-    if (major_version == 3) {
+    if (major_version == 4) {
       for (int i = 0; i < count; i++) {
-        fread(ptr[i].position, sizeof(float), 3, fp);
+        fread(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fread(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
+        fread(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fread(ptr[i].tangent, sizeof(RNInt16), 3, fp);
+        fread(ptr[i].radius, sizeof(RNInt16), 2, fp);
+        fread(&ptr[i].identifier, sizeof(RNInt32), 1, fp);
+        fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+      }
+    }
+    else if (major_version == 3) {
+      for (int i = 0; i < count; i++) {
+        fread(ptr[i].position, sizeof(RNScalar32), 3, fp);
         fread(ptr[i].normal, sizeof(RNInt16), 3, fp);
         fread(ptr[i].radius, sizeof(RNInt16), 1, fp);
-        fread(ptr[i].color, sizeof(unsigned char), 3, fp);
-        fread(&ptr[i].flags, sizeof(unsigned char), 1, fp);
+        fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+        ptr[i].radius[1] = ptr[i].radius[0];
       }
     }
     else if (major_version < 2) {
       for (int i = 0; i < count; i++) {
         float position[3];
         unsigned char color_and_flags[4];
-        fread(position, sizeof(float), 3, fp);
-        fread(color_and_flags, sizeof(unsigned char), 4, fp);
+        fread(position, sizeof(RNScalar32), 3, fp);
+        fread(color_and_flags, sizeof(RNUChar8), 4, fp);
         ptr[i].SetPosition(position);
         ptr[i].SetColor(color_and_flags);
         ptr[i].SetFlags(color_and_flags[3]);
@@ -562,6 +575,7 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].radius, 2);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
+      RNSwap4(&ptr[i].attribute, 1);
     }
   }
 
@@ -584,6 +598,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].radius, 2);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
+      RNSwap4(&ptr[i].attribute, 1);
     }
   }
 
@@ -608,6 +623,7 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].radius, 2);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
+      RNSwap4(&ptr[i].attribute, 1);
     }
   }
 
@@ -828,7 +844,7 @@ ReadFileHeader(FILE *fp, unsigned int& nblocks)
   // Read version
   if (!RNReadUnsignedInt(fp, &major_version, 1, swap_endian)) return 0;
   if (!RNReadUnsignedInt(fp, &minor_version, 1, swap_endian)) return 0;
-  if ((major_version < 2) || (major_version > 4)) {
+  if ((major_version < 2) || (major_version > current_major_version)) {
     RNFail("Incorrect version (%d.%d) in database file %s\n", major_version, minor_version, filename);
     return 0;
   }

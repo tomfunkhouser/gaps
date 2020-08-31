@@ -801,6 +801,24 @@ SetSurfelIdentifier(int surfel_index, unsigned int identifier)
 
 
 void R3SurfelBlock::
+SetSurfelAttribute(int surfel_index, unsigned int attribute)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel attribute
+  surfels[surfel_index].SetAttribute(attribute);
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
 SetSurfelActive(int surfel_index, RNBoolean active)
 {
   // Check if surfels are resident

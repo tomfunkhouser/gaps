@@ -1613,7 +1613,7 @@ ReadPNGStream(FILE *fp)
     return 0;
   }
 
-  // Allocate the pixels and row pointers 
+  // Allocate the pixels and row pointers
   pixels = new unsigned char [ height * rowsize ]; 
   png_bytep *row_pointers = (png_bytep *) png_malloc(png_ptr, height * sizeof(png_bytep));
   for (int i = 0; i < height; i++) row_pointers[i] = &pixels[ (height - i - 1) * rowsize ];

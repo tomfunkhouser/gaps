@@ -193,6 +193,16 @@ SetIdentifier(unsigned int identifier)
 
 
 void R3SurfelPoint::
+SetAttribute(unsigned int attribute)
+{
+  // Set attribute
+  assert(block && surfel);
+  block->SetSurfelAttribute(block->SurfelIndex(surfel), attribute);
+}
+
+
+
+void R3SurfelPoint::
 SetActive(RNBoolean active)
 {
   // Set position
