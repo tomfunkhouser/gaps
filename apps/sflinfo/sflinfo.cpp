@@ -546,6 +546,7 @@ PrintInfo(R3SurfelScene *scene)
           printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
           printf("      Timestamp = %.6f\n", surfel->Timestamp());
           printf("      Identifier = %u\n", surfel->Identifier());
+          printf("      Attribute = %u\n", surfel->Attribute());
           printf("      Flags = %d\n", surfel->Flags());
         }
         database->ReleaseBlock(block);
