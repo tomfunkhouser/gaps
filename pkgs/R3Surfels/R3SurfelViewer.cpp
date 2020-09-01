@@ -496,17 +496,17 @@ Redraw(void)
               LoadColor(value);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
-              unsigned int encoded_elevation = (surfel->Identifier() >> 16) & 0xFFFF;
+              unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
               double elevation = (encoded_elevation - 32768.0) / 400.0;
               double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
               LoadColor(value);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
-              int label_identifier = surfel->Identifier() & 0xFF;
+              int label_identifier = surfel->Attribute() & 0xFF;
               LoadColor(label_identifier);
             }
             else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE) {
-              double confidence = ((surfel->Identifier() >> 8) & 0xFF) / 255.0;
+              double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
               LoadColor(confidence);
             }
             glVertex3fv(surfel->PositionPtr());
