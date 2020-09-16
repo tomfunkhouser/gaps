@@ -1312,9 +1312,15 @@ FindAll(R3KdtreeNode<PtrType> *node, const R3Box& node_box,
   if (node->children[0]) {
     assert(node->children[1]);
 
-    // Check distance from shape to node box
-    RNLength distance = R3Distance(query_shape, node_box);
-    if (distance >= max_distance) return;
+    // Check node box
+    if (max_distance == 0) {
+      if (!R3Contains(query_shape, node_box)) return;
+    }
+    else {
+      // Check distance from shape to node box
+      RNLength distance = R3Distance(query_shape, node_box);
+      if (distance >= max_distance) return;
+    }
 
     // Search negative side 
     R3Box child_box1(node_box);

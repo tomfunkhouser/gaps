@@ -197,20 +197,9 @@ Centroid(void) const
 const R3Point R3Frustum::
 ClosestPoint(const R3Point& point) const
 {
-  // Intialize closest point
-  R3Point closest_point = point;
-
-  // Project onto each halfspace
-  for (int dir = 0; dir < 2; dir++) {
-    for (int dim = 0; dim < 3; dim++) {
-      const R3Plane& plane = halfspaces[dir][dim].Plane();
-      RNScalar d = R3SignedDistance(plane, point);
-      if (d < 0) closest_point -= d*plane.Normal();
-    }
-  }
-
-  // Return closest point
-  return closest_point;
+  // Todo
+  RNAbort("Not implemented");
+  return R3unknown_point;
 }
 
 
@@ -219,6 +208,7 @@ const R3Point R3Frustum::
 FurthestPoint(const R3Point& point) const
 {
   // Todo
+  RNAbort("Not implemented");
   return R3unknown_point;
 }
 
