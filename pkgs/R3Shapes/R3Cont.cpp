@@ -1297,6 +1297,141 @@ RNBoolean R3Contains(const R3Cone& cone, const R3Point& point)
 
 
 
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Point& point)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), point)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Line& line) 
+{
+  // Frustum is finite, line is infinite
+  return FALSE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Ray& ray) 
+{
+  // Frustum is finite, ray is infinite
+  return FALSE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Span& span) 
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), span)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Plane& plane) 
+{
+  // Frustum is finite, plane is infinite
+  return FALSE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Halfspace& halfspace) 
+{
+  // Frustum is finite, halfspace is infinite
+  return FALSE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Box& box) 
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), box)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3OrientedBox& box) 
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), box)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Sphere& sphere) 
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), sphere)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Shape& shape) 
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Contains(frustum.Halfspace(dir, dim), shape)) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
 RNBoolean R3Contains(const R3Shape& shape, const R3Point& point)
 {
     // Return whether shape contains point

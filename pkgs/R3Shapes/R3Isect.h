@@ -28,6 +28,7 @@ RNClassID R3Intersects(const R3Point& point, const R3OrientedBox& box);
 RNClassID R3Intersects(const R3Point& point, const R3Sphere& sphere); 
 RNClassID R3Intersects(const R3Point& point, const R3Cylinder& cylinder); 
 RNClassID R3Intersects(const R3Point& point, const R3Cone& cone); 
+RNClassID R3Intersects(const R3Point& point, const R3Frustum& frustum); 
 RNClassID R3Intersects(const R3Point& point, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3Line& line, const R3Point& point);
@@ -48,6 +49,8 @@ RNClassID R3Intersects(const R3Line& line, const R3Box& box,
 RNClassID R3Intersects(const R3Line& line, const R3OrientedBox& box, 
     R3Point *hit_point = NULL);
 RNClassID R3Intersects(const R3Line& line, const R3Sphere& sphere, 
+    R3Point *hit_point = NULL);
+RNClassID R3Intersects(const R3Line& line, const R3Frustum& frustum, 
     R3Point *hit_point = NULL);
 RNClassID R3Intersects(const R3Line& line, const R3Shape& shape);
 
@@ -83,6 +86,8 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Cylinder& cylinder,
     R3Point *hit_point1 = NULL, R3Vector *hit_norma1l = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Ray& ray, const R3Cone& cone, 
     R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
+RNClassID R3Intersects(const R3Ray& ray, const R3Frustum& frustum, 
+    R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Ray& ray, const R3Shape& shape, 
     R3Point *hit_point = NULL, R3Vector *hit_normal = NULL, RNScalar *hit_t = NULL);
 
@@ -99,6 +104,8 @@ RNClassID R3Intersects(const R3Span& span, const R3Plane& plane,
 RNClassID R3Intersects(const R3Span& span, const R3Triangle& triangle, 
     R3Point *hit_point1 = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Span& span, const R3Halfspace& halfspace, 
+    R3Point *hit_point = NULL, RNScalar *hit_t = NULL);
+RNClassID R3Intersects(const R3Span& span, const R3Frustum& frustum, 
     R3Point *hit_point = NULL, RNScalar *hit_t = NULL);
 RNClassID R3Intersects(const R3Span& span, const R3Shape& shape, 
     R3Point *hit_point = NULL, RNScalar *hit_t = NULL);
@@ -119,6 +126,7 @@ RNClassID R3Intersects(const R3Plane& plane, const R3Box& box);
 RNClassID R3Intersects(const R3Plane& plane, const R3OrientedBox& box);
 RNClassID R3Intersects(const R3Plane& plane, const R3Sphere& sphere);
 RNClassID R3Intersects(const R3Plane& plane, const R3Ellipsoid& ellipsoid, R3Ellipse *result = NULL);
+RNClassID R3Intersects(const R3Plane& plane, const R3Frustum& frustum);
 RNClassID R3Intersects(const R3Plane& plane, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3Triangle& triangle, const R3Point& point); 
@@ -154,6 +162,7 @@ RNClassID R3Intersects(const R3Halfspace& halfspace, const R3OrientedBox& box);
 RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Sphere& sphere);
 RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Cylinder& cylinder);
 RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Cone& cone);
+RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Frustum& frustum);
 RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3Box& box, const R3Point& point);
@@ -169,6 +178,7 @@ RNClassID R3Intersects(const R3Box& box1, const R3Box& box2,
     R3Box *result = NULL);
 RNClassID R3Intersects(const R3Box& box1, const R3OrientedBox& box2);
 RNClassID R3Intersects(const R3Box& box, const R3Sphere& sphere);
+RNClassID R3Intersects(const R3Box& box, const R3Frustum& frustum); 
 RNClassID R3Intersects(const R3Box& box, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3OrientedBox& box, const R3Point& point);
@@ -178,6 +188,7 @@ RNClassID R3Intersects(const R3OrientedBox& box, const R3Halfspace& halfspace);
 RNClassID R3Intersects(const R3OrientedBox& box1, const R3Box& box2);
 RNClassID R3Intersects(const R3OrientedBox& box1, const R3OrientedBox& box2);
 RNClassID R3Intersects(const R3OrientedBox& box, const R3Sphere& sphere);
+RNClassID R3Intersects(const R3OrientedBox& box, const R3Frustum& frustum);
 RNClassID R3Intersects(const R3OrientedBox& box, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3Sphere& sphere, const R3Point& point); 
@@ -192,6 +203,7 @@ RNClassID R3Intersects(const R3Sphere& sphere, const R3Halfspace& halfspace);
 RNClassID R3Intersects(const R3Sphere& sphere, const R3Box& box);
 RNClassID R3Intersects(const R3Sphere& sphere, const R3OrientedBox& box);
 RNClassID R3Intersects(const R3Sphere& sphere1, const R3Sphere& sphere2);
+RNClassID R3Intersects(const R3Sphere& sphere, const R3Frustum& frustum);
 RNClassID R3Intersects(const R3Sphere& sphere, const R3Shape& shape);
 
 RNClassID R3Intersects(const R3Ellipsoid& ellipsoid, const R3Plane& plane, R3Ellipse *result = NULL);
@@ -206,6 +218,20 @@ RNClassID R3Intersects(const R3Cone& cone, const R3Ray& ray,
     R3Point *hit_point1 = NULL, R3Vector *hit_normal1 = NULL, RNScalar *hit_t1 = NULL);
 RNClassID R3Intersects(const R3Cone& cone, const R3Halfspace& halfspace);
 
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Point& point); 
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Line& line, 
+    R3Point *hit_point = NULL);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Ray& ray, 
+    R3Point *hit_point1 = NULL, R3Vector *hit_normal = NULL, RNScalar *hit_t1 = NULL);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Span& span, 
+    R3Point *hit_point1 = NULL, RNScalar *hit_t1 = NULL);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Plane& plane);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Halfspace& halfspace);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Box& box);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3OrientedBox& box);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Sphere& sphere);
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Shape& shape);
+
 RNClassID R3Intersects(const R3Shape& shape, const R3Point& point);
 RNClassID R3Intersects(const R3Shape& shape, const R3Line& line);
 RNClassID R3Intersects(const R3Shape& shape, const R3Ray& ray, 
@@ -216,6 +242,7 @@ RNClassID R3Intersects(const R3Shape& shape, const R3Halfspace& halfspace);
 RNClassID R3Intersects(const R3Shape& shape, const R3Box& box);
 RNClassID R3Intersects(const R3Shape& shape, const R3OrientedBox& box);
 RNClassID R3Intersects(const R3Shape& shape, const R3Sphere& sphere);
+RNClassID R3Intersects(const R3Shape& shape, const R3Frustum& frustum);
 RNClassID R3Intersects(const R3Shape& shape1, const R3Shape& shape2);
 
 
@@ -639,6 +666,79 @@ inline RNClassID R3Intersects(const R3Cone& cone, const R3Halfspace& halfspace)
 
 
 
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Point& point)
+{
+    // Intersection is commutative
+    return R3Intersects(point, frustum);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Line& line, R3Point *hit_point)
+{
+    // Intersection is commutative
+    return R3Intersects(line, frustum, hit_point);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Ray& ray, 
+    R3Point *hit_point1, R3Vector *hit_normal1, RNScalar *hit_t1)
+{
+    // Intersection is commutative
+    return R3Intersects(ray, frustum, hit_point1, hit_normal1, hit_t1);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Span& span, R3Point *hit_point1, RNScalar *hit_t1)
+{
+    // Intersection is commutative
+    return R3Intersects(span, frustum, hit_point1, hit_t1);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Plane& plane)
+{
+    // Intersection is commutative
+    return R3Intersects(plane, frustum);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Halfspace& halfspace)
+{
+    // Intersection is commutative
+    return R3Intersects(halfspace, frustum);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Box& box)
+{
+    // Intersection is commutative
+    return R3Intersects(box, frustum);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3OrientedBox& box)
+{
+    // Intersection is commutative
+    return R3Intersects(box, frustum);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Frustum& frustum, const R3Sphere& sphere)
+{
+    // Intersection is commutative
+    return R3Intersects(sphere, frustum);
+}
+
+
+
 inline RNClassID R3Intersects(const R3Shape& shape, const R3Point& point)
 {
     // Intersection is commutative
@@ -708,6 +808,14 @@ inline RNClassID R3Intersects(const R3Shape& shape, const R3Sphere& sphere)
 {
     // Intersection is commutative
     return R3Intersects(sphere, shape);
+}
+
+
+
+inline RNClassID R3Intersects(const R3Shape& shape, const R3Frustum& frustum)
+{
+    // Intersection is commutative
+     return R3Intersects(frustum, shape);
 }
 
 

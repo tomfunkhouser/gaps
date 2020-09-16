@@ -53,6 +53,9 @@
     <ClCompile Include="R3Ellipsoid.C">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="R3Frustum.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="R3Grid.C">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -45,6 +45,7 @@ class R3Camera {
         const RNLength Far(void) const;
 	const R3Triad& Triad(void) const;
 	const R3CoordSystem& CoordSystem(void) const;
+        const R3Frustum Frustum(void) const;
 	const R3Halfspace Halfspace(RNDirection dir, RNDimension dim) const;
 	const R4Matrix Perspective(void) const;
         const RNScalar Value(void) const;
@@ -237,6 +238,15 @@ CoordSystem(void) const
 
 
 
+inline const R3Frustum R3Camera::
+Frustum(void) const
+{
+  // Return view frustum
+  return R3Frustum(Origin(), Towards(), Up(), XFOV(), YFOV(), Near(), Far());
+}
+
+
+  
 inline const RNScalar R3Camera::
 Value(void) const
 {

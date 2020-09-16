@@ -21,6 +21,7 @@ RNLength R3Distance(const R3Point& point, const R3Box& box);
 RNLength R3Distance(const R3Point& point, const R3OrientedBox& box);
 RNLength R3Distance(const R3Point& point, const R3Sphere& sphere);
 RNLength R3Distance(const R3Point& point, const R3Cone& cone);
+RNLength R3Distance(const R3Point& point, const R3Frustum& frustum);
 RNLength R3Distance(const R3Point& point, const R3Shape& shape);
 RNLength R3SquaredDistance(const R3Point& point1, const R3Point& point2);
 
@@ -125,6 +126,8 @@ RNLength R3Distance(const R3Sphere& sphere1, const R3Sphere& sphere2);
 RNLength R3Distance(const R3Sphere& sphere, const R3Shape& shape);
 
 RNLength R3Distance(const R3Cone& cone, const R3Point& point);
+
+RNLength R3Distance(const R3Frustum& frustum, const R3Point& point);
 
 RNLength R3Distance(const R3Shape& shape, const R3Point& point);
 RNLength R3Distance(const R3Shape& shape, const R3Line& line);
@@ -442,6 +445,14 @@ inline RNLength R3Distance(const R3Cone& cone, const R3Point& point)
 {
     // Distance is commutative
     return R3Distance(point, cone);
+}
+
+
+
+inline RNLength R3Distance(const R3Frustum& frustum, const R3Point& point)
+{
+    // Distance is commutative
+    return R3Distance(point, frustum);
 }
 
 

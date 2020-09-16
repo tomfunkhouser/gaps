@@ -150,6 +150,17 @@ RNBoolean R3Contains(const R3Cylinder& cylinder, const R3Point& point);
 
 RNBoolean R3Contains(const R3Cone& cone, const R3Point& point);
 
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Point& point);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Line& line);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Ray& ray);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Span& span);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Plane& plane);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Halfspace& halfspace);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Box& box);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3OrientedBox& box);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Sphere& sphere);
+RNBoolean R3Contains(const R3Frustum& frustum, const R3Shape& shape);
+
 RNBoolean R3Contains(const R3Shape& shape, const R3Point& point);
 RNBoolean R3Contains(const R3Shape& shape, const R3Line& line);
 RNBoolean R3Contains(const R3Shape& shape, const R3Ray& ray);

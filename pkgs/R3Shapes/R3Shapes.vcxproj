@@ -92,6 +92,7 @@
     <ClCompile Include="R3Draw.cpp" />
     <ClCompile Include="R3Ellipse.cpp" />
     <ClCompile Include="R3Ellipsoid.cpp" />
+    <ClCompile Include="R3Frustum.cpp" />
     <ClCompile Include="R3PlanarGrid.cpp" />
     <ClCompile Include="R3Grid.cpp" />
     <ClCompile Include="R3Halfspace.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="R3Draw.h" />
     <ClInclude Include="R3Ellipse.h" />
     <ClInclude Include="R3Ellipsoid.h" />
+    <ClInclude Include="R3Frustum.h" />
     <ClInclude Include="R3PlanarGrid.h" />
     <ClInclude Include="R3Grid.h" />
     <ClInclude Include="R3Halfspace.h" />

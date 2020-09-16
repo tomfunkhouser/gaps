@@ -67,7 +67,8 @@ public:
   R3Vector WorldTowards(void) const;
   R3Vector WorldRight(void) const;
   R3Vector WorldUp(void) const;
-  R3Box WorldBBox(void) const;
+  R3Frustum WorldFrustum(RNLength neardist = RN_EPSILON, RNLength fardist = RN_INFINITY) const;
+  R3Box WorldBBox(void) const;  
   RNScalar Timestamp(void) const;
   RNAngle XFov(void) const;
   RNAngle YFov(void) const;
@@ -420,6 +421,16 @@ WorldUp(void) const
 
 
 
+inline R3Frustum RGBDImage::
+WorldFrustum(RNLength neardist, RNLength fardist) const
+{
+  // Return view frustum
+  return R3Frustum(WorldViewpoint(), WorldTowards(), WorldUp(),
+    XFov(), YFov(), neardist, fardist);
+}
+
+
+  
 inline RNScalar RGBDImage::
 Timestamp(void) const
 {

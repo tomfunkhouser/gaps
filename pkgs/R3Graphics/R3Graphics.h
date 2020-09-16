@@ -42,7 +42,6 @@ class R3SceneElement;
 
 #include "R2Viewport.h"
 #include "R3Camera.h"
-#include "R3Frustum.h"
 #include "R3Viewer.h"
 
 

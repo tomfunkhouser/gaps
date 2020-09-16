@@ -198,7 +198,15 @@ RNLength R3Distance(const R3Point& point, const R3Cone& cone)
 	if (RNIsNegativeOrZero(d)) return 0.0;
 	else return d;
     }
+}
 
+
+
+RNLength R3Distance(const R3Point& point, const R3Frustum& frustum) 
+{
+    // Return distance to closest point
+    R3Point closest_point = frustum.ClosestPoint(point);
+    return R3Distance(closest_point, point);
 }
 
 

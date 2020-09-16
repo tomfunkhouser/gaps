@@ -120,6 +120,7 @@ class R3Grid;
 #include "R3Cone.h"
 #include "R3Sphere.h"
 #include "R3Ellipsoid.h"
+#include "R3Frustum.h"
 #include "R3Grid.h"        
 
 

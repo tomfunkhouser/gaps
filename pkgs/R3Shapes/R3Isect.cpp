@@ -240,6 +240,21 @@ RNClassID R3Intersects(const R3Point& point, const R3Cone& cone)
 }
 
 
+  
+RNClassID R3Intersects(const R3Point& point, const R3Frustum& frustum) 
+{
+    // Check whether frustum contains point
+    if (R3Contains(frustum, point)) {
+	// Point lies in frustum
+	return R3_POINT_CLASS_ID;
+    }
+    else {
+	// Point does not lie in frustum
+	return RN_NULL_CLASS_ID;
+    }
+}
+
+
 
 RNClassID R3Intersects(const R3Point& point, const R3Shape& shape)
 {
@@ -610,6 +625,16 @@ RNClassID R3Intersects(const R3Line& line, const R3Sphere& sphere,
 	    else return R3_SPAN_CLASS_ID;
 	}
     }
+}
+
+
+
+RNClassID R3Intersects(const R3Line& line, const R3Frustum& frustum,
+                       R3Point *hit_point)
+{
+    // Not implemented
+    RNAbort("Not implemented");
+    return RN_NULL_CLASS_ID;
 }
 
 
@@ -1442,6 +1467,23 @@ RNClassID R3Intersects(const R3Ray& ray, const R3Cone& cone,
 
 
 
+RNClassID R3Intersects(const R3Ray& ray, const R3Frustum& frustum,
+    R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_t)
+{
+    // Check if frustum contains ray start
+    if (R3Contains(frustum, ray.Start())) {
+       if (hit_point) *hit_point = ray.Start();
+       if (hit_normal) *hit_normal = R3zero_vector;
+       if (hit_t) *hit_t = 0;
+    }
+  
+    // Not implemented
+    RNAbort("Not implemented");
+    return RN_NULL_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3Ray& ray, const R3Shape& shape, 
     R3Point *hit_point, R3Vector *hit_normal, RNScalar *hit_t)
 {
@@ -1729,6 +1771,27 @@ RNClassID R3Intersects(const R3Span& span, const R3Halfspace& halfspace,
 
 
 
+RNClassID R3Intersects(const R3Span& span, const R3Frustum& frustum, 
+    R3Point *hit_point, RNScalar *hit_t)
+{
+  // Clip by each halfspace
+  R3Span result = span;
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!result.Clip(frustum.Halfspace(dir, dim).Plane())) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  if (hit_point) *hit_point = result.Start();
+  if (hit_t) *hit_t = span.T(result.Start());
+  return R3_SPAN_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3Span& span, const R3Shape& shape, 
     R3Point *hit_point, RNScalar *hit_t)
 {
@@ -1895,6 +1958,23 @@ RNClassID R3Intersects(const R3Plane& plane, const R3Sphere& sphere)
 
 
 
+RNClassID R3Intersects(const R3Plane& plane, const R3Frustum& frustum)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), plane)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3Plane& plane, const R3Shape& shape)
 {
     // Return whether plane intersects shape
@@ -2024,6 +2104,23 @@ RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Cone& cone)
     if (R3Intersects(halfspace, cone.Apex())) return RN_UNKNOWN_CLASS_ID;
     if (R3Intersects(halfspace, cone.Base())) return RN_UNKNOWN_CLASS_ID;
     return RN_NULL_CLASS_ID;
+}
+
+
+
+RNClassID R3Intersects(const R3Halfspace& halfspace, const R3Frustum& frustum)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), halfspace)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
 }
 
 
@@ -2165,6 +2262,23 @@ RNClassID R3Intersects(const R3Box& box, const R3Sphere& sphere)
 
 
 
+RNClassID R3Intersects(const R3Box& box, const R3Frustum& frustum)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), box)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3Box& box, const R3Shape& shape)
 {
     // Return whether box intersects shape
@@ -2216,6 +2330,23 @@ RNClassID R3Intersects(const R3OrientedBox& box, const R3Sphere& sphere)
 
 
 
+RNClassID R3Intersects(const R3OrientedBox& box, const R3Frustum& frustum)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), box)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3OrientedBox& box, const R3Shape& shape)
 {
     // Check if box is empty
@@ -2251,11 +2382,46 @@ RNClassID R3Intersects(const R3Sphere& sphere1, const R3Sphere& sphere2)
 
 
 
+RNClassID R3Intersects(const R3Sphere& sphere, const R3Frustum& frustum)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), sphere)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
+}
+
+
+
 RNClassID R3Intersects(const R3Sphere& sphere, const R3Shape& shape)
 {
     // Return whether sphere intersects shape
     return shape.Intersects(sphere);
 }
+
+
+
+RNClassID R3Intersects(const R3Frustum& frustum, const R3Shape& shape)
+{
+  // Check each halfspace
+  for (int dir = 0; dir < 2; dir++) {
+    for (int dim = 0; dim < 3; dim++) {
+      if (!R3Intersects(frustum.Halfspace(dir, dim), shape)) {
+        return RN_NULL_CLASS_ID;
+      }
+    }
+  }
+
+  // Passed all tests
+  return RN_UNKNOWN_CLASS_ID;
+}
+
 
 
 

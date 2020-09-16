@@ -76,6 +76,7 @@ public:
   R3Vector Towards(void) const;
   const R3Vector& Up(void) const;
   const R3Vector& Right(void) const;
+  R3Frustum Frustum(RNLength neardist = RN_EPSILON, RNLength fardist = RN_INFINITY) const;
   R4Matrix CameraToWorld(void) const;
   R4Matrix Extrinsics(void) const;
 
@@ -533,6 +534,16 @@ Right(void) const
 
 
 
+inline R3Frustum R3SurfelImage::
+Frustum(RNLength neardist, RNLength fardist) const
+{
+  // Return view frustum
+  return R3Frustum(Viewpoint(), Towards(), Up(),
+    XFOV(), YFOV(), neardist, fardist);
+}
+
+
+  
 inline RNScalar R3SurfelImage::
 Timestamp(void) const
 {

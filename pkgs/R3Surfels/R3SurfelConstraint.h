@@ -334,11 +334,11 @@ public:
   virtual int Check(const R3Point& point) const;
 
 private:
+  R3Frustum frustum;
   R4Matrix world_to_camera;
   int w, h;
   RNScalar fx, fy, cx, cy;
   RNScalar neardist, fardist;
-  R3Halfspace frustum[2][3];
   const R2Grid *image_mask;
   RNBoolean must_be_inside_frustum;
 };
