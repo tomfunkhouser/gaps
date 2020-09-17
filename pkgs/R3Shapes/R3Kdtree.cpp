@@ -1314,7 +1314,7 @@ FindAll(R3KdtreeNode<PtrType> *node, const R3Box& node_box,
 
     // Check node box
     if (max_distance == 0) {
-      if (!R3Contains(query_shape, node_box)) return;
+      if (!R3Intersects(query_shape, node_box)) return;
     }
     else {
       // Check distance from shape to node box
