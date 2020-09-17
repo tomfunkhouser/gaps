@@ -1340,10 +1340,17 @@ FindAll(R3KdtreeNode<PtrType> *node, const R3Box& node_box,
     // Search points
     for (int i = 0; i < node->npoints; i++) {
       PtrType point = node->points[i];
-      RNLength distance = R3Distance(query_shape, Position(point));
-      if ((distance >= min_distance) && 
-          (distance <= max_distance)) {
-        points.Insert(point);
+
+      if (max_distance == 0) {
+        if (R3Intersects(query_shape, Position(point))) {
+          points.Insert(point);
+        }
+      }
+      else {
+        RNLength distance = R3Distance(query_shape, Position(point));
+        if ((distance >= min_distance) && (distance <= max_distance)) {
+          points.Insert(point);
+        }
       }
     }
   }
