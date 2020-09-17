@@ -297,7 +297,7 @@ Transform(const R3Transformation& transformation)
 
 
 void R3Frustum::
-Draw(void) const
+Draw(const R3DrawFlags draw_flags) const
 {
   // Draw quads
   glBegin(GL_QUADS);
@@ -331,7 +331,7 @@ Draw(void) const
 
 
 void R3Frustum::
-Outline(void) const
+Outline(const R3DrawFlags draw_flags) const
 {
   // Draw wireframe
   glBegin(GL_LINE_STRIP);

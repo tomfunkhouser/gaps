@@ -53,8 +53,8 @@ public:
   virtual void SetHalfspace(int dir, int dim, const R3Halfspace& halfspace);
 
   // Draw function
-  virtual void Draw(void) const;
-  virtual void Outline(void) const;
+  virtual void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
+  virtual void Outline(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
 
   // Standard shape definitions
   RN_CLASS_TYPE_DECLARATIONS(R3Frustum);
