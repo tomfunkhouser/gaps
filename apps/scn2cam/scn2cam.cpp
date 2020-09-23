@@ -382,8 +382,8 @@ WriteCameraIntrinsics(const char *filename)
   // Write file
   for (int i = 0; i < cameras.NEntries(); i++) {
     Camera *camera = cameras.Kth(i);
-    RNScalar fx = 0.5 * width / atan(camera->XFOV());
-    RNScalar fy = 0.5 * height / atan(camera->YFOV());
+    RNScalar fx = 0.5 * width / tan(camera->XFOV());
+    RNScalar fy = 0.5 * height / tan(camera->YFOV());
     fprintf(fp, "%g 0 %g   0 %g %g  0 0 1\n", fx, cx, fy, cy);
   }
 
