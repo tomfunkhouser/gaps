@@ -53,7 +53,7 @@ public:
 private:
   R3Scene *referenced_scene;
   RNArray<R3Material *> materials;
-  RNSymbolTable<std::string> info;
+  RNSymbolTable<const char *> info;
   char *name;
   void *data;
 };
@@ -102,9 +102,9 @@ inline const char *R3SceneReference::
 Info(const char *key) const
 {
   // Return info associated with key
-  std::string value;
+  const char *value = NULL;
   if (!info.Find(key, &value)) return NULL;
-  return value.c_str();
+  return value;
 }
 
 
