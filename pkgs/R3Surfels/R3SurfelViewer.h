@@ -85,7 +85,10 @@ public:
   int CenterPointVisibility(void) const;
   int ViewingExtentVisibility(void) const;
   int AxesVisibility(void) const;
-
+  int LabelVisibility(R3SurfelLabel *label) const;
+  int LabelVisibility(int label_index) const;
+  int NodeVisibility(R3SurfelNode *node) const;
+  
   // Color properties
   int SurfelColorScheme(void) const;
   const char *SurfelColorSchemeName(void) const;
@@ -148,7 +151,9 @@ public:
   void SetCenterPointVisibility(int visibility);
   void SetViewingExtentVisibility(int visibility);
   void SetAxesVisibility(int visibility);
-
+  void SetLabelVisibility(R3SurfelLabel *label, int visibility);
+  void SetLabelVisibility(int label_index, int visibility);
+  
   // Color manipulation
   void SetSurfelColorScheme(int scheme);
   void SetNormalColor(const RNRgb& color);
@@ -198,7 +203,6 @@ public:
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;
   void DrawNode(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
-  int CheckNodeVisibility(R3SurfelNode *node) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -270,6 +274,7 @@ protected:
   int center_point_visibility;
   int viewing_extent_visibility;
   int axes_visibility;
+  std::vector<int> label_visibilities;
 
   // Color properties
   int surfel_color_scheme;
@@ -576,6 +581,18 @@ AxesVisibility(void) const
 {
   // Return axes visibililty
   return axes_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+LabelVisibility(R3SurfelLabel *label) const
+{
+  // Check label
+  if (!label) return 0;
+
+  // Return visibility
+  return LabelVisibility(label->SceneIndex());
 }
 
 
@@ -975,6 +992,18 @@ SetAxesVisibility(int visibility)
   if (visibility == -1) axes_visibility = 1 - axes_visibility;
   else if (visibility == 0) axes_visibility = 0;
   else axes_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetLabelVisibility(R3SurfelLabel *label, int visibility)
+{
+  // Check label
+  if (!label) return;
+
+  // Set visibility
+  SetLabelVisibility(label->SceneIndex(), visibility);
 }
 
 

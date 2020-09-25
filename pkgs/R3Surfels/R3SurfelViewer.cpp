@@ -53,6 +53,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     center_point_visibility(0),
     viewing_extent_visibility(1),
     axes_visibility(0),
+    label_visibilities(),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
     normal_color(0,1,0),
     background_color(0,0,0),
@@ -138,6 +139,88 @@ SurfelColorSchemeName(void) const
 
 
  
+int R3SurfelViewer::
+NodeVisibility(R3SurfelNode *node) const
+{
+  // Check node
+  if (!node) return 0;
+
+  // Check if drawing human labeled objects
+  if (!human_labeled_object_visibility) {
+    R3SurfelObject *object = node->Object();
+    while (object) {
+      if (object->HumanLabel()) return 0;
+      object = object->Parent();
+    }
+  }
+
+  // Check if label is visible
+  R3SurfelObject *object = node->Object(TRUE);
+  if (object) {
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (label) {
+      if (!LabelVisibility(label)) return 0;
+    }
+  }
+  
+  // Passed all tests
+  return 1;
+}
+
+
+
+int R3SurfelViewer::
+LabelVisibility(int label_index) const
+{
+  // Check label index
+  if (label_index < 0) return FALSE;
+  if (label_index >= scene->NLabels()) return FALSE;
+
+  // Label is visible if not in list
+  if (label_visibilities.size() <= (unsigned int) label_index) 
+    return TRUE;
+
+  // Return whether label is visible
+  return label_visibilities[label_index];
+}
+
+
+  
+void R3SurfelViewer::
+SetLabelVisibility(int label_index, int visibility)
+{
+  // Check label index
+  if (label_index == -1) {
+    if (visibility == 1) {
+      // Turn all visibilities on
+      label_visibilities.clear();
+    }
+    else {
+      // Set all visibilities
+      for (int i = 0; i < scene->NLabels(); i++) {
+        SetLabelVisibility(i, visibility);
+      }
+    }
+  }
+  else {
+    // Check label index
+    if (label_index < 0) return;
+    if (label_index >= scene->NLabels()) return;
+
+    // Add label visibilities
+    while (label_visibilities.size() <= (unsigned int) label_index) {
+      label_visibilities.push_back(1);
+    }
+
+    // Set visibility
+    if (visibility == -1) label_visibilities[label_index] = 1 - label_visibilities[label_index];
+    else if (visibility == 0) label_visibilities[label_index] = 0;
+    else label_visibilities[label_index] = 1;
+  }
+}
+
+
+  
 ////////////////////////////////////////////////////////////////////////
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
@@ -293,32 +376,11 @@ DisableViewingExtent(void) const
 
 
 
-int R3SurfelViewer::
-CheckNodeVisibility(R3SurfelNode *node) const
-{
-  // Check node
-  if (!node) return 0;
-
-  // Check if drawing human labeled objects
-  if (!human_labeled_object_visibility) {
-    R3SurfelObject *object = node->Object();
-    while (object) {
-      if (object->HumanLabel()) return 0;
-      object = object->Parent();
-    }
-  }
-  
-  // Passed all tests
-  return 1;
-}
-
-
-
 void R3SurfelViewer::
 DrawNode(R3SurfelNode *node, RNFlags color_draw_flags) const
 {
   // Check node
-  if (!CheckNodeVisibility(node)) return;
+  if (!NodeVisibility(node)) return;
 
   // Draw node
   node->Draw(shape_draw_flags | color_draw_flags);
@@ -431,7 +493,7 @@ Redraw(void)
       int count = 0;
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           LoadColor(count++);
@@ -453,7 +515,7 @@ Redraw(void)
       // Draw with colors based on normals
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
@@ -480,7 +542,7 @@ Redraw(void)
       // Draw with colors based on surfel attributes
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
@@ -520,7 +582,7 @@ Redraw(void)
       // Draw with RGB surfel colors (to produce a reasonable background for blending)
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
       }
       
@@ -528,7 +590,7 @@ Redraw(void)
       glDepthRange(0, 0.9);
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         R3SurfelScan *scan = node->Scan();
         if (!scan) continue;
 
@@ -577,7 +639,7 @@ Redraw(void)
       // Draw with RGB surfel colors
       for (int i = 0; i < resident_nodes.NNodes(); i++) {
         R3SurfelNode *node = resident_nodes.Node(i);
-        if (!CheckNodeVisibility(node)) continue;
+        if (!NodeVisibility(node)) continue;
         DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
       }
     }
@@ -593,7 +655,7 @@ Redraw(void)
     RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
-      if (!CheckNodeVisibility(node)) continue;
+      if (!NodeVisibility(node)) continue;
       for (int j = 0; j < node->NBlocks(); j++) {
         R3SurfelBlock *block = node->Block(j);
         const R3Point& block_origin = block->PositionOrigin();
@@ -1903,7 +1965,7 @@ PickNode(int x, int y, R3Point *picked_position,
   // Draw everything
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
-    if (!CheckNodeVisibility(node)) continue;
+    if (!NodeVisibility(node)) continue;
 
     // Set color
     unsigned char rgba[4];
