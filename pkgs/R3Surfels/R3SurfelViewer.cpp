@@ -33,6 +33,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_point(NULL),
     selected_image(NULL),
     current_image_texture(),
+    image_inset_size(0.1),
     image_plane_depth(10),
     surfel_size(2),
     surfel_visibility(1),
@@ -758,7 +759,7 @@ Redraw(void)
     if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
       // Draw image
       RNLength depth = 1E-1;
-      RNScalar fraction = 0.9;
+      RNScalar fraction = 1.0 - image_inset_size;
       R3Ray ray = viewer.WorldRay(fraction*Viewport().Width(), fraction*Viewport().Height());
       RNScalar dot = ray.Vector().Dot(Camera().Towards());
       R3Point c = (dot > 0) ? ray.Point(depth/dot) : ray.Point(depth); 
@@ -1233,6 +1234,29 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       }
       break; }
 
+    case '.':
+      SetFocusRadius(1.1 * FocusRadius());
+      break;
+      
+    case ',':
+      SetFocusRadius(1.1 * FocusRadius());
+      break;
+
+    default:
+      redraw = 0;
+      break;
+    }
+  }
+  else if (ctrl) {
+    switch(key) {
+    default:
+      redraw = 0;
+      break;
+    }
+  }
+  else {
+    // Process other commands
+    switch (key) {
     case '_': 
       SetImagePlaneDepth(0.9 * ImagePlaneDepth());
       break;
@@ -1249,33 +1273,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetSurfelSize(1.1 * SurfelSize());
       break;
 
-    case '.':
-    case ',': {
-      // Select next/prev image
-      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key == '.') image_index++;
-      else if (key == ',') image_index--;
-      if (image_index < 0) image_index = 0;
-      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
-      SelectImage(scene->Image(image_index), TRUE, TRUE);
-      break; }
-
-    default:
-      redraw = 0;
-      break;
-    }
-  }
-  else if (ctrl) {
-    switch(key) {
-    default:
-      redraw = 0;
-      break;
-    }
-  }
-  else {
-    // Process other keyboard events
-    switch (key) {
-    case R3_SURFEL_VIEWER_F1_KEY: 
+    case R3_SURFEL_VIEWER_F1_KEY:
     case R3_SURFEL_VIEWER_F2_KEY:
     case R3_SURFEL_VIEWER_F3_KEY:
     case R3_SURFEL_VIEWER_F4_KEY: {
@@ -1286,26 +1284,29 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case R3_SURFEL_VIEWER_F7_KEY:
       if (selected_image) SelectImage(selected_image, TRUE, TRUE);
       break;
-      
+
     case R3_SURFEL_VIEWER_F8_KEY:
       ResetCamera();
       break;
       
-    case R3_SURFEL_VIEWER_UP_KEY:
-      SetTargetResolution(1.5 * TargetResolution());
-      break;
-
     case R3_SURFEL_VIEWER_DOWN_KEY:
-      SetTargetResolution(0.67 * TargetResolution());
+      SetImageInsetSize(0.9 * ImageInsetSize());
       break;
 
-    case R3_SURFEL_VIEWER_RIGHT_KEY:
-      SetFocusRadius(1.1 * FocusRadius());
+    case R3_SURFEL_VIEWER_UP_KEY:
+      SetImageInsetSize(1.1 * ImageInsetSize());
       break;
 
-    case R3_SURFEL_VIEWER_LEFT_KEY:
-      SetFocusRadius(0.9 * FocusRadius());
-      break;
+    case R3_SURFEL_VIEWER_LEFT_KEY: 
+    case R3_SURFEL_VIEWER_RIGHT_KEY: {
+      // Select next/prev image
+      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
+      if (key ==  R3_SURFEL_VIEWER_RIGHT_KEY) image_index++;
+      else if (key == R3_SURFEL_VIEWER_LEFT_KEY) image_index--;
+      if (image_index < 0) image_index = 0;
+      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
+      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      break; }
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
@@ -1398,7 +1399,7 @@ ResetCamera(void)
   // Move center point to scene centroid
   if (!scene) return;
   SetCenterPoint(scene->Centroid());
-  R3Point eye = CenterPoint() - 2 * scene->BBox().DiagonalRadius() * viewer.Camera().Towards();
+  R3Point eye = CenterPoint() + 2 * scene->BBox().DiagonalRadius() * R3posz_vector;
   viewer.RepositionCamera(eye);
   viewer.ReorientCamera(R3negz_vector, R3posy_vector);
 }

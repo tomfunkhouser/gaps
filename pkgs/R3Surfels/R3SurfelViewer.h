@@ -63,6 +63,7 @@ public:
   const R2Viewport& Viewport(void) const;
   const R3Box& ViewingExtent(void) const;
   const R3Point& CenterPoint(void) const;
+  RNScalar ImageInsetSize(void) const;
   RNLength ImagePlaneDepth(void) const;
   RNScalar SurfelSize(void) const;
 
@@ -129,6 +130,7 @@ public:
   void SetViewport(const R2Viewport& viewport);
   void SetViewingExtent(const R3Box& box);
   void SetCenterPoint(const R3Point& point);
+  void SetImageInsetSize(RNScalar fraction);
   void SetImagePlaneDepth(RNLength depth);
   void SetSurfelSize(RNScalar npixels);
 
@@ -252,6 +254,7 @@ protected:
   R3SurfelPoint *selected_point;
   R3SurfelImage *selected_image;
   R2Texture current_image_texture;
+  RNScalar image_inset_size;
   RNLength image_plane_depth;
   RNScalar surfel_size;
 
@@ -410,6 +413,15 @@ CenterPoint(void) const
 {
   // Return center point
   return center_point;
+}
+
+
+
+inline RNScalar R3SurfelViewer::
+ImageInsetSize(void) const
+{
+  // Return size of inset image (as fraction of window size)
+  return image_inset_size;
 }
 
 
@@ -776,6 +788,17 @@ SetCenterPoint(const R3Point& point)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
+}
+
+
+
+inline void R3SurfelViewer::
+SetImageInsetSize(RNScalar fraction)
+{
+  // Set size of inset image as fraction of window size
+  if (fraction < 0.01) fraction = 0.01;
+  else if (fraction > 1) fraction = 1;
+  this->image_inset_size = fraction;
 }
 
 
