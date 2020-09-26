@@ -34,7 +34,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_image(NULL),
     current_image_texture(),
     image_inset_size(0.1),
-    image_plane_depth(10),
+    image_plane_depth(100),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
