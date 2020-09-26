@@ -810,7 +810,7 @@ WriteFileHeader(FILE *fp, int swap_endian)
   if (!RNWriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
   if (!RNWriteChar(fp, buffer, 1004, swap_endian)) return 0;
-  
+
   // Return success
   return 1;
 }
@@ -1096,6 +1096,9 @@ WriteStream(FILE *fp)
     return 0;
   }
 
+  // Save end of file offset
+  unsigned long long end_of_file_offset = RNFileTell(fp);
+  
   // Write file header again (now that info has been filled in)
   if (!WriteFileHeader(fp, swap_endian)) {
     delete [] saved_file_surfels_counts;
@@ -1103,9 +1106,9 @@ WriteStream(FILE *fp)
     return 0;
   }
 
-  // Seek to end of stream
-  RNFileSeek(fp, 0, RN_FILE_SEEK_END);
-  
+  // Seek back to end of file
+  RNFileSeek(fp, end_of_file_offset, RN_FILE_SEEK_SET);
+
   // Restore previous file offset info
   file_blocks_count = saved_file_blocks_count;
   file_blocks_offset = saved_file_blocks_offset;
@@ -1142,9 +1145,6 @@ ReadStream(FILE *fp)
     block->file_read_count = 1;
   }
 
-  // Seek to end of stream
-  RNFileSeek(fp, 0, RN_FILE_SEEK_END);
-  
   // Return success
   return 1;
 }
