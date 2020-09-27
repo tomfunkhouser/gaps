@@ -721,6 +721,51 @@ Redraw(void)
     }
   }
 
+  // Draw image points
+  if (image_points_visibility && selected_image) {
+    glDisable(GL_LIGHTING);
+    glPointSize(surfel_size);
+    glBegin(GL_POINTS);
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      if (selected_image && (image != selected_image)) continue;
+      const R2Grid *depth_channel = image->DepthChannel();
+      if (!depth_channel) continue;
+      const R2Image color_channels = image->ColorChannels();
+      for (int iy = 0; iy < image->ImageHeight(); iy++) {
+        for (int ix = 0; ix < image->ImageWidth(); ix++) {
+          RNScalar depth = depth_channel->GridValue(ix, iy);
+          if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
+          R2Point image_position(ix, iy);
+          R3Point world_position = image->TransformFromImageToWorld(image_position);
+          RNLoadRgb(color_channels.PixelRGB(ix, iy));
+          R3LoadPoint(world_position);
+        }
+      }
+    }
+    glEnd();
+    glPointSize(1);
+  }
+  
+  // Draw center point
+  if (center_point_visibility) {
+    glEnable(GL_LIGHTING);
+    RNLoadRgb(center_point_color);
+    R3Sphere(center_point, 0.1).Draw();
+    glDisable(GL_LIGHTING);
+  }
+
+  // Reset viewing modes
+  DisableViewingExtent();
+
+  // Draw selected point
+  if (selected_point) {
+    glEnable(GL_LIGHTING);
+    RNLoadRgb(RNred_rgb);
+    R3Sphere(selected_point->Position(), 0.05).Draw();
+    glDisable(GL_LIGHTING);
+  }
+
   // Draw scan viewpoints
   if (scan_viewpoint_visibility) {
     glDisable(GL_LIGHTING);
@@ -776,51 +821,6 @@ Redraw(void)
       glEnd();
       R2null_texture.Draw();
     }
-  }
-
-  // Draw image points
-  if (image_points_visibility && selected_image) {
-    glDisable(GL_LIGHTING);
-    glPointSize(surfel_size);
-    glBegin(GL_POINTS);
-    for (int i = 0; i < scene->NImages(); i++) {
-      R3SurfelImage *image = scene->Image(i);
-      if (selected_image && (image != selected_image)) continue;
-      const R2Grid *depth_channel = image->DepthChannel();
-      if (!depth_channel) continue;
-      const R2Image color_channels = image->ColorChannels();
-      for (int iy = 0; iy < image->ImageHeight(); iy++) {
-        for (int ix = 0; ix < image->ImageWidth(); ix++) {
-          RNScalar depth = depth_channel->GridValue(ix, iy);
-          if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
-          R2Point image_position(ix, iy);
-          R3Point world_position = image->TransformFromImageToWorld(image_position);
-          RNLoadRgb(color_channels.PixelRGB(ix, iy));
-          R3LoadPoint(world_position);
-        }
-      }
-    }
-    glEnd();
-    glPointSize(1);
-  }
-  
-  // Draw center point
-  if (center_point_visibility) {
-    glEnable(GL_LIGHTING);
-    RNLoadRgb(center_point_color);
-    R3Sphere(center_point, 0.1).Draw();
-    glDisable(GL_LIGHTING);
-  }
-
-  // Reset viewing modes
-  DisableViewingExtent();
-
-  // Draw selected point
-  if (selected_point) {
-    glEnable(GL_LIGHTING);
-    RNLoadRgb(RNred_rgb);
-    R3Sphere(selected_point->Position(), 0.05).Draw();
-    glDisable(GL_LIGHTING);
   }
 
   // Draw image inset
