@@ -255,7 +255,7 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
 
     // Get/check NdotV
     RNScalar NdotV = 1.0;
-    if (!query_normal.IsZero()) {
+    if (0 && !query_normal.IsZero()) {
       R3Vector V = image->Viewpoint() - query_position;
       V.Normalize();
       RNScalar NdotV = query_normal.Dot(V);
