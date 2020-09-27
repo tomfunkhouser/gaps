@@ -751,68 +751,6 @@ Redraw(void)
     }
   }
 
-  // Draw image inset
-  if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
-    R3SurfelImage *image = selected_image;
-    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
-      int w = viewer.Viewport().Width();
-      int h = viewer.Viewport().Height();
-
-      // Push ortho viewing matrices
-      glMatrixMode(GL_PROJECTION);
-      glPushMatrix();
-      glLoadIdentity();
-      glOrtho(0, w-1, 0, h-1, 0.1, 1);
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-
-      // Draw image as textured quad
-      double x2 = w-1;
-      double y2 = h-1;
-      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
-      double x1 = x2 - image_inset_size * w;
-      double y1 = y2 - image_inset_size * w * aspect;
-      glDisable(GL_LIGHTING);
-      RNLoadRgb(1.0, 1.0, 1.0);
-      current_image_texture.Draw();
-      glBegin(GL_QUADS);
-      R3LoadTextureCoords(0.0, 0.0);
-      R3LoadPoint(x1, y1, -0.5);
-      R3LoadTextureCoords(1.0, 0.0);
-      R3LoadPoint(x2, y1, -0.5);
-      R3LoadTextureCoords(1.0, 1.0);
-      R3LoadPoint(x2, y2, -0.5);
-      R3LoadTextureCoords(0.0, 1.0);
-      R3LoadPoint(x1, y2, -0.5);
-      glEnd();
-      R2null_texture.Draw();
-
-      // Draw projected center point
-      if (selected_point) {
-        R2Point p = image->ImagePosition(selected_point->Position());
-        if ((p.X() >= 0) && (p.Y() >= 0) &&
-            (p.X() <= image->ImageWidth()-0.5) &&
-            (p.Y() <= image->ImageHeight()-0.5)) {
-          double x = x1 + (x2 - x1) * p.X()/image->ImageWidth();
-          double y = y1 + (y2 - y1) * p.Y()/image->ImageHeight();
-          glPointSize(8);
-          RNLoadRgb(1.0, 0.0, 0.0);
-          glBegin(GL_POINTS);
-          R3LoadPoint(x, y, -0.25);
-          glEnd();
-          glPointSize(1);
-        }
-      }
-     
-      // Pop ortho viewing matrices
-      glMatrixMode(GL_PROJECTION);
-      glPopMatrix();
-      glMatrixMode(GL_MODELVIEW);
-      glPopMatrix();
-    }
-  }
-
   // Draw image plane
   if ((image_plane_visibility) && (current_image_texture.Image()) && selected_image) {
     RNLength depth = image_plane_depth;
@@ -883,6 +821,68 @@ Redraw(void)
     RNLoadRgb(RNred_rgb);
     R3Sphere(selected_point->Position(), 0.05).Draw();
     glDisable(GL_LIGHTING);
+  }
+
+  // Draw image inset
+  if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
+    R3SurfelImage *image = selected_image;
+    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      int w = viewer.Viewport().Width();
+      int h = viewer.Viewport().Height();
+
+      // Push ortho viewing matrices
+      glMatrixMode(GL_PROJECTION);
+      glPushMatrix();
+      glLoadIdentity();
+      glOrtho(0, w-1, 0, h-1, 0.1, 1);
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+
+      // Draw image as textured quad
+      double x2 = w-1;
+      double y2 = h-1;
+      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
+      double x1 = x2 - image_inset_size * w;
+      double y1 = y2 - image_inset_size * w * aspect;
+      glDisable(GL_LIGHTING);
+      RNLoadRgb(1.0, 1.0, 1.0);
+      current_image_texture.Draw();
+      glBegin(GL_QUADS);
+      R3LoadTextureCoords(0.0, 0.0);
+      R3LoadPoint(x1, y1, -0.5);
+      R3LoadTextureCoords(1.0, 0.0);
+      R3LoadPoint(x2, y1, -0.5);
+      R3LoadTextureCoords(1.0, 1.0);
+      R3LoadPoint(x2, y2, -0.5);
+      R3LoadTextureCoords(0.0, 1.0);
+      R3LoadPoint(x1, y2, -0.5);
+      glEnd();
+      R2null_texture.Draw();
+
+      // Draw projected center point
+      if (selected_point) {
+        R2Point p = image->ImagePosition(selected_point->Position());
+        if ((p.X() >= 0) && (p.Y() >= 0) &&
+            (p.X() <= image->ImageWidth()-0.5) &&
+            (p.Y() <= image->ImageHeight()-0.5)) {
+          double x = x1 + (x2 - x1) * p.X()/image->ImageWidth();
+          double y = y1 + (y2 - y1) * p.Y()/image->ImageHeight();
+          glPointSize(8);
+          RNLoadRgb(1.0, 0.0, 0.0);
+          glBegin(GL_POINTS);
+          R3LoadPoint(x, y, -0.25);
+          glEnd();
+          glPointSize(1);
+        }
+      }
+     
+      // Pop ortho viewing matrices
+      glMatrixMode(GL_PROJECTION);
+      glPopMatrix();
+      glMatrixMode(GL_MODELVIEW);
+      glPopMatrix();
+    }
   }
 
   // Draw axes
