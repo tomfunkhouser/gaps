@@ -1063,8 +1063,13 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
         R3SurfelBlock *picked_block = NULL;
         if (PickNode(x, y, &pick_position, &picked_block, &picked_surfel_index)) {
           // Hit
-          if ((button == 0) && (picked_surfel_index >= 0))
+          if ((button == 0) && (picked_surfel_index >= 0)) {
             SelectPoint(picked_block, picked_surfel_index);
+            if (selected_point && !image_plane_visibility) {
+              R3SurfelImage *image = scene->FindImageByBestView(selected_point->Position(), selected_point->Normal());
+              SelectImage(image, FALSE, FALSE);
+            }
+          }
           SetCenterPoint(pick_position);
           redraw = TRUE;
         }
@@ -1458,14 +1463,6 @@ SelectPoint(R3SurfelBlock *block, int surfel_index)
     selected_point = new R3SurfelPoint(block, surfel_index);
   }
 
-#if 1
-  // Select image
-  if (selected_point) {
-    R3SurfelImage *image = scene->FindImageByBestView(selected_point->Position(), selected_point->Normal());
-    SelectImage(image, FALSE, FALSE);
-  }
-#endif
-  
   // Delete previously selected point
   if (previous_selected_point) delete previous_selected_point;
 }
