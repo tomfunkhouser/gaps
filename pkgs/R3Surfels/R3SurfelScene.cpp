@@ -253,15 +253,6 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
   for (int i = 0; i < NImages(); i++) {
     R3SurfelImage *image = Image(i);
 
-    // Get/check NdotV
-    RNScalar NdotV = 1.0;
-    if (0 && !query_normal.IsZero()) {
-      R3Vector V = image->Viewpoint() - query_position;
-      V.Normalize();
-      RNScalar NdotV = query_normal.Dot(V);
-      if (RNIsNegativeOrZero(NdotV)) NdotV = RN_EPSILON; // continue;
-    }
-    
     // Get/check point depth
     R3Point camera_position = image->TransformFromWorldToCamera(query_position);
     RNScalar point_depth = -camera_position.Z();
@@ -274,18 +265,39 @@ FindImageByBestView(const R3Point& query_position, const R3Vector& query_normal)
     int iy = (int) (image_position.Y() + 0.5);
     if ((iy < 0) || (iy >= image->ImageHeight())) continue;
 
+#if 0
     // Get/check image depth
     const R2Grid *depth_channel = image->DepthChannel();
     if (depth_channel) {
       RNScalar image_depth = depth_channel->GridValue(ix, iy);
       if (image_depth != R2_GRID_UNKNOWN_VALUE) {
-        // RNScalar delta_depth = fabs(image_depth - point_depth);
-        // if (delta_depth > 0.1 * point_depth) continue;
+        RNScalar delta_depth = fabs(image_depth - point_depth);
+        if (delta_depth > 0.1 * point_depth) continue;
       }
     }
+#endif
+   
+#if 0
+    // Get/check NdotV
+    RNScalar NdotV = 1.0;
+    if (!query_normal.IsZero()) {
+      R3Vector V = image->Viewpoint() - query_position;
+      V.Normalize();
+      RNScalar NdotV = query_normal.Dot(V);
+      if (RNIsNegativeOrZero(NdotV)) NdotV = continue;
+    }
+#endif
+   
+    // Get image centrality
+    double dx = fabs(ix - 0.5*image->ImageWidth()) / (0.5*image->ImageWidth());
+    double dy = fabs(iy - 0.5*image->ImageHeight()) / (0.5*image->ImageHeight());
+    double image_centrality = (1.0 - dx) * (1.0 - dy);
+
+    // Get distance
+    RNScalar dd = R3SquaredDistance(image->Viewpoint(), query_position);
 
     // Get/check score
-    RNScalar score = NdotV / (point_depth * point_depth);
+    RNScalar score = image_centrality / dd;
     if (score > best_score) {
       best_image = image;
       best_score = score;
