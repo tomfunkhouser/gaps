@@ -76,7 +76,7 @@ class R3Viewer {
 	virtual void RotateWorldRoll(RNScalar factor, const R3Point& origin, int x, int y, int dx, int dy);
 
 	// Camera/viewport relationship functions/operators
-	const R3Ray WorldRay(int x, int y) const;
+	const R3Ray WorldRay(RNCoord x, RNCoord y) const;
 	const R2Point ViewportPoint(const R3Point& point) const;
 	const R2Box ViewportBBox(const R3Shape& shape) const;
 	const R2Circle ViewportBCircle(const R3Shape& shape) const;

@@ -753,42 +753,59 @@ Redraw(void)
 
   // Draw image inset
   if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
-    glDisable(GL_LIGHTING);
-    RNLoadRgb(1.0, 1.0, 1.0);
     R3SurfelImage *image = selected_image;
     if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      // Push ortho viewing matrices
+      glMatrixMode(GL_PROJECTION);
+      glPushMatrix();
+      glLoadIdentity();
+      glOrtho(0, 1, 0, 1, 0.1, 1);
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+
       // Draw image
-      RNLength depth = 1E-1;
-      RNScalar fraction = 1.0 - image_inset_size;
-      R3Ray ray = viewer.WorldRay(fraction*Viewport().Width(), fraction*Viewport().Height());
-      RNScalar dot = ray.Vector().Dot(Camera().Towards());
-      R3Point c = (dot > 0) ? ray.Point(depth/dot) : ray.Point(depth); 
-      RNLength w = 2.0 * (1.0-fraction) * depth * tan(Camera().XFOV());
-      RNLength h = w * image->ImageHeight() / image->ImageWidth();
-      R3Vector dx = w * Camera().Right();
-      R3Vector dy = h * Camera().Up();
+      double x2 = 1;
+      double y2 = 1;
+      double x1 = x2 - image_inset_size;
+      double y1 = 1.0 - image_inset_size * image->ImageHeight() / image->ImageWidth();
+      glDisable(GL_LIGHTING);
+      RNLoadRgb(1.0, 1.0, 1.0);
       current_image_texture.Draw();
       glBegin(GL_QUADS);
       R3LoadTextureCoords(0.0, 0.0);
-      R3LoadPoint(c - dx - dy);
+      R3LoadPoint(x1, y1, -0.5);
       R3LoadTextureCoords(1.0, 0.0);
-      R3LoadPoint(c + dx - dy);
+      R3LoadPoint(x2, y1, -0.5);
       R3LoadTextureCoords(1.0, 1.0);
-      R3LoadPoint(c + dx + dy);
+      R3LoadPoint(x2, y2, -0.5);
       R3LoadTextureCoords(0.0, 1.0);
-      R3LoadPoint(c - dx + dy);
+      R3LoadPoint(x1, y2, -0.5);
       glEnd();
       R2null_texture.Draw();
 
       // Draw projected center point
-      R2Point p = image->ImagePosition(center_point);
-      if ((p.X() >= 0) && (p.Y() >= 0) && (p.X() <= image->ImageWidth()-0.5) && (p.Y() <= image->ImageHeight()-0.5)) {
-        RNLoadRgb(1.0, 0.0, 0.0);
-        R3Point plane_position = c;
-        plane_position += dx * (2*p.X()/image->ImageWidth() - 1);
-        plane_position += dy * (2*p.Y()/image->ImageHeight() - 1);
-        R3Sphere(plane_position, 0.025*w).Draw();
+      if (selected_point) {
+        R2Point p = image->ImagePosition(selected_point->Position());
+        if ((p.X() >= 0) && (p.Y() >= 0) &&
+            (p.X() <= image->ImageWidth()-0.5) &&
+            (p.Y() <= image->ImageHeight()-0.5)) {
+          double x = x1 + (x2 - x1) * p.X()/image->ImageWidth();
+          double y = y1 + (y2 - y1) * p.Y()/image->ImageHeight();
+          glPointSize(5);
+          RNLoadRgb(1.0, 0.0, 0.0);
+          glBegin(GL_POINTS);
+          R3LoadPoint(x, y, -0.25);
+          glEnd();
+          glPointSize(1);
+        }
       }
+      
+      // Pop ortho viewing matrices
+      glMatrixMode(GL_PROJECTION);
+      glPopMatrix();
+      glMatrixMode(GL_MODELVIEW);
+      glPopMatrix();
     }
   }
 
@@ -860,7 +877,7 @@ Redraw(void)
   if (selected_point) {
     glEnable(GL_LIGHTING);
     RNLoadRgb(RNred_rgb);
-    R3Sphere(selected_point->Position(), 0.1).Draw();
+    R3Sphere(selected_point->Position(), 0.05).Draw();
     glDisable(GL_LIGHTING);
   }
 
@@ -1239,7 +1256,15 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case ',':
-      SetFocusRadius(1.1 * FocusRadius());
+      SetFocusRadius(0.9 * FocusRadius());
+      break;
+
+    case '<':
+      SetTargetResolution(0.9 * TargetResolution());
+      break;
+
+    case '>':
+      SetTargetResolution(1.1 * TargetResolution());
       break;
 
     default:

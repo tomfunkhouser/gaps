@@ -363,7 +363,7 @@ WalkCamera(RNScalar pitch_factor, RNScalar yaw_factor, RNScalar roll_factor, RNS
 
 
 const R3Ray R3Viewer::
-WorldRay(int x, int y) const
+WorldRay(RNCoord x, RNCoord y) const
 {
     // Return ray from camera origin to appropriate point on far plane
 #if FALSE
