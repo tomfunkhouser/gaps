@@ -33,7 +33,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_point(NULL),
     selected_image(NULL),
     current_image_texture(),
-    image_inset_size(0.1),
+    image_inset_size(0.2),
     image_plane_depth(100),
     surfel_size(2),
     surfel_visibility(1),
@@ -755,20 +755,24 @@ Redraw(void)
   if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
     R3SurfelImage *image = selected_image;
     if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
+      int w = viewer.Viewport().Width();
+      int h = viewer.Viewport().Height();
+
       // Push ortho viewing matrices
       glMatrixMode(GL_PROJECTION);
       glPushMatrix();
       glLoadIdentity();
-      glOrtho(0, 1, 0, 1, 0.1, 1);
+      glOrtho(0, w-1, 0, h-1, 0.1, 1);
       glMatrixMode(GL_MODELVIEW);
       glPushMatrix();
       glLoadIdentity();
 
-      // Draw image
-      double x2 = 1;
-      double y2 = 1;
-      double x1 = x2 - image_inset_size;
-      double y1 = 1.0 - image_inset_size * image->ImageHeight() / image->ImageWidth();
+      // Draw image as textured quad
+      double x2 = w-1;
+      double y2 = h-1;
+      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
+      double x1 = x2 - image_inset_size * w;
+      double y1 = y2 - image_inset_size * w * aspect;
       glDisable(GL_LIGHTING);
       RNLoadRgb(1.0, 1.0, 1.0);
       current_image_texture.Draw();
@@ -792,7 +796,7 @@ Redraw(void)
             (p.Y() <= image->ImageHeight()-0.5)) {
           double x = x1 + (x2 - x1) * p.X()/image->ImageWidth();
           double y = y1 + (y2 - y1) * p.Y()/image->ImageHeight();
-          glPointSize(5);
+          glPointSize(8);
           RNLoadRgb(1.0, 0.0, 0.0);
           glBegin(GL_POINTS);
           R3LoadPoint(x, y, -0.25);
@@ -800,7 +804,7 @@ Redraw(void)
           glPointSize(1);
         }
       }
-      
+     
       // Pop ortho viewing matrices
       glMatrixMode(GL_PROJECTION);
       glPopMatrix();
