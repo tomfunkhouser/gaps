@@ -42,7 +42,7 @@ R3Scene(void)
     referenced_scenes(),
     info(),
     viewer(),
-    ambient(0, 0, 0),
+    ambient(0.2, 0.2, 0.2),
     background(0, 0, 0),
     filename(NULL),
     name(NULL),
