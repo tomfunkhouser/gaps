@@ -1126,8 +1126,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'C':
     case 'c':
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
-        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_Z);
-      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_Z)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT);
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
