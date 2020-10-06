@@ -830,6 +830,25 @@ Redraw(void)
       int w = viewer.Viewport().Width();
       int h = viewer.Viewport().Height();
 
+      // Determine image coordinates
+      double x2 = w-1;
+      double y2 = h-1;
+      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
+      double x1 = x2 - image_inset_size * w;
+      double y1 = y2 - image_inset_size * w * aspect;
+
+      // Determine focal point
+      R2Point focal_point(0.5*image->ImageWidth(), 0.5*image->ImageHeight());
+      if (selected_point) {
+        focal_point = image->ImagePosition(selected_point->Position());
+        if ((focal_point.X() >= 0) && (focal_point.Y() >= 0) &&
+            (focal_point.X() <= image->ImageWidth()-0.5) &&
+            (focal_point.Y() <= image->ImageHeight()-0.5)) {
+          focal_point[0] = x1 + (x2 - x1) * focal_point.X()/image->ImageWidth();
+          focal_point[1] = y1 + (y2 - y1) * focal_point.Y()/image->ImageHeight();
+        }
+      }
+
       // Push ortho viewing matrices
       glMatrixMode(GL_PROJECTION);
       glPushMatrix();
@@ -839,12 +858,13 @@ Redraw(void)
       glPushMatrix();
       glLoadIdentity();
 
+      // Translate so that focal point is in view
+      if (focal_point.Y() < 0.25*h) {
+        double dy = 0.25*h - focal_point.Y();
+        glTranslated(0.0, dy, 0.0);
+      }
+     
       // Draw image as textured quad
-      double x2 = w-1;
-      double y2 = h-1;
-      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
-      double x1 = x2 - image_inset_size * w;
-      double y1 = y2 - image_inset_size * w * aspect;
       glDisable(GL_LIGHTING);
       RNLoadRgb(1.0, 1.0, 1.0);
       current_image_texture.Draw();
@@ -862,19 +882,12 @@ Redraw(void)
 
       // Draw projected center point
       if (selected_point) {
-        R2Point p = image->ImagePosition(selected_point->Position());
-        if ((p.X() >= 0) && (p.Y() >= 0) &&
-            (p.X() <= image->ImageWidth()-0.5) &&
-            (p.Y() <= image->ImageHeight()-0.5)) {
-          double x = x1 + (x2 - x1) * p.X()/image->ImageWidth();
-          double y = y1 + (y2 - y1) * p.Y()/image->ImageHeight();
-          glPointSize(8);
-          RNLoadRgb(1.0, 0.0, 0.0);
-          glBegin(GL_POINTS);
-          R3LoadPoint(x, y, -0.25);
-          glEnd();
-          glPointSize(1);
-        }
+        glPointSize(8);
+        RNLoadRgb(1.0, 0.0, 0.0);
+        glBegin(GL_POINTS);
+        R3LoadPoint(focal_point.X(), focal_point.Y(), -0.25);
+        glEnd();
+        glPointSize(1);
       }
      
       // Pop ortho viewing matrices
