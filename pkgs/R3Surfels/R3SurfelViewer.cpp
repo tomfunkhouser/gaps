@@ -34,7 +34,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_image(NULL),
     current_image_texture(),
     image_inset_size(0.2),
-    image_plane_depth(100),
+    image_plane_depth(10),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -1289,21 +1289,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetTargetResolution(1.1 * TargetResolution());
       break;
 
-    default:
-      redraw = 0;
-      break;
-    }
-  }
-  else if (ctrl) {
-    switch(key) {
-    default:
-      redraw = 0;
-      break;
-    }
-  }
-  else {
-    // Process other commands
-    switch (key) {
     case '_': 
       SetImagePlaneDepth(0.9 * ImagePlaneDepth());
       break;
@@ -1320,6 +1305,21 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetSurfelSize(1.1 * SurfelSize());
       break;
 
+    default:
+      redraw = 0;
+      break;
+    }
+  }
+  else if (ctrl) {
+    switch(key) {
+    default:
+      redraw = 0;
+      break;
+    }
+  }
+  else {
+    // Process other commands
+    switch (key) {
     case R3_SURFEL_VIEWER_F1_KEY:
     case R3_SURFEL_VIEWER_F2_KEY:
     case R3_SURFEL_VIEWER_F3_KEY:
