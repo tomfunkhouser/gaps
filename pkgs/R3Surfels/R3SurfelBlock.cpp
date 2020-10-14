@@ -146,11 +146,12 @@ R3SurfelBlock(const R3SurfelPointSet *set)
       surfel->SetPosition(position[0], position[1], position[2]);
       surfel->SetNormal(normal[0], normal[1], normal[2]);
       surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
-      surfel->SetColor(point->Color());
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
+      surfel->SetColor(point->Color());
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
       surfel->SetIdentifier(point->Identifier());
+      surfel->SetAttribute(point->Attribute());
       surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
     }
   }
@@ -201,9 +202,10 @@ R3SurfelBlock(const R3SurfelPointSet *set,
       surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
+      surfel->SetColor(point->Color());
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
       surfel->SetIdentifier(point->Identifier());
-      surfel->SetColor(point->Color());
+      surfel->SetAttribute(point->Attribute());
       surfel->SetFlags(point->Flags() & ~R3_SURFEL_MARKED_FLAG);
     }
   }
