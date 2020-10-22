@@ -31,6 +31,7 @@ public:
   const RNAngle YFov(void) const; 
   const RNLength Near(void) const; 
   const RNLength Far(void) const; 
+  const RNBoolean IsEmpty(void) const;
 
   // Shape propetry functions/operators
   virtual const RNBoolean IsPoint(void) const;
@@ -113,6 +114,15 @@ Far(void) const
 {
   // Return near distance  
   return fardist;
+}
+
+
+
+inline const RNBoolean R3Frustum::
+IsEmpty(void) const
+{
+  // Return whether frustum is empty
+  return (neardist >= fardist) ? TRUE : FALSE;
 }
 
 

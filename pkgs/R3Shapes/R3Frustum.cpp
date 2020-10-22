@@ -266,6 +266,10 @@ Empty(void)
   // Reset fovs
   xfov = 0;
   yfov = 0;
+
+  // Reset near and far dists
+  neardist = 0;
+  fardist = 0;
   
   // Reset halfspaces
   for (int dir = 0; dir < 2; dir++) {
