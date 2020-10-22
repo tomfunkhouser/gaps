@@ -29,6 +29,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     resident_nodes(),
     viewer(),
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    viewing_frustum(),
     center_point(0,0,0),
     selected_point(NULL),
     selected_image(NULL),
@@ -68,6 +69,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     adapt_working_set_automatically(0),
     target_resolution(30),
     focus_radius(0),
+    adapt_subsampling_automatically(0),
+    subsampling_factor(1),
     window_height(0),
     window_width(0),
     shift_down(0),
@@ -162,6 +165,11 @@ NodeVisibility(R3SurfelNode *node) const
     if (label) {
       if (!LabelVisibility(label)) return 0;
     }
+  }
+
+  // Check viewing frustum
+  if (!viewing_frustum.IsEmpty()) {
+    if (!R3Intersects(viewing_frustum, node->BBox())) return 0;
   }
   
   // Passed all tests
@@ -383,8 +391,11 @@ DrawNode(R3SurfelNode *node, RNFlags color_draw_flags) const
   // Check node
   if (!NodeVisibility(node)) return;
 
-  // Draw node
-  node->Draw(shape_draw_flags | color_draw_flags);
+  // Draw all blocks
+  for (int i = 0; i < node->NBlocks(); i++) {
+    R3SurfelBlock *block = node->Block(i);
+    block->Draw(shape_draw_flags | color_draw_flags, subsampling_factor);
+  }
 }
 
 
@@ -400,7 +411,8 @@ Redraw(void)
   if (!scene) return 0;
 
   // Set viewing transformation
-  viewer.Camera().Load();
+  const R3Camera& camera = viewer.Camera();
+  camera.Load();
 
   // Clear window 
   glClearColor(background_color[0], background_color[1], background_color[2], 1.0);
@@ -411,6 +423,10 @@ Redraw(void)
   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
   static GLfloat light1_position[] = { -3.0, -2.0, -3.0, 0.0 };
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
+
+  // Set viewing frustum
+  viewing_frustum = R3Frustum(camera.Origin(), camera.Towards(), camera.Up(),
+    camera.XFOV(), camera.YFOV(), camera.Near(), camera.Far());
 
   // Set viewing extent
   DrawViewingExtent();
@@ -498,7 +514,7 @@ Redraw(void)
         for (int j = 0; j < node->NBlocks(); j++) {
           R3SurfelBlock *block = node->Block(j);
           LoadColor(count++);
-          block->Draw(shape_draw_flags);
+          block->Draw(shape_draw_flags, subsampling_factor);
         }
       }
     }
@@ -523,7 +539,7 @@ Redraw(void)
           glPushMatrix();
           glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
           glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
+          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
             const R3Surfel *surfel = block->Surfel(k);
             float r = 0.5F + 0.5F * surfel->NX();
             float g = 0.5F + 0.5F * surfel->NY();
@@ -550,7 +566,7 @@ Redraw(void)
           glPushMatrix();
           glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
           glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
+          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
             const R3Surfel *surfel = block->Surfel(k);
             if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
               double z = block_origin.Z() + surfel->Z();
@@ -609,7 +625,7 @@ Redraw(void)
           R3SurfelBlock *block = node->Block(j);
           const R3Point& block_origin = block->PositionOrigin();
           glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k++) {
+          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
             const R3Surfel *surfel = block->Surfel(k);
 
             // Check surfel type
@@ -1184,7 +1200,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetHumanLabeledObjectVisibility(-1);
       break;
       
-    // case 'M': // Reserve for toggling "model" in sfllabel
+    // case 'M': // Reserve for toggling "menu" in sfllabel
     // case 'm':
     //  break;
       
@@ -1287,6 +1303,14 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case '>':
       SetTargetResolution(1.1 * TargetResolution());
+      break;
+
+    case ';': 
+      SetSubsamplingFactor(SubsamplingFactor() - 1);
+      break;
+
+    case '\'': 
+      SetSubsamplingFactor(SubsamplingFactor() + 1);
       break;
 
     case '_': 

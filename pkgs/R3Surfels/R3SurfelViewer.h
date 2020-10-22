@@ -105,6 +105,7 @@ public:
   // Viewing parameters
   RNScalar TargetResolution(void) const;
   RNScalar FocusRadius(void) const;
+  int SubsamplingFactor(void) const;
 
   // Selection properties
   R3SurfelPoint *SelectedPoint(void) const;
@@ -173,9 +174,10 @@ public:
     RNBoolean update_working_set = TRUE,
     RNBoolean jump_to_viewpoint = FALSE);
 
-  // Working set parameters
+  // Display parameters
   void SetTargetResolution(RNScalar resolution);
   void SetFocusRadius(RNScalar radius);
+  void SetSubsamplingFactor(int subsampling_factor);
 
   // Image loading
   void SetImageDirectory(const char *directory_name);
@@ -250,6 +252,7 @@ protected:
   // Viewing properties
   R3Viewer viewer;
   R3Box viewing_extent;
+  R3Frustum viewing_frustum;
   R3Point center_point;
   R3SurfelPoint *selected_point;
   R3SurfelImage *selected_image;
@@ -297,6 +300,10 @@ protected:
   RNBoolean adapt_working_set_automatically;
   RNScalar target_resolution;
   RNScalar focus_radius;
+
+  // Subsampling parameters
+  RNBoolean adapt_subsampling_automatically;
+  int subsampling_factor;
 
   // UI state
   int window_height;
@@ -717,6 +724,15 @@ FocusRadius(void) const
 
 
 
+inline int R3SurfelViewer::
+SubsamplingFactor(void) const
+{
+  // Return subsampling factor
+  return subsampling_factor;
+}
+
+
+
 inline RNScalar R3SurfelViewer::
 FrameRate(void) const
 {
@@ -1132,6 +1148,18 @@ SetFocusRadius(RNScalar focus_radius)
 
   // Update working set
   UpdateWorkingSet(center_point, target_resolution, focus_radius);
+}
+
+
+
+inline void R3SurfelViewer::
+SetSubsamplingFactor(int subsampling_factor)
+{
+  // Just checking
+  if (subsampling_factor < 1) subsampling_factor = 1;
+
+  // Set subsampling factor
+  this->subsampling_factor = subsampling_factor;
 }
 
 

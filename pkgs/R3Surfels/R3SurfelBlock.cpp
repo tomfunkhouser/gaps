@@ -1204,13 +1204,16 @@ UpdateSurfelNormals(void)
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelBlock::
-Draw(RNFlags flags) const
+Draw(RNFlags flags, int subsampling_factor) const
 {
   // Get convenient variables
   int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
   int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
   int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
 
+  // Just checking
+  if (subsampling_factor < 1) subsampling_factor = 1;
+  
   // Push translation to position_origin
   glPushMatrix();
   glTranslated(position_origin[0], position_origin[1], position_origin[2]);
@@ -1362,7 +1365,7 @@ Draw(RNFlags flags) const
     // Draw discs
     const int nsides = 6;
     glBegin(GL_TRIANGLES);
-    for (int i = 0; i < NSurfels(); i++) {
+    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
       const R3Surfel& surfel = surfels[i];
       R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
       R3Vector tangent1(surfel.TX(), surfel.TY(), surfel.TZ());
@@ -1392,7 +1395,7 @@ Draw(RNFlags flags) const
   else {
     // Draw points
     glBegin(GL_POINTS);
-    for (int i = 0; i < NSurfels(); i++) {
+    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
       const R3Surfel& surfel = surfels[i];
       if (c) glColor3ubv(surfel.ColorPtr());
       if (id) LoadUnsignedInt(surfel.Identifier());

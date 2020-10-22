@@ -160,7 +160,7 @@ public:
   ///////////////////////////
 
   // Draw function
-  void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+  void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS, int subsampling_factor = 1) const;
 
   // Print function
   void Print(FILE *fp = NULL, const char *prefix = NULL, const char *suffix = NULL) const;
