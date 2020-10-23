@@ -1306,12 +1306,15 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case ';': 
-      SetSubsamplingFactor(SubsamplingFactor() - 1);
-      break;
-
-    case '\'': 
-      SetSubsamplingFactor(SubsamplingFactor() + 1);
-      break;
+    case '\'': {
+      // Select next/prev image
+      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
+      if (key == '\'') image_index++;
+      else if (key == ';') image_index--;
+      if (image_index < 0) image_index = 0;
+      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
+      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      break; }
 
     case '_': 
       SetImagePlaneDepth(0.9 * ImagePlaneDepth());
@@ -1369,15 +1372,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case R3_SURFEL_VIEWER_LEFT_KEY: 
-    case R3_SURFEL_VIEWER_RIGHT_KEY: {
-      // Select next/prev image
-      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key ==  R3_SURFEL_VIEWER_RIGHT_KEY) image_index++;
-      else if (key == R3_SURFEL_VIEWER_LEFT_KEY) image_index--;
-      if (image_index < 0) image_index = 0;
-      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
-      SelectImage(scene->Image(image_index), TRUE, TRUE);
-      break; }
+      SetSubsamplingFactor(SubsamplingFactor() - 1);
+      break;
+
+    case R3_SURFEL_VIEWER_RIGHT_KEY: 
+      SetSubsamplingFactor(SubsamplingFactor() + 1);
+      break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
