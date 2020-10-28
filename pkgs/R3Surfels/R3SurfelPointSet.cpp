@@ -592,6 +592,9 @@ AllocatePoints(int n)
   // Check if already big enough
   if (n <= nallocated) return;
 
+  // To avoid little increments to nallocated
+  if (n < 2*npoints) n = 2*npoints;
+
   // Allocate enough memory to store n points
   R3SurfelPoint *next_points = new R3SurfelPoint [ n ];
 
