@@ -997,6 +997,62 @@ LoadScene(R3SurfelScene *scene1,
 
 
 ////////////////////////////////////////////////////////////////////////
+// PROPERTY FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+static int
+OverwriteSurfelCategoryIdentifiers(R3SurfelScene *scene, const char *filename)
+{
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open surfel category identifier file %s\n", filename);
+    return 0;
+  }
+
+  // Read categories
+  unsigned int c;
+  std::vector<unsigned int> category_identifiers;
+  while (fscanf(fp, "%u", &c) == (unsigned int) 1) {
+    category_identifiers.push_back(c);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Overwrite category identifiers
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      database->ReadBlock(block);
+      for (int k = 0; k < block->NSurfels(); k++) {
+        unsigned int surfel_identifier = block->SurfelIdentifier(k);
+        if (surfel_identifier < 0) continue;
+        if (surfel_identifier >= category_identifiers.size()) continue;
+        unsigned int old_attribute = block->SurfelAttribute(k);
+        unsigned int new_category_identifier = category_identifiers[surfel_identifier];
+        unsigned int new_attribute = (old_attribute & 0xFFFFFF00) | (new_category_identifier & 0xFF);
+        block->SetSurfelAttribute(k, new_attribute);
+      }
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // ALIGNMENT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -2328,6 +2384,11 @@ int main(int argc, char **argv)
     }
     else if (!strcmp(*argv, "-order_surfel_identifiers")) { 
       if (!OrderSurfelIdentifiers(scene)) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-overwrite_surfel_category_identifiers")) { 
+      argc--; argv++; char *category_identifier_filename = *argv; 
+      if (!OverwriteSurfelCategoryIdentifiers(scene, category_identifier_filename)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
