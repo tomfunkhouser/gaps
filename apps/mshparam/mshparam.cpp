@@ -20,6 +20,7 @@ static char *output_texture_directory = NULL;
 static int separate_face_segments = 0;
 static int separate_face_materials = 0;
 static double texel_spacing = 1;
+static int fit_in_zero_to_one = 0;
 static int flatten = 0;
 static int print_verbose = 0;
 
@@ -346,6 +347,40 @@ ParameterizeMesh(R3Mesh *mesh)
 
 
 static int
+NormalizeTextureCoordinates(R3Mesh *mesh)
+{
+  // Check flags
+  if (!fit_in_zero_to_one) return 1;
+  
+  // Get bounding box of texcoords
+  R2Box bbox = R2null_box;
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    R3MeshVertex *vertex = mesh->Vertex(i);
+    R2Point texcoords = mesh->VertexTextureCoords(vertex);
+    bbox.Union(texcoords);
+  }
+
+  // Get scale factor
+  RNLength max_length = bbox.LongestAxisLength();
+  if (RNIsZero(max_length)) return 0;
+  RNScalar scale = 1.0 / max_length;
+  
+  // Scale texture coords to fit into 0-1
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    R3MeshVertex *vertex = mesh->Vertex(i);
+    R2Point texcoords = mesh->VertexTextureCoords(vertex);
+    texcoords[0] = scale * (texcoords[0] - bbox.XMin());
+    texcoords[1] = scale * (texcoords[1] - bbox.YMin());
+    mesh->SetVertexTextureCoords(vertex, texcoords);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 FlattenMesh(R3Mesh *mesh)
 {
   // This is useful for debugging
@@ -362,7 +397,6 @@ FlattenMesh(R3Mesh *mesh)
   // Return success
   return 1;
 }
-
 
 
 
@@ -567,6 +601,7 @@ ParseArgs(int argc, char **argv)
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
+      else if (!strcmp(*argv, "-fit_in_zero_to_one")) fit_in_zero_to_one = 1;
       else if (!strcmp(*argv, "-flatten")) flatten = 1;
       else if (!strcmp(*argv, "-separate_face_segments")) separate_face_segments = 1;
       else if (!strcmp(*argv, "-separate_face_materials")) separate_face_materials = 1;
@@ -611,6 +646,9 @@ main(int argc, char **argv)
 
   // Segment mesh
   if (!ParameterizeMesh(mesh)) exit(-1);
+
+  // Normalize texture coordinates
+  if (!NormalizeTextureCoordinates(mesh)) exit(-1);
 
   // Flatten mesh
   if (!FlattenMesh(mesh)) exit(-1);
