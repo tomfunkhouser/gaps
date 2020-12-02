@@ -238,8 +238,8 @@ void R3SurfelViewer::
 LoadColor(int k) const
 {
   // Make array of colors
-  const int ncolors = 72;
-  const RNRgb colors[ncolors] = {
+  static const int ncolors = 72;
+  static const RNRgb colors[ncolors] = {
     RNRgb(0.5, 0.2, 0.2), RNRgb(0, 1, 0), RNRgb(0, 0, 1), 
     RNRgb(0.3, 0.6, 0), RNRgb(0, 1, 1), RNRgb(1, 0, 1), 
     RNRgb(1, 0.5, 0), RNRgb(0, 1, 0.5), RNRgb(0.5, 0, 1), 
