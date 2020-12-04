@@ -16,6 +16,10 @@ namespace gaps {
 
 
 
+// #define R3_SURFEL_DRAW_WITH_VBO 1
+
+  
+  
 ////////////////////////////////////////////////////////////////////////
 // CONSTRUCTORS/DESTRUCTORS
 ////////////////////////////////////////////////////////////////////////
@@ -1212,6 +1216,7 @@ Draw(RNFlags flags, int subsampling_factor) const
   int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
 
   // Just checking
+  if (nsurfels == 0) return;
   if (subsampling_factor < 1) subsampling_factor = 1;
   
   // Push translation to position_origin
@@ -1314,18 +1319,18 @@ Draw(RNFlags flags, int subsampling_factor) const
   if (error_buffer_id == 0) {
     glGenBuffers(1, &error_buffer_id);
   }
-
+  
   // Create a VBO for block
   if (opengl_id == 0) {
     glGetError();
     GLuint buffer_id;
-    opengl_id = error_buffer_id;
+    ((R3SurfelBlock *) this)->opengl_id = error_buffer_id;
     glGenBuffers(1, &buffer_id);
     if (buffer_id > 0) {
       glBindBuffer(GL_ARRAY_BUFFER, buffer_id);
       glBufferData(GL_ARRAY_BUFFER, NSurfels() * sizeof(R3Surfel), surfels, GL_STATIC_DRAW);
       if (glGetError() == GL_NO_ERROR) {
-        opengl_id = buffer_id;
+        ((R3SurfelBlock *) this)->opengl_id = buffer_id;
       }
     }
   }
@@ -1337,7 +1342,7 @@ Draw(RNFlags flags, int subsampling_factor) const
     // Draw surfels using VBO arrays
     glBindBuffer(GL_ARRAY_BUFFER, opengl_id);
     glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), 0);
-    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), 12);
+    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   }
   else {
     // Draw surfels using client-side arrays

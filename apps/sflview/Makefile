@@ -6,7 +6,6 @@ NAME=sflview
 CCSRCS=$(NAME).cpp
 
 
-
 #
 # Dependency libraries
 #
