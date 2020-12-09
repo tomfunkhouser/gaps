@@ -16,10 +16,6 @@ namespace gaps {
 
 
 
-// #define R3_SURFEL_DRAW_WITH_VBO 1
-
-  
-  
 ////////////////////////////////////////////////////////////////////////
 // CONSTRUCTORS/DESTRUCTORS
 ////////////////////////////////////////////////////////////////////////
@@ -388,12 +384,12 @@ R3SurfelBlock::
   // Delete surfels
   if (surfels) delete [] surfels;
 
-#ifdef DRAW_WITH_DISPLAY_LIST
+#ifdef R3_SURFELS_DRAW_WITH_DISPLAY_LIST
   // Delete opengl display lists
   if (opengl_id > 0) glDeleteLists(opengl_id, 2);
 #endif
 
-#ifdef DRAW_WITH_VBO
+#ifdef R3_SURFELS_DRAW_WITH_VBO
   glDeleteBuffers(1, &opengl_id);
 #endif
 }
@@ -1338,31 +1334,32 @@ Draw(RNFlags flags, int subsampling_factor) const
   // Draw surfels
   glEnableClientState(GL_VERTEX_ARRAY);
   if (c) glEnableClientState(GL_COLOR_ARRAY);
+  else glDisableClientState(GL_COLOR_ARRAY);
   if (opengl_id != error_buffer_id) {
     // Draw surfels using VBO arrays
+    static R3Surfel tmp;
+    static unsigned long int position_offset = (unsigned char *) tmp.PositionPtr() - (unsigned char *) &tmp;
+    static unsigned long int color_offset = (unsigned char *) tmp.ColorPtr() - (unsigned char *) &tmp;
     glBindBuffer(GL_ARRAY_BUFFER, opengl_id);
-    glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), 0);
-    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
+    glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), (const void *) position_offset);
+    if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), (const void *)color_offset);
   }
   else {
     // Draw surfels using client-side arrays
-    glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels);
+    glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels[0].PositionPtr());
     if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   }
   glDrawArrays(GL_POINTS, 0, NSurfels());
-  glDisableClientState(GL_VERTEX_ARRAY);
-  if (c) glDisableClientState(GL_COLOR_ARRAY);
 #endif
 
 #ifdef R3_SURFEL_DRAW_WITH_ARRAYS
   // Draw surfels using arrays
   glEnableClientState(GL_VERTEX_ARRAY);
   if (c) glEnableClientState(GL_COLOR_ARRAY);
-  glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels);
+  else glDisableClientState(GL_COLOR_ARRAY);
+  glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels[0].PositionPtr());
   if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   glDrawArrays(GL_POINTS, 0, NSurfels());
-  glDisableClientState(GL_VERTEX_ARRAY);
-  if (c) glDisableClientState(GL_COLOR_ARRAY);
 #endif
 
 #ifdef R3_SURFEL_DRAW_WITH_GLBEGIN

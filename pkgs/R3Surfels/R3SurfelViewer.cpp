@@ -128,7 +128,7 @@ SurfelColorSchemeName(void) const
   case R3_SURFEL_VIEWER_COLOR_BY_Z: return "Z";
   case R3_SURFEL_VIEWER_COLOR_BY_NORMAL: return "Normal";
   case R3_SURFEL_VIEWER_COLOR_BY_SCAN: return "Scan";
-  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT: return "Objecxt";
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT: return "Object";
   case R3_SURFEL_VIEWER_COLOR_BY_NODE: return "Node";
   case R3_SURFEL_VIEWER_COLOR_BY_BLOCK: return "Block";
   case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL: return "Current Label";
@@ -149,6 +149,11 @@ NodeVisibility(R3SurfelNode *node) const
   // Check node
   if (!node) return 0;
 
+  // Check node complexity
+  if (subsampling_factor > 1) {
+    if (node->Complexity() < subsampling_factor) return 0;
+  }
+  
   // Check if drawing human labeled objects
   if (!human_labeled_object_visibility) {
     R3SurfelObject *object = node->Object();
@@ -168,8 +173,10 @@ NodeVisibility(R3SurfelNode *node) const
   }
 
   // Check viewing frustum
-  if (!viewing_frustum.IsEmpty()) {
-    if (!R3Intersects(viewing_frustum, node->BBox())) return 0;
+  if (node->Complexity() > 1000) {
+    if (!viewing_frustum.IsEmpty()) {
+      if (!R3Intersects(viewing_frustum, node->BBox())) return 0;
+    }
   }
   
   // Passed all tests
@@ -1157,8 +1164,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION)
-        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT);
-      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
       else SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_RGB);
       break;
