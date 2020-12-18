@@ -1314,11 +1314,13 @@ Draw(RNFlags flags, int subsampling_factor) const
   static GLuint error_buffer_id = 0;
   if (error_buffer_id == 0) {
     glGenBuffers(1, &error_buffer_id);
+    if (glGetError() != GL_NO_ERROR) {
+      printf("Error in glGenBuffers\n");
+    }
   }
   
   // Create a VBO for block
   if (opengl_id == 0) {
-    glGetError();
     GLuint buffer_id;
     ((R3SurfelBlock *) this)->opengl_id = error_buffer_id;
     glGenBuffers(1, &buffer_id);

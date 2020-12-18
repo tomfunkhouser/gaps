@@ -36,6 +36,9 @@
 #       if (RN_OS == RN_MAC) 
 #           include <OpenGL/gl.h>
 #           include <OpenGL/glu.h>
+#       elif (RN_OS == RN_WINDOWS)
+#           include <GL/gl.h>
+#           include <GL/glu.h>
 #       else
 #           include <GL/gl.h>
 #           include <GL/glu.h>

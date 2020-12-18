@@ -203,6 +203,8 @@ public:
 
   void LoadColor(int k) const;
   void LoadColor(double value) const;
+  void CreateColor(unsigned char *color, int k) const;
+  void CreateColor(unsigned char *color, double value) const;
   void EnableViewingExtent(void) const;
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;

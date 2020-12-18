@@ -194,7 +194,7 @@ DiagonalRadius(void) const
     if (IsEmpty()) return -1.0;
 
     // Return rectangle radius
-    return sqrt(Radius(0)*Radius(0) + Radius(1)*Radius(1) + Radius(2)*Radius(2));
+    return sqrt(Radius(0)*Radius(0) + Radius(1)*Radius(1));
 }
 
 

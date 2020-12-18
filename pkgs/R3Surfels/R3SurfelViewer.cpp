@@ -135,7 +135,7 @@ SurfelColorSchemeName(void) const
   case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL: return "Ground Truth Label";
   case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: return "Surfel Label";
   case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: return "Confidence";
-  case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: return "ELEVATION";
+  case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: return "Elevation";
   case R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT: return "Viewpoint";
   default: return "Unknown";
   }
@@ -242,90 +242,112 @@ SetLabelVisibility(int label_index, int visibility)
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelViewer::
-LoadColor(int k) const
+CreateColor(unsigned char *color, int k) const
 {
   // Make array of colors
   static const int ncolors = 72;
-  static const RNRgb colors[ncolors] = {
-    RNRgb(0.5, 0.2, 0.2), RNRgb(0, 1, 0), RNRgb(0, 0, 1), 
-    RNRgb(0.3, 0.6, 0), RNRgb(0, 1, 1), RNRgb(1, 0, 1), 
-    RNRgb(1, 0.5, 0), RNRgb(0, 1, 0.5), RNRgb(0.5, 0, 1), 
-    RNRgb(0.5, 1, 0), RNRgb(0, 0.5, 1), RNRgb(1, 0, 0.5), 
-    RNRgb(0.5, 0, 0), RNRgb(0, 0.5, 0), RNRgb(0, 0, 0.5), 
-    RNRgb(0.5, 0.5, 0), RNRgb(0, 0.5, 0.5), RNRgb(0.5, 0, 0.5),
-    RNRgb(0.7, 0, 0), RNRgb(0, 0.7, 0), RNRgb(0, 0, 0.7), 
-    RNRgb(0.7, 0.7, 0), RNRgb(0, 0.7, 0.7), RNRgb(0.7, 0, 0.7), 
-    RNRgb(0.7, 0.3, 0), RNRgb(0, 0.7, 0.3), RNRgb(0.3, 0, 0.7), 
-    RNRgb(0.3, 0.7, 0), RNRgb(0, 0.3, 0.7), RNRgb(0.7, 0, 0.3), 
-    RNRgb(0.3, 0, 0), RNRgb(0, 0.3, 0), RNRgb(0, 0, 0.3), 
-    RNRgb(0.3, 0.3, 0), RNRgb(0, 0.3, 0.3), RNRgb(0.3, 0, 0.3),
-    RNRgb(1, 0.3, 0.3), RNRgb(0.3, 1, 0.3), RNRgb(0.3, 0.3, 1), 
-    RNRgb(1, 0.0, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1), 
-    RNRgb(1, 0.2, 0.7), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1), 
-    RNRgb(0.5, 1, 0.3), RNRgb(0.3, 0.5, 1), RNRgb(1, 0.3, 0.5), 
-    RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), RNRgb(0.3, 0.3, 0.5), 
-    RNRgb(0.5, 0.5, 0.3), RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5),
-    RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5), RNRgb(0.5, 0.5, 0.3), 
-    RNRgb(0.3, 0.3, 0.5), RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), 
-    RNRgb(0.3, 0.8, 0.5), RNRgb(0.5, 0.3, 0.8), RNRgb(0.8, 0.5, 0.3), 
-    RNRgb(0.8, 0.3, 0.5), RNRgb(0.5, 0.8, 0.3), RNRgb(0.3, 0.5, 0.8), 
-    RNRgb(0.8, 0.5, 0.5), RNRgb(0.5, 0.8, 0.5), RNRgb(0.5, 0.5, 0.8), 
-    RNRgb(0.8, 0.8, 0.5), RNRgb(0.5, 0.8, 0.8), RNRgb(0.8, 0.5, 0.8)
+  static const unsigned char colors[ncolors][3] = {
+    { 128, 52, 52 }, { 0, 1, 0 }, { 0, 0, 1 }, 
+    { 78, 156, 0 }, { 0, 1, 1 }, { 1, 0, 1 }, 
+    { 1, 128, 0 }, { 0, 1, 128 }, { 128, 0, 1 }, 
+    { 128, 1, 0 }, { 0, 128, 1 }, { 1, 0, 128 }, 
+    { 128, 0, 0 }, { 0, 128, 0 }, { 0, 0, 128 }, 
+    { 128, 128, 0 }, { 0, 128, 128 }, { 128, 0, 128 },
+    { 182, 0, 0 }, { 0, 182, 0 }, { 0, 0, 182 }, 
+    { 182, 182, 0 }, { 0, 182, 182 }, { 182, 0, 182 }, 
+    { 182, 78, 0 }, { 0, 182, 78 }, { 78, 0, 182 }, 
+    { 78, 182, 0 }, { 0, 78, 182 }, { 182, 0, 78 }, 
+    { 78, 0, 0 }, { 0, 78, 0 }, { 0, 0, 78 }, 
+    { 78, 78, 0 }, { 0, 78, 78 }, { 78, 0, 78 },
+    { 1, 78, 78 }, { 78, 1, 78 }, { 78, 78, 1 }, 
+    { 1, 0, 78 }, { 78, 1, 1 }, { 1, 78, 1 }, 
+    { 1, 52, 182 }, { 78, 1, 128 }, { 128, 78, 1 }, 
+    { 128, 1, 78 }, { 78, 128, 1 }, { 1, 78, 128 }, 
+    { 128, 78, 78 }, { 78, 128, 78 }, { 78, 78, 128 }, 
+    { 128, 128, 78 }, { 78, 128, 128 }, { 128, 78, 128 },
+    { 78, 128, 128 }, { 128, 78, 128 }, { 128, 128, 78 }, 
+    { 78, 78, 128 }, { 128, 78, 78 }, { 78, 128, 78 }, 
+    { 78, 204, 128 }, { 128, 78, 204 }, { 204, 128, 78 }, 
+    { 204, 78, 128 }, { 128, 204, 78 }, { 78, 128, 204 }, 
+    { 204, 128, 128 }, { 128, 204, 128 }, { 128, 128, 204 }, 
+    { 204, 204, 128 }, { 128, 204, 204 }, { 204, 128, 204 }
   };
 
-  // Return color based on k
-  if (k <= 0) RNLoadRgb(colors[0]);
-  else RNLoadRgb(colors[1 + (k % (ncolors-1))]);
+  // Fill color
+  int index = (k > 0) ? k % ncolors : 0;
+  color[0] = colors[index][0];
+  color[1] = colors[index][1];
+  color[2] = colors[index][2];
 }
 
 
 
 void R3SurfelViewer::
-LoadColor(double value) const
+CreateColor(unsigned char *color, double value) const
 {
   // Compute rgb based on blue-green-red heatmap
-  GLdouble r, g, b;
-  if (value < 0) {
-    r = 0;
-    g = 0;
-    b = 1;
+  if (value <= 0) {
+    color[0] = 0;
+    color[1] = 0;
+    color[2] = 1;
   }
   else if (value < 0.1) {
-    value *= 10;
-    r = 0;
-    g = value;
-    b = 1;
+    value *= 10 * 255;
+    color[0] = 0;
+    color[1] = value;
+    color[2] = 1;
   }
   else if (value < 0.5) {
-    value = (value - 0.1) * 2.5;
-    r = 0;
-    g = 1;
-    b = 1 - value;
+    value = (value - 0.1) * 2.5 * 255;
+    color[0] = 0;
+    color[1] = 255;
+    color[2] = 255 - value;
   }
   else if (value < 0.9) {
-    value = (value - 0.5) * 2.5;
-    r = value;
-    g = 1;
-    b = 0;
+    value = (value - 0.5) * 2.5 * 255;
+    color[0] = value;
+    color[1] = 255;
+    color[2] = 0;
   }
   else if (value < 1) {
-    value = (value - 0.9) * 10;
-    r = 1;
-    g = 1 - value;
-    b = 0;
+    value = (value - 0.9) * 10 * 255;
+    color[0] = 255;
+    color[1] = 255 - value;
+    color[2] = 0;
   }
   else {
-    r = 1;
-    g = 0;
-    b = 0;
+    color[0] = 255;
+    color[1] = 0;
+    color[2] = 0;
   }
-
-  // Load rgb
-  glColor3d(r, g, b);
 }
 
 
 
+void R3SurfelViewer::
+LoadColor(int k) const
+{
+  // Load color
+  unsigned char color[3];
+  CreateColor(color, k);
+  glColor3ubv(color);
+}
+
+
+
+ 
+void R3SurfelViewer::
+LoadColor(double value) const
+{
+  // Load color
+  unsigned char color[3];
+  CreateColor(color, value);
+  glColor3ubv(color);
+}
+
+
+
+ 
 void R3SurfelViewer::
 DrawViewingExtent(void) const
 {
