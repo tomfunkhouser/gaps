@@ -384,12 +384,12 @@ R3SurfelBlock::
   // Delete surfels
   if (surfels) delete [] surfels;
 
-#ifdef R3_SURFELS_DRAW_WITH_DISPLAY_LIST
+#ifdef R3_SURFEL_DRAW_WITH_DISPLAY_LIST
   // Delete opengl display lists
   if (opengl_id > 0) glDeleteLists(opengl_id, 2);
 #endif
 
-#ifdef R3_SURFELS_DRAW_WITH_VBO
+#ifdef R3_SURFEL_DRAW_WITH_VBO
   glDeleteBuffers(1, &opengl_id);
 #endif
 }
