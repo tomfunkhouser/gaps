@@ -68,7 +68,9 @@ R3SurfelViewer(R3SurfelScene *scene)
     shape_draw_flags(0),
     adapt_working_set_automatically(0),
     target_resolution(30),
+    last_target_resolution(0),
     focus_radius(0),
+    last_focus_radius(0),
     adapt_subsampling_automatically(0),
     subsampling_factor(1),
     window_height(0),
@@ -79,7 +81,11 @@ R3SurfelViewer(R3SurfelScene *scene)
     start_timer(),
     frame_timer(),
     frame_time(-1),
-    screenshot_name(NULL)
+    screenshot_name(NULL),
+    vbo_position_buffer(0),
+    vbo_normal_buffer(0),
+    vbo_color_buffer(0),
+    vbo_nsurfels(0)
 {
   // Initialize mouse button state
   mouse_button[0] = 0;
@@ -110,6 +116,11 @@ R3SurfelViewer(R3SurfelScene *scene)
 R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
+#ifdef R3_SURFEL_DRAW_WITH_VBO
+  if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
+  if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
+  if (vbo_color_buffer > 0) glDeleteBuffers(1, &vbo_color_buffer);
+#endif
 }
 
 
@@ -136,7 +147,7 @@ SurfelColorSchemeName(void) const
   case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: return "Surfel Label";
   case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: return "Confidence";
   case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: return "Elevation";
-  case R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT: return "Viewpoint";
+  case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX: return "Pick Index";
   default: return "Unknown";
   }
 }
@@ -165,6 +176,7 @@ NodeVisibility(R3SurfelNode *node) const
 
   // Check if label is visible
   R3SurfelObject *object = node->Object(TRUE);
+  while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
   if (object) {
     R3SurfelLabel *label = object->CurrentLabel();
     if (label) {
@@ -172,12 +184,15 @@ NodeVisibility(R3SurfelNode *node) const
     }
   }
 
+#if 0
   // Check viewing frustum
+  // Note: can't use this with VBO 
   if (node->Complexity() > 1000) {
     if (!viewing_frustum.IsEmpty()) {
       if (!R3Intersects(viewing_frustum, node->BBox())) return 0;
     }
   }
+#endif
   
   // Passed all tests
   return 1;
@@ -233,12 +248,15 @@ SetLabelVisibility(int label_index, int visibility)
     else if (visibility == 0) label_visibilities[label_index] = 0;
     else label_visibilities[label_index] = 1;
   }
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
   
 ////////////////////////////////////////////////////////////////////////
-// Drawing utility functions
+// Color utility functions
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelViewer::
@@ -247,10 +265,10 @@ CreateColor(unsigned char *color, int k) const
   // Make array of colors
   static const int ncolors = 72;
   static const unsigned char colors[ncolors][3] = {
-    { 128, 52, 52 }, { 0, 1, 0 }, { 0, 0, 1 }, 
-    { 78, 156, 0 }, { 0, 1, 1 }, { 1, 0, 1 }, 
-    { 1, 128, 0 }, { 0, 1, 128 }, { 128, 0, 1 }, 
-    { 128, 1, 0 }, { 0, 128, 1 }, { 1, 0, 128 }, 
+    { 128, 52, 52 }, { 0, 255, 0 }, { 0, 0, 255 }, 
+    { 78, 156, 0 }, { 0, 255, 255 }, { 255, 0, 255 }, 
+    { 255, 128, 0 }, { 0, 255, 128 }, { 128, 0, 255 }, 
+    { 128, 255, 0 }, { 0, 128, 255 }, { 255, 0, 128 }, 
     { 128, 0, 0 }, { 0, 128, 0 }, { 0, 0, 128 }, 
     { 128, 128, 0 }, { 0, 128, 128 }, { 128, 0, 128 },
     { 182, 0, 0 }, { 0, 182, 0 }, { 0, 0, 182 }, 
@@ -259,10 +277,10 @@ CreateColor(unsigned char *color, int k) const
     { 78, 182, 0 }, { 0, 78, 182 }, { 182, 0, 78 }, 
     { 78, 0, 0 }, { 0, 78, 0 }, { 0, 0, 78 }, 
     { 78, 78, 0 }, { 0, 78, 78 }, { 78, 0, 78 },
-    { 1, 78, 78 }, { 78, 1, 78 }, { 78, 78, 1 }, 
-    { 1, 0, 78 }, { 78, 1, 1 }, { 1, 78, 1 }, 
-    { 1, 52, 182 }, { 78, 1, 128 }, { 128, 78, 1 }, 
-    { 128, 1, 78 }, { 78, 128, 1 }, { 1, 78, 128 }, 
+    { 255, 78, 78 }, { 78, 255, 78 }, { 78, 78, 255 }, 
+    { 255, 0, 78 }, { 78, 255, 255 }, { 255, 78, 255 }, 
+    { 255, 52, 182 }, { 78, 255, 128 }, { 128, 78, 255 }, 
+    { 128, 255, 78 }, { 78, 128, 255 }, { 255, 78, 128 }, 
     { 128, 78, 78 }, { 78, 128, 78 }, { 78, 78, 128 }, 
     { 128, 128, 78 }, { 78, 128, 128 }, { 128, 78, 128 },
     { 78, 128, 128 }, { 128, 78, 128 }, { 128, 128, 78 }, 
@@ -274,7 +292,7 @@ CreateColor(unsigned char *color, int k) const
   };
 
   // Fill color
-  int index = (k > 0) ? k % ncolors : 0;
+  int index = (k > 0) ? (k+1) % ncolors : 0;
   color[0] = colors[index][0];
   color[1] = colors[index][1];
   color[2] = colors[index][2];
@@ -289,7 +307,7 @@ CreateColor(unsigned char *color, double value) const
   if (value <= 0) {
     color[0] = 0;
     color[1] = 0;
-    color[2] = 1;
+    color[2] = 255;
   }
   else if (value < 0.1) {
     value *= 10 * 255;
@@ -325,6 +343,100 @@ CreateColor(unsigned char *color, double value) const
 
 
 void R3SurfelViewer::
+CreateColor(unsigned char *color, int color_scheme,
+  const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+  R3SurfelObject *object, R3SurfelLabel *label) const
+{
+  // Check color scheme
+  switch (color_scheme) {    
+  case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX: {
+    int node_index = (node) ? node->TreeIndex() + 1 : 0;
+    *color++ = (node_index >> 16) & 0xFF;
+    *color++ = (node_index >> 8) & 0xFF;
+    *color++ = node_index & 0xFF;
+    break; }
+
+  case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL: {
+    const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
+    *color++ = 255 * rgb.R();
+    *color++ = 255 * rgb.G();
+    *color++ = 255 * rgb.B();
+    break; }
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL: {
+    R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
+    int label_index = (label) ? label->SceneIndex() : 0;
+    CreateColor(color, label_index);
+    break; }
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_SCAN: {
+    R3SurfelScan *scan = (node) ? node->Scan() : NULL;
+    int scan_index = (scan) ? scan->SceneIndex() : 0;
+    CreateColor(color, scan_index);
+    break; }
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT: {
+    int object_index = (object) ? object->SceneIndex() : 0;
+    CreateColor(color, object_index);
+    break; }
+
+  case R3_SURFEL_VIEWER_COLOR_BY_NODE: {
+    int node_index = (node) ? node->TreeIndex() : 0;
+    CreateColor(color, node_index);
+    break; }
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_BLOCK: {
+    int block_index = (block) ? block->DatabaseIndex() : 0;
+    CreateColor(color, block_index);
+    break; }
+      
+  case R3_SURFEL_VIEWER_COLOR_BY_NORMAL: {
+    assert(surfel);
+    *color++ = 128 + 127 * surfel->NX();
+    *color++ = 128 + 127 * surfel->NY();
+    *color++ = 128 + 127 * surfel->NZ();
+    break; }
+
+  case R3_SURFEL_VIEWER_COLOR_BY_Z: {
+    assert(block && surfel);
+    double z = block->PositionOrigin().Z() + surfel->Z();
+    double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
+    double value = 0.5 * sqrt(dz);
+    CreateColor(color, value);
+    break; }
+      
+  case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: {
+    assert(surfel);
+    unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
+    double elevation = (encoded_elevation - 32768.0) / 400.0;
+    double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
+    CreateColor(color, value);
+    break; }
+
+  case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: {
+    assert(surfel);
+    int label_identifier = surfel->Attribute() & 0xFF;
+    CreateColor(color, label_identifier);
+    break; }
+
+  case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: {
+    assert(surfel);
+    double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
+    CreateColor(color, confidence);
+    break; }
+
+  default: {
+    assert(surfel);
+    *color++ = surfel->R();
+    *color++ = surfel->G();
+    *color++ = surfel->B();
+    break; }
+  }
+}
+
+
+
+void R3SurfelViewer::
 LoadColor(int k) const
 {
   // Load color
@@ -349,6 +461,23 @@ LoadColor(double value) const
 
  
 void R3SurfelViewer::
+LoadColor(int color_scheme,
+  const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+  R3SurfelObject *object, R3SurfelLabel *label) const
+{
+  // Load color
+  unsigned char color[3];
+  CreateColor(color, color_scheme, surfel, block, node, object, label);
+  glColor3ubv(color);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Viewing extent utility functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelViewer::
 DrawViewingExtent(void) const
 {
   // Check extent visibility
@@ -370,7 +499,7 @@ DrawViewingExtent(void) const
 void R3SurfelViewer::
 EnableViewingExtent(void) const
 {
-  // Check extent
+  // Check clip planes extent
   const R3Box& bbox = scene->BBox();  
   const R3Box& extent = ViewingExtent();
   if (extent.IsEmpty() || R3Contains(extent, bbox)) {
@@ -415,7 +544,22 @@ DisableViewingExtent(void) const
 
 
 void R3SurfelViewer::
-DrawNode(R3SurfelNode *node, RNFlags color_draw_flags) const
+UpdateViewingFrustum(void)
+{
+  // Update viewing frustum
+  const R3Camera& camera = viewer.Camera();
+  viewing_frustum = R3Frustum(camera.Origin(), camera.Towards(), camera.Up(),
+    camera.XFOV(), camera.YFOV(), camera.Near(), camera.Far());
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Drawing utility functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelViewer::
+DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags) const
 {
   // Check node
   if (!NodeVisibility(node)) return;
@@ -424,6 +568,181 @@ DrawNode(R3SurfelNode *node, RNFlags color_draw_flags) const
   for (int i = 0; i < node->NBlocks(); i++) {
     R3SurfelBlock *block = node->Block(i);
     block->Draw(shape_draw_flags | color_draw_flags, subsampling_factor);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawSurfels(RNFlags color_draw_flags) const
+{
+  // Draw resident nodes
+  switch (surfel_color_scheme) {
+  case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX:
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      LoadColor(surfel_color_scheme, NULL, NULL, node, NULL, NULL);
+      DrawSurfels(node);
+    }
+    break;
+
+  case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL:
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      R3SurfelObject *object = node->Object();
+      while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+      R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+      int label_index = (label) ? label->SceneIndex() : 0;
+      LoadColor(label_index);
+      DrawSurfels(node);
+    }
+    break;
+
+  case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL:
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      R3SurfelObject *object = node->Object(TRUE);
+      while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+      R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
+      int label_index = (label) ? label->SceneIndex() : 0;
+      LoadColor(label_index);
+      DrawSurfels(node);
+    }
+    break;
+
+  case R3_SURFEL_VIEWER_COLOR_BY_SCAN:
+    // Draw with colors based on nodes
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      R3SurfelScan *scan = node->Scan();
+      int scan_index = (scan) ? scan->SceneIndex() : 0;
+      LoadColor(scan_index);
+      DrawSurfels(node);
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT:
+    // Draw with colors based on nodes
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      R3SurfelObject *object = node->Object(TRUE);
+      while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+      int object_index = (object) ? object->SceneIndex() : 0;
+      LoadColor(object_index);
+      DrawSurfels(node);
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_NODE:
+    // Draw with colors based on nodes
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      LoadColor(i);
+      DrawSurfels(node);
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_BLOCK:
+    // Draw with colors based on blocks
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        LoadColor(block->DatabaseIndex());
+        block->Draw(shape_draw_flags, subsampling_factor);
+      }
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_SHADING:
+    // Draw with colors based on shading
+    glEnable(GL_LIGHTING);
+    glColor3d(0.8, 0.8, 0.8);
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      DrawSurfels(node, R3_SURFEL_NORMAL_DRAW_FLAG);
+    }
+    glDisable(GL_LIGHTING);
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_NORMAL:
+    // Draw with colors based on normals
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        const R3Point& block_origin = block->PositionOrigin();
+        glPushMatrix();
+        glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+        glBegin(GL_POINTS);
+        for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
+          const R3Surfel *surfel = block->Surfel(k);
+          float r = 0.5F + 0.5F * surfel->NX();
+          float g = 0.5F + 0.5F * surfel->NY();
+          float b = 0.5F + 0.5F * surfel->NZ();
+          glColor3f(r, g, b);
+          glVertex3fv(surfel->PositionPtr());
+        }
+        glEnd();
+        glPopMatrix();
+      }
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_Z:
+  case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION:
+  case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL:
+  case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE:
+    // Draw with colors based on surfel attributes
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        const R3Point& block_origin = block->PositionOrigin();
+        glPushMatrix();
+        glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+        glBegin(GL_POINTS);
+        for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
+          const R3Surfel *surfel = block->Surfel(k);
+          if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
+            double z = block_origin.Z() + surfel->Z();
+            double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
+            double value = 0.5 * sqrt(dz);
+            LoadColor(value);
+          }
+          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
+            unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
+            double elevation = (encoded_elevation - 32768.0) / 400.0;
+            double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
+            LoadColor(value);
+          }
+          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
+            int label_identifier = surfel->Attribute() & 0xFF;
+            LoadColor(label_identifier);
+          }
+          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE) {
+            double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
+            LoadColor(confidence);
+          }
+          glVertex3fv(surfel->PositionPtr());
+        }
+        glEnd();
+        glPopMatrix();
+      }
+    }
+    break;
+    
+  default:
+    // Draw with RGB surfel colors
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      DrawSurfels(node, R3_SURFEL_COLOR_DRAW_FLAG);
+    }
+    break;
   }
 }
 
@@ -440,8 +759,7 @@ Redraw(void)
   if (!scene) return 0;
 
   // Set viewing transformation
-  const R3Camera& camera = viewer.Camera();
-  camera.Load();
+  viewer.Camera().Load();
 
   // Clear window 
   glClearColor(background_color[0], background_color[1], background_color[2], 1.0);
@@ -453,247 +771,37 @@ Redraw(void)
   static GLfloat light1_position[] = { -3.0, -2.0, -3.0, 0.0 };
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
 
-  // Set viewing frustum
-  viewing_frustum = R3Frustum(camera.Origin(), camera.Towards(), camera.Up(),
-    camera.XFOV(), camera.YFOV(), camera.Near(), camera.Far());
-
   // Set viewing extent
   DrawViewingExtent();
   EnableViewingExtent();
-
+  UpdateViewingFrustum();
+  
   // Set draw modes
   glDisable(GL_LIGHTING);
   glPointSize(surfel_size);
   glLineWidth(1);
   if (backfacing_visibility) glDisable(GL_CULL_FACE);
   else glEnable(GL_CULL_FACE);
-  RNLength distance_to_closest_scan = FLT_MAX;
-  if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT) {
-    for (int i = 0; i < resident_nodes.NNodes(); i++) {
-      R3SurfelNode *node = resident_nodes.Node(i);
-      R3SurfelScan *scan = node->Scan();
-      if (!scan) continue;
-      RNLength d = R3Distance(viewer.Camera().Origin(), scan->Viewpoint());
-      if (d < distance_to_closest_scan) distance_to_closest_scan = d;
-    }
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
-  }
 
-  // Draw surfels
+
+#ifdef R3_SURFEL_DRAW_WITH_VBO
   if (surfel_visibility) {
-    // Draw resident nodes
-    if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) {
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelObject *object = node->Object();
-        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
-        R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
-        int label_index = (label) ? label->SceneIndex() : 0;
-        LoadColor(label_index);
-        DrawNode(node);
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL) {
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelObject *object = node->Object(TRUE);
-        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
-        R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
-        int label_index = (label) ? label->SceneIndex() : 0;
-        LoadColor(label_index);
-        DrawNode(node);
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SCAN) {
-      // Draw with colors based on nodes
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelScan *scan = node->Scan();
-        int scan_index = (scan) ? scan->SceneIndex() : 0;
-        LoadColor(scan_index);
-        DrawNode(node);
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) {
-      // Draw with colors based on nodes
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        R3SurfelObject *object = node->Object(TRUE);
-        while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
-        int object_index = (object) ? object->SceneIndex() : 0;
-        LoadColor(object_index);
-        DrawNode(node);
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_NODE) {
-      // Draw with colors based on nodes
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        LoadColor(i);
-        DrawNode(node);
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_BLOCK) {
-      // Draw with colors based on blocks
-      int count = 0;
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          LoadColor(count++);
-          block->Draw(shape_draw_flags, subsampling_factor);
-        }
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
-      // Draw with colors based on shading
-      glEnable(GL_LIGHTING);
-      glColor3d(0.8, 0.8, 0.8);
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        DrawNode(node, R3_SURFEL_NORMAL_DRAW_FLAG);
-      }
-      glDisable(GL_LIGHTING);
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_NORMAL) {
-      // Draw with colors based on normals
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
-            const R3Surfel *surfel = block->Surfel(k);
-            float r = 0.5F + 0.5F * surfel->NX();
-            float g = 0.5F + 0.5F * surfel->NY();
-            float b = 0.5F + 0.5F * surfel->NZ();
-            glColor3f(r, g, b);
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-          glPopMatrix();
-        }
-      }
-    }
-    else if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) ||
-             (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) ||
-             (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) ||
-             (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE)) {
-      // Draw with colors based on surfel attributes
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glPushMatrix();
-          glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
-            const R3Surfel *surfel = block->Surfel(k);
-            if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
-              double z = block_origin.Z() + surfel->Z();
-              double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
-              double value = 0.5 * sqrt(dz);
-              LoadColor(value);
-            }
-            else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
-              unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
-              double elevation = (encoded_elevation - 32768.0) / 400.0;
-              double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
-              LoadColor(value);
-            }
-            else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
-              int label_identifier = surfel->Attribute() & 0xFF;
-              LoadColor(label_identifier);
-            }
-            else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE) {
-              double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
-              LoadColor(confidence);
-            }
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-          glPopMatrix();
-        }
-      }
-    }
-    else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT) {
-      // Draw with RGB surfel colors (to produce a reasonable background for blending)
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
-      }
-      
-      // Draw with RGB surfel colors, with alpha based on distance to viewpoint
-      glDepthRange(0, 0.9);
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        R3SurfelScan *scan = node->Scan();
-        if (!scan) continue;
-
-        // Compute alpha
-        unsigned char alpha = 255;
-        if (distance_to_closest_scan < FLT_MAX) {
-          RNLength d = R3Distance(viewer.Camera().Origin(), scan->Viewpoint());
-          // if (d > 2 * distance_to_closest_scan) continue;
-          RNScalar a = (d > distance_to_closest_scan) ? distance_to_closest_scan / d : 1.0;
-          alpha = 255 * a*a;
-        }
-
-        // Draw surfels
-        for (int j = 0; j < node->NBlocks(); j++) {
-          R3SurfelBlock *block = node->Block(j);
-          const R3Point& block_origin = block->PositionOrigin();
-          glBegin(GL_POINTS);
-          for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
-            const R3Surfel *surfel = block->Surfel(k);
-
-            // Check surfel type
-            if (!aerial_visibility && surfel->IsAerial()) continue;
-            if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-
-            // Get position
-            R3Point position(surfel->X(), surfel->Y(), surfel->Z());
-            position += block_origin.Vector();
-
-            // Check position
-            // RNScalar max_dd = 9;
-            // RNScalar dd = R3SquaredDistance(position, scan->Viewpoint());
-            // if (dd > max_dd) continue;
-            
-            // Set color
-            glColor4ub(surfel->R(), surfel->G(), surfel->B(), alpha);
-
-            // Draw surfel
-            glVertex3fv(surfel->PositionPtr());
-          }
-          glEnd();
-        }
-      }
-      glDepthRange(0, 1);
+    if (shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
+      DrawSurfels(surfel_color_scheme);
     }
     else {
-      // Draw with RGB surfel colors
-      for (int i = 0; i < resident_nodes.NNodes(); i++) {
-        R3SurfelNode *node = resident_nodes.Node(i);
-        if (!NodeVisibility(node)) continue;
-        DrawNode(node, R3_SURFEL_COLOR_DRAW_FLAG);
-      }
+      DrawVBO(surfel_color_scheme);
     }
   }
-
-  // Reset the point size
-  glDisable(GL_BLEND);
+#else
+  // Draw surfels
+  DrawSurfels(surfel_color_scheme);
+#endif
+  
+  // Reset opengl modes
+  glDisable(GL_LIGHTING);
   glPointSize(1);
+  glLineWidth(1);
 
   // Draw normals
   if (normal_visibility) {
@@ -1209,7 +1317,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       
     case 'G':
     case 'g':
-      surfel_color_scheme = (surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES;
+      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
       break;
 
     case 'I':
@@ -1668,6 +1776,9 @@ ReadCoarsestBlocks(RNScalar max_complexity)
       queue.Push(part);
     }
   }
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -1701,6 +1812,9 @@ ReleaseCoarsestBlocks(RNScalar max_complexity)
       queue.Push(part);
     }
   }
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -1716,6 +1830,9 @@ EmptyWorkingSet(void)
 
   // Empty resident nodes
   resident_nodes.Empty();
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -1730,6 +1847,10 @@ UpdateWorkingSet(const R3Point& center, RNScalar resolution, RNScalar radius)
   R3SurfelTree *tree = scene->Tree();
   if (!tree) return;
 
+  // Check if already at full resolution
+  if ((resolution == last_target_resolution) && (resolution == RN_INFINITY) && 
+      (radius == last_focus_radius) && (radius == RN_INFINITY)) return;
+
   // Find new set of nodes
   R3SurfelNodeSet new_resident_nodes;
   new_resident_nodes.InsertNodes(tree, center, radius, -FLT_MAX, FLT_MAX, resolution, RN_EPSILON);
@@ -1742,6 +1863,13 @@ UpdateWorkingSet(const R3Point& center, RNScalar resolution, RNScalar radius)
 
   // Now use newnodes 
   resident_nodes = new_resident_nodes;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
+
+  // Remember parameters
+  last_target_resolution = resolution;
+  last_focus_radius = radius;
 }
 
 
@@ -1869,6 +1997,9 @@ UpdateWorkingSet(const R3Viewer& view)
   delete [] item_buffer;
   delete [] depth_buffer;
   delete [] viewpoint_distance_buffer;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -2053,46 +2184,23 @@ PickNode(int x, int y, R3Point *picked_position,
   // Set OpenGL stuff
   glPointSize(pick_tolerance);    
 
+#ifdef R3_SURFEL_DRAW_WITH_VBO
+  DrawVBO(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
+#else
   // Draw everything
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
     if (!NodeVisibility(node)) continue;
 
     // Set color
-    unsigned char rgba[4];
-    int node_index = i + 1;
-    rgba[0] = (node_index >> 16) & 0xFF;
-    rgba[1] = (node_index >> 8) & 0xFF;
-    rgba[2] = node_index & 0xFF;
-    rgba[3] = 0xFE;
+    unsigned char rgba[4] = { 0, 0, 0, 0xFE };
+    CreateColor(rgba, R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX, NULL, NULL, node, NULL, NULL);
     glColor4ubv(rgba);
 
-#if 1
     // Draw node
     node->Draw(shape_draw_flags);
-#else
-    // Draw node
-    for (int j = 0; j < node->NBlocks(); j++) {
-      R3SurfelBlock *block = node->Block(j);
-      glPushMatrix();
-      const R3Point& origin = block->PositionOrigin();
-      glTranslated(origin[0], origin[1], origin[2]);
-      glBegin(GL_POINTS);
-      for (int k = 0; k < block->NSurfels(); k++) {
-        const R3Surfel *surfel = block->Surfel(k);
-        if (!aerial_visibility && surfel->IsAerial()) continue;
-        if (!terrestrial_visibility && surfel->IsTerrestrial()) continue;
-        if (!backfacing_visibility) {
-          R3Vector normal(surfel->NX(), surfel->NY(), surfel->NZ());
-          if (normal.Dot(viewer.Camera().Towards()) >= 0) continue;
-        }
-        glVertex3fv(surfel->PositionPtr());
-      }
-      glEnd();
-      glPopMatrix();
-    }
-#endif
   }
+#endif
 
   // Reset OpenGL stuff
   glPointSize(1);
@@ -2110,15 +2218,18 @@ PickNode(int x, int y, R3Point *picked_position,
   int r = rgba[0] & 0xFF;
   int g = rgba[1] & 0xFF;
   int b = rgba[2] & 0xFF;
-  int a = rgba[3] & 0xFF;
-  if (a != 0xFE) return NULL;
+  // int a = rgba[3] & 0xFF;
+  // if (a != 0xFE) return NULL;
   int node_index = (r << 16) | (g << 8) | b;
+  if (node_index == 0) return NULL;
   node_index--;
 
   // Determine node
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return NULL;
   if (node_index < 0) return NULL;
-  if (node_index >= resident_nodes.NNodes()) return NULL;
-  R3SurfelNode *hit_node = resident_nodes.Node(node_index);
+  if (node_index >= tree->NNodes()) return NULL;
+  R3SurfelNode *hit_node = tree->Node(node_index);
 
   // Find node part of an object
   R3SurfelNode *picked_node = hit_node;
@@ -2297,10 +2408,192 @@ SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint,
     } 
   }
 
+  // Invalidate VBO buffers
+  InvalidateVBO();
+
   // Return status
   if (countA == 0) return 0;
   if (countB == 0) return 0;
   return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// VERTEX BUFFER OBJECT UPDATES
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelViewer::
+InvalidateVBO(void)
+{
+  // Ensure VBO is updated
+  vbo_nsurfels = 0;
+}
+
+
+
+void R3SurfelViewer::
+UpdateVBO(void)
+{
+#ifdef R3_SURFEL_DRAW_WITH_VBO
+  // Check if VBO is uptodate
+  if (vbo_nsurfels > 0) return;
+
+  // Count surfels
+  vbo_nsurfels = 0;
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      vbo_nsurfels += block->NSurfels() / subsampling_factor;
+      if (block->NSurfels() % subsampling_factor > 0) vbo_nsurfels++;
+    }
+  }
+
+  // Allocate in-memory buffers
+  GLfloat *surfel_positions = new GLfloat [ 3 * vbo_nsurfels ];
+  GLfloat *surfel_normals = new GLfloat [ 3 * vbo_nsurfels ];
+  GLubyte *surfel_colors = new GLubyte [  2 * 3 * vbo_nsurfels ];
+
+  // Fill in-memory buffers 
+  if (surfel_positions && surfel_normals && surfel_colors) {
+    GLfloat *surfel_positionsp = surfel_positions;
+    GLfloat *surfel_normalsp = surfel_normals;
+    GLubyte *surfel_colorsp = surfel_colors;
+    unsigned int pick_color_offset = 3 * vbo_nsurfels;
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      R3SurfelObject *object = node->Object();
+      while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+      R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        const R3Point& block_origin = block->PositionOrigin();
+        for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
+          const R3Surfel *surfel = block->Surfel(k);
+          assert(surfel_positionsp - surfel_positions < 3*vbo_nsurfels);
+          assert(surfel_normalsp - surfel_colors < 3*vbo_nsurfels);
+          assert(surfel_colorsp - surfel_colors < 3*vbo_nsurfels);
+          *surfel_positionsp++ = block_origin.X() + surfel->X();
+          *surfel_positionsp++ = block_origin.Y() + surfel->Y();
+          *surfel_positionsp++ = block_origin.Z() + surfel->Z();
+          *surfel_normalsp++ = surfel->NX();
+          *surfel_normalsp++ = surfel->NY();
+          *surfel_normalsp++ = surfel->NZ();
+          CreateColor(surfel_colorsp, surfel_color_scheme,
+            surfel, block, node, object, label);
+          CreateColor(surfel_colorsp + pick_color_offset, 
+            R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX,
+            surfel, block, node, object, label);
+          surfel_colorsp += 3;
+        }
+      }
+    }
+  
+    // Just checking
+    assert(surfel_positionsp - surfel_positions == 3*vbo_nsurfels);
+    assert(surfel_normalsp - surfel_colors == 3*vbo_nsurfels);
+    assert(surfel_colorsp - surfel_colors == 3*vbo_nsurfels);
+
+    // Generate VBO buffers (first time only)
+    if (vbo_position_buffer == 0) glGenBuffers(1, &vbo_position_buffer);
+    if (vbo_normal_buffer == 0) glGenBuffers(1, &vbo_normal_buffer);
+    if (vbo_color_buffer == 0) glGenBuffers(1, &vbo_color_buffer);
+
+    // Load VBO buffers
+    if (vbo_position_buffer && surfel_positions) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+      glBufferData(GL_ARRAY_BUFFER, 3 * vbo_nsurfels * sizeof(GLfloat), surfel_positions, GL_STATIC_DRAW);
+      glVertexPointer(3, GL_FLOAT, 0, 0);
+    }
+    if (vbo_normal_buffer && surfel_normals) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glBufferData(GL_ARRAY_BUFFER, 3 * vbo_nsurfels * sizeof(GLfloat), surfel_normals, GL_STATIC_DRAW);
+      glNormalPointer(GL_FLOAT, 0, 0);
+    }
+    if (vbo_color_buffer && surfel_colors) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+      glBufferData(GL_ARRAY_BUFFER, 2 * 3 * vbo_nsurfels * sizeof(GLubyte), surfel_colors, GL_STATIC_DRAW);
+      glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+    }
+  }
+
+  // Delete in-memory buffers
+  if (surfel_positions) delete [] surfel_positions;
+  if (surfel_normals) delete [] surfel_normals;
+  if (surfel_colors) delete [] surfel_colors;
+#endif
+}
+
+
+
+void R3SurfelViewer::
+DrawVBO(int color_scheme)
+{
+#ifdef R3_SURFEL_DRAW_WITH_VBO
+  // Update VBO
+  UpdateVBO();
+
+  // Check VBO
+  if (vbo_nsurfels == 0) return;
+
+  // Enable position buffer
+  if (vbo_position_buffer > 0) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+    glEnableClientState(GL_VERTEX_ARRAY);
+  }
+
+  // Enable color/normal buffers
+  if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX) {
+    // Enable color buffer to draw pick colors 
+    if (vbo_color_buffer > 0) {
+      // Set color pointer to second half of buffer where pick colors are
+      void *pick_color_offset = (void *) (3 * vbo_nsurfels * sizeof(GLubyte));
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+      glColorPointer(3, GL_UNSIGNED_BYTE, 0, pick_color_offset);
+      glEnableClientState(GL_COLOR_ARRAY);
+    }
+
+    // Draw points with pick color
+    glDrawArrays(GL_POINTS, 0, vbo_nsurfels);
+
+    // Reset color pointer to start of buffer where regular colors are
+    if (vbo_color_buffer > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+      glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+    }
+  }
+  else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
+    // Enable normal buffer
+    if (vbo_normal_buffer > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glEnableClientState(GL_NORMAL_ARRAY);
+    }
+
+    // Draw points with shading
+    glEnable(GL_LIGHTING);
+    glColor3d(0.8, 0.8, 0.8);
+    glDrawArrays(GL_POINTS, 0, vbo_nsurfels);
+    glDisable(GL_LIGHTING);
+  }
+  else {
+    // Enable color buffer
+    if (vbo_color_buffer > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+      glEnableClientState(GL_COLOR_ARRAY);
+    }
+
+    // Draw points with color
+    glDrawArrays(GL_POINTS, 0, vbo_nsurfels);
+  }
+
+  // Disable client state
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_COLOR_ARRAY);
+#endif
 }
 
 

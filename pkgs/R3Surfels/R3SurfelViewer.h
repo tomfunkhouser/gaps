@@ -201,14 +201,29 @@ public:
   //// DRAWING UTILITY FUNCTIONS       ////
   /////////////////////////////////////////
 
-  void LoadColor(int k) const;
-  void LoadColor(double value) const;
+  // Color creation
   void CreateColor(unsigned char *color, int k) const;
   void CreateColor(unsigned char *color, double value) const;
+  void CreateColor(unsigned char *color, int color_scheme,
+    const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+    R3SurfelObject *object, R3SurfelLabel *label) const;
+
+  // Color loading
+  void LoadColor(int k) const;
+  void LoadColor(double value) const;
+  void LoadColor(int color_scheme,
+    const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+    R3SurfelObject *object, R3SurfelLabel *label) const;
+
+  // Viewing extent
   void EnableViewingExtent(void) const;
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;
-  void DrawNode(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
+  void UpdateViewingFrustum(void);
+ 
+  // Surfel drawing
+  void DrawSurfels(RNFlags color_draw_flags = 0) const;
+  void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -230,7 +245,7 @@ public:
   virtual void RemoveFromWorkingSet(R3SurfelNode *node, RNBoolean full_resolution = FALSE);
 
 protected:
-  // Tree manipulation
+  // Scene manipulation functions
   void SetScene(R3SurfelScene *scene);
 
   // Viewing utility functions
@@ -239,10 +254,14 @@ protected:
   // Draw functions
   void DrawObject(R3SurfelObject *object, RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
 
-  // Management functions
+  // Memory management functions
   void ReadCoarsestBlocks(RNScalar max_complexity);
   void ReleaseCoarsestBlocks(RNScalar max_complexity);
 
+  // VBO management functions
+  void InvalidateVBO(void);
+  void UpdateVBO(void);
+  void DrawVBO(int color_scheme);
 
 protected:
   // Tree properties
@@ -300,8 +319,8 @@ protected:
   
   // Working set parameters
   RNBoolean adapt_working_set_automatically;
-  RNScalar target_resolution;
-  RNScalar focus_radius;
+  RNScalar target_resolution, last_target_resolution;
+  RNScalar focus_radius, last_focus_radius;
 
   // Subsampling parameters
   RNBoolean adapt_subsampling_automatically;
@@ -325,6 +344,12 @@ protected:
 
   // Screen capture
   char *screenshot_name;
+
+  // Vertex buffer objects
+  GLuint vbo_position_buffer;
+  GLuint vbo_normal_buffer;
+  GLuint vbo_color_buffer;
+  unsigned int vbo_nsurfels;
 };
 
 
@@ -380,7 +405,7 @@ enum {
   R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL,
   R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE,
   R3_SURFEL_VIEWER_COLOR_BY_ELEVATION,
-  R3_SURFEL_VIEWER_COLOR_BY_VIEWPOINT,
+  R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX,
   R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES
 };
 
@@ -879,6 +904,9 @@ SetAerialVisibility(int visibility)
   if (visibility == -1) aerial_visibility = 1 - aerial_visibility;
   else if (visibility == 0) aerial_visibility = 0;
   else aerial_visibility = 1;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -890,6 +918,9 @@ SetTerrestrialVisibility(int visibility)
   if (visibility == -1) terrestrial_visibility = 1 - terrestrial_visibility;
   else if (visibility == 0) terrestrial_visibility = 0;
   else terrestrial_visibility = 1;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -901,6 +932,9 @@ SetHumanLabeledObjectVisibility(int visibility)
   if (visibility == -1) human_labeled_object_visibility = 1 - human_labeled_object_visibility;
   else if (visibility == 0) human_labeled_object_visibility = 0;
   else human_labeled_object_visibility = 1;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -1054,6 +1088,9 @@ SetSurfelColorScheme(int scheme)
 {
   // Set color scheme for drawing surfels
   surfel_color_scheme = scheme;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 
@@ -1162,6 +1199,9 @@ SetSubsamplingFactor(int subsampling_factor)
 
   // Set subsampling factor
   this->subsampling_factor = subsampling_factor;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 

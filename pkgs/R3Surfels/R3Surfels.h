@@ -26,18 +26,11 @@
 
 /* Drawing method */
 
-#ifdef __CYGWIN__
-  // Define only one of these
-  // #define R3_SURFEL_DRAW_WITH_DISPLAY_LIST
-  // #define R3_SURFEL_DRAW_WITH_ARRAYS
+// Can have VBO and GLBEGIN
+// #define R3_SURFEL_DRAW_WITH_DISPLAY_LIST
+// #define R3_SURFEL_DRAW_WITH_VBO
+// #define R3_SURFEL_DRAW_WITH_ARRAYS
 # define R3_SURFEL_DRAW_WITH_GLBEGIN
-#else
-  // Define only one of these
-  // #define R3_SURFEL_DRAW_WITH_DISPLAY_LIST
-  // #define R3_SURFEL_DRAW_WITH_VBO
-  // #define R3_SURFEL_DRAW_WITH_ARRAYS
-# define R3_SURFEL_DRAW_WITH_GLBEGIN
-#endif
 
 
 
