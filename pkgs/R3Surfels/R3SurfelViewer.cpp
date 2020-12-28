@@ -364,9 +364,11 @@ CreateColor(unsigned char *color, int color_scheme,
     break; }
     
   case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL: {
-    R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
-    int label_index = (label) ? label->SceneIndex() : 0;
-    CreateColor(color, label_index);
+    R3SurfelLabel *gtlabel = (object) ? object->GroundTruthLabel() : NULL;
+    const RNRgb& rgb = (gtlabel) ? gtlabel->Color() : RNwhite_rgb;
+    *color++ = 255 * rgb.R();
+    *color++ = 255 * rgb.G();
+    *color++ = 255 * rgb.B();
     break; }
     
   case R3_SURFEL_VIEWER_COLOR_BY_SCAN: {
@@ -592,8 +594,8 @@ DrawSurfels(RNFlags color_draw_flags) const
       R3SurfelObject *object = node->Object();
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
-      int label_index = (label) ? label->SceneIndex() : 0;
-      LoadColor(label_index);
+      const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
+      RNLoadRgb(rgb);
       DrawSurfels(node);
     }
     break;
@@ -604,8 +606,8 @@ DrawSurfels(RNFlags color_draw_flags) const
       R3SurfelObject *object = node->Object(TRUE);
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
-      int label_index = (label) ? label->SceneIndex() : 0;
-      LoadColor(label_index);
+      const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
+      RNLoadRgb(rgb);
       DrawSurfels(node);
     }
     break;
