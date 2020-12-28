@@ -390,7 +390,7 @@ R3SurfelBlock::
 #endif
 
 #ifdef R3_SURFEL_DRAW_WITH_VBO
-  glDeleteBuffers(1, &opengl_id);
+  if (opengl_id > 0) glDeleteBuffers(1, &opengl_id);
 #endif
 }
 
