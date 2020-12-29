@@ -384,13 +384,12 @@ R3SurfelBlock::
   // Delete surfels
   if (surfels) delete [] surfels;
 
-#ifdef R3_SURFEL_DRAW_WITH_DISPLAY_LIST
+#if (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_VBO)
+  // Delete opengl VBO buffer
+  if (opengl_id > 0) glDeleteBuffers(1, &opengl_id);
+#elif (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_DISPLAY_LIST)
   // Delete opengl display lists
   if (opengl_id > 0) glDeleteLists(opengl_id, 2);
-#endif
-
-#ifdef R3_SURFEL_DRAW_WITH_VBO
-  if (opengl_id > 0) glDeleteBuffers(1, &opengl_id);
 #endif
 }
 
@@ -1219,52 +1218,7 @@ Draw(RNFlags flags, int subsampling_factor) const
   glPushMatrix();
   glTranslated(position_origin[0], position_origin[1], position_origin[2]);
 
-#ifdef R3_SURFEL_DRAW_WITH_GLBEGIN
-  if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
-    // Draw discs
-    const int nsides = 6;
-    glBegin(GL_TRIANGLES);
-    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
-      const R3Surfel& surfel = surfels[i];
-      R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
-      R3Vector tangent1(surfel.TX(), surfel.TY(), surfel.TZ());
-      R3Vector tangent2 = normal % tangent1;
-      double r1 = surfel.Radius(0);
-      double r2 = surfel.Radius(1);
-      if (r1 <= 0) r1 = 0.1;
-      if (r2 <= 0) r2 = r1;
-      if (c) glColor3ubv(surfel.ColorPtr());
-      if (id) LoadUnsignedInt(surfel.Identifier());
-      else if (n) R3LoadNormal(normal);
-      R3Point p[nsides];
-      for (int j = 0; j < nsides; j++) {
-        double angle = RN_TWO_PI*j/nsides;
-        p[j].Reset(surfel.PX(), surfel.PY(), surfel.PZ());
-        p[j] += cos(angle) * r1 * tangent1;
-        p[j] += sin(angle) * r2 * tangent2;
-      }
-      for (int j = 0; j < nsides; j++) {
-        glVertex3fv(surfel.PositionPtr());
-        R3LoadPoint(p[j]);
-        R3LoadPoint(p[(j+1)%nsides]);
-      }
-    }
-    glEnd();        
-  }
-  else {
-    // Draw points
-    glBegin(GL_POINTS);
-    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
-      const R3Surfel& surfel = surfels[i];
-      if (c) glColor3ubv(surfel.ColorPtr());
-      if (id) LoadUnsignedInt(surfel.Identifier());
-      else if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
-      glVertex3fv(surfel.PositionPtr());
-    }
-    glEnd();
-  }
-#else
-#ifdef R3_SURFEL_DRAW_WITH_DISPLAY_LIST
+#if (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_DISPLAY_LIST)
   // Create a display list id to use to detect errors
   static GLuint error_id = 0;
   if (error_id == 0) error_id = glGenLists(1);
@@ -1352,8 +1306,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       glEnd();
     }
   }
-#else
-#if R3_SURFEL_DRAW_WITH_VBO
+#elif (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_VBO)
   // Create a VBO id to use to detect errors
   static GLuint error_buffer_id = 0;
   if (error_buffer_id == 0) {
@@ -1396,8 +1349,7 @@ Draw(RNFlags flags, int subsampling_factor) const
     if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   }
   glDrawArrays(GL_POINTS, 0, NSurfels());
-#else
-#ifdef R3_SURFEL_DRAW_WITH_ARRAYS
+#elif (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_ARRAYS)
   // Draw surfels using arrays
   glEnableClientState(GL_VERTEX_ARRAY);
   if (c) glEnableClientState(GL_COLOR_ARRAY);
@@ -1405,9 +1357,51 @@ Draw(RNFlags flags, int subsampling_factor) const
   glVertexPointer(3, GL_FLOAT, sizeof(R3Surfel), surfels[0].PositionPtr());
   if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   glDrawArrays(GL_POINTS, 0, NSurfels());
-#endif
-#endif
-#endif
+#else
+  // Draw surfels using glBegin ... glEnd
+  if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
+    // Draw discs
+    const int nsides = 6;
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
+      const R3Surfel& surfel = surfels[i];
+      R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
+      R3Vector tangent1(surfel.TX(), surfel.TY(), surfel.TZ());
+      R3Vector tangent2 = normal % tangent1;
+      double r1 = surfel.Radius(0);
+      double r2 = surfel.Radius(1);
+      if (r1 <= 0) r1 = 0.1;
+      if (r2 <= 0) r2 = r1;
+      if (c) glColor3ubv(surfel.ColorPtr());
+      if (id) LoadUnsignedInt(surfel.Identifier());
+      else if (n) R3LoadNormal(normal);
+      R3Point p[nsides];
+      for (int j = 0; j < nsides; j++) {
+        double angle = RN_TWO_PI*j/nsides;
+        p[j].Reset(surfel.PX(), surfel.PY(), surfel.PZ());
+        p[j] += cos(angle) * r1 * tangent1;
+        p[j] += sin(angle) * r2 * tangent2;
+      }
+      for (int j = 0; j < nsides; j++) {
+        glVertex3fv(surfel.PositionPtr());
+        R3LoadPoint(p[j]);
+        R3LoadPoint(p[(j+1)%nsides]);
+      }
+    }
+    glEnd();        
+  }
+  else {
+    // Draw points
+    glBegin(GL_POINTS);
+    for (int i = 0; i < NSurfels(); i += subsampling_factor) {
+      const R3Surfel& surfel = surfels[i];
+      if (c) glColor3ubv(surfel.ColorPtr());
+      if (id) LoadUnsignedInt(surfel.Identifier());
+      else if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
+      glVertex3fv(surfel.PositionPtr());
+    }
+    glEnd();
+  }
 #endif
   
   // Pop translation to position_origin

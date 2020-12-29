@@ -50,7 +50,7 @@ LDFLAGS=$(DEBUG_LDFLAGS)
 #
 
 ifeq ("$(findstring CYGWIN,$(OS))", "CYGWIN")
-OPENGL_LIBS=-lfglut -lGLEW -lglu32 -lopengl32 -lwinmm -lgdi32
+OPENGL_LIBS=-lfglut -lglew32s -lglu32 -lopengl32 -lwinmm -lgdi32
 else ifeq ("$(OS)","Darwin")
 OPENGL_LIBS=-framework GLUT -framework opengl
 else

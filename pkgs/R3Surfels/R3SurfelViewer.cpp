@@ -20,6 +20,16 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
+// Draw mode
+////////////////////////////////////////////////////////////////////////
+
+#define R3_SURFEL_VIEWER_DRAW_WITH_GLBEGIN   0
+#define R3_SURFEL_VIEWER_DRAW_WITH_VBO       1
+#define R3_SURFEL_VIEWER_DRAW_METHOD R3_SURFEL_VIEWER_DRAW_WITH_VBO
+
+  
+  
+////////////////////////////////////////////////////////////////////////
 // Surfel viewer constructor/destructor
 ////////////////////////////////////////////////////////////////////////
 
@@ -116,7 +126,7 @@ R3SurfelViewer(R3SurfelScene *scene)
 R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
-#ifdef R3_SURFEL_DRAW_WITH_VBO
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
   if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
   if (vbo_color_buffer > 0) glDeleteBuffers(1, &vbo_color_buffer);
@@ -184,9 +194,8 @@ NodeVisibility(R3SurfelNode *node) const
     }
   }
 
-#if 0
+#if (R3_SURFEL_VIEWER_DRAW_METHOD != R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Check viewing frustum
-  // Note: can't use this with VBO 
   if (node->Complexity() > 1000) {
     if (!viewing_frustum.IsEmpty()) {
       if (!R3Intersects(viewing_frustum, node->BBox())) return 0;
@@ -786,7 +795,7 @@ Redraw(void)
   else glEnable(GL_CULL_FACE);
 
 
-#ifdef R3_SURFEL_DRAW_WITH_VBO
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   if (surfel_visibility) {
     if (shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
       DrawSurfels(surfel_color_scheme);
@@ -2186,10 +2195,11 @@ PickNode(int x, int y, R3Point *picked_position,
   // Set OpenGL stuff
   glPointSize(pick_tolerance);    
 
-#ifdef R3_SURFEL_DRAW_WITH_VBO
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
+  // Draw with VBO
   DrawVBO(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
 #else
-  // Draw everything
+  // Draw with glBegin ... glEnd
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
     if (!NodeVisibility(node)) continue;
@@ -2437,7 +2447,7 @@ InvalidateVBO(void)
 void R3SurfelViewer::
 UpdateVBO(void)
 {
-#ifdef R3_SURFEL_DRAW_WITH_VBO
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Check if VBO is uptodate
   if (vbo_nsurfels > 0) return;
 
@@ -2534,7 +2544,7 @@ UpdateVBO(void)
 void R3SurfelViewer::
 DrawVBO(int color_scheme)
 {
-#ifdef R3_SURFEL_DRAW_WITH_VBO
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Update VBO
   UpdateVBO();
 

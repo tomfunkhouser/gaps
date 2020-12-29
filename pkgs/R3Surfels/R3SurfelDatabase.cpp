@@ -686,18 +686,16 @@ InternalReleaseBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
   // Write block
   if (!SyncBlock(block)) return 0;
     
-#ifdef R3_SURFEL_DRAW_WITH_DISPLAY_LIST
-  // Delete opengl display lists
-  if (block->opengl_id > 0) {
-    glDeleteLists(block->opengl_id, 2);
-    block->opengl_id = 0;
-  }
-#endif
-
-#ifdef DRAW_WITH_VBO
+#if (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_VBO)
   // Delete opengl vertex buffer object
   if (block->opengl_id > 0) {
     glDeleteBuffers(1, &block->opengl_id);
+    block->opengl_id = 0;
+  }
+#elif (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_DISPLAY_LIST)
+  // Delete opengl display lists
+  if (block->opengl_id > 0) {
+    glDeleteLists(block->opengl_id, 2);
     block->opengl_id = 0;
   }
 #endif

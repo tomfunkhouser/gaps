@@ -563,6 +563,10 @@ void GLUTInit(int *argc, char **argv)
   glutMotionFunc(GLUTMouseMotion);
   atexit(GLUTStop);
 
+  // Initialize packages (calls glewInit)
+  R3InitGraphics();
+  R3InitSurfels();
+
   // Initialize viewer
   viewer->Initialize();
 }
