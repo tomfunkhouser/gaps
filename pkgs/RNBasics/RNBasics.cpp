@@ -25,7 +25,10 @@ int RNInitBasics(void)
     // Check whether are already initialized 
     if ((RNbasics_active_count++) > 0) return TRUE;
 
-    // Initialize submodules 
+    // Initialize submodules
+    if (!RNInitGrfx()) return FALSE;
+
+    // Seed random number generator
     RNSeedRandomScalar();
 
     // Return OK status 
@@ -40,7 +43,7 @@ void RNStopBasics(void)
     if ((--RNbasics_active_count) > 0) return;
 
     // Stop submodules 
-    // ???
+    RNStopGrfx();
 }
 
 

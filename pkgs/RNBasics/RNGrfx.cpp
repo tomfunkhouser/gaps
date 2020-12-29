@@ -61,6 +61,14 @@ RNInitGrfx(void)
     // Check whether are already initialized 
     if ((RNgrfx_active_count++) > 0) return 1;
 
+    // Initialize glew
+#   ifdef GLEW_STATIC
+        GLenum glew_status = glewInit();
+        if (glew_status != GLEW_OK) {
+            RNFail("Unable to initialize glew");
+        }
+#   endif
+  
     // Initialize submodules 
     // ???
 

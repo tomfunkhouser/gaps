@@ -40,6 +40,8 @@
 #           include <GL/gl.h>
 #           include <GL/glu.h>
 #       else
+#           define GLEW_STATIC 1
+#           include <GL/glew.h>
 #           include <GL/gl.h>
 #           include <GL/glu.h>
 #       endif
