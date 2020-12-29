@@ -322,7 +322,7 @@ CreateColor(unsigned char *color, double value) const
     value *= 10 * 255;
     color[0] = 0;
     color[1] = value;
-    color[2] = 1;
+    color[2] = 255;
   }
   else if (value < 0.5) {
     value = (value - 0.1) * 2.5 * 255;
