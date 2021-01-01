@@ -2486,7 +2486,7 @@ UpdateVBO(void)
         for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
           const R3Surfel *surfel = block->Surfel(k);
           assert(surfel_positionsp - surfel_positions < 3*vbo_nsurfels);
-          assert(surfel_normalsp - surfel_colors < 3*vbo_nsurfels);
+          assert(surfel_normalsp - surfel_normals < 3*vbo_nsurfels);
           assert(surfel_colorsp - surfel_colors < 3*vbo_nsurfels);
           *surfel_positionsp++ = block_origin.X() + surfel->X();
           *surfel_positionsp++ = block_origin.Y() + surfel->Y();
@@ -2506,7 +2506,7 @@ UpdateVBO(void)
   
     // Just checking
     assert(surfel_positionsp - surfel_positions == 3*vbo_nsurfels);
-    assert(surfel_normalsp - surfel_colors == 3*vbo_nsurfels);
+    assert(surfel_normalsp - surfel_normals == 3*vbo_nsurfels);
     assert(surfel_colorsp - surfel_colors == 3*vbo_nsurfels);
 
     // Generate VBO buffers (first time only)
