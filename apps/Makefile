@@ -49,6 +49,7 @@ target:
 	cd conf2conf; $(MAKE) $(TARGET)
 	cd sflinfo; $(MAKE) $(TARGET)
 	cd sflview; $(MAKE) $(TARGET)
+	cd sfllabel; $(MAKE) $(TARGET)
 	cd gapsview; $(MAKE) $(TARGET)
 
 
