@@ -255,6 +255,8 @@ class R3Mesh {
       // Returns the bounding box of the face
     RNArea FaceArea(const R3MeshFace *face) const;
       // Returns the area of the face
+    RNRgb FaceColor(const R3MeshFace *face) const;
+      // Returns the color of the face
     RNScalar FaceAspect(const R3MeshFace *face) const;
       // Returns the ratio of the circumradius to twice its inradius
     int FaceMaterial(const R3MeshFace *face) const;
@@ -401,6 +403,10 @@ class R3Mesh {
       // Returns the edge across a triangle from a vertex (the edge is the base and the vertex is the apex)
     R3MeshEdge *EdgeBetweenFaces(const R3MeshFace *face1, const R3MeshFace *face2) const;
       // Returns the edge between two faces (or NULL if there is none)
+    R3MeshEdge *ShortestEdgeOnFace(const R3MeshFace *face) const;
+      // Returns the shortest of the edges on a face
+    R3MeshEdge *LongestEdgeOnFace(const R3MeshFace *face) const;
+      // Returns the longest of the edges on a face
     R3MeshFace *FaceOnFace(const R3MeshFace *face) const;
       // Returns any face connected to face
     R3MeshFace *FaceOnFace(const R3MeshFace *face, int k) const;

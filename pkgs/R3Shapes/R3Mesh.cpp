@@ -703,6 +703,20 @@ EdgeAspect(const R3MeshEdge *e) const
 
 
 
+RNRgb R3Mesh:: 
+FaceColor(const R3MeshFace *f) const
+{
+  R3MeshVertex *v0 = VertexOnFace(f, 0);
+  R3MeshVertex *v1 = VertexOnFace(f, 1);
+  R3MeshVertex *v2 = VertexOnFace(f, 2);
+  const RNRgb& c0 = VertexColor(v0);
+  const RNRgb& c1 = VertexColor(v1);
+  const RNRgb& c2 = VertexColor(v2);
+  return (c0 + c1 + c2) / 3.0;
+}
+
+
+
 RNScalar R3Mesh:: 
 FaceAspect(const R3MeshFace *f) const
 {
@@ -969,6 +983,50 @@ VertexBetweenFaces(const R3MeshFace *f1, const R3MeshFace *f2, RNDirection dir) 
     if (f1->vertex[2] == f2->vertex[1]) return f1->vertex[2];
     if (f1->vertex[2] == f2->vertex[2]) return f1->vertex[2];
     return NULL;
+  }
+}
+
+
+
+R3MeshEdge *R3Mesh::
+ShortestEdgeOnFace(const R3MeshFace *f) const
+{
+  // Return shortest of three edges on face
+  R3MeshEdge *e0 = EdgeOnFace(f, 0);
+  R3MeshEdge *e1 = EdgeOnFace(f, 1);
+  R3MeshEdge *e2 = EdgeOnFace(f, 2);
+  RNLength d0 = EdgeLength(e0);
+  RNLength d1 = EdgeLength(e1);
+  RNLength d2 = EdgeLength(e2);
+  if (d0 < d1) {
+    if (d0 < d2) return e0;
+    else return e2;
+  }
+  else {
+    if (d1 < d2) return e1;
+    else return e2;
+  }
+}
+
+
+
+R3MeshEdge *R3Mesh::
+LongestEdgeOnFace(const R3MeshFace *f) const
+{
+  // Return longest of three edges on face
+  R3MeshEdge *e0 = EdgeOnFace(f, 0);
+  R3MeshEdge *e1 = EdgeOnFace(f, 1);
+  R3MeshEdge *e2 = EdgeOnFace(f, 2);
+  RNLength d0 = EdgeLength(e0);
+  RNLength d1 = EdgeLength(e1);
+  RNLength d2 = EdgeLength(e2);
+  if (d0 > d1) {
+    if (d0 > d2) return e0;
+    else return e2;
+  }
+  else {
+    if (d1 > d2) return e1;
+    else return e2;
   }
 }
 
