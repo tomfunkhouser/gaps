@@ -610,6 +610,12 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     RNScalar remainder = ideal_face_nsurfels - face_nsurfels;
     if (remainder > RNRandomScalar()) face_nsurfels++;
 
+    // Get normal, tangent, etc.
+    R3Vector normal = mesh.FaceNormal(face);
+    R3MeshEdge *edge = mesh.LongestEdgeOnFace(face);
+    R3Vector tangent = mesh.EdgeVector(edge); tangent.Normalize();
+    RNLength radius = surfel_spacing;
+    
     // Generate random surfels on face
     for (int j = 0; j < face_nsurfels; j++) {
       RNScalar r1 = sqrt(RNRandomScalar());
@@ -618,12 +624,26 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
       RNScalar t1 = r1 * (1.0 - r2);
       RNScalar t2 = r1 * r2;
       R3Point position = t0*p0 + t1*p1 + t2*p2;
-      R3Vector normal = mesh.FaceNormal(face); // t0*n0 + t1*n1 + t2*n2; normal.Normalize();
-      RNRgb color = t0*c0 + t1*c1 + t2*c2; 
-      R3Surfel *surfel = new R3Surfel(position.X(), position.Y(), position.Z(),
-        normal.X(), normal.Y(), normal.Z(), surfel_spacing,
-        255*color.R(), 255*color.G(), 255*color.B(), R3_SURFEL_AERIAL_FLAG);
+      RNRgb color = t0*c0 + t1*c1 + t2*c2;
+      int category = label_index;
+      if (category < 0) category = 0;
+      if (category > 255) category = 255;
+      double elevation = position.Z() - mesh.BBox().ZMin();
+      int encoded_elevation = 400 * elevation + 32768;
+      if (encoded_elevation < 0) encoded_elevation = 0;
+      if (encoded_elevation > 65535) encoded_elevation = 65535;
+      unsigned int attribute = category | (encoded_elevation << 16);
+      R3Surfel *surfel = new R3Surfel();
+      surfel->SetPosition(position.X(), position.Y(), position.Z());
+      surfel->SetColor(255*color.R(), 255*color.G(), 255*color.B());
+      surfel->SetNormal(normal.X(), normal.Y(), normal.Z());
+      surfel->SetTangent(tangent.X(), tangent.Y(), tangent.Z());
+      surfel->SetRadius(radius);
+      surfel->SetIdentifier(surfel_count+1);
+      surfel->SetAttribute(attribute);
+      surfel->SetAerial(FALSE);
       segment_surfels->Insert(surfel);
+      surfel_count++;
     }
   }
 
@@ -699,7 +719,6 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
     delete segment_surfels;
 
     // Increment statistics
-    surfel_count += block->NSurfels();
     node_count++;
   }
   
