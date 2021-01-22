@@ -158,6 +158,9 @@ UpdateOperands(void)
   // Check if already uptodate
   if (noperands > 0) return;
 
+  // Check object
+  if (!object) return;
+
   // Check property type
   switch(type) {
   case R3_SURFEL_OBJECT_PCA_PROPERTY: {
