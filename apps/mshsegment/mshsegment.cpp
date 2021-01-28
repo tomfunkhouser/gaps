@@ -20,6 +20,7 @@ using namespace gaps;
 static char *input_mesh_name = NULL;
 static char *output_mesh_name = NULL;
 static char *output_json_name = NULL;
+static char *output_ascii_name = NULL;
 static double max_neighbor_normal_angle = 0;
 static double max_neighbor_color_difference = 0;
 static int set_face_materials = 0;
@@ -185,6 +186,32 @@ WriteJson(R3Mesh *mesh, const char *filename)
 
 
 
+static int
+WriteAscii(Segmentation *segmentation, const char *filename)
+{
+  // Check filename
+  if (!filename) return 1;
+
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Write segmentation
+  if (!segmentation->WriteFile(filename)) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Wrote segments to %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Segmentation functions
 ////////////////////////////////////////////////////////////////////////
@@ -294,35 +321,42 @@ UpdateMesh(R3Mesh *mesh, Segmentation *segmentation)
 
 
 
-static int
-SegmentMesh(R3Mesh *mesh)
+static Segmentation *
+CreateSegmentation(R3Mesh *mesh)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
-  // Initialize segmentation
-  Segmentation segmentation;
+  // Allocate segmentation
+  Segmentation *segmentation = new Segmentation();
+  if (!segmentation) {
+    RNFail("Unable to allocate segmentation\n");
+    return NULL;
+  }
 
   // Create points
-  if (!CreatePoints(mesh, &segmentation)) return 0;
+  if (!CreatePoints(mesh, segmentation)) {
+    delete segmentation;
+    return NULL;
+  }
 
   // Create clusters
-  if (!segmentation.CreateClusters(PLANE_PRIMITIVE_TYPE)) return 0;
+  if (!segmentation->CreateClusters(PLANE_PRIMITIVE_TYPE)) {
+    delete segmentation;
+    return NULL;
+  }
 
-  // Update mesh
-  if (!UpdateMesh(mesh, &segmentation)) return 0;
-  
   // Print statistics
   if (print_verbose) {
-    printf("Segmented mesh ...\n");
+    printf("Created segmentation ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Segments = %d\n", segmentation.clusters.NEntries());
+    printf("  # Segments = %d\n", segmentation->clusters.NEntries());
     fflush(stdout);
   }
 
-  // Return success
-  return 1;
+  // Return segmentation
+  return segmentation;
 }
 
 
@@ -538,6 +572,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-output_json")) {
         argc--; argv++; output_json_name = *argv;
       }
+      else if (!strcmp(*argv, "-output_ascii")) {
+        argc--; argv++; output_ascii_name = *argv;
+      }
       else {
         RNFail("Invalid program argument: %s", *argv);
         exit(1);
@@ -578,9 +615,13 @@ main(int argc, char **argv)
   R3Mesh *mesh = ReadMesh(input_mesh_name);
   if (!mesh) exit(-1);
 
-  // Segment mesh
-  if (!SegmentMesh(mesh)) exit(-1);
+  // Create segmentation
+  Segmentation *segmentation = CreateSegmentation(mesh);
+  if (!segmentation) exit(-1);
 
+  // Update mesh
+  if (!UpdateMesh(mesh, segmentation)) return 0;
+  
   // Refine boundaries
   if (refine_mesh_boundaries) {
     if (!RefineBoundaries(mesh)) exit(-1);
@@ -592,6 +633,15 @@ main(int argc, char **argv)
   // Write segments to json file
   if (!WriteJson(mesh, output_json_name)) exit(-1);
 
+  // Write segments to ascii file
+  if (!WriteAscii(segmentation, output_ascii_name)) exit(-1);
+
+  // Delete segmentation
+  delete segmentation;
+
+  // Delete mesh
+  delete mesh;
+  
   // Return success 
   return 0;
 }
