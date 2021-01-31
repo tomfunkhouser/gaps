@@ -1108,7 +1108,7 @@ void GLUTMotion(int x, int y)
   GLUTmouse_drag += dx*dx + dy*dy;
 
   // Check if control key is down
-  if (glutGetModifiers() & GLUT_ACTIVE_CTRL) {
+  if (GLUTmodifiers & GLUT_ACTIVE_CTRL) {
     // Update rubber box
     if (rubber_box_active) {
       DrawRubberBox();
