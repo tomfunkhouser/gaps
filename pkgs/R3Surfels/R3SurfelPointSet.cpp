@@ -1048,13 +1048,17 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
 
     // Compute radius of neighborhood
     int neighbor_index = (npositions <= 6) ? npositions-1 : 6;
-    RNScalar radius = R3Distance(positions[neighbor_index], point->Position());
-    if (radius < RN_EPSILON) radius = RN_EPSILON;
+    RNScalar radius0 = R3Distance(positions[neighbor_index], point->Position());
+    if (radius0 < RN_EPSILON) radius0 = RN_EPSILON;
     
     // Compute normal with PCA of neighborhood
+    RNScalar variances[3];
     R3Point centroid = R3Centroid(npositions, positions);
-    R3Triad triad = R3PrincipleAxes(centroid, npositions, positions);
+    R3Triad triad = R3PrincipleAxes(centroid, npositions, positions, NULL, variances);
     R3Vector normal = triad[2];
+    R3Vector tangent = triad[0];
+    RNScalar aspect = (variances[0] > 0) ? sqrt(variances[1]/variances[0]) : 1;
+    RNScalar radius1 = aspect * radius0;
 
     // Flip normal
     R3SurfelBlock *block = point->Block();
@@ -1075,8 +1079,11 @@ UpdateNormals(RNScalar max_neighborhood_radius, int max_neighborhood_points) con
     // Assign normal
     if (!point->HasNormal()) point->SetNormal(normal);
 
+    // Assign normal
+    if (!point->HasTangent()) point->SetTangent(tangent);
+    
     // Assign radius
-    if (point->Radius() == 0) point->SetRadius(radius);
+    if (point->Radius(0) == 0) point->SetRadius(radius0, radius1);
   }
 
   // Delete data

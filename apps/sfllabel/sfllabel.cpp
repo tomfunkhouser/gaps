@@ -173,15 +173,14 @@ ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
   start_time.Read();
 
   // Read all image channels
-  if (!ReadPixelDatabase(scene, pixel_database)) return 0;
+  if (!ReadPixelDatabase(scene, pixel_database, max_images)) return 0;
 
   // Print statistics
   if (print_verbose) {
     // Gather statistics
     int color_count = 0;
     int depth_count = 0;
-    int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
-    for (int i = 0; i < scene->NImages(); i += skip) {
+    for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
       if (image->RedChannel()) color_count++;
       if (image->DepthChannel()) depth_count++;
@@ -211,15 +210,14 @@ ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
 
   // Read all image channels
   if (!ReadImageDirectory(scene, image_directory,
-    depth_scale, depth_exponent)) return 0;
+    depth_scale, depth_exponent, max_images)) return 0;
 
   // Print statistics
   if (print_verbose) {
     // Gather statistics
     int color_count = 0;
     int depth_count = 0;
-    int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
-    for (int i = 0; i < scene->NImages(); i += skip) {
+    for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
       if (image->RedChannel()) color_count++;
       if (image->DepthChannel()) depth_count++;

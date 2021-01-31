@@ -536,7 +536,7 @@ ReadFile(const char *filename)
   // Parse input filename extension
   const char *input_extension;
   if (!(input_extension = strrchr(filename, '.'))) {
-    RNFail("Input file has no extension (e.g., .jpg).\n");
+    RNFail("Input file %s has no extension (e.g., .jpg).\n", filename);
     return 0;
   }
 

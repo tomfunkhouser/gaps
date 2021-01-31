@@ -76,7 +76,7 @@ public:
   ////////////////////////////////////////////////////////////////////////
 
   // Update functions
-  void UpdateNormals(RNScalar max_neighborhood_radius = 1.0, int max_neighborhood_points = 8) const;
+  void UpdateNormals(RNScalar max_neighborhood_radius = 1.0, int max_neighborhood_points = 16) const;
 
   // Get arrays of things containing points in pointset
   RNArray<R3SurfelBlock *> *Blocks(void) const;

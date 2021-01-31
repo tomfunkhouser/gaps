@@ -944,7 +944,7 @@ RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label)
 
 int
 ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
-  double depth_scale, double depth_exponent)
+  double depth_scale, double depth_exponent, int max_images)
 {
   /// Get convenient variables
   double ds = (depth_scale >= 0) ? 1.0 / depth_scale : 1.0;
@@ -952,7 +952,8 @@ ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
   
   // Read all channels for all images
   char filename[1024];
-  for (int i = 0; i < scene->NImages(); i++) {
+  int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
+  for (int i = 0; i < scene->NImages(); i += skip) {
     R3SurfelImage *image = scene->Image(i);
 
     // Get color image name
@@ -997,14 +998,15 @@ ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
 
 
 int
-ReadPixelDatabase(R3SurfelScene *scene, const char *filename)
+ReadPixelDatabase(R3SurfelScene *scene, const char *filename, int max_images)
 {
   // Open pixel database
   R2PixelDatabase database;
   if (!database.OpenFile(filename, "r")) return 0;
   
   // Read all channels for all images
-  for (int i = 0; i < scene->NImages(); i++) {
+  int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
+  for (int i = 0; i < scene->NImages(); i += skip) {
     R3SurfelImage *image = scene->Image(i);
     char imagekey[1024];
 

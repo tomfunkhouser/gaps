@@ -154,10 +154,10 @@ int RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label);
 // Image reading
 ////////////////////////////////////////////////////////////////////////
 
-int ReadPixelDatabase(R3SurfelScene *scene, const char *filename);
+int ReadPixelDatabase(R3SurfelScene *scene, const char *filename, int max_images = 0);
 
 int ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
-  double depth_scale = 2000, double depth_exponent = 0.5);
+  double depth_scale = 2000, double depth_exponent = 0.5, int max_images = 0);
 
 
   

@@ -495,7 +495,7 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
 
   // Write color channels
   surface->WriteColorChannels();
-
+  
   // Return success
   return 1;
 }
