@@ -29,6 +29,7 @@ static const char *pixel_database = NULL;
 static const char *image_directory = NULL;
 static double depth_scale = 2000;
 static double depth_exponent = 0.5;
+static int max_images = 0;
 static int print_verbose = 0;
 
 
@@ -179,7 +180,8 @@ ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
     // Gather statistics
     int color_count = 0;
     int depth_count = 0;
-    for (int i = 0; i < scene->NImages(); i++) {
+    int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
+    for (int i = 0; i < scene->NImages(); i += skip) {
       R3SurfelImage *image = scene->Image(i);
       if (image->RedChannel()) color_count++;
       if (image->DepthChannel()) depth_count++;
@@ -216,7 +218,8 @@ ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
     // Gather statistics
     int color_count = 0;
     int depth_count = 0;
-    for (int i = 0; i < scene->NImages(); i++) {
+    int skip = (max_images > 0) ? scene->NImages() / max_images + 1 : 1;
+    for (int i = 0; i < scene->NImages(); i += skip) {
       R3SurfelImage *image = scene->Image(i);
       if (image->RedChannel()) color_count++;
       if (image->DepthChannel()) depth_count++;
@@ -320,6 +323,9 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-depth_exponent")) { 
         argv++; argc--; depth_exponent = atof(*argv);
+      }
+      else if (!strcmp(*argv, "-max_images")) { 
+        argv++; argc--; max_images = atoi(*argv);
       }
       else { 
         RNFail("Invalid program argument: %s", *argv); 
