@@ -454,8 +454,84 @@ CreateNode(R3SurfelScene *scene,
 
   
 ////////////////////////////////////////////////////////////////////////
-// Node manipulation
+// Scene manipulation
 ////////////////////////////////////////////////////////////////////////
+
+static int
+RemoveEmptyObjects(R3SurfelScene *scene, R3SurfelObject *object)
+{
+  // Check object
+  if (!object) return 0;
+  if (object == scene->RootObject()) return 1;
+  
+  // Remove empty parts
+  for (int i = 0; i < object->NParts(); i++) {
+    R3SurfelObject *part = object->Part(i);
+    if (!RemoveEmptyObjects(scene, part)) return 0;
+  }
+
+  // Check if object is empty
+  if (object->NParts() > 0) return 1;
+  if (object->NNodes() > 0) return 1;
+
+  // Delete object
+  scene->RemoveObject(object);
+  delete object;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+RemoveEmptyObjects(R3SurfelScene *scene)
+{
+  // Remove empty objects
+  return RemoveEmptyObjects(scene, scene->RootObject());
+}
+
+
+
+static int
+RemoveEmptyNodes(R3SurfelTree *tree, R3SurfelNode *node)
+{
+  // Check node
+  if (!node) return 0;
+  if (node == tree->RootNode()) return 1;
+  
+  // Remove empty parts
+  for (int i = 0; i < node->NParts(); i++) {
+    R3SurfelNode *part = node->Part(i);
+    if (!RemoveEmptyNodes(tree, part)) return 0;
+  }
+
+  // Check if node is empty
+  if (node->NParts() > 0) return 1;
+  if (node->NBlocks() > 0) return 1;
+
+  // Delete node
+  tree->RemoveNode(node);
+  delete node;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+RemoveEmptyNodes(R3SurfelScene *scene)
+{
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+
+  // Remove empty nodes
+  return RemoveEmptyNodes(tree, tree->RootNode());
+}
+
+
 
 int
 RemoveInteriorNodes(R3SurfelScene *scene)
@@ -508,6 +584,128 @@ RemoveInteriorNodes(R3SurfelScene *scene)
   return 1;
 }
 
+
+
+int
+CullScans(R3SurfelScene *scene, const R3SurfelConstraint *constraint)
+{
+  // Check inputs
+  if (!scene) return 0;
+  if (!constraint) return 0;
+
+  // Find all scans to delete
+  RNArray<R3SurfelScan *> delete_scans;
+  for (int i = 0; i < scene->NScans(); i++) {
+    R3SurfelScan *scan = scene->Scan(i);
+    if (constraint->Check(scan->Viewpoint()) != R3_SURFEL_CONSTRAINT_FAIL) continue;
+    delete_scans.Insert(scan);
+  }
+
+  // Delete scans
+  for (int i = 0; i < delete_scans.NEntries(); i++) {
+    R3SurfelScan *scan = delete_scans.Kth(i);
+    delete scan;
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+int
+CullImages(R3SurfelScene *scene, const R3SurfelConstraint *constraint)
+{
+  // Check inputs
+  if (!scene) return 0;
+  if (!constraint) return 0;
+
+  // Find all images to delete
+  RNArray<R3SurfelImage *> delete_images;
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    if (constraint->Check(image->Viewpoint()) != R3_SURFEL_CONSTRAINT_FAIL) continue;
+    delete_images.Insert(image);
+  }
+
+  // Delete images
+  for (int i = 0; i < delete_images.NEntries(); i++) {
+    R3SurfelImage *image = delete_images.Kth(i);
+    delete image;
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+int
+CullSurfels(R3SurfelScene *scene, const R3SurfelConstraint *constraint)
+{
+  // Get surfel tree
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+  
+  // Find all blocks
+  RNArray<R3SurfelBlock *> blocks;
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      blocks.Insert(block);
+    }
+  }
+
+  // Cull every block by constraint
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    R3SurfelNode *node = block->Node();
+    R3SurfelBlock *blockA = NULL, *blockB = NULL;
+    tree->SplitBlock(node, block, *constraint, &blockA, &blockB);
+    if (blockA && (blockA->NSurfels() == 0)) delete blockA;
+    if (blockB) delete blockB;
+  }
+
+  // Remove empty nodes
+  if (!RemoveEmptyNodes(scene)) return 0;
+
+  // Remove empty objects
+  if (!RemoveEmptyObjects(scene)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+CullScene(R3SurfelScene *scene, const R3SurfelConstraint *constraint)
+{
+  // Cull scan
+  if (!CullScans(scene, constraint)) return 0;
+
+  // Cull images
+  if (!CullImages(scene, constraint)) return 0;
+
+  // Cull surfels
+  if (!CullSurfels(scene, constraint)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+CullScene(R3SurfelScene *scene, const R3Box& box)
+{
+  // Cull scene
+  R3SurfelBoxConstraint box_constraint(box);
+  return CullScene(scene, &box_constraint);
+}
 
 
 

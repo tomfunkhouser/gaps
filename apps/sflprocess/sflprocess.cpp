@@ -2410,6 +2410,17 @@ int main(int argc, char **argv)
       if (!OverwriteSurfelCategoryIdentifiers(scene, category_identifier_filename)) exit(-1);
       noperations++;
     }
+    else if (!strcmp(*argv, "-cull_box")) { 
+      R3Box cull_box;
+      argc--; argv++; cull_box[0][0] = atof(*argv); 
+      argc--; argv++; cull_box[0][1] = atof(*argv); 
+      argc--; argv++; cull_box[0][2] = atof(*argv); 
+      argc--; argv++; cull_box[1][0] = atof(*argv); 
+      argc--; argv++; cull_box[1][1] = atof(*argv); 
+      argc--; argv++; cull_box[1][2] = atof(*argv); 
+      if (!CullScene(scene, cull_box)) exit(-1);
+      noperations++;
+    }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
       argc--; argv++; char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename)) exit(-1);

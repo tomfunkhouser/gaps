@@ -81,12 +81,22 @@ R3SurfelNode *CreateNode(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Node manipulation
+// Scene manipulation
 ////////////////////////////////////////////////////////////////////////
 
+int RemoveEmptyObjects(R3SurfelScene *scene);
+  
+int RemoveEmptyNodes(R3SurfelScene *scene);
 int RemoveInteriorNodes(R3SurfelScene *scene);
 
+int CullScans(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullImages(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullSurfels(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullScene(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullScene(R3SurfelScene *scene, const R3Box& bbox);
 
+
+  
   
 ////////////////////////////////////////////////////////////////////////
 // Object creation
