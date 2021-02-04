@@ -63,6 +63,7 @@ public:
   // File input/output
   virtual int ReadFile(const char *filename, int read_every_kth_image = 1);
   virtual int ReadConfigurationFile(const char *filename, int read_every_kth_image = 1);
+  virtual int ReadSegmentationFile(const char *filename);
   virtual int WriteFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteConfigurationFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteObjFile(const char *filename) const;

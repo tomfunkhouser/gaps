@@ -21,6 +21,7 @@ using namespace gaps;
 static const char *input_configuration_filename = NULL;
 static const char *output_configuration_filename = NULL;
 static const char *input_mesh_filename = NULL;
+static const char *input_segmentation_filename = NULL;
 static const char *input_overlap_filename = NULL;
 static const char *input_overlap_matrix = NULL;
 static int load_every_kth_image = 1;
@@ -128,6 +129,31 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
 
   // Print statistics
   if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration.NImages());
+    printf("  # Surfaces = %d\n", configuration.NSurfaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadSegmentation(RGBDConfiguration& configuration, const char *filename) 
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read segmentation file
+  if (!configuration.ReadSegmentationFile(filename)) return 0;
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Read segmentation from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", configuration.NImages());
     printf("  # Surfaces = %d\n", configuration.NSurfaces());
@@ -1475,6 +1501,7 @@ ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-read_all_channels")) read_all_channels = TRUE; 
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-segmentation")) { argc--; argv++; input_segmentation_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_file")) { argc--; argv++; input_overlap_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_matrix")) { argc--; argv++; input_overlap_matrix = *argv; }
       else if (!strcmp(*argv, "-load_every_kth_image")) { argc--; argv++; load_every_kth_image = atoi(*argv); }
@@ -1530,6 +1557,11 @@ main(int argc, char **argv)
   // Read mesh
   if (input_mesh_filename) {
     if (!ReadMesh(configuration, input_mesh_filename)) exit(-1);
+  }
+
+  // Read segmentation
+  if (input_segmentation_filename) {
+    if (!ReadSegmentation(configuration, input_segmentation_filename)) exit(-1);
   }
 
   // Read image-image overlaps

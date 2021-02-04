@@ -39,7 +39,8 @@ RGBDSurface(void)
     data(NULL),
     rectangle(NULL),
     mesh(NULL),
-    mesh_face_index(NULL)
+    mesh_face_index(NULL),
+    thickness(0)
 {
 }
 
@@ -59,7 +60,8 @@ RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel
     data(NULL),
     rectangle(rectangle),
     mesh(NULL),
-    mesh_face_index(NULL)
+    mesh_face_index(NULL),
+    thickness(0)
 {
   // Check rectangle
   if (!rectangle) return;
@@ -96,7 +98,8 @@ RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing)
     data(NULL),
     rectangle(NULL),
     mesh(mesh),
-    mesh_face_index(NULL)
+    mesh_face_index(NULL),
+    thickness(0)
 {
   // Check mesh
   if (mesh->NFaces() == 0) return;

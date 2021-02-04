@@ -141,6 +141,9 @@ public: // temporary
   // Mesh surface variables
   R3Mesh *mesh;
   R2Grid *mesh_face_index;
+
+  // Thickness in direction off surface
+  RNScalar thickness;
 };
 
 

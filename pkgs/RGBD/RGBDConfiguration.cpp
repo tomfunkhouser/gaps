@@ -289,6 +289,9 @@ ReadFile(const char *filename, int read_every_kth_image)
   if (!strncmp(extension, ".conf", 5)) {
     if (!ReadConfigurationFile(filename, read_every_kth_image)) return 0;
   }
+  else if (!strncmp(extension, ".seg", 4)) {
+    if (!ReadSegmentationFile(filename)) return 0;
+  }
   else {
     RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
     return 0;
@@ -612,9 +615,9 @@ ReadConfigurationStream(FILE *fp, int read_every_kth_image)
     else if (!strcmp(cmd, "rectangle")) {
       // Parse surface
       char texture_filename[2048];
-      RNScalar pixel_spacing, c[3], n[3], u[3], r[2];
-      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, texture_filename, &pixel_spacing, 
-         &c[0], &c[1], &c[2], &n[0], &n[1], &n[2], &u[0], &u[1], &u[2], &r[0], &r[1]) != (unsigned int) 14) {
+      RNScalar pixel_spacing, c[3], n[3], u[3], r[3];
+      if (sscanf(buffer, "%s%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", cmd, texture_filename, &pixel_spacing, 
+        &c[0], &c[1], &c[2], &n[0], &n[1], &n[2], &u[0], &u[1], &u[2], &r[0], &r[1], &r[2]) != (unsigned int) 15) {
         RNFail("Error parsing line %d of configuration file\n", line_number);
         return 0;
       }
@@ -634,6 +637,7 @@ ReadConfigurationStream(FILE *fp, int read_every_kth_image)
       // RGBDSurface *surface = new RGBDSurface(texture_filename, mesh, pixel_spacing);
       R3Rectangle *rectangle = new R3Rectangle(center, axis0, axis1, r[0], r[1]);
       RGBDSurface *surface = new RGBDSurface(texture_filename, rectangle, pixel_spacing);
+      surface->thickness = r[2];
       InsertSurface(surface);
     }
     else if (!strcmp(cmd, "mesh")) {
@@ -692,11 +696,11 @@ WriteConfigurationStream(FILE *fp, int write_every_kth_image) const
       RNLength rx = surface->rectangle->Radius(0);
       RNLength ry = surface->rectangle->Radius(1);
       const char *texture_filename = (surface->TextureFilename()) ? surface->TextureFilename() : "-";
-      fprintf(fp, "rectangle  %s  %g   %g %g %g   %g %g %g   %g %g %g   %g %g\n",
+      fprintf(fp, "rectangle  %s  %g   %g %g %g   %g %g %g   %g %g %g   %g %g %g\n",
         texture_filename, surface->WorldTexelSpacing(),
         centroid.X(), centroid.Y(), centroid.Z(),
         normal.X(), normal.Y(), normal.Z(),
-        up.X(), up.Y(), up.Z(), rx, ry);
+        up.X(), up.Y(), up.Z(), rx, ry, surface->thickness);
     }
     else if (surface->mesh) {
       const char *texture_filename = (surface->TextureFilename()) ? surface->TextureFilename() : "-";
@@ -750,6 +754,76 @@ WriteConfigurationStream(FILE *fp, int write_every_kth_image) const
        m[2][0], m[2][1], m[2][2], m[2][3],
        m[3][0], m[3][1], m[3][2], m[3][3]);
   }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// OBJ output functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDConfiguration::
+ReadSegmentationFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open segmentation file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  int id, npoints, primitive_type;
+  double area, total_affinity, possible_affinity, timestamp;
+  R3Point centroid, center;
+  R3Plane plane;
+  RNRgb color;
+  R3Vector axes[3];
+  double variances[3];
+  R3Box extent;
+  while (fscanf(fp, "%d%d%lf%lf%lf%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+    &id, &npoints, &area,
+    &total_affinity, &possible_affinity, &primitive_type,
+    &centroid[0], &centroid[1], &centroid[2],
+    &plane[0], &plane[1], &plane[2], &plane[3], 
+    &color[0], &color[1], &color[2],
+    &timestamp,
+    &center[0], &center[1], &center[2],
+    &axes[0][0], &axes[0][1], &axes[0][2],
+    &axes[1][0], &axes[1][1], &axes[1][2],
+    &axes[2][0], &axes[2][1], &axes[2][2],
+    &variances[0], &variances[1], &variances[2],
+    &extent[0][0], &extent[0][1], &extent[0][2],
+    &extent[1][0], &extent[1][1], &extent[1][2]) == (unsigned int) 38) {
+
+    // Determine radii
+    RNLength radius0 = 0.5 * (extent[1][0] - extent[0][0]);
+    if (RNIsZero(radius0)) continue;
+    RNLength radius1 = 0.5 * (extent[1][1] - extent[0][1]);
+    if (RNIsZero(radius1)) continue;
+    RNLength radius2 = 0.5 * (extent[1][2] - extent[0][2]);
+
+    // Determine center of extent
+    center += (radius0 + extent[0][0]) * axes[0];
+    center += (radius1 + extent[0][1]) * axes[1];
+
+    // Create rectangle
+    R3Rectangle *rectangle = new R3Rectangle(center, axes[0], axes[1], radius0, radius1);
+
+    // Create RGBD surface
+    double texel_spacing = 0.01;
+    RGBDSurface *rgbd_surface = new RGBDSurface(NULL, rectangle, texel_spacing);
+    rgbd_surface->thickness = radius2;
+
+    // Insert RGBD surface
+    InsertSurface(rgbd_surface);
+  }
+
+  // Close file
+  fclose(fp);
 
   // Return success
   return 1;

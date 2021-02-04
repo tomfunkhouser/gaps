@@ -587,6 +587,30 @@ PrincipleAxes(R3Point *returned_center, RNScalar *returned_variances) const
 
 
 
+R3Box Cluster::
+AxisExtents(void)
+{
+  // Get centroid and axes
+  R3Point center;
+  R3Triad triad = PrincipleAxes(&center);
+  
+  // Find extent
+  R3Box extent = R3null_box;
+  for (int i = 0; i < points.NEntries(); i++) {
+    R3Point position = points[i]->position;
+    R3Vector vector = position - center;
+    RNScalar x = triad.Axis(0).Dot(vector);
+    RNScalar y = triad.Axis(1).Dot(vector);
+    RNScalar z = triad.Axis(2).Dot(vector);
+    extent.Union(R3Point(x, y, z));
+  }
+
+  // Return extent
+  return extent;
+}
+
+
+
 void Cluster::
 EmptyPoints(void)
 {
@@ -2346,7 +2370,8 @@ WriteFile(const char *filename) const
     R3Point center;
     RNScalar variances[3];
     R3Triad axes = cluster->PrincipleAxes(&center, variances);
-    fprintf(fp, "%d %d %g %g %g %d  %g %g %g   %g %g %g %g   %g %g %g  %g  %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g\n",
+    R3Box extent = cluster->AxisExtents();
+    fprintf(fp, "%d %d %g %g %g %d  %g %g %g   %g %g %g %g   %g %g %g  %g  %g %g %g   %g %g %g  %g %g %g  %g %g %g   %g %g %g   %g %g %g  %g %g %g\n",
             i+1, cluster->points.NEntries(), cluster->area,
             cluster->total_affinity, cluster->possible_affinity, cluster->primitive.primitive_type,
             cluster->primitive.centroid.X(), cluster->primitive.centroid.Y(), cluster->primitive.centroid.Z(),
@@ -2355,7 +2380,8 @@ WriteFile(const char *filename) const
             cluster->timestamp,
             center.X(), center.Y(), center.Z(),
             axes[0][0], axes[0][1], axes[0][2], axes[1][0], axes[1][1], axes[1][2], axes[2][0], axes[2][1], axes[2][2],
-            variances[0], variances[1], variances[2]);
+            variances[0], variances[1], variances[2],
+            extent[0][0], extent[0][1], extent[0][2], extent[1][0], extent[1][1], extent[1][2]);
   }
 
   // Close file
