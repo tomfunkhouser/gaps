@@ -12,7 +12,6 @@
 
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Namespace
 ////////////////////////////////////////////////////////////////////////
@@ -291,6 +290,9 @@ ReadFile(const char *filename, int read_every_kth_image)
   }
   else if (!strncmp(extension, ".seg", 4)) {
     if (!ReadSegmentationFile(filename)) return 0;
+  }
+  else if (!strncmp(extension, ".json", 5)) {
+    if (!ReadNeRFFile(filename)) return 0;
   }
   else {
     RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
@@ -762,7 +764,7 @@ WriteConfigurationStream(FILE *fp, int write_every_kth_image) const
 
 
 ////////////////////////////////////////////////////////////////////////
-// OBJ output functions
+// Segmentation input functions
 ////////////////////////////////////////////////////////////////////////
 
 int RGBDConfiguration::
@@ -825,6 +827,201 @@ ReadSegmentationFile(const char *filename)
   // Close file
   fclose(fp);
 
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// NeRF input functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+GetJsonObjectMember(Json::Value *&result, Json::Value *object, const char *str, int expected_type = 0)
+{
+  // Check object type
+  if (object->type() != Json::objectValue) {
+    // RNFail("JSON: not an object\n");
+    return 0;
+  }
+
+  // Check object member
+  if (!object->isMember(str)) {
+    // RNFail("JSON object has no member named %s\n", str);
+    return 0;
+  }
+
+  // Get object member
+  result = &((*object)[str]);
+  if (result->type() == Json::nullValue) {
+    // RNFail("JSON object has null member named %s\n", str);
+    return 0;
+  }
+
+  // Check member type
+  if (expected_type > 0) {
+    if (result->type() != expected_type) {
+      // RNFail("JSON object member %s has unexpected type %d (rather than %d)\n", str, result->type(), expected_type);
+      return 0;
+    }
+  }
+  
+  // Check for empty strings
+  if (result->type() == Json::stringValue) {
+    if (result->asString().length() == 0) {
+      // RNFail("JSON object has zero length string named %s\n", str);
+      return 0;
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int expected_type = -1)
+{
+  // Check array type
+  if (array->type() != Json::arrayValue) {
+    RNFail("JSON: not an array\n");
+    return 0;
+  }
+
+  // Check array size
+  if (array->size() <= k) {
+    // RNFail("JSON array has no member %d\n", k);
+    return 0;
+  }
+
+  // Get entry
+  result = &((*array)[k]);
+  if (result->type() == Json::nullValue) {
+    // RNFail("JSON array has null member %d\n", k);
+    return 0;
+  }
+
+  // Check entry type
+  if (expected_type > 0) {
+    if (result->type() != expected_type) {
+      // RNFail("JSON array entry %d has unexpected type %d (rather than %d)\n", k, result->type(), expected_type);
+      return 0;
+    }
+  }
+  
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+ReadNeRFFile(const char *filename)
+{
+  // Defaults?
+  int width = 800;
+  int height = 800;
+
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open NeRF file %s\n", filename);
+    return 0;
+  }
+
+  // Read file 
+  std::string text;
+  fseek(fp, 0, SEEK_END);
+  long const size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  char* buffer = new char[size + 1];
+  unsigned long const usize = static_cast<unsigned long const>(size);
+  if (fread(buffer, 1, usize, fp) != usize) { RNFail("Unable to read %s\n", filename); return 0; }
+  else { buffer[size] = 0; text = buffer; }
+  delete[] buffer;
+
+  // Close file
+  fclose(fp);
+
+  // Parse file
+  Json::Value json_root;
+  Json::Reader json_reader;
+  if (!json_reader.parse(text, json_root, false)) {
+    RNFail("Unable to parse %s\n", filename);
+    return 0;
+  }
+
+  // Get top level stuff
+  Json::Value *json_camera_angle_x = NULL;
+  Json::Value *json_frames = NULL;
+  if (!json_root.isObject() ||
+      !GetJsonObjectMember(json_camera_angle_x, &json_root, "camera_angle_x") ||
+      !GetJsonObjectMember(json_frames, &json_root, "frames")) {
+    RNFail("NeRF file is not expected format\n", filename);
+    return 0;
+  }
+
+  // Get intrinsics matrix
+  R3Matrix intrinsics = R3identity_matrix;
+  double xfov = 0.5 * json_camera_angle_x->asDouble();
+  double focal = 0.5 * width / tan(xfov);
+  intrinsics[0][0] = focal;
+  intrinsics[1][1] = focal;
+  intrinsics[0][2] = 0.5 * width;
+  intrinsics[1][2] = 0.5 * height;
+      
+  // Parse frames
+  for (Json::ArrayIndex i = 0; i < json_frames->size(); i++) {
+    Json::Value *json_frame = NULL;
+    GetJsonArrayEntry(json_frame, json_frames, i);
+    if (!json_frame->isObject()) continue;
+
+    // Parse filepath
+    std::string file_path;
+    Json::Value *json_file_path = NULL;
+    Json::Value *json_transform = NULL;
+    if (!GetJsonObjectMember(json_file_path, json_frame, "file_path") ||
+        !GetJsonObjectMember(json_transform, json_frame, "transform_matrix") ||
+        !json_transform->isArray() || (json_transform->size() != 4)) {
+      RNFail("Error parsing frame %d\n", i);
+      return 0;
+    }
+
+    // Parse color filename
+    std::string color_filename = json_file_path->asString() + ".png";
+    std::string depth_filename = json_file_path->asString() + ".png";
+
+    // Parse transformation matrix
+    R4Matrix matrix = R4identity_matrix;
+    for (int j = 0; j < 4; j++) {
+      Json::Value *json_column = NULL;
+      GetJsonArrayEntry(json_column, json_transform, j);
+      if (!json_transform->isArray() || (json_column->size() != 4)) {
+        RNFail("Error parsing tranform %d\n", i);
+        return 0;
+      }
+      for (int k = 0; k < 4; k++) {
+        Json::Value *json_value = NULL;
+        GetJsonArrayEntry(json_value, json_column, k);
+        matrix[j][k] = json_value->asDouble();
+      }
+    }
+
+    // Compute camera-to-world matrix
+    R4Matrix camera_to_world = R4identity_matrix;
+    camera_to_world.XRotate(-RN_PI_OVER_TWO);
+    camera_to_world = camera_to_world * matrix;
+
+    // Create image
+    RGBDImage *image = new RGBDImage(color_filename.c_str(), depth_filename.c_str(),
+      intrinsics, camera_to_world, width, height);
+
+    // Insert image
+    InsertImage(image);
+  }
+  
   // Return success
   return 1;
 }
