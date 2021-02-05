@@ -379,6 +379,7 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
         R2Point image_position;
         if (!RGBDTransformCameraToImage(camera_position, image_position, image)) continue;
 
+#if 0
         // Check transformed depth
         RNScalar transformed_depth = -camera_position[2];
         if (RNIsNegativeOrZero(transformed_depth)) continue;
@@ -389,7 +390,8 @@ RGBDComputeSurfaceTexture(RGBDSurface *surface)
 
         // Check depth difference
         if (RNIsNotEqual(captured_depth, transformed_depth, 0.1 * captured_depth)) continue;
-
+#endif
+        
         // Get rgb from image
         RNScalar r = image->PixelChannelValue(image_position, RGBD_RED_CHANNEL);
         RNScalar g = image->PixelChannelValue(image_position, RGBD_GREEN_CHANNEL);

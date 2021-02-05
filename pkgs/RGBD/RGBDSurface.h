@@ -23,8 +23,8 @@ class RGBDSurface {
 public:
   // Constructors/destructors
   RGBDSurface(void);
-  RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel_spacing);
-  RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing);
+  RGBDSurface(const char *texture_filename, R3Rectangle *rectangle, RNLength texel_spacing = 0.02);
+  RGBDSurface(const char *texture_filename, R3Mesh *mesh, RNLength texel_spacing = 0.02);
   virtual ~RGBDSurface(void);
 
   // Geometric property functions

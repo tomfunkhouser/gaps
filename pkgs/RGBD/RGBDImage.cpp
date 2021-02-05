@@ -1708,6 +1708,17 @@ SetColorFilename(const char *filename)
   if (color_filename) free(color_filename);
   if (filename && strcmp(filename, "-")) color_filename = RNStrdup(filename);
   else color_filename = NULL;
+
+  // Set name
+  if (!name && filename) {
+    char buffer[1024];
+    strncpy(buffer, filename, 1023);
+    char *startp = strrchr(buffer, '/');
+    if (!startp) startp = buffer;
+    char *endp = strrchr(startp, '.');
+    if (endp) *endp = '\0';
+    name = RNStrdup(startp);
+  }
 }
 
 
@@ -1721,7 +1732,7 @@ SetDepthFilename(const char *filename)
   else depth_filename = NULL;
 
   // Set name
-  if (!name && filename) {
+  if (!name && filename && strcmp(filename, "-")) {
     char buffer[1024];
     strncpy(buffer, filename, 1023);
     char *startp = strrchr(buffer, '/');
@@ -1743,7 +1754,7 @@ SetCategoryFilename(const char *filename)
   else category_filename = NULL;
 
   // Set name
-  if (!name && filename) {
+  if (!name && filename && strcmp(filename, "-")) {
     char buffer[1024];
     strncpy(buffer, filename, 1023);
     char *startp = strrchr(buffer, '/');

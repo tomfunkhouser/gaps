@@ -288,11 +288,14 @@ ReadFile(const char *filename, int read_every_kth_image)
   if (!strncmp(extension, ".conf", 5)) {
     if (!ReadConfigurationFile(filename, read_every_kth_image)) return 0;
   }
+  else if (!strncmp(extension, ".json", 5)) {
+    if (!ReadNeRFFile(filename, read_every_kth_image)) return 0;
+  }
   else if (!strncmp(extension, ".seg", 4)) {
     if (!ReadSegmentationFile(filename)) return 0;
   }
-  else if (!strncmp(extension, ".json", 5)) {
-    if (!ReadNeRFFile(filename)) return 0;
+  else if (!strncmp(extension, ".obb", 4)) {
+    if (!ReadOrientedBoxFile(filename)) return 0;
   }
   else {
     RNFail("Unable to read file %s (unrecognized extension: %s)\n", filename, extension);
@@ -834,6 +837,56 @@ ReadSegmentationFile(const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Oriented box input functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDConfiguration::
+ReadOrientedBoxFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open obb file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  R3Point center;
+  R3Vector axis[2];
+  double radius[3];
+  while (fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+    &center[0], &center[1], &center[2],
+    &axis[0][0], &axis[0][1], &axis[0][2],
+    &axis[1][0], &axis[1][1], &axis[1][2],
+    &radius[0], &radius[1], &radius[2]) == (unsigned int) 12) {
+    // Make sure axes are orthogonal
+    axis[0].Normalize();
+    R3Vector axis2 = axis[0] % axis[1];
+    axis[1] = axis2 % axis[0];
+    axis[1].Normalize();
+    
+    // Create rectangle
+    R3Rectangle *rectangle = new R3Rectangle(center,
+      axis[0], axis[1], radius[0], radius[1]);
+
+    // Create RGBD surface
+    RGBDSurface *rgbd_surface = new RGBDSurface(NULL, rectangle);
+    rgbd_surface->thickness = radius[2];
+
+    // Insert RGBD surface
+    InsertSurface(rgbd_surface);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // NeRF input functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -918,7 +971,7 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 
 
 int RGBDConfiguration::
-ReadNeRFFile(const char *filename)
+ReadNeRFFile(const char *filename, int read_every_kth_image)
 {
   // Defaults?
   int width = 800;
@@ -974,10 +1027,13 @@ ReadNeRFFile(const char *filename)
       
   // Parse frames
   for (Json::ArrayIndex i = 0; i < json_frames->size(); i++) {
+    // Get frame
     Json::Value *json_frame = NULL;
     GetJsonArrayEntry(json_frame, json_frames, i);
     if (!json_frame->isObject()) continue;
 
+    // Check if skipping images
+    if ((read_every_kth_image > 1) && ((i % read_every_kth_image) != 0)) continue;
     // Parse filepath
     std::string file_path;
     Json::Value *json_file_path = NULL;
@@ -991,7 +1047,7 @@ ReadNeRFFile(const char *filename)
 
     // Parse color filename
     std::string color_filename = json_file_path->asString() + ".png";
-    std::string depth_filename = json_file_path->asString() + ".png";
+    std::string depth_filename = "-"; 
 
     // Parse transformation matrix
     R4Matrix matrix = R4identity_matrix;

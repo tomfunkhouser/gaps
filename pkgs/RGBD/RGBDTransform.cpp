@@ -188,6 +188,7 @@ int RGBDTransformCameraToImage(const R3Point& camera_position, R2Point& image_po
   int image_iy = (int) (image_position.Y() + 0.5);
   if ((image_iy < 0) || (image_iy >= image->NPixels(RN_Y))) return 0;
 
+#if 0
   // Get/check point depth
   RNScalar point_depth = -camera_position[2];
   if (RNIsNegativeOrZero(point_depth)) return 0;
@@ -199,6 +200,7 @@ int RGBDTransformCameraToImage(const R3Point& camera_position, R2Point& image_po
   // If depth is not within 10% of image depth, then probably not 
   if (image_depth < 0.9 * point_depth) return 0;
   if (image_depth > 1.1 * point_depth) return 0;
+#endif
   
   // Return success
   return 1;
