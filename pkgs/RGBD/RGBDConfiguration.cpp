@@ -321,6 +321,9 @@ WriteFile(const char *filename, int write_every_kth_image) const
   if (!strncmp(extension, ".conf", 5)) {
     if (!WriteConfigurationFile(filename, write_every_kth_image)) return 0;
   }
+  else if (!strncmp(extension, ".json", 5)) {
+    if (!WriteNeRFFile(filename, write_every_kth_image)) return 0;
+  }
   else if (!strncmp(extension, ".obj", 4)) {
     if (!WriteObjFile(filename)) return 0;
   }
@@ -1049,6 +1052,9 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
     std::string color_filename = json_file_path->asString() + ".png";
     std::string depth_filename = "-"; 
 
+    // Parse rotation (what is this?)
+    // XXX
+    
     // Parse transformation matrix
     R4Matrix matrix = R4identity_matrix;
     for (int j = 0; j < 4; j++) {
@@ -1078,6 +1084,80 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
     InsertImage(image);
   }
   
+  // Return success
+  return 1;
+}
+
+
+
+int RGBDConfiguration::
+WriteNeRFFile(const char *filename, int write_every_kth_image) const
+{
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open NeRF file %s\n", filename);
+    return 0;
+  }
+
+  // Write header
+  double xfov = (NImages() > 0) ? Image(0)->XFov() : 0;
+  fprintf(fp, "{\n");
+  fprintf(fp, "  \"camera_angle_x\": %.12f,\n", 2 * xfov);
+  fprintf(fp, "  \"frames\": [\n");
+
+  // Write images
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    if (!image->ColorFilename()) continue;
+
+    // Get filename
+    char filename[1024] = { '\0' };
+    strncpy(filename, image->ColorFilename(), 1023);
+    char *endp = strrchr(filename, '.');
+    if (endp) *endp = '\0';
+
+    // Print opening curly bracket for image
+    fprintf(fp, "    {\n");
+
+    // Print file path
+    if (!color_directory) fprintf(fp, "      \"file_path\": \"%s\",\n", filename);
+    else fprintf(fp, "      \"file_path\": \"%s/%s\",\n", color_directory, filename);
+
+    // Print rotation (what is this?)
+    // XXX
+    
+    // Print transformation matrix
+    R4Matrix m = R4identity_matrix;
+    m.XRotate(RN_PI_OVER_TWO);
+    m = m * image->CameraToWorld().Matrix();
+    fprintf(fp, "      \"transform_matrix\":\n");
+    fprintf(fp, "        [");
+    for (int j = 0; j < 4; j++) {
+      fprintf(fp, "          [\n");
+      for (int k = 0; k < 4; k++) {
+        fprintf(fp, "            %.12f", m[j][k]);
+        if (k < 3) fprintf(fp, ",");
+        fprintf(fp, "\n");
+      }
+      fprintf(fp, "          ]");
+      if (j < 3) fprintf(fp, ",");
+      fprintf(fp, "\n");
+    }
+    fprintf(fp, "        ]");
+
+    // Print trailing curly bracket for image
+    if (i < NImages()-1) fprintf(fp, "    },\n");
+    else fprintf(fp, "    }\n");
+  }
+  
+  // Write trailer
+  fprintf(fp, "  ]\n");
+  fprintf(fp, "}\n");
+  
+  // Close file
+  fclose(fp);
+
   // Return success
   return 1;
 }
