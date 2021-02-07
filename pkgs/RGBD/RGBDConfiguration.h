@@ -69,6 +69,7 @@ public:
   virtual int WriteFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteConfigurationFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteNeRFFile(const char *filename, int write_every_kth_image = 1) const;
+  virtual int WriteCameraFile(const char *filename, int write_every_kth_image = 1) const;
   virtual int WriteObjFile(const char *filename) const;
 
   // Stream input/output

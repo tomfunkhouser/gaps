@@ -324,6 +324,9 @@ WriteFile(const char *filename, int write_every_kth_image) const
   else if (!strncmp(extension, ".json", 5)) {
     if (!WriteNeRFFile(filename, write_every_kth_image)) return 0;
   }
+  else if (!strncmp(extension, ".cam", 4)) {
+    if (!WriteCameraFile(filename)) return 0;
+  }
   else if (!strncmp(extension, ".obj", 4)) {
     if (!WriteObjFile(filename)) return 0;
   }
@@ -725,8 +728,8 @@ WriteConfigurationStream(FILE *fp, int write_every_kth_image) const
   int image_height = 0;
   R3Matrix intrinsics_matrix = R3identity_matrix;
   for (int i = 0; i < NImages(); i++) {
-    RGBDImage *image = Image(i);
     if ((write_every_kth_image > 1) && ((i % write_every_kth_image) != 0)) continue;
+    RGBDImage *image = Image(i);
 
     // Write image dimensions
     if ((image->NPixels(RN_X) > 0) && (image->NPixels(RN_Y) > 0)) {
@@ -890,7 +893,7 @@ ReadOrientedBoxFile(const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
-// NeRF input functions
+// NeRF input/output functions
 ////////////////////////////////////////////////////////////////////////
 
 static int
@@ -1030,13 +1033,14 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
       
   // Parse frames
   for (Json::ArrayIndex i = 0; i < json_frames->size(); i++) {
+    // Check if skipping images
+    if ((read_every_kth_image > 1) && ((i % read_every_kth_image) != 0)) continue;
+    
     // Get frame
     Json::Value *json_frame = NULL;
     GetJsonArrayEntry(json_frame, json_frames, i);
     if (!json_frame->isObject()) continue;
 
-    // Check if skipping images
-    if ((read_every_kth_image > 1) && ((i % read_every_kth_image) != 0)) continue;
     // Parse filepath
     std::string file_path;
     Json::Value *json_file_path = NULL;
@@ -1108,6 +1112,7 @@ WriteNeRFFile(const char *filename, int write_every_kth_image) const
 
   // Write images
   for (int i = 0; i < NImages(); i++) {
+    if ((write_every_kth_image > 1) && ((i % write_every_kth_image) != 0)) continue;
     RGBDImage *image = Image(i);
     if (!image->ColorFilename()) continue;
 
@@ -1154,6 +1159,45 @@ WriteNeRFFile(const char *filename, int write_every_kth_image) const
   // Write trailer
   fprintf(fp, "  ]\n");
   fprintf(fp, "}\n");
+  
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Camera input/output functions
+////////////////////////////////////////////////////////////////////////
+
+int RGBDConfiguration::
+WriteCameraFile(const char *filename, int write_every_kth_image) const
+{
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open camera file %s\n", filename);
+    return 0;
+  }
+
+  // Write images
+  for (int i = 0; i < NImages(); i++) {
+    if ((write_every_kth_image > 1) && ((i % write_every_kth_image) != 0)) continue;
+    RGBDImage *image = Image(i);
+    R3Point viewpoint = image->WorldViewpoint();
+    R3Vector towards = image->WorldTowards();
+    R3Vector up = image->WorldUp();
+    RNAngle xfov = image->XFov();
+    RNAngle yfov = image->YFov();
+    fprintf(fp, "%f %f %f   %f %f %f   %f %f %f  %f %f  1\n",
+      viewpoint[0], viewpoint[1], viewpoint[2],
+      towards[0], towards[1], towards[2],
+      up[0], up[1], up[2],
+      xfov, yfov);
+  }
   
   // Close file
   fclose(fp);

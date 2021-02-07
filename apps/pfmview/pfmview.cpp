@@ -468,9 +468,12 @@ void GLUTInit(int *argc, char **argv)
   glutInit(argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // | GLUT_STENCIL
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("pfmview");
 
+  // Initialize multisampling
+  glEnable(GL_MULTISAMPLE);
+  
   // Initialize background color 
   glClearColor(00, 0.0, 0.0, 1.0);
 

@@ -18,6 +18,8 @@ using namespace gaps;
 
 static const char *input_configuration_filename = NULL;
 static const char *input_mesh_filename = NULL;
+static const char *input_obbs_filename = NULL;
+static const char *input_segmentation_filename = NULL;
 static const char *input_depth_directory = NULL;
 static const char *input_color_directory = NULL;
 static const char *input_texture_directory = NULL;
@@ -157,7 +159,7 @@ DeleteUnwantedImages(RGBDConfiguration *configuration)
 ////////////////////////////////////////////////////////////////////////
 
 static RGBDConfiguration *
-ReadConfiguration(const char *filename) 
+ReadConfigurationFile(const char *filename) 
 {
   // Start statistics
   RNTime start_time;
@@ -203,7 +205,7 @@ ReadConfiguration(const char *filename)
 
 
 static int
-WriteConfiguration(RGBDConfiguration *configuration, const char *filename) 
+WriteConfigurationFile(RGBDConfiguration *configuration, const char *filename) 
 {
   // Start statistics
   RNTime start_time;
@@ -235,8 +237,58 @@ WriteConfiguration(RGBDConfiguration *configuration, const char *filename)
 
 
 
+static int
+ReadSegmentationFile(RGBDConfiguration *configuration, const char *filename) 
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read segmentation file
+  if (!configuration->ReadSegmentationFile(filename)) return 0;
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Read segmentation from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration->NImages());
+    printf("  # Surfaces = %d\n", configuration->NSurfaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadOrientedBoxFile(RGBDConfiguration *configuration, const char *filename) 
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read segmentation file
+  if (!configuration->ReadOrientedBoxFile(filename)) return 0;
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Read oriented boxes from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration->NImages());
+    printf("  # Surfaces = %d\n", configuration->NSurfaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 static R3Mesh *
-ReadMesh(RGBDConfiguration *configuration, const char *filename)
+ReadMeshFile(RGBDConfiguration *configuration, const char *filename)
 {
   // Start statistics
   RNTime start_time;
@@ -811,12 +863,22 @@ main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read configuration
-  RGBDConfiguration *configuration = ReadConfiguration(input_configuration_filename);
+  RGBDConfiguration *configuration = ReadConfigurationFile(input_configuration_filename);
   if (!configuration) exit(-1);
 
   // Read mesh
   if (input_mesh_filename) {
-    if (!ReadMesh(configuration, input_mesh_filename)) exit(-1);
+    if (!ReadMeshFile(configuration, input_mesh_filename)) exit(-1);
+  }
+  
+  // Read oriented boxes
+  if (input_obbs_filename) {
+    if (!ReadOrientedBoxFile(configuration, input_obbs_filename)) exit(-1);
+  }
+  
+  // Read segmentation
+  if (input_segmentation_filename) {
+    if (!ReadSegmentationFile(configuration, input_segmentation_filename)) exit(-1);
   }
   
   // Execute commands (this has to mimic the code in ParseArgs)
@@ -886,7 +948,7 @@ main(int argc, char **argv)
   }
   
   // Write configuration
-  if (!WriteConfiguration(configuration, output_configuration_filename)) exit(-1);
+  if (!WriteConfigurationFile(configuration, output_configuration_filename)) exit(-1);
   
   // Return success 
   return 0;

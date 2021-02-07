@@ -1250,9 +1250,12 @@ RenderImagesWithGlut(const char *output_image_directory)
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(width, height);
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); 
+  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE); 
   glutCreateWindow("Scene Image Capture");
 
+  // Initialize multisampling
+  glEnable(GL_MULTISAMPLE);
+  
   // Initialize GLUT callback functions 
   glutDisplayFunc(Redraw);
 

@@ -21,6 +21,7 @@ using namespace gaps;
 static const char *input_configuration_filename = NULL;
 static const char *output_configuration_filename = NULL;
 static const char *input_mesh_filename = NULL;
+static const char *input_obbs_filename = NULL;
 static const char *input_segmentation_filename = NULL;
 static const char *input_overlap_filename = NULL;
 static const char *input_overlap_matrix = NULL;
@@ -86,7 +87,7 @@ static int show_axes = 0;
 ////////////////////////////////////////////////////////////////////////
 
 static int
-ReadConfiguration(RGBDConfiguration& configuration, const char *filename) 
+ReadConfigurationFile(RGBDConfiguration& configuration, const char *filename) 
 {
   // Start statistics
   RNTime start_time;
@@ -142,7 +143,7 @@ ReadConfiguration(RGBDConfiguration& configuration, const char *filename)
 
 
 static int
-ReadSegmentation(RGBDConfiguration& configuration, const char *filename) 
+ReadSegmentationFile(RGBDConfiguration& configuration, const char *filename) 
 {
   // Start statistics
   RNTime start_time;
@@ -167,7 +168,32 @@ ReadSegmentation(RGBDConfiguration& configuration, const char *filename)
 
 
 static int
-WriteConfiguration(RGBDConfiguration& configuration, const char *filename) 
+ReadOrientedBoxFile(RGBDConfiguration& configuration, const char *filename) 
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read segmentation file
+  if (!configuration.ReadOrientedBoxFile(filename)) return 0;
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Read oriented boxes from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration.NImages());
+    printf("  # Surfaces = %d\n", configuration.NSurfaces());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+WriteConfigurationFile(RGBDConfiguration& configuration, const char *filename) 
 {
   // Start statistics
   RNTime start_time;
@@ -195,7 +221,7 @@ WriteConfiguration(RGBDConfiguration& configuration, const char *filename)
 
 
 static int
-ReadMesh(RGBDConfiguration& configuration, const char *filename)
+ReadMeshFile(RGBDConfiguration& configuration, const char *filename)
 {
   // Start statistics
   RNTime start_time;
@@ -1052,7 +1078,7 @@ void GLUTStop(void)
 {
   // Write configuration
   if (output_configuration_filename) {
-    if (!WriteConfiguration(configuration, output_configuration_filename)) exit(-1);
+    if (!WriteConfigurationFile(configuration, output_configuration_filename)) exit(-1);
   }
 
   // Destroy window 
@@ -1448,9 +1474,12 @@ void GLUTInterface(void)
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // | GLUT_STENCIL
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("Configuration Viewer");
 
+  // Initialize multisampling
+  glEnable(GL_MULTISAMPLE);
+  
   // Initialize graphics modes  
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -1501,6 +1530,7 @@ ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-read_all_channels")) read_all_channels = TRUE; 
       else if (!strcmp(*argv, "-mesh")) { argc--; argv++; input_mesh_filename = *argv; }
+      else if (!strcmp(*argv, "-obbs")) { argc--; argv++; input_obbs_filename = *argv; }
       else if (!strcmp(*argv, "-segmentation")) { argc--; argv++; input_segmentation_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_file")) { argc--; argv++; input_overlap_filename = *argv; }
       else if (!strcmp(*argv, "-overlap_matrix")) { argc--; argv++; input_overlap_matrix = *argv; }
@@ -1552,16 +1582,21 @@ main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read configuration
-  if (!ReadConfiguration(configuration, input_configuration_filename)) exit(-1);
+  if (!ReadConfigurationFile(configuration, input_configuration_filename)) exit(-1);
 
   // Read mesh
   if (input_mesh_filename) {
-    if (!ReadMesh(configuration, input_mesh_filename)) exit(-1);
+    if (!ReadMeshFile(configuration, input_mesh_filename)) exit(-1);
   }
 
   // Read segmentation
   if (input_segmentation_filename) {
-    if (!ReadSegmentation(configuration, input_segmentation_filename)) exit(-1);
+    if (!ReadSegmentationFile(configuration, input_segmentation_filename)) exit(-1);
+  }
+
+  // Read obbs
+  if (input_obbs_filename) {
+    if (!ReadOrientedBoxFile(configuration, input_obbs_filename)) exit(-1);
   }
 
   // Read image-image overlaps
