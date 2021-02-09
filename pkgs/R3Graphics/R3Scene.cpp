@@ -2155,6 +2155,29 @@ ReadPrincetonFile(const char *filename, R3SceneNode *parent_node)
       // Insert shape into element
       element->InsertShape(box);
     }
+    else if (!strcmp(cmd, "obb")) {
+      // Read data
+      int m;
+      R3Point c;
+      R3Vector a[2];
+      RNScalar r[3];
+      if (fscanf(fp, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &m, &c[0], &c[1], &c[2], &a[0][0], &a[0][1], &a[0][2], &a[1][0], &a[1][1], &a[1][2], &r[0], &r[1], &r[2]) != 13) {
+        RNFail("Unable to read obb at command %d in file %s\n", command_number, filename);
+        return 0;
+      }
+
+      // Create obb
+      R3OrientedBox *obb = new R3OrientedBox(c, a[0], a[1], r[0], r[1], r[2]);
+
+      // Get material and element from m
+      if (!FindPrincetonMaterialAndElement(this, group_nodes[depth], parsed_materials, m, group_materials[depth], material, element)) {
+        RNFail("Invalid material id at command %d in file %s\n", command_number, filename);
+        return 0;
+      }
+
+      // Insert shape into element
+      element->InsertShape(obb);
+    }
     else if (!strcmp(cmd, "sphere")) {
       // Read data
       int m;
@@ -2635,7 +2658,17 @@ WritePrincetonElement(const R3Scene *scene, R3SceneElement *element,
       fprintf(fp, "%sbox  %d   %g %g %g   %g %g %g\n", indent, material_index,
         box->XMin(), box->YMin(), box->ZMin(), box->XMax(), box->YMax(), box->ZMax());
     }
-    else if (shape->ClassID() == R3Sphere::CLASS_ID()) {
+    else if (shape->ClassID() == R3OrientedBox::CLASS_ID()) {
+      R3OrientedBox *obb = (R3OrientedBox *) shape;
+      R3Point center = obb->Center();
+      R3Vector axis0 = obb->Axis(0);
+      R3Vector axis1 = obb->Axis(1);
+      fprintf(fp, "%sobb  %d   %g %g %g   %g %g %g   %g %g %g   %g %g %g\n", indent, material_index,
+        center.X(), center.Y(), center.Z(),
+        axis0.X(), axis0.Y(), axis0.Z(), axis1.X(), axis1.Y(), axis1.Z(),
+        obb->Radius(0), obb->Radius(1), obb->Radius(2));
+   }
+   else if (shape->ClassID() == R3Sphere::CLASS_ID()) {
       R3Sphere *sphere = (R3Sphere *) shape;
       R3Point center = sphere->Center();
       fprintf(fp, "%ssphere  %d   %g %g %g   %g\n", indent, material_index,

@@ -979,10 +979,6 @@ GetJsonArrayEntry(Json::Value *&result, Json::Value *array, unsigned int k, int 
 int RGBDConfiguration::
 ReadNeRFFile(const char *filename, int read_every_kth_image)
 {
-  // Defaults?
-  int width = 800;
-  int height = 800;
-
   // Open file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
@@ -1022,15 +1018,15 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
     return 0;
   }
 
-  // Get intrinsics matrix
-  R3Matrix intrinsics = R3identity_matrix;
+  // Parse x fov 
+  int width = 0;  // Gets filled from first image
+  int height = 0; // Gets filled from first image
   double xfov = 0.5 * json_camera_angle_x->asDouble();
-  double focal = 0.5 * width / tan(xfov);
-  intrinsics[0][0] = focal;
-  intrinsics[1][1] = focal;
-  intrinsics[0][2] = 0.5 * width;
-  intrinsics[1][2] = 0.5 * height;
-      
+  if (xfov <= 0) {
+    RNFail("Error parsing camera_angle_x in %s\n", filename);
+    return 0;
+  }
+
   // Parse frames
   for (Json::ArrayIndex i = 0; i < json_frames->size(); i++) {
     // Check if skipping images
@@ -1052,10 +1048,33 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
       return 0;
     }
 
-    // Parse color filename
+    // Parse image filenames
+    std::string depth_filename = "-";
     std::string color_filename = json_file_path->asString() + ".png";
-    std::string depth_filename = "-"; 
+    if (!RNFileExists(color_filename.c_str())) {
+      color_filename = json_file_path->asString() + ".jpg";
+    }
 
+    // Get width and height
+    if ((width <= 0) || (height <= 0)) {
+      R2Image color_image;
+      if (!color_image.ReadFile(color_filename.c_str())) return 0;
+      width = color_image.Width();
+      height = color_image.Height();
+      if ((width <= 0) || (height <= 0)) {
+        RNFail("Error parsing image width and height in %s\n", filename);
+        return 0;
+      }
+    }
+
+    // Get intrinsics matrix
+    R3Matrix intrinsics = R3identity_matrix;
+    double focal = 0.5 * width / tan(xfov);
+    intrinsics[0][0] = focal;
+    intrinsics[1][1] = focal;
+    intrinsics[0][2] = 0.5 * width;
+    intrinsics[1][2] = 0.5 * height;
+      
     // Parse rotation (what is this?)
     // XXX
     

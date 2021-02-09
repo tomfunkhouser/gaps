@@ -475,7 +475,7 @@ ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-  // Check number of arguments
+  // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(1);
 
   // Read scene

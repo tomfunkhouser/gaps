@@ -231,7 +231,7 @@ Load(void) const
   ((R2Texture *) this)->id = i;
   assert(id > 0);
 
-  // Begin texture definition                                                                                     
+  // Begin texture definition
   glBindTexture(GL_TEXTURE_2D, id);
 
   // Define texture parameters
@@ -268,7 +268,7 @@ Load(void) const
   }
 #endif
 
-  // End texture definition                                                                                       
+  // End texture definition
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -320,6 +320,18 @@ Draw(RNBoolean force) const
     glEnable(GL_POLYGON_OFFSET_FILL);
   }
 
+  // Set blending
+  if (IsTransparent()) {
+    glDepthMask(FALSE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+  }
+  else {
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
+    glDepthMask(TRUE);
+  }
+  
   // Remember current texture
   R2current_texture = this;
 }
