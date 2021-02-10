@@ -2085,10 +2085,8 @@ RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy)
   RNAngle theta = -1 * factor * 4.0 * vx;
   viewer.RotateWorld(origin, viewer.Camera().Up(), theta);
   RNAngle phi = factor * 4.0 * vy;
-  // RNAngle max_phi = R3InteriorAngle(viewer.Camera().Towards(), R3posy_vector) - RN_PI_OVER_TWO;
-  // RNAngle min_phi = -1.0 * R3InteriorAngle(viewer.Camera().Towards(), R3negz_vector);
-  // if (phi < min_phi) phi = min_phi;
-  // if (phi > max_phi) phi = max_phi;
+  RNAngle max_phi = R3InteriorAngle(viewer.Camera().Towards(), R3posz_vector) - RN_PI_OVER_TWO;
+  if (phi > max_phi) phi = max_phi;
   viewer.RotateWorld(origin, viewer.Camera().Right(), phi);
 }
 
