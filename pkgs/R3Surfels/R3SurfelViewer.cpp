@@ -1304,6 +1304,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case 'C':
+      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
+      break;
+
     case 'c':
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
@@ -1329,11 +1332,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetBackfacingVisibility(-1);
       break;
       
-    case 'G':
-    case 'g':
-      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
-      break;
-
     case 'I':
       SetImagePlaneVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);

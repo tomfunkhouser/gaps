@@ -555,7 +555,18 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
   if (alt) {
     // Make sure does not conflict with keys used by R3SurfelViewer
     switch(key) {
+    case 'B':
+    case 'b':
+      SetImagePlaneVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
+      redraw = 1;
+      break;
+
     case 'C':
+      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
+      redraw = 1;
+      break;
+
     case 'c':
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
@@ -565,18 +576,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       redraw = 1;
       break;
       
-    case 'G':
-    case 'g':
-      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
-      redraw = 1;
-      break;
-
     case 'I':
-      SetImagePlaneVisibility(-1);
-      SelectImage(selected_image, FALSE, FALSE);
-      redraw = 1;
-      break;
-
     case 'i':
       SetImageInsetVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);
@@ -696,6 +696,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     case 'M':
     case 'm': // ENTER
       ResetCamera();
+      redraw = 1;
       break;
 
     case 'N':
