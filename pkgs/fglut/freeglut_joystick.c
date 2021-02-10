@@ -1004,7 +1004,7 @@ static void fghJoystickAddHatElement ( SFG_Joystick *joy, CFDictionaryRef button
 
 static int fghJoystickGetOEMProductName ( SFG_Joystick* joy, char *buf, int buf_sz )
 {
-    char buffer [ 256 ];
+    char buffer [ 512 ];
 
     char OEMKey [ 256 ];
 
