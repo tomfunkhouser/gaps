@@ -1488,6 +1488,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
   }
   else if (ctrl) {
     switch(key) {
+    case 'm':
+      ResetCamera();
+      break;
+
     default:
       redraw = 0;
       break;

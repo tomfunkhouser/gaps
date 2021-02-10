@@ -121,7 +121,6 @@ public:
   void SetCommandMenuVisibility(int visibility);
   void SetLabelMenuVisibility(int visibility);
 
-
 public:
 
   //////////////////////////////////////////
@@ -155,6 +154,10 @@ public:
   
   // Pointset functions
   R3SurfelPointSet *ObjectSelectionPointSet(void) const;
+
+  // Draw functions
+  void DrawObjectSelections(void) const;
+  void DrawObjectLabels(void) const;
 
   // Debug functions
   int IsValid(void) const;

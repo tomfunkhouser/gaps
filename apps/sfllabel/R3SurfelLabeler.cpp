@@ -122,6 +122,102 @@ R3SurfelLabeler::
 
 
 ////////////////////////////////////////////////////////////////////////
+// Draw functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelLabeler::
+DrawObjectSelections(void) const
+{
+  // Check if need to draw
+  if (!surfel_visibility) return;
+  if (!selection_visibility) return;
+  if (NObjectSelections() == 0) return;
+
+  // Set opengl draw modes to make sure selection is visible
+  // glDisable(GL_DEPTH_TEST);
+  // glEnable(GL_POLYGON_OFFSET_FILL);
+  // glPolygonOffset(-2, -1);
+  glColor3d(1.0, 1.0, 0.0);
+  glDepthRange(0, 0.999999);
+
+  // Increase point size
+  glPointSize(2 + surfel_size);
+
+  // Assign shader and its variables
+  if (shader_program > 0) {
+    glUseProgram(shader_program);
+    int pointSizeLocation = glGetUniformLocation(shader_program, "pointSize");
+    glUniform1f(pointSizeLocation, 2 + surfel_size);
+  }
+  
+  // Draw objects
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *object = ObjectSelection(i);
+    DrawObject(object, shape_draw_flags);
+  }
+
+  // Unassign shader
+  glUseProgram(0);
+
+  // Reset point size
+  glPointSize(surfel_size);
+  
+  // Reset draw modes
+  glDepthRange(0, 1);
+  // glDisable(GL_POLYGON_OFFSET_FILL);
+  // glEnable(GL_DEPTH_TEST);
+}
+
+
+
+void R3SurfelLabeler::
+DrawObjectLabels(void) const
+{
+  // Set opengl stuff
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0, viewer.Viewport().Width(), 0, viewer.Viewport().Height());
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(FALSE);
+
+  // Draw labels
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    for (int i = 0; i < object->NLabelAssignments(); i++) {
+      R3SurfelLabelAssignment *assignment = object->LabelAssignment(i);
+      if (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
+      RNBoolean confirmed = (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) ? 1 : 0;
+      R3SurfelLabel *label = assignment->Label();
+      if (!strcmp(label->Name(), "Unknown")) continue;
+      if (!LabelVisibility(label)) continue;
+      R3Point position = object->Centroid();
+      position[2] = object->BBox().ZMax() + 0.01;
+      R2Point p = viewer.ViewportPoint(position);
+      void *font = (confirmed) ? GLUT_BITMAP_HELVETICA_18 : GLUT_BITMAP_HELVETICA_12;
+      int width = glutBitmapLength(font, (const unsigned char *) label->Name());
+      p[0] -= width / 2;
+      RNLoadRgb(label->Color());
+      DrawText(p, label->Name(), font);
+      break;
+    }
+  }
+
+  // Reset opengl stuff
+  glDepthMask(TRUE);
+  glEnable(GL_DEPTH_TEST);
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // UI event handler functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -140,64 +236,13 @@ Redraw(void)
   glLineWidth(1);
 
   // Draw selected objects
-  if (surfel_visibility) {
-    if (selection_visibility) {
-      if (NObjectSelections() > 0) {
-        // glDisable(GL_DEPTH_TEST);
-        // glEnable(GL_POLYGON_OFFSET_FILL);
-        // glPolygonOffset(-2, -1);
-        glColor3d(1.0, 1.0, 0.0);
-        glDepthRange(0, 0.999999);
-        glPointSize(2 + surfel_size);
-        for (int i = 0; i < NObjectSelections(); i++) {
-          R3SurfelObject *object = ObjectSelection(i);
-          DrawObject(object, shape_draw_flags);
-        }
-        glPointSize(surfel_size);
-        glDepthRange(0, 1);
-        // glDisable(GL_POLYGON_OFFSET_FILL);
-        // glEnable(GL_DEPTH_TEST);
-      }
-    }
+  if (selection_visibility) {
+    DrawObjectSelections();
   }
   
   // Draw object labels
   if (object_label_visibility) {
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    gluOrtho2D(0, viewer.Viewport().Width(), 0, viewer.Viewport().Height());
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(FALSE);
-    for (int i = 0; i < scene->NObjects(); i++) {
-      R3SurfelObject *object = scene->Object(i);
-      for (int i = 0; i < object->NLabelAssignments(); i++) {
-        R3SurfelLabelAssignment *assignment = object->LabelAssignment(i);
-        if (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
-        RNBoolean confirmed = (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) ? 1 : 0;
-        R3SurfelLabel *label = assignment->Label();
-        if (!strcmp(label->Name(), "Unknown")) continue;
-        if (!LabelVisibility(label)) continue;
-        R3Point position = object->Centroid();
-        position[2] = object->BBox().ZMax() + 0.01;
-        R2Point p = viewer.ViewportPoint(position);
-        void *font = (confirmed) ? GLUT_BITMAP_HELVETICA_18 : GLUT_BITMAP_HELVETICA_12;
-        int width = glutBitmapLength(font, (const unsigned char *) label->Name());
-        p[0] -= width / 2;
-        RNLoadRgb(label->Color());
-        DrawText(p, label->Name(), font);
-        break;
-      }
-    }
-    glDepthMask(TRUE);
-    glEnable(GL_DEPTH_TEST);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    DrawObjectLabels();
   }
 
   // Draw status
@@ -521,12 +566,12 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       redraw = 1;
       break;
 
-    case '[': 
+    case '!': 
       SetStatusVisibility(-1);
       redraw = 1;
       break; 
 
-    case ']': 
+    case '@': 
       SetLabelMenuVisibility(-1);
       redraw = 1;
       break; 
@@ -549,8 +594,8 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'F':
     case 'f':
-      segmenter.PredictObjectSegmentations(selection_objects);
-      redraw = 1;
+      // segmenter.PredictObjectSegmentations(selection_objects);
+      // redraw = 1;
       break;
 
     case 'G': {
@@ -565,21 +610,20 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'M':
     case 'm': // ENTER
-      SelectSuggestedObject();
-      redraw = 1;
+      // Used by R3SurfelViewer to ResetCamera
       break;
 
     case 'N':
     case 'n':
       // Assign new label (copy label from closest other object)
-      if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
-      else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
+      // if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
+      // else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
       break;
       
     case 'P':
     case 'p':
-      classifier.PredictLabelAssignments();
-      redraw = 1;
+      // classifier.PredictLabelAssignments();
+      // redraw = 1;
       break;
 
     case 'R':
