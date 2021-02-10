@@ -868,6 +868,7 @@ inline void R3SurfelViewer::
 SetSurfelSize(RNScalar npixels)
 {
   // Set surfel size
+  if (npixels < 1) npixels = 1;
   this->surfel_size = npixels;
 }
 
