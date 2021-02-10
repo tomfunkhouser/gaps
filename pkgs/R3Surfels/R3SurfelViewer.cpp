@@ -95,7 +95,10 @@ R3SurfelViewer(R3SurfelScene *scene)
     vbo_position_buffer(0),
     vbo_normal_buffer(0),
     vbo_color_buffer(0),
-    vbo_nsurfels(0)
+    vbo_nsurfels(0),
+    shader_program(0),
+    vertex_shader(0),
+    fragment_shader(0)
 {
   // Initialize mouse button state
   mouse_button[0] = 0;
@@ -1599,6 +1602,9 @@ Initialize(void)
   // Initialize graphics modes
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+
+  // Initialize shaders
+  CompileShaders();
 }
 
 
@@ -1606,6 +1612,8 @@ Initialize(void)
 void R3SurfelViewer::
 Terminate(void)
 {
+  // Delete shaders
+  DeleteShaders();
 }
 
 
@@ -2606,6 +2614,126 @@ DrawVBO(int color_scheme)
   glDisableClientState(GL_NORMAL_ARRAY);
   glDisableClientState(GL_COLOR_ARRAY);
 #endif
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// SHADERS
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelViewer::
+CompileShaders(void)
+{
+  // Inline GLSL 1.4 shader definitions.
+  const GLchar* vertex_shader_source =
+    "#version 140\n"
+    "in vec3 inPosition;"
+    "in vec3 inColor;"
+    "uniform float pointSize;"
+    "out vec4 vertexColor;"
+    "void main()"
+    "{"
+    "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+    "    vertexColor = gl_Color;"
+    "    gl_PointSize = pointSize;" // Replicate the current functionality
+    // Alternative: uncomment to divide by clip space w to scale based on distance.
+    // If we do this, we also need to increase the pointSize to compensate:
+    //"    gl_PointSize = pointSize / gl_Position.w;" 
+    "}";
+                                                                                     
+  const GLchar* fragment_shader_source = 
+    "#version 140\n"
+    "in vec4 vertexColor;"
+    "out vec4 FragColor;"
+    "void main()"
+    "{"
+    "	FragColor = vertexColor;"
+    "}";
+                                                                                     
+  // Compile the vertex shader
+  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertex_shader, 1, &vertex_shader_source, 0);
+  glCompileShader(vertex_shader);
+
+  // Check if vertex shader is compiled
+  int is_compiled = 0;
+  glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &is_compiled);
+  if (!is_compiled) {
+    int log_length = 0;
+    glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &log_length);
+    char* log_contents = new char[log_length + 1];
+    glGetShaderInfoLog(vertex_shader, log_length, &log_length, log_contents);
+    RNFail("Error: Failed to compile the vertex shader: %s\n", log_contents);
+    delete[] log_contents;
+    DeleteShaders();
+    return;
+  }
+                                                                                     
+  // Compile the fragment shader
+  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragment_shader, 1, &fragment_shader_source, 0);
+  glCompileShader(fragment_shader);
+
+  // Check if fragment shader is compiled
+  is_compiled = 0;
+  glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &is_compiled);
+  if (!is_compiled) {
+    int log_length = 0;
+    glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &log_length);
+    char* log_contents = new char[log_length + 1];
+    glGetShaderInfoLog(fragment_shader, log_length, &log_length, log_contents);
+    RNFail("Error: Failed to compile the fragment shader: %s\n", log_contents);
+    delete[] log_contents;
+    DeleteShaders();
+    return;
+  }
+                                                                                     
+  // Link the shader program
+  shader_program = glCreateProgram();
+  glAttachShader(shader_program, vertex_shader);
+  glAttachShader(shader_program, fragment_shader);
+  glLinkProgram(shader_program);
+
+  // Check if shader is linked
+  int is_linked = 0;
+  glGetProgramiv(shader_program, GL_LINK_STATUS, &is_linked);
+  if (!is_linked) {
+    int log_length = 0;
+    glGetProgramiv(shader_program, GL_INFO_LOG_LENGTH, &log_length);
+    char* log_contents = new char[log_length + 1];
+    glGetProgramInfoLog(shader_program, log_length, &log_length, log_contents);
+    RNFail("Error: Failed to link the shader program: %s\n", log_contents);
+    delete[] log_contents;
+    DeleteShaders();
+    return;
+  }
+}
+
+
+
+void R3SurfelViewer::
+DeleteShaders(void)
+{
+  // Delete shader program
+  if (shader_program > 0) {
+    glDetachShader(shader_program, vertex_shader);
+    glDetachShader(shader_program, fragment_shader);
+    glDeleteProgram(shader_program);
+    shader_program = 0;
+  }
+
+  // Delete vertex shader
+  if (vertex_shader > 0) {
+    glDeleteShader(vertex_shader);
+    vertex_shader = 0;
+  }
+
+  // Delete fragment shader
+  if (fragment_shader > 0) {
+    glDeleteShader(fragment_shader);
+    fragment_shader = 0;
+  }
 }
 
 

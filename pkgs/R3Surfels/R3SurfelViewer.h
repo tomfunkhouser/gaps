@@ -263,6 +263,10 @@ protected:
   void UpdateVBO(void);
   void DrawVBO(int color_scheme);
 
+  // Shader management functions
+  void CompileShaders(void);
+  void DeleteShaders(void);
+
 protected:
   // Tree properties
   R3SurfelScene *scene;
@@ -350,6 +354,11 @@ protected:
   GLuint vbo_normal_buffer;
   GLuint vbo_color_buffer;
   unsigned int vbo_nsurfels;
+
+  // Shader objects
+  GLuint shader_program;
+  GLuint vertex_shader;
+  GLuint fragment_shader;
 };
 
 
