@@ -2564,7 +2564,7 @@ DrawVBO(int color_scheme)
     glUseProgram(shader_program);
     float pointSize = SurfelSize();
     if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX)
-      pointSize = 0.1 * Viewport().Width() + 1;
+      pointSize = 0.01 * Viewport().Width() + 1;
     int pointSizeLocation = glGetUniformLocation(shader_program, "pointSize");
     glUniform1f(pointSizeLocation, pointSize);
   }
