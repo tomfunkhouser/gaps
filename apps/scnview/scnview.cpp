@@ -343,6 +343,7 @@ Pick(R3Scene *scene, int x, int y,
   int pick_tolerance = 10;
   glPointSize(pick_tolerance);
   glDisable(GL_LIGHTING);
+  glDisable(GL_MULTISAMPLE);
 
   // Draw leaf nodes with color indicating node index
   for (int i = 0; i < scene->NNodes(); i++) {
@@ -362,6 +363,7 @@ Pick(R3Scene *scene, int x, int y,
   }
 
   // Reset OpenGL stuff
+  glEnable(GL_MULTISAMPLE);
   glPointSize(1);
   glFinish();
 
@@ -860,11 +862,8 @@ void GLUTInit(int *argc, char **argv)
   glutInit(argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
   GLUTwindow = glutCreateWindow("Scene Viewer");
-
-  // Initialize multisampling
-  glEnable(GL_MULTISAMPLE);
   
   // Initialize depth testing
   glEnable(GL_DEPTH_TEST);

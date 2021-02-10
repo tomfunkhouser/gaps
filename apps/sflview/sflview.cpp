@@ -551,11 +551,8 @@ void GLUTInit(int *argc, char **argv)
   glutInit(argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_ALPHA);
   GLUTwindow = glutCreateWindow("Surfel Viewer");
-
-  // Initialize multisampling
-  glEnable(GL_MULTISAMPLE);
   
   // Initialize GLUT callback functions
   glutDisplayFunc(GLUTRedraw);
