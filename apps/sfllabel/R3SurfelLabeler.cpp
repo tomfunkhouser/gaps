@@ -548,16 +548,51 @@ MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl
 int R3SurfelLabeler::
 Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 {
-  // Send event to viewer
-  int redraw = R3SurfelViewer::Keyboard(x, y, key, shift, ctrl, alt);
-
+  // Do not redraw by default
+  int redraw = 0;
+  
   // Process mouse button event
   if (alt) {
     // Make sure does not conflict with keys used by R3SurfelViewer
     switch(key) {
-    case 'T':
-    case 't':
-      object_label_visibility = !object_label_visibility;
+    case 'C':
+    case 'c':
+      if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
+      else SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_RGB);
+      redraw = 1;
+      break;
+      
+    case 'G':
+    case 'g':
+      SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
+      redraw = 1;
+      break;
+
+    case 'I':
+      SetImagePlaneVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
+      redraw = 1;
+      break;
+
+    case 'i':
+      SetImageInsetVisibility(-1);
+      SelectImage(selected_image, FALSE, FALSE);
+      redraw = 1;
+      break;
+
+    case 'L': 
+    case 'l':
+      SetHumanLabeledObjectVisibility(-1);
+      redraw = 1;
+      break;
+      
+    case 'P':
+    case 'p':
+      SetSurfelVisibility(-1);
+      redraw = 1;
       break;
 
     case 'S':
@@ -566,6 +601,24 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       redraw = 1;
       break;
 
+    case 'T':
+    case 't':
+      // object_label_visibility = !object_label_visibility;
+      redraw = 1;
+      break;
+
+    case 'V':
+    case 'v':
+      SetImageViewpointVisibility(-1);
+      redraw = 1;
+      break;
+      
+    case 'Z':
+    case 'z':
+      SetViewingExtentVisibility(-1);
+      redraw = 1;
+      break;
+      
     case '!': 
       SetStatusVisibility(-1);
       redraw = 1;
@@ -575,6 +628,38 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       SetLabelMenuVisibility(-1);
       redraw = 1;
       break; 
+
+    case ';': 
+    case '\'': {
+      // Select next/prev image
+      int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
+      if (key == '\'') image_index++;
+      else if (key == ';') image_index--;
+      if (image_index < 0) image_index = 0;
+      if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
+      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      redraw = 1;
+      break; }
+
+    case '_': 
+      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
+      redraw = 1;
+      break;
+
+    case '+': 
+      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
+      redraw = 1;
+      break;
+
+    case '-': 
+      SetSurfelSize(0.9 * SurfelSize());
+      redraw = 1;
+      break;
+
+    case '=': 
+      SetSurfelSize(1.1 * SurfelSize());
+      redraw = 1;
+      break;
     }
   }
   else if (ctrl) {
@@ -588,8 +673,8 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'E':
     case 'e': {
-      SelectOverlappingObjects();
-      redraw = 1;
+      // SelectOverlappingObjects();
+      // redraw = 1;
       break; }
       
     case 'F':
@@ -610,7 +695,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'M':
     case 'm': // ENTER
-      // Used by R3SurfelViewer to ResetCamera
+      ResetCamera();
       break;
 
     case 'N':
@@ -652,6 +737,9 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     }
   }
   else {
+    // Send event to viewer
+    redraw |= R3SurfelViewer::Keyboard(x, y, key, shift, ctrl, alt);
+
     // Process other keyboard events
     switch (key) {
     case R3_SURFEL_VIEWER_F11_KEY: 

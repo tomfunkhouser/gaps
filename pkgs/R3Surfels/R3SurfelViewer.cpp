@@ -1349,10 +1349,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetHumanLabeledObjectVisibility(-1);
       break;
       
-    // case 'M': // Reserve for toggling "menu" in sfllabel
-    // case 'm':
-    //  break;
-      
     case 'N':
     case 'n':
       SetNormalVisibility(-1);
@@ -1488,10 +1484,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
   }
   else if (ctrl) {
     switch(key) {
-    case 'm':
-      ResetCamera();
-      break;
-
     default:
       redraw = 0;
       break;
