@@ -2625,32 +2625,31 @@ DrawVBO(int color_scheme)
 void R3SurfelViewer::
 CompileShaders(void)
 {
-  // Inline GLSL 1.4 shader definitions.
+  // Inline GLSL 1.1 vertex shader definition
   const GLchar* vertex_shader_source =
-    "#version 140\n"
-    "in vec3 inPosition;"
-    "in vec3 inColor;"
-    "uniform float pointSize;"
-    "out vec4 vertexColor;"
-    "void main()"
-    "{"
-    "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-    "    vertexColor = gl_Color;"
-    "    gl_PointSize = pointSize;" // Replicate the current functionality
-    // Alternative: uncomment to divide by clip space w to scale based on distance.
-    // If we do this, we also need to increase the pointSize to compensate:
-    //"    gl_PointSize = pointSize / gl_Position.w;" 
-    "}";
-                                                                                     
-  const GLchar* fragment_shader_source = 
-    "#version 140\n"
-    "in vec4 vertexColor;"
-    "out vec4 FragColor;"
-    "void main()"
-    "{"
-    "	FragColor = vertexColor;"
-    "}";
-                                                                                     
+       "#version 110\n"
+       "attribute vec3 inPosition;"
+       "attribute vec3 inColor;"
+       "uniform float pointSize;"
+       "varying vec4 vertexColor;"
+       "void main()"
+       "{"
+       "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+       "    vertexColor = gl_Color;"
+       "    gl_PointSize = pointSize;" // Replicate the current functionality
+       // Alternative: uncomment to divide by clip space w to scale based on distance.
+       // If we do this, we also need to increase the pointSize to compensate:
+       //"    gl_PointSize = pointSize / gl_Position.w;"
+       "}";
+                                                                                  // Inline GLSL 1.1 fragment shader definition
+  const GLchar* fragment_shader_source =
+       "#version 110\n"
+       "varying vec4 vertexColor;"
+       "void main()"
+       "{"
+       "        gl_FragColor = vertexColor;"
+       "}";
+
   // Compile the vertex shader
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex_shader_source, 0);
