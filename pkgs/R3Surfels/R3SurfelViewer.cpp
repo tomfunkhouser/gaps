@@ -2559,6 +2559,16 @@ DrawVBO(int color_scheme)
   // Check VBO
   if (vbo_nsurfels == 0) return;
 
+  // Assign shader and its variables
+  if (shader_program > 0) {
+    glUseProgram(shader_program);
+    float pointSize = SurfelSize();
+    if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX)
+      pointSize = 0.1 * Viewport().Width() + 1;
+    int pointSizeLocation = glGetUniformLocation(shader_program, "pointSize");
+    glUniform1f(pointSizeLocation, pointSize);
+  }
+
   // Enable position buffer
   if (vbo_position_buffer > 0) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
@@ -2613,6 +2623,9 @@ DrawVBO(int color_scheme)
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
   glDisableClientState(GL_COLOR_ARRAY);
+
+  // Reset shader
+  glUseProgram(0);
 #endif
 }
 
