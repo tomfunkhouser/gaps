@@ -15,8 +15,12 @@ using namespace gaps;
 const char *input_mesh_name = NULL;
 const char *output_mesh_name = NULL;
 const char *output_xform_name = NULL;
-const char *color_name = NULL;
+const char *source_mesh_name = NULL;
 const char *merge_list_name = NULL;
+int copy_colors = 0;
+int copy_categories = 0;
+int copy_segments = 0;
+int copy_materials = 0;
 int flip_faces = 0;
 int clean = 0;
 int swap_edges = 0;
@@ -190,7 +194,7 @@ MergeList(R3Mesh *mesh, const char *filename)
 
 
 static int
-CopyColors(R3Mesh *mesh, const char *source_mesh_name)
+CopyFromSource(R3Mesh *mesh, const char *source_mesh_name)
 {
   // Read source mesh
   R3Mesh source_mesh;
@@ -199,30 +203,47 @@ CopyColors(R3Mesh *mesh, const char *source_mesh_name)
   // Create kdtree
   R3MeshSearchTree kdtree(&source_mesh);
   
-  // Copy colors
-  for (int i = 0; i < mesh->NVertices(); i++) {
-    R3MeshVertex *vertex = mesh->Vertex(i);
-    mesh->SetVertexColor(vertex, RNblack_rgb);
-    const R3Point& position = mesh->VertexPosition(vertex);
+  // Copy stuff from source mesh
+  if (copy_colors) {
+    // Copy info from closest vertex (no interpolation)
+    for (int i = 0; i < mesh->NVertices(); i++) {
+      R3MeshVertex *vertex = mesh->Vertex(i);
+      mesh->SetVertexColor(vertex, RNblack_rgb);
+      const R3Point& position = mesh->VertexPosition(vertex);
 
-    // Search kdtree
-    R3MeshIntersection closest;
-    kdtree.FindClosest(position, closest);
-    if (closest.type == R3_MESH_VERTEX_TYPE) {
-      mesh->SetVertexColor(vertex, source_mesh.VertexColor(closest.vertex));
+      // Search kdtree
+      R3MeshIntersection closest;
+      kdtree.FindClosest(position, closest);
+      if (closest.type == R3_MESH_VERTEX_TYPE) {
+        mesh->SetVertexColor(vertex, source_mesh.VertexColor(closest.vertex));
+      }
+      else if (closest.type == R3_MESH_EDGE_TYPE) {
+        R3Span span = mesh->EdgeSpan(closest.edge);
+        RNScalar t = span.T(position);
+        int k = (t < 0.5 * span.Length()) ?  0 : 1;
+        R3MeshVertex *source_vertex = source_mesh.VertexOnEdge(closest.edge, k);
+        mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
+      }
+      else if (closest.type == R3_MESH_FACE_TYPE) {
+        R3Point b = source_mesh.FaceBarycentric(closest.face, position);
+        int k = b.Vector().MaxDimension();
+        R3MeshVertex *source_vertex = source_mesh.VertexOnFace(closest.face, k);
+        mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
+      }
     }
-    else if (closest.type == R3_MESH_EDGE_TYPE) {
-      R3Span span = mesh->EdgeSpan(closest.edge);
-      RNScalar t = span.T(position);
-      int k = (t < 0.5 * span.Length()) ?  0 : 1;
-      R3MeshVertex *source_vertex = source_mesh.VertexOnEdge(closest.edge, k);
-      mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
-    }
-    else if (closest.type == R3_MESH_FACE_TYPE) {
-      R3Point b = source_mesh.FaceBarycentric(closest.face, position);
-      int k = b.Vector().MaxDimension();
-      R3MeshVertex *source_vertex = source_mesh.VertexOnFace(closest.face, k);
-      mesh->SetVertexColor(vertex, source_mesh.VertexColor(source_vertex));
+  }
+  else if (copy_categories || copy_segments || copy_materials) {
+    // Copy info from closest face
+    for (int i = 0; i < mesh->NFaces(); i++) {
+      R3MeshFace *face = mesh->Face(i);
+      const R3Point& position = mesh->FaceCentroid(face);
+
+      // Search kdtree
+      R3MeshIntersection closest;
+      kdtree.FindClosest(position, closest);
+      if (copy_categories) mesh->SetFaceCategory(face, source_mesh.FaceCategory(closest.face));
+      if (copy_segments) mesh->SetFaceSegment(face, source_mesh.FaceSegment(closest.face));
+      if (copy_materials) mesh->SetFaceMaterial(face, source_mesh.FaceMaterial(closest.face));
     }
   }
 
@@ -452,6 +473,10 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-center_at_origin")) translate_by_centroid = 1;
       else if (!strcmp(*argv, "-rotate_by_pca")) rotate_by_pca = 1;
       else if (!strcmp(*argv, "-align_by_pca")) align_by_pca = 1;
+      else if (!strcmp(*argv, "-copy_colors")) copy_colors = 1;
+      else if (!strcmp(*argv, "-copy_categories")) copy_categories = 1;
+      else if (!strcmp(*argv, "-copy_segments")) copy_segments = 1;
+      else if (!strcmp(*argv, "-copy_materials")) copy_materials = 1;
       else if (!strcmp(*argv, "-smooth"))  { argv++; argc--; smooth_factor = atof(*argv); }
       else if (!strcmp(*argv, "-scale")) { argv++; argc--; xform = R3identity_affine; xform.Scale(atof(*argv)); xform.Transform(prev_xform); }
       else if (!strcmp(*argv, "-tx")) { argv++; argc--; xform = R3identity_affine; xform.XTranslate(atof(*argv)); xform.Transform(prev_xform); }
@@ -467,7 +492,7 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-min_edge_length")) { argv++; argc--; min_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-max_edge_length")) { argv++; argc--; max_edge_length = atof(*argv); }
       else if (!strcmp(*argv, "-remove_small_components")) { argv++; argc--; min_component_area = atof(*argv); }
-      else if (!strcmp(*argv, "-color")) { argv++; argc--; color_name = *argv; }
+      else if (!strcmp(*argv, "-source_mesh")) { argv++; argc--; source_mesh_name = *argv; }
       else if (!strcmp(*argv, "-merge_list")) { argv++; argc--; merge_list_name = *argv; }
       else if (!strcmp(*argv, "-debug_matrix")) { argv++; argc--; output_xform_name = *argv; }
       else if (!strcmp(*argv, "-transform")) {
@@ -627,8 +652,8 @@ int main(int argc, char **argv)
   }
 
   // Transfer colors
-  if (color_name) {
-    CopyColors(mesh, color_name);
+  if (source_mesh_name) {
+    CopyFromSource(mesh, source_mesh_name);
   }
   
   // Write mesh
