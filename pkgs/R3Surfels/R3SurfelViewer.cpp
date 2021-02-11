@@ -1049,12 +1049,9 @@ Redraw(void)
 
       // Draw projected center point
       if (selected_point) {
-        glPointSize(8);
         RNLoadRgb(1.0, 0.0, 0.0);
-        glBegin(GL_POINTS);
-        R3LoadPoint(focal_point.X(), focal_point.Y(), -0.25);
-        glEnd();
-        glPointSize(1);
+        R3Point p(focal_point.X(), focal_point.Y(), -0.25);
+        R3Box(p[0]-4, p[1]-4, -0.25, p[0]+4, p[1]+4, -0.25).Draw();
       }
      
       // Pop ortho viewing matrices
@@ -1507,19 +1504,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case R3_SURFEL_VIEWER_DOWN_KEY:
-      SetImageInsetSize(0.9 * ImageInsetSize());
+      SetImageInsetSize(2.0 * ImageInsetSize() / 3.0);
       break;
 
     case R3_SURFEL_VIEWER_UP_KEY:
-      SetImageInsetSize(1.1 * ImageInsetSize());
+      SetImageInsetSize(3.0 * ImageInsetSize() / 2.0);
       break;
 
-    case R3_SURFEL_VIEWER_LEFT_KEY: 
-      SetSubsamplingFactor(SubsamplingFactor() - 1);
+    case R3_SURFEL_VIEWER_LEFT_KEY:
+      SetSubsamplingFactor(SubsamplingFactor() / 2);
       break;
 
     case R3_SURFEL_VIEWER_RIGHT_KEY: 
-      SetSubsamplingFactor(SubsamplingFactor() + 1);
+      SetSubsamplingFactor(SubsamplingFactor() * 2);
       break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
