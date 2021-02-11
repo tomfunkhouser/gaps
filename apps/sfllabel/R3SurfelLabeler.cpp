@@ -138,7 +138,7 @@ DrawObjectSelections(void) const
   // glEnable(GL_POLYGON_OFFSET_FILL);
   // glPolygonOffset(-2, -1);
   glColor3d(1.0, 1.0, 0.0);
-  glDepthRange(0, 0.999999);
+  glDepthRange(0, 0.9999);
 
   // Increase point size
   glPointSize(2 + surfel_size);
