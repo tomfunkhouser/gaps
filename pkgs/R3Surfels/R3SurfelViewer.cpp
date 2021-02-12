@@ -45,7 +45,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     selected_image(NULL),
     current_image_texture(),
     image_inset_size(0.2),
-    image_plane_depth(10),
+    image_plane_depth(2),
     surfel_size(2),
     surfel_visibility(1),
     normal_visibility(0),
@@ -1429,47 +1429,47 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       }
       break; }
 
-    case '.':
-      SetFocusRadius(1.1 * FocusRadius());
-      break;
-      
-    case ',':
+    case ';':
       SetFocusRadius(0.9 * FocusRadius());
       break;
+      
+    case '\'':
+      SetFocusRadius(1.1 * FocusRadius());
+      break;
 
-    case '<':
+    case ':':
       SetTargetResolution(0.9 * TargetResolution());
       break;
 
-    case '>':
+    case '"':
       SetTargetResolution(1.1 * TargetResolution());
       break;
 
-    case ';': 
-    case '\'': {
+    case ',': 
+    case '.': {
       // Select next/prev image
       int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key == '\'') image_index++;
-      else if (key == ';') image_index--;
+      if (key == ',') image_index++;
+      else if (key == '.') image_index--;
       if (image_index < 0) image_index = 0;
       if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
-      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      SelectImage(scene->Image(image_index), FALSE, FALSE);
       break; }
 
     case '_': 
-      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
+      SetImagePlaneDepth(0.8 * ImagePlaneDepth());
       break;
 
     case '+': 
-      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
+      SetImagePlaneDepth(1.25 * ImagePlaneDepth());
       break;
 
     case '-': 
-      SetSurfelSize(0.9 * SurfelSize());
+      SetImageInsetSize(0.8 * ImageInsetSize());
       break;
 
     case '=': 
-      SetSurfelSize(1.1 * SurfelSize());
+      SetImageInsetSize(1.25 * ImageInsetSize());
       break;
 
     default:
@@ -1479,6 +1479,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
   }
   else if (ctrl) {
     switch(key) {
+    case 'M':
+    case 'm': // Enter
+      if (image_inset_size < 0.5) SetImageInsetSize(0.8);
+      else SetImageInsetSize(0.2);
+      break;
+
     default:
       redraw = 0;
       break;
@@ -1504,19 +1510,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case R3_SURFEL_VIEWER_DOWN_KEY:
-      SetImageInsetSize(2.0 * ImageInsetSize() / 3.0);
+      SetSurfelSize(0.8 * SurfelSize());
       break;
 
     case R3_SURFEL_VIEWER_UP_KEY:
-      SetImageInsetSize(3.0 * ImageInsetSize() / 2.0);
+      SetSurfelSize(1.25 * SurfelSize());
       break;
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
-      SetSubsamplingFactor(SubsamplingFactor() / 2);
+      SetSubsamplingFactor(SubsamplingFactor() * 2);
       break;
 
     case R3_SURFEL_VIEWER_RIGHT_KEY: 
-      SetSubsamplingFactor(SubsamplingFactor() * 2);
+      SetSubsamplingFactor(SubsamplingFactor() / 2);
       break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 

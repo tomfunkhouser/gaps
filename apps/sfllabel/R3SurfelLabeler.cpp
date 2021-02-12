@@ -557,17 +557,20 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     switch(key) {
     case 'B':
     case 'b':
+      // Copied from R3SurfelViewer
       SetImagePlaneVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);
       redraw = 1;
       break;
 
     case 'C':
+      // Copied from R3SurfelViewer
       SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
       redraw = 1;
       break;
 
     case 'c':
+      // Copied from R3SurfelViewer
       if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_RGB)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_ELEVATION);
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION)
@@ -578,6 +581,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'I':
     case 'i':
+      // Copied from R3SurfelViewer
       SetImageInsetVisibility(-1);
       SelectImage(selected_image, FALSE, FALSE);
       redraw = 1;
@@ -585,12 +589,14 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 
     case 'L': 
     case 'l':
+      // Copied from R3SurfelViewer
       SetHumanLabeledObjectVisibility(-1);
       redraw = 1;
       break;
       
     case 'P':
     case 'p':
+      // Copied from R3SurfelViewer
       SetSurfelVisibility(-1);
       redraw = 1;
       break;
@@ -603,18 +609,21 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 
     case 'T':
     case 't':
+      // Copied from R3SurfelViewer
       // object_label_visibility = !object_label_visibility;
       redraw = 1;
       break;
 
     case 'V':
     case 'v':
+      // Copied from R3SurfelViewer
       SetImageViewpointVisibility(-1);
       redraw = 1;
       break;
       
     case 'Z':
     case 'z':
+      // Copied from R3SurfelViewer
       SetViewingExtentVisibility(-1);
       redraw = 1;
       break;
@@ -629,35 +638,39 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       redraw = 1;
       break; 
 
-    case ';': 
-    case '\'': {
+    case ',': 
+    case '.': {
       // Select next/prev image
       int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key == '\'') image_index++;
-      else if (key == ';') image_index--;
+      if (key == ',') image_index++;
+      else if (key == '.') image_index--;
       if (image_index < 0) image_index = 0;
       if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
-      SelectImage(scene->Image(image_index), TRUE, TRUE);
+      SelectImage(scene->Image(image_index), FALSE, FALSE);
       redraw = 1;
       break; }
 
     case '_': 
+      // Copied from R3SurfelViewer
       SetImagePlaneDepth(0.9 * ImagePlaneDepth());
       redraw = 1;
       break;
 
     case '+': 
+      // Copied from R3SurfelViewer
       SetImagePlaneDepth(1.1 * ImagePlaneDepth());
       redraw = 1;
       break;
 
     case '-': 
-      SetSurfelSize(0.9 * SurfelSize());
+      // Copied from R3SurfelViewer
+      SetImageInsetSize(0.8 * ImageInsetSize());
       redraw = 1;
       break;
 
     case '=': 
-      SetSurfelSize(1.1 * SurfelSize());
+      // Copied from R3SurfelViewer
+      SetImageInsetSize(1.25 * ImageInsetSize());
       redraw = 1;
       break;
     }
@@ -692,10 +705,12 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       MergeSelectedObjects();
       redraw = 1;
       break; }
-      
+
     case 'M':
-    case 'm': // ENTER
-      ResetCamera();
+    case 'm': // Enter
+      // Copied from R3SurfelViewer
+      if (image_inset_size < 0.5) SetImageInsetSize(0.8);
+      else SetImageInsetSize(0.2);
       redraw = 1;
       break;
 
@@ -749,6 +764,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       break; 
 
     case 27: { // ESC
+      ResetCamera();
       SelectPickedObject(-1, -1, 0, 0);
       SetLabelVisibility(-1, 1);
       viewing_extent = R3null_box;

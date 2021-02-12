@@ -45,6 +45,7 @@ static int create_mesh_segment_images = 0;
 static int create_mesh_category_images = 0;
 static int capture_color_images = 0;
 static int capture_depth_images = 0;
+static int capture_mesh_color_images = 0;
 static int capture_mesh_depth_images = 0;
 static int capture_mesh_position_images = 0;
 static int capture_mesh_wposition_images = 0;
@@ -103,6 +104,7 @@ static int current_image_index = -1;
 
 enum {
   BLACK_RENDERING,
+  COLOR_RENDERING,
   FACE_INDEX_RENDERING,
   FACE_MATERIAL_RENDERING,
   FACE_SEGMENT_RENDERING,
@@ -996,6 +998,15 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
         R3LoadPoint(position);
       }
     }
+    else if (rendering_scheme >= COLOR_RENDERING){
+      for (int j = 0; j < 3; j++) {
+        R3MeshVertex *vertex = mesh.VertexOnFace(face, j);
+        const R3Point& position = mesh.VertexPosition(vertex);
+        const RNRgb& color = mesh.VertexColor(vertex);
+        RNLoadRgb(color);
+        R3LoadPoint(position);
+      }
+    }
     else {
       LoadInteger(0);
       for (int j = 0; j < 3; j++) {
@@ -1151,6 +1162,17 @@ Redraw(void)
     RenderConfiguration(configuration, target_viewpoint, target_towards, target_up);
     if (CaptureColor(color_image)) {
       sprintf(output_image_filename, "%s/%s_color.jpg", output_image_directory, name);
+      color_image.Write(output_image_filename);
+    }
+  }
+
+  // Capture and write mesh color image
+  sprintf(output_image_filename, "%s/%s_mesh_color.jpg", output_image_directory, name);
+  if (capture_mesh_color_images && !RNFileExists(output_image_filename)) {
+    R2Image color_image(width, height, 3);
+    RenderMesh(mesh, COLOR_RENDERING, target_viewpoint, target_towards, target_up);
+    if (CaptureColor(color_image)) {
+      sprintf(output_image_filename, "%s/%s_mesh_color.jpg", output_image_directory, name);
       color_image.Write(output_image_filename);
     }
   }
@@ -1463,7 +1485,7 @@ RenderImages(const char *output_image_directory)
 {
   // Check parameters
   if (!capture_color_images && !capture_depth_images &&
-      !capture_mesh_depth_images &&
+      !capture_mesh_color_images && !capture_mesh_depth_images &&
       !capture_mesh_position_images && !capture_mesh_wposition_images &&
       !capture_mesh_normal_images && !capture_mesh_wnormal_images && !capture_mesh_ndotv_images &&
       !capture_mesh_face_images && !capture_mesh_material_images &&
@@ -1525,6 +1547,7 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-capture_color_images")) { output = capture_color_images = 1; }
       else if (!strcmp(*argv, "-capture_depth_images")) { output = capture_depth_images = 1; }
+      else if (!strcmp(*argv, "-capture_mesh_color_images")) { output = capture_mesh_color_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_depth_images")) { output = capture_mesh_depth_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_position_images")) { output = capture_mesh_position_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_wposition_images")) { output = capture_mesh_wposition_images = 1; }
@@ -1536,6 +1559,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-capture_mesh_segment_images")) { output = capture_mesh_segment_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_category_images")) { output = capture_mesh_category_images = 1; }
       else if (!strcmp(*argv, "-capture_mesh_images")) { output = 1;
+        capture_mesh_color_images = 1;
         capture_mesh_depth_images = 1;
         // capture_mesh_position_images = 1;
         // capture_mesh_wposition_images = 1; 
