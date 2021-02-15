@@ -1226,6 +1226,8 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
     int object_index = object_mask[i];
     if (object_marks[object_index] > 0) continue;
     R3SurfelObject *object = scene->Object(object_index);
+    if (unlabeled_only && object->HumanLabel()) continue;
+    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
     picked_objects.Insert(object);
     object_marks[object_index] = 1;
   }
@@ -1348,6 +1350,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
 
     // Check if should select if overlapped
     if (object_is_selected[top_level_object->SceneIndex()]) continue;
+    if (!HumanLabeledObjectVisibility() && top_level_object->HumanLabel()) continue;
     if (unlabeled_only && top_level_object->HumanLabel()) continue;
 
     // Count overlaps
@@ -1378,12 +1381,12 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     picked_objects.Insert(top_level_object);
   }
 
-  // Check picked objects
-  if (picked_objects.IsEmpty()) return 0;
-  
   // Set message
   SetMessage("Selected %d more objects", picked_objects.NEntries());
 
+  // Check picked objects
+  if (picked_objects.IsEmpty()) return 0;
+  
   // Begin logging command 
   BeginCommand(R3_SURFEL_LABELER_SELECT_OVERLAPPING_COMMAND);
   
