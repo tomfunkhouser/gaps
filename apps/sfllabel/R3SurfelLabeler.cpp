@@ -686,8 +686,8 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'E':
     case 'e': {
-      // SelectOverlappedObjects();
-      // redraw = 1;
+      SelectOverlappedObjects();
+      redraw = 1;
       break; }
       
     case 'F':
@@ -1266,114 +1266,102 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
 }
 
 
-
-int R3SurfelLabeler::
-SelectOverlappedObjects(RNScalar min_bbox_overlap, RNLength max_plane_distance, RNBoolean unlabeled_only) 
+static void
+FindLeafObjects(R3SurfelObject *object, RNArray<R3SurfelObject *>& leaf_objects)
 {
-  // Check scene
-  if (!scene) return 0;
-  if (NObjectSelections() == 0) return 0;
-
-  // Make array of selected leaf objects
-  RNArray<R3SurfelObject *> selected_leaf_objects;
   RNArray<R3SurfelObject *> stack;
-  for (int i = 0; i < NObjectSelections(); i++)
-    stack.Insert(ObjectSelection(i));
+  stack.Insert(object);
   while (!stack.IsEmpty()) {
     R3SurfelObject *object = stack.Tail();
     stack.RemoveTail();
     if (object->NParts() == 0) {
-      selected_leaf_objects.Insert(object);
+      leaf_objects.Insert(object);
     }
     else {
       for (int k = 0; k < object->NParts(); k++) 
         stack.Insert(object->Part(k));
     }
   }
+}
 
-  // Make array of other objects overlapping any selected object
-  RNArray<R3SurfelObject *> picked_objects;
-  for (int i = 0; i < resident_nodes.NNodes(); i++) {
-    R3SurfelNode *node = resident_nodes.Node(i);
-    R3SurfelObject *leaf_object = node->Object(TRUE);
-    if (!leaf_object) continue;
 
-    // Find top-level object
-    R3SurfelObject *object = leaf_object;
-    while (object->Parent() && (object->Parent() != scene->RootObject()))
-      object = object->Parent();
 
-    // Check object
-    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
-    R3SurfelLabel *label = object->CurrentLabel();
-    if (label && !LabelVisibility(label)) continue;
-    if (selection_objects.FindEntry(object)) continue;
-    if (picked_objects.FindEntry(object)) continue;
-    RNVolume object_volume = object->BBox().Volume();
+int R3SurfelLabeler::
+SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_tolerance, RNBoolean unlabeled_only) 
+{
+  // Get/check scene stuff
+  if (!scene) return 0;
+  if (NObjectSelections() == 0) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+  
+  // Compute bbox of selected objects
+  R3Box grid_bbox = R3null_box;
+  for (int i = 0; i < NObjectSelections(); i++) 
+    grid_bbox.Union(ObjectSelection(i)->BBox());
+  if (grid_bbox.Volume() == 0) return 0;
 
-    // Skip objects that have already been labeled
-    if (unlabeled_only && object->HumanLabel()) continue;
+  // Make array of selected leaf objects
+  RNArray<R3SurfelObject *> selected_leaf_objects;
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *selected_object = ObjectSelection(i);
+    FindLeafObjects(selected_object, selected_leaf_objects);
+  }
 
-    // Check overlap with selected leaf objects
-    for (int j = 0; j < selected_leaf_objects.NEntries(); j++) {
-      R3SurfelObject *selected_object = selected_leaf_objects.Kth(j);
-      
-      // Check bbox intersection
-      if (min_bbox_overlap > 0) {
-        R3Box intersection = leaf_object->BBox();
-        intersection.Intersect(selected_object->BBox());
-        if (intersection.IsEmpty()) continue;
-        RNVolume intersection_volume = intersection.Volume();
-        RNScalar bbox_overlap = (RNIsPositive(object_volume)) ? intersection_volume / object_volume : 1.0;
-        if (bbox_overlap < min_bbox_overlap) continue;
+  // Create mask from selected objects
+  R3Grid mask(grid_bbox, overlap_tolerance, 5, 256, 3);
+  for (int i = 0; i < selected_leaf_objects.NEntries(); i++) {
+    R3SurfelObject *object = selected_leaf_objects.Kth(i);
+    for (int j = 0; j < object->NNodes(); j++) {
+      R3SurfelNode *node = object->Node(j);
+      for (int k = 0; k < node->NBlocks(); k++) {
+        R3SurfelBlock *block = node->Block(k);
+        if (!database->IsBlockResident(block)) continue;
+        for (int s = 0; s < block->NSurfels(); s++) {
+          R3Point position = block->SurfelPosition(s);
+          mask.RasterizeWorldPoint(position, 1);
+        }
       }
+    }
+  }
 
-      // Check plane distances
-      if (max_plane_distance > 0) {
-        R3SurfelObjectProperty *leaf_object_pca = leaf_object->FindObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY);
-        if (leaf_object_pca && (leaf_object_pca->NOperands() == 21)) {
-          R3SurfelObjectProperty *selected_object_pca = selected_object->FindObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY);
-          if (selected_object_pca && (selected_object_pca->NOperands() == 21)) {
-            // Get selected object plane info
-            R3Point selected_object_centroid(selected_object_pca->Operand(0), selected_object_pca->Operand(1), selected_object_pca->Operand(2));
-            R3Vector selected_object_axis1(selected_object_pca->Operand(3), selected_object_pca->Operand(4), selected_object_pca->Operand(5));
-            R3Vector selected_object_axis2(selected_object_pca->Operand(6), selected_object_pca->Operand(7), selected_object_pca->Operand(8));
-            R3Vector selected_object_normal(selected_object_pca->Operand(9), selected_object_pca->Operand(10), selected_object_pca->Operand(11));
-            R3Vector selected_object_radii(selected_object_pca->Operand(12), selected_object_pca->Operand(13), selected_object_pca->Operand(14));
-            R3Plane selected_object_plane(selected_object_centroid, selected_object_normal);
+  // Find other top-level objects overlapping selected objects
+  RNArray<R3SurfelObject *> picked_objects;
+  R3SurfelObject *root_object = scene->RootObject();
+  for (int r = 0; r < root_object->NParts(); r++) {
+    R3SurfelObject *top_level_object = root_object->Part(r);
 
-            // Get leaf object plane info
-            R3Point leaf_object_centroid(leaf_object_pca->Operand(0), leaf_object_pca->Operand(1), leaf_object_pca->Operand(2));
-            R3Vector leaf_object_axis1(leaf_object_pca->Operand(3), leaf_object_pca->Operand(4), leaf_object_pca->Operand(5));
-            R3Vector leaf_object_axis2(leaf_object_pca->Operand(6), leaf_object_pca->Operand(7), leaf_object_pca->Operand(8));
-            R3Vector leaf_object_normal(leaf_object_pca->Operand(9), leaf_object_pca->Operand(10), leaf_object_pca->Operand(11));
-            R3Vector leaf_object_radii(leaf_object_pca->Operand(12), leaf_object_pca->Operand(13), leaf_object_pca->Operand(14));
-            R3Plane leaf_object_plane(leaf_object_centroid, leaf_object_normal);
+    // Check if already labeled
+    if (unlabeled_only && top_level_object->HumanLabel()) continue;
 
-            // Check plane normals
-            if (selected_object_normal.IsZero()) continue;
-            if (leaf_object_normal.IsZero()) continue;
-            if (selected_object_normal.Dot(leaf_object_normal) < 0.8) continue;
-
-            // Check plane distances
-            double min_plane_radius = RN_EPSILON;
-            if (selected_object_radii[1] > min_plane_radius) {
-              double d = R3Distance(selected_object_plane, leaf_object->Centroid());
-              if (fabs(d) > max_plane_distance) continue;
-            }
-            if (leaf_object_radii[1] > min_plane_radius) {
-              double d = R3Distance(leaf_object_plane, selected_object->Centroid());
-              if (fabs(d) > max_plane_distance) continue;
-            }
-            
+    // Count overlaps
+    int overlap_count = 0, total_count = 0;
+    RNArray<R3SurfelObject *> leaf_objects;
+    FindLeafObjects(top_level_object, leaf_objects);
+    for (int i = 0; i < leaf_objects.NEntries(); i++) {
+      R3SurfelObject *object = leaf_objects.Kth(i);
+      for (int j = 0; j < object->NNodes(); j++) {
+        R3SurfelNode *node = object->Node(j);
+        for (int k = 0; k < node->NBlocks(); k++) {
+          R3SurfelBlock *block = node->Block(k);
+          if (!database->IsBlockResident(block)) continue;
+          for (int s = 0; s < block->NSurfels(); s++) {
+            R3Point position = block->SurfelPosition(s);
+            RNScalar mask_value = mask.WorldValue(position);
+            if (mask_value > 0.5) overlap_count++;
+            total_count++;
           }
         }
       }
-
-      // Insert object
-      picked_objects.Insert(object);
-      break;
     }
+
+    // Check overlap fraction
+    if (total_count == 0) continue;
+    RNScalar overlap_fraction = (RNScalar) overlap_count / (RNScalar) total_count;
+    if (overlap_fraction < min_overlap_fraction) continue;
+    picked_objects.Insert(top_level_object);
   }
 
   // Check picked objects
