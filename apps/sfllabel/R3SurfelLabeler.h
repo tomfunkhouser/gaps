@@ -49,7 +49,7 @@ public:
   int SelectEnclosedObjects(const R2Box& box, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   int SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   int SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.05, RNBoolean unlabeled_only = FALSE);
+  int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
   int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
   int SelectSuggestedObject(void);
 
