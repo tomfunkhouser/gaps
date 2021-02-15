@@ -686,7 +686,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case 'E':
     case 'e': {
-      // SelectOverlappingObjects();
+      // SelectOverlappedObjects();
       // redraw = 1;
       break; }
       
@@ -729,7 +729,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 
     case 'R':
     case 'r':
-      // Reset();
+      ResetCamera();
       break;
 
     case 'S':
@@ -764,7 +764,6 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       break; 
 
     case 27: { // ESC
-      ResetCamera();
       SelectPickedObject(-1, -1, 0, 0);
       SetLabelVisibility(-1, 1);
       viewing_extent = R3null_box;
@@ -1101,9 +1100,175 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
 }
 
 
+int R3SurfelLabeler::
+RasterizeObjectMask(unsigned int *object_mask) 
+{
+  // Get convenient variables
+  if (!scene) return 0;
+  if (scene->NObjects() == 0) return 0;
+  if (!object_mask) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  int width = viewer.Viewport().Width();
+  if (width <= 0) return 0;
+  int height = viewer.Viewport().Height();
+  if (height <= 0) return 0;
+
+  // Clear window 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Set viewing transformation
+  viewer.Camera().Load();
+
+  // Set viewing extent
+  EnableViewingExtent();
+
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
+  // Draw with VBO
+  DrawVBO(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
+#else
+  // Draw with glBegin ... glEnd
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+
+    // Set color
+    unsigned char rgba[4] = { 0, 0, 0, 0xFE };
+    CreateColor(rgba, R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX, NULL, NULL, node, NULL, NULL);
+    glColor4ubv(rgba);
+
+    // Draw node
+    node->Draw(shape_draw_flags);
+  }
+#endif
+
+  // Reset OpenGL stuff
+  glFinish();
+
+  // Reset viewing modes
+  DisableViewingExtent();
+
+  // Read color buffer
+  unsigned char *pixels = new unsigned char [ 4 * width * height ];
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+  // Process color buffer to fill returned mask with object indices
+  unsigned char *pixelsp = pixels;
+  for (int i = 0; i < width*height; i++) {
+    // Initialize object mask
+    object_mask[i] = -1;
+    
+    // Determine node index
+    int r = *(pixelsp++);
+    int g = *(pixelsp++);
+    int b = *(pixelsp++);
+    int a = *(pixelsp++);
+    if (a == 0) continue;
+    int node_index = (r << 16) | (g << 8) | b;
+    node_index--;    
+
+    // Determine node
+    if (node_index < 0) continue;
+    if (node_index >= tree->NNodes()) continue;
+    R3SurfelNode *node = tree->Node(node_index);
+
+    // Determine object
+    R3SurfelObject *object = node->Object(TRUE);
+    if (!object) continue;
+    while (object->Parent() && (object->Parent() != scene->RootObject()))
+      object = object->Parent();
+
+    // Update object mask
+    int object_index = object->SceneIndex();
+    object_mask[i] = object_index;
+  }
+
+  // Free pixels
+  delete [] pixels;
+
+  // Return success
+  return 1;
+}
+
+
 
 int R3SurfelLabeler::
-SelectOverlappingObjects(RNScalar min_bbox_overlap, RNLength max_plane_distance, RNBoolean unlabeled_only) 
+SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl, RNBoolean alt, RNBoolean unlabeled_only) 
+{
+  // Check stuff
+  if (!scene) return 0;
+  if (scene->NObjects() == 0) return 0;
+  if (polygon.IsLinear()) return 0;
+  if (polygon.NPoints() < 3) return 0;
+  int width = viewer.Viewport().Width();
+  if (width <= 0) return 0;
+  int height = viewer.Viewport().Height();
+  if (height <= 0) return 0;
+
+  // Rasterize polygon mask
+  R2Grid polygon_mask(width, height);
+  polygon_mask.RasterizeGridPolygon(polygon, 1);
+
+  // Rasterize object mask
+  unsigned int *object_mask = new unsigned int [ width * height ];
+  RasterizeObjectMask(object_mask);
+
+  // Allocate object marks
+  unsigned char *object_marks = new unsigned char [ scene->NObjects() ];
+  for (int i = 0; i < scene->NObjects(); i++) object_marks[i] = 0;
+
+  // Find objects intersecting polygon mask
+  RNArray<R3SurfelObject *> picked_objects;
+  for (int i = 0; i < width*height; i++) {
+    if (object_mask[i] <= 0) continue;
+    if (object_mask[i] >= (unsigned int) scene->NObjects()) continue;
+    if (polygon_mask.GridValue(i) <= 0) continue;
+    int object_index = object_mask[i];
+    if (object_marks[object_index] > 0) continue;
+    R3SurfelObject *object = scene->Object(object_index);
+    picked_objects.Insert(object);
+    object_marks[object_index] = 1;
+  }
+
+  // Delete object marks
+  delete [] object_marks;
+
+  // Set message
+  if (ctrl) SetMessage("Unselected %d objects", picked_objects.NEntries());
+  else SetMessage("Selected %d objects", picked_objects.NEntries());
+
+  // Begin logging command 
+  BeginCommand(R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND);
+  
+  // Remove previous selections
+  if (!ctrl && !shift) EmptyObjectSelections();
+ 
+  // Update object selections
+  for (int i = 0; i < picked_objects.NEntries(); i++) {
+    R3SurfelObject *object = picked_objects.Kth(i);
+
+    // Check if object is already selected
+    if (selection_objects.FindEntry(object)) {
+      // Remove object from selected objects
+      if (ctrl) RemoveObjectSelection(object);
+    }
+    else {
+      // Insert object into selected objects
+      if (!ctrl) InsertObjectSelection(object);
+    }
+  }
+
+  // End logging command
+  EndCommand();
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelLabeler::
+SelectOverlappedObjects(RNScalar min_bbox_overlap, RNLength max_plane_distance, RNBoolean unlabeled_only) 
 {
   // Check scene
   if (!scene) return 0;

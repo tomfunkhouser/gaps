@@ -590,6 +590,14 @@ DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags) const
 void R3SurfelViewer::
 DrawSurfels(RNFlags color_draw_flags) const
 {
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
+  if (!shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
+    // Draw with VBO
+    DrawVBO(color_draw_flags);
+    return;
+  }
+#endif
+
   // Draw resident nodes
   switch (surfel_color_scheme) {
   case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX:
@@ -797,20 +805,8 @@ Redraw(void)
   if (backfacing_visibility) glDisable(GL_CULL_FACE);
   else glEnable(GL_CULL_FACE);
 
-
-#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
-  if (surfel_visibility) {
-    if (shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
-      DrawSurfels(surfel_color_scheme);
-    }
-    else {
-      DrawVBO(surfel_color_scheme);
-    }
-  }
-#else
   // Draw surfels
   DrawSurfels(surfel_color_scheme);
-#endif
   
   // Reset opengl modes
   glDisable(GL_LIGHTING);
@@ -1483,6 +1479,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'm': // Enter
       if (image_inset_size < 0.5) SetImageInsetSize(0.8);
       else SetImageInsetSize(0.2);
+      break;
+
+    case 'R':
+    case 'r':
+      // Reset camera
+      ResetCamera();
       break;
 
     default:
@@ -2198,24 +2200,8 @@ PickNode(int x, int y, R3Point *picked_position,
   // Set OpenGL stuff
   glPointSize(pick_tolerance);    
 
-#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
-  // Draw with VBO
-  DrawVBO(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
-#else
-  // Draw with glBegin ... glEnd
-  for (int i = 0; i < resident_nodes.NNodes(); i++) {
-    R3SurfelNode *node = resident_nodes.Node(i);
-    if (!NodeVisibility(node)) continue;
-
-    // Set color
-    unsigned char rgba[4] = { 0, 0, 0, 0xFE };
-    CreateColor(rgba, R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX, NULL, NULL, node, NULL, NULL);
-    glColor4ubv(rgba);
-
-    // Draw node
-    node->Draw(shape_draw_flags);
-  }
-#endif
+  // Draw surfels
+  DrawSurfels(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
 
   // Reset OpenGL stuff
   glPointSize(1);
@@ -2545,11 +2531,11 @@ UpdateVBO(void)
 
 
 void R3SurfelViewer::
-DrawVBO(int color_scheme)
+DrawVBO(int color_scheme) const
 {
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Update VBO
-  UpdateVBO();
+  ((R3SurfelViewer *) this)->UpdateVBO();
 
   // Check VBO
   if (vbo_nsurfels == 0) return;

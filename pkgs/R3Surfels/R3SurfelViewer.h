@@ -259,9 +259,9 @@ protected:
   void ReleaseCoarsestBlocks(RNScalar max_complexity);
 
   // VBO management functions
+  void DrawVBO(int color_scheme) const;
   void InvalidateVBO(void);
   void UpdateVBO(void);
-  void DrawVBO(int color_scheme);
 
   // Shader management functions
   void CompileShaders(void);

@@ -48,7 +48,8 @@ public:
   int SelectPickedObject(int x, int y, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
   int SelectEnclosedObjects(const R2Box& box, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   int SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  int SelectOverlappingObjects(RNScalar min_bbox_overlap = 0.001, RNLength max_plane_distance = 0.1, RNBoolean unlabeled_only = FALSE);
+  int SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  int SelectOverlappedObjects(RNScalar min_bbox_overlap = 0.001, RNLength max_plane_distance = 0.1, RNBoolean unlabeled_only = FALSE);
   int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
   int SelectSuggestedObject(void);
 
@@ -159,6 +160,9 @@ public:
   void DrawObjectSelections(void) const;
   void DrawObjectLabels(void) const;
 
+  // Selection utility functions
+  int RasterizeObjectMask(unsigned int *object_mask);
+  
   // Debug functions
   int IsValid(void) const;
 
