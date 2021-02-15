@@ -1296,11 +1296,15 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
   if (!tree) return 0;
   R3SurfelDatabase *database = tree->Database();
   if (!database) return 0;
-  
+
   // Compute bbox of selected objects
   R3Box grid_bbox = R3null_box;
-  for (int i = 0; i < NObjectSelections(); i++) 
-    grid_bbox.Union(ObjectSelection(i)->BBox());
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *selected_object = ObjectSelection(i);
+    grid_bbox.Union(selected_object->BBox());
+  }
+
+  // Check volume of selected objects
   if (grid_bbox.Volume() == 0) return 0;
 
   // Make array of selected leaf objects
@@ -1310,7 +1314,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     FindLeafObjects(selected_object, selected_leaf_objects);
   }
 
-  // Create mask from selected objects
+  // Create mask from selected leaf objects
   R3Grid mask(grid_bbox, overlap_tolerance, 5, 256, 3);
   for (int i = 0; i < selected_leaf_objects.NEntries(); i++) {
     R3SurfelObject *object = selected_leaf_objects.Kth(i);
@@ -1327,13 +1331,23 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     }
   }
 
+  // Mark which objects are selected
+  std::vector<unsigned char> object_is_selected;
+  object_is_selected.resize(scene->NObjects());
+  for (int i = 0; i < scene->NObjects(); i++) object_is_selected[i] = 0;
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *selected_object = ObjectSelection(i);
+    object_is_selected[selected_object->SceneIndex()] = 1;
+  }
+  
   // Find other top-level objects overlapping selected objects
   RNArray<R3SurfelObject *> picked_objects;
   R3SurfelObject *root_object = scene->RootObject();
   for (int r = 0; r < root_object->NParts(); r++) {
     R3SurfelObject *top_level_object = root_object->Part(r);
 
-    // Check if already labeled
+    // Check if should select if overlapped
+    if (object_is_selected[top_level_object->SceneIndex()]) continue;
     if (unlabeled_only && top_level_object->HumanLabel()) continue;
 
     // Count overlaps
