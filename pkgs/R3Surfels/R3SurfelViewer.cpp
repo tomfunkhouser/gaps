@@ -1000,6 +1000,12 @@ Redraw(void)
       double x1 = x2 - image_inset_size * w;
       double y1 = y2 - image_inset_size * w * aspect;
 
+      // Check image coordinates
+      if ((y1 < 0) && (aspect > 0)) {
+        x1 = x2 - y2 / aspect;
+        y1 = 0;
+      }
+      
       // Determine focal point
       R2Point focal_point(0.5*image->ImageWidth(), 0.5*image->ImageHeight());
       if (selected_point) {
