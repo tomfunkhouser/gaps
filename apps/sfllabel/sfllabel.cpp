@@ -29,6 +29,7 @@ static const char *pixel_database = NULL;
 static const char *image_directory = NULL;
 static double depth_scale = 2000;
 static double depth_exponent = 0.5;
+static int multiresolution = 0;
 static int max_images = 0;
 static int print_verbose = 0;
 
@@ -307,6 +308,9 @@ ParseArgs(int argc, char **argv)
       if (!strcmp(*argv, "-v")) { 
         print_verbose = 1; 
       }
+      else if (!strcmp(*argv, "-multiresolution")) { 
+        multiresolution = 1;
+      }
       else if (!strcmp(*argv, "-history")) { 
         argc--; argv++; history_name = *argv; 
       }
@@ -378,8 +382,12 @@ int main(int argc, char **argv)
 
   // Temporary (for surfel tests)
   UpdateLabels(scene);
-  labeler->SetFocusRadius(RN_INFINITY);
-  labeler->SetTargetResolution(RN_INFINITY);
+
+  // Check if should read everything into memory always
+  if (!multiresolution) {
+    labeler->SetFocusRadius(RN_INFINITY);
+    labeler->SetTargetResolution(RN_INFINITY);
+  }
 
   // Run interface
   UIInterface();

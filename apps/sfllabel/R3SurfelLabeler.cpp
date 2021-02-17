@@ -673,6 +673,38 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       SetImageInsetSize(1.25 * ImageInsetSize());
       redraw = 1;
       break;
+
+    case ';':
+      // Copied from R3SurfelViewer
+      if (FocusRadius() < RN_INFINITY) {
+        SetFocusRadius(0.9 * FocusRadius());
+        redraw = 1;
+      }
+      break;
+      
+    case '\'':
+      // Copied from R3SurfelViewer
+      if (FocusRadius() < RN_INFINITY) {
+        SetFocusRadius(1.1 * FocusRadius());
+        redraw = 1;
+      }
+      break;
+
+    case ':':
+      // Copied from R3SurfelViewer
+      if (TargetResolution() < RN_INFINITY) {
+        SetTargetResolution(0.9 * TargetResolution());
+        redraw = 1;
+      }
+      break;
+
+      case '"':
+      // Copied from R3SurfelViewer
+      if (TargetResolution() < RN_INFINITY) {
+        SetTargetResolution(1.1 * TargetResolution());
+        redraw = 1;
+      }
+      break;
     }
   }
   else if (ctrl) {
