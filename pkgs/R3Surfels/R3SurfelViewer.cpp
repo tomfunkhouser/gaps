@@ -611,7 +611,7 @@ DrawSurfels(RNFlags color_draw_flags) const
   case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL:
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
-      R3SurfelObject *object = node->Object();
+      R3SurfelObject *object = node->Object(TRUE, TRUE);
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
       const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
@@ -623,7 +623,7 @@ DrawSurfels(RNFlags color_draw_flags) const
   case R3_SURFEL_VIEWER_COLOR_BY_GROUND_TRUTH_LABEL:
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
-      R3SurfelObject *object = node->Object(TRUE);
+      R3SurfelObject *object = node->Object(TRUE, TRUE);
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       R3SurfelLabel *label = (object) ? object->GroundTruthLabel() : NULL;
       const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
@@ -647,7 +647,7 @@ DrawSurfels(RNFlags color_draw_flags) const
     // Draw with colors based on nodes
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
-      R3SurfelObject *object = node->Object(TRUE);
+      R3SurfelObject *object = node->Object(TRUE, TRUE);
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       int object_index = (object) ? object->SceneIndex() : 0;
       LoadColor(object_index);
@@ -1124,6 +1124,12 @@ Redraw(void)
       RNLength npixels = window_width / (visible_radius * TargetResolution());
       SetSurfelSize(npixels);
     }
+  }
+
+  // Check if there are any GL errors
+  GLenum status = glGetError();
+  if (status != GL_NO_ERROR) {
+    printf("Error in OpenGL: %d\n", (int) status);
   }
 
   // Return whether need redraw
@@ -2472,7 +2478,7 @@ UpdateVBO(void)
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
       if (!NodeVisibility(node)) continue;
-      R3SurfelObject *object = node->Object();
+      R3SurfelObject *object = node->Object(TRUE, TRUE);
       while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
       R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
       for (int j = 0; j < node->NBlocks(); j++) {

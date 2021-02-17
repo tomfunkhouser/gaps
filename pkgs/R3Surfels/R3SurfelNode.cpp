@@ -227,17 +227,37 @@ TreeLevel(void) const
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelObject *R3SurfelNode::
-Object(RNBoolean search_ancestors) const
+Object(RNBoolean search_ancestors, RNBoolean search_descendants) const
 {
-  // Check if should search ancestors
-  if (!search_ancestors) return object;
+  // Return object, if there is one associated with this node
+  if (object) return object;
+
+  // Search descendants for object
+  if (search_descendants) {
+    RNScalar best_complexity = 0;
+    R3SurfelObject *best_object = NULL;
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelNode *part = Part(i);
+      R3SurfelObject *object = part->Object(FALSE, TRUE);
+      if (object) {
+        RNScalar complexity = object->Complexity();
+        if (complexity > best_complexity) {
+          best_complexity = complexity;
+          best_object = object;
+        }
+      }
+    }
+    if (best_object) return best_object;
+  }
 
   // Search ancestors for object
-  const R3SurfelNode *node = this;
-  while (node) {
-    R3SurfelObject *object = node->Object(FALSE);
-    if (object) return object;
-    node = node->Parent();
+  if (search_ancestors) {
+    const R3SurfelNode *node = this;
+    while (node) {
+      R3SurfelObject *object = node->Object(FALSE, FALSE);
+      if (object) return object;
+      node = node->Parent();
+    }
   }
 
   // Object not found

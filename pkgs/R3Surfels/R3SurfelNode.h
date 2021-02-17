@@ -64,7 +64,7 @@ public:
   //////////////////////////
 
   // Object access functions
-  R3SurfelObject *Object(RNBoolean search_ancestors = FALSE) const;
+  R3SurfelObject *Object(RNBoolean search_ancestors = FALSE, RNBoolean search_descendants = FALSE) const;
 
   // Scan access functions
   R3SurfelScan *Scan(RNBoolean search_ancestors = TRUE) const;
