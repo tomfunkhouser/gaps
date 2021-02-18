@@ -2759,7 +2759,7 @@ InsertObjectSelection(R3SurfelObject *object)
   object_selection_times[object->SceneIndex()] = start_timer.Elapsed();
 
   // Read blocks
-  object->ReadBlocks();
+  object->ReadBlocks(TRUE);
 }
 
 
@@ -2777,7 +2777,7 @@ RemoveObjectSelection(R3SurfelObject *object)
   selection_objects.Remove(object);
 
   // Release blocks
-  object->ReleaseBlocks();
+  object->ReleaseBlocks(TRUE);
 }
 
 
@@ -2794,7 +2794,7 @@ EmptyObjectSelections(void)
   // Release blocks of selected objects
   for (int i = 0; i < selection_objects.NEntries(); i++) {
     R3SurfelObject *object = selection_objects.Kth(i);
-    object->ReleaseBlocks();
+    object->ReleaseBlocks(TRUE);
   }
 
   // Empty object selection
