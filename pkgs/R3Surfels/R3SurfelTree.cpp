@@ -52,8 +52,9 @@ R3SurfelTree::
 ~R3SurfelTree(void)
 {
   // Delete nodes
-  while (NNodes() > 0) delete Node(NNodes()-1);
-  // OR if (RootNode()) delete RootNode();
+  // If uncomment this, need to comment recursive delete in R3SurfelNode
+  // while (NNodes() > 0) delete Node(NNodes()-1);
+  if (RootNode()) delete RootNode();
   
   // Remove from scene
   if (scene) scene->tree = NULL;

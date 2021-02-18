@@ -134,8 +134,8 @@ public:
   /////////////////////////////////////
 
   // Block memory management
-  void ReadBlocks(void);
-  void ReleaseBlocks(void);
+  void ReadBlocks(RNBoolean entire_subtree = FALSE);
+  void ReleaseBlocks(RNBoolean entire_subtree = FALSE);
   RNBoolean AreBlocksResident(void) const;
 
 
@@ -377,23 +377,23 @@ Image(void) const
 
 
 inline void R3SurfelScan::
-ReadBlocks(void)
+ReadBlocks(RNBoolean entire_subtree)
 {
   // Read blocks in scan
   R3SurfelNode *node = Node();
   if (!node) return;
-  node->ReadBlocks();
+  node->ReadBlocks(entire_subtree);
 }
 
 
 
 inline void R3SurfelScan::
-ReleaseBlocks(void)
+ReleaseBlocks(RNBoolean entire_subtree)
 {
   // Release blocks in scan
   R3SurfelNode *node = Node();
   if (!node) return;
-  node->ReleaseBlocks();
+  node->ReleaseBlocks(entire_subtree);
 }
 
 

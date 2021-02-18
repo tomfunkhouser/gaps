@@ -124,8 +124,8 @@ public:
   /////////////////////////////////////
 
   // Block memory management
-  void ReadBlocks(void);
-  void ReleaseBlocks(void);
+  void ReadBlocks(RNBoolean entire_subtree = FALSE);
+  void ReleaseBlocks(RNBoolean entire_subtree = FALSE);
   RNBoolean AreBlocksResident(void) const;
 
 

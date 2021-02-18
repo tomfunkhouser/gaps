@@ -627,24 +627,24 @@ SetMarks(RNBoolean mark)
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelObject::
-ReadBlocks(void)
+ReadBlocks(RNBoolean entire_subtree)
 {
   // Read blocks in object
   for (int i = 0; i < NNodes(); i++) {
     R3SurfelNode *node = Node(i);
-    node->ReadBlocks();
+    node->ReadBlocks(entire_subtree);
   }
 }
 
 
 
 void R3SurfelObject::
-ReleaseBlocks(void)
+ReleaseBlocks(RNBoolean entire_subtree)
 {
   // Release blocks in object
   for (int i = 0; i < NNodes(); i++) {
     R3SurfelNode *node = Node(i);
-    node->ReleaseBlocks();
+    node->ReleaseBlocks(entire_subtree);
   }
 }
 

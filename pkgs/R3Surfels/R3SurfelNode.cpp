@@ -90,7 +90,7 @@ R3SurfelNode::
   if (scan) scan->SetNode(NULL);
 
   // Delete parts
-  // while (NParts() > 0) delete (Part(NParts()-1));
+  while (NParts() > 0) delete (Part(NParts()-1));
   
   // Remove node from tree
   if (tree) tree->RemoveNode(this);
@@ -529,7 +529,7 @@ SetMarks(RNBoolean mark)
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelNode::
-ReadBlocks(void)
+ReadBlocks(RNBoolean entire_subtree)
 {
   // Read blocks in node
   for (int i = 0; i < NBlocks(); i++) {
@@ -537,18 +537,34 @@ ReadBlocks(void)
     R3SurfelDatabase *database = block->Database();
     if (database) database->ReadBlock(block);
   }
+
+  // Read blocks in parts
+  if (entire_subtree) {
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelNode *part = Part(i);
+      part->ReadBlocks(entire_subtree);
+    }
+  }
 }
 
 
 
 void R3SurfelNode::
-ReleaseBlocks(void)
+ReleaseBlocks(RNBoolean entire_subtree)
 {
   // Release blocks in node
   for (int i = 0; i < NBlocks(); i++) {
     R3SurfelBlock *block = Block(i);
     R3SurfelDatabase *database = block->Database();
     if (database) database->ReleaseBlock(block);
+  }
+
+  // Release blocks in parts
+  if (entire_subtree) {
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelNode *part = Part(i);
+      part->ReleaseBlocks(entire_subtree);
+    }
   }
 }
 
