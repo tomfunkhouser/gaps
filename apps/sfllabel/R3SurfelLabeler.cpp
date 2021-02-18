@@ -762,6 +762,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     case 'R':
     case 'r':
       ResetCamera();
+      redraw = 1;
       break;
 
     case 'S':
