@@ -77,7 +77,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     center_point_color(0,0,0.5),
     shape_draw_flags(0),
     adapt_working_set_automatically(0),
-    target_resolution(30),
+    target_resolution(100),
     last_target_resolution(0),
     focus_radius(0),
     last_focus_radius(0),
