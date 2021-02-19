@@ -180,7 +180,7 @@ NodeVisibility(R3SurfelNode *node) const
   
   // Check if drawing human labeled objects
   if (!human_labeled_object_visibility) {
-    R3SurfelObject *object = node->Object();
+    R3SurfelObject *object = node->Object(TRUE, TRUE);
     while (object) {
       if (object->HumanLabel()) return 0;
       object = object->Parent();
@@ -188,7 +188,7 @@ NodeVisibility(R3SurfelNode *node) const
   }
 
   // Check if label is visible
-  R3SurfelObject *object = node->Object(TRUE);
+  R3SurfelObject *object = node->Object(TRUE, TRUE);
   while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
   if (object) {
     R3SurfelLabel *label = object->CurrentLabel();
