@@ -244,6 +244,10 @@ public:
   virtual void InsertIntoWorkingSet(R3SurfelNode *node, RNBoolean full_resolution = FALSE);
   virtual void RemoveFromWorkingSet(R3SurfelNode *node, RNBoolean full_resolution = FALSE);
 
+  // Memory management functions
+  void ReadCoarsestBlocks(RNScalar max_complexity);
+  void ReleaseCoarsestBlocks(RNScalar max_complexity);
+
 protected:
   // Scene manipulation functions
   void SetScene(R3SurfelScene *scene);
@@ -253,10 +257,6 @@ protected:
 
   // Draw functions
   void DrawObject(R3SurfelObject *object, RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
-
-  // Memory management functions
-  void ReadCoarsestBlocks(RNScalar max_complexity);
-  void ReleaseCoarsestBlocks(RNScalar max_complexity);
 
   // VBO management functions
   void DrawVBO(int color_scheme) const;

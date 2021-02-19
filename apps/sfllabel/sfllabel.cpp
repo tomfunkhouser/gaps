@@ -30,6 +30,7 @@ static const char *image_directory = NULL;
 static double depth_scale = 2000;
 static double depth_exponent = 0.5;
 static int multiresolution = 0;
+static int dynamic_cache = 0;
 static int max_images = 0;
 static int print_verbose = 0;
 
@@ -311,6 +312,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-multiresolution")) { 
         multiresolution = 1;
       }
+      else if (!strcmp(*argv, "-dynamic_cache")) { 
+        dynamic_cache = 1;
+      }      
       else if (!strcmp(*argv, "-history")) { 
         argc--; argv++; history_name = *argv; 
       }
@@ -384,6 +388,11 @@ int main(int argc, char **argv)
   UpdateLabels(scene);
 
   // Check if should read everything into memory always
+  if (!dynamic_cache) {
+    labeler->ReadCoarsestBlocks(FLT_MAX);
+  }
+
+  // Check if should draw everything at full res always
   if (!multiresolution) {
     labeler->SetFocusRadius(RN_INFINITY);
     labeler->SetTargetResolution(RN_INFINITY);

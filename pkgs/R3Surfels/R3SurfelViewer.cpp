@@ -1787,12 +1787,9 @@ ReadCoarsestBlocks(RNScalar max_complexity)
   R3SurfelTree *tree = scene->Tree();
   if (!tree) return;
 
-  // Seed breadth first search with root nodes
+  // Seed breadth first search with root node
   RNQueue<R3SurfelNode *> queue;
-  for (int i = 0; i < tree->NNodes(); i++) {
-    R3SurfelNode *node = tree->Node(i);
-    queue.Insert(node);
-  }
+  queue.Insert(tree->RootNode());
 
   // Visit nodes in breadth first search reading blocks
   RNScalar total_complexity = 0;
@@ -1878,8 +1875,8 @@ UpdateWorkingSet(const R3Point& center, RNScalar resolution, RNScalar radius)
   if (!tree) return;
 
   // Check if already at full resolution
-  if ((resolution == last_target_resolution) && (resolution == RN_INFINITY) && 
-      (radius == last_focus_radius) && (radius == RN_INFINITY)) return;
+  if ((resolution == last_target_resolution) && (resolution >= RN_INFINITY) && 
+      (radius == last_focus_radius) && (radius >= RN_INFINITY)) return;
 
   // Find new set of nodes
   R3SurfelNodeSet new_resident_nodes;
