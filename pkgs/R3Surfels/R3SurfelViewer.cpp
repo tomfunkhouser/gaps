@@ -197,6 +197,9 @@ NodeVisibility(R3SurfelNode *node) const
   // Check node
   if (!node) return 0;
 
+  // Check if blocks are resident in memory
+  if (!node->AreBlocksResident()) return 0;
+
   // Check node complexity
   if (subsampling_factor > 1) {
     if (node->Complexity() < subsampling_factor) return 0;
