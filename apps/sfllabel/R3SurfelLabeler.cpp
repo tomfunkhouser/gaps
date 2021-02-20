@@ -806,7 +806,8 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     case 27: { // ESC
       SelectPickedObject(-1, -1, 0, 0);
       SetLabelVisibility(-1, 1);
-      viewing_extent = R3null_box;
+      SetElevationRange(RNnull_interval);
+      SetViewingExtent(R3null_box);
       click_polygon_active = FALSE;
       select_polygon_active = FALSE;
       split_polygon_active = FALSE;
