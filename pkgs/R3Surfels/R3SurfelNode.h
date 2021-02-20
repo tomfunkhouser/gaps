@@ -44,7 +44,7 @@ public:
   R3Point Centroid(void) const;
 
   // Elevation property functions
-  RNInterval ElevationRange(void) const;
+  const RNInterval& ElevationRange(void) const;
   
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
@@ -168,6 +168,7 @@ protected:
 
   // Property update functions
   virtual void UpdateBBox();
+  virtual void UpdateElevationRange();
   virtual void UpdateTimestampRange();
   virtual void UpdateComplexity();
   virtual void UpdateResolution();
@@ -192,6 +193,7 @@ protected:
   RNScalar complexity;
   RNScalar resolution;
   R3Box bbox;
+  RNInterval elevation_range;
   RNInterval timestamp_range;
   char *name;
   RNFlags flags;

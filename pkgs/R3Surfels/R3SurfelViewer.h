@@ -89,6 +89,7 @@ public:
   int AxesVisibility(void) const;
   int LabelVisibility(R3SurfelLabel *label) const;
   int LabelVisibility(int label_index) const;
+  int ObjectVisibility(R3SurfelObject *object) const;
   int NodeVisibility(R3SurfelNode *node) const;
   
   // Color properties

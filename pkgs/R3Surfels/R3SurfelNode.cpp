@@ -47,6 +47,7 @@ R3SurfelNode(const char *name)
     complexity(-1),
     resolution(-1),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
+    elevation_range(FLT_MAX,-FLT_MAX),
     timestamp_range(FLT_MAX,-FLT_MAX),
     name((name) ? RNStrdup(name) : NULL),
     flags(0),
@@ -155,20 +156,12 @@ BBox(void) const
 
 
 
-RNInterval R3SurfelNode::
+const RNInterval& R3SurfelNode::
 ElevationRange(void) const
 {
-  // Initialize elevation range
-  RNInterval elevation_range = RNnull_interval;
-
-  // Compute elevation range
-  for (int i = 0; i < NBlocks(); i++) {
-    R3SurfelBlock *block = Block(i);
-    RNInterval block_range = block->ElevationRange();
-    elevation_range.Union(block_range);
-  }
-
-  // Return elevation range
+  // Return elevation interval of node
+  if (elevation_range.Min() == FLT_MAX) 
+    ((R3SurfelNode *) this)->UpdateElevationRange();
   return elevation_range;
 }
 
@@ -857,9 +850,28 @@ UpdateBBox(void)
 
 
 void R3SurfelNode::
+UpdateElevationRange(void)
+{
+  // Check if range is uptodate
+  if (elevation_range[0] != FLT_MAX) return;
+
+  // Initialize elevation range
+  elevation_range.Reset(FLT_MAX,-FLT_MAX);
+
+  // Compute elevation range
+  for (int i = 0; i < NBlocks(); i++) {
+    R3SurfelBlock *block = Block(i);
+    RNInterval block_range = block->ElevationRange();
+    elevation_range.Union(block_range);
+  }
+}
+
+
+
+void R3SurfelNode::
 UpdateTimestampRange(void)
 {
-  // Check if bounding box is uptodate
+  // Check if range is uptodate
   if (timestamp_range[0] != FLT_MAX) return;
 
   // Initialize timestamp range

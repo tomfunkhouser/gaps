@@ -578,6 +578,12 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       else SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_RGB);
       redraw = 1;
       break;
+
+    case 'G':
+    case 'g': 
+      if (ElevationRange().IsEmpty()) SetElevationRange(RNInterval(-FLT_MAX, 0.25));
+      else SetElevationRange(RNnull_interval);
+      break;
       
     case 'I':
     case 'i':
