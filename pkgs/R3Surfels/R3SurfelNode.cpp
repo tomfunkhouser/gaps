@@ -155,6 +155,25 @@ BBox(void) const
 
 
 
+RNInterval R3SurfelNode::
+ElevationRange(void) const
+{
+  // Initialize elevation range
+  RNInterval elevation_range = RNnull_interval;
+
+  // Compute elevation range
+  for (int i = 0; i < NBlocks(); i++) {
+    R3SurfelBlock *block = Block(i);
+    RNInterval block_range = block->ElevationRange();
+    elevation_range.Union(block_range);
+  }
+
+  // Return elevation range
+  return elevation_range;
+}
+
+
+
 const RNInterval& R3SurfelNode::
 TimestampRange(void) const
 {

@@ -62,6 +62,7 @@ public:
   const R3Camera& Camera(void) const;
   const R2Viewport& Viewport(void) const;
   const R3Box& ViewingExtent(void) const;
+  const RNInterval& ElevationRange(void) const;
   const R3Point& CenterPoint(void) const;
   RNScalar ImageInsetSize(void) const;
   RNLength ImagePlaneDepth(void) const;
@@ -107,6 +108,11 @@ public:
   RNScalar FocusRadius(void) const;
   int SubsamplingFactor(void) const;
 
+  // Elevation properties
+  RNScalar Elevation(const R3Point& position) const;
+  RNCoord GroundZ(const R3Point& position) const;
+  RNCoord GroundZ(const R2Point& position) const;
+  
   // Selection properties
   R3SurfelPoint *SelectedPoint(void) const;
   R3SurfelImage *SelectedImage(void) const;
@@ -130,6 +136,7 @@ public:
   void ZoomCamera(RNScalar scale = 10);
   void SetViewport(const R2Viewport& viewport);
   void SetViewingExtent(const R3Box& box);
+  void SetElevationRange(const RNInterval& range);
   void SetCenterPoint(const R3Point& point);
   void SetImageInsetSize(RNScalar fraction);
   void SetImagePlaneDepth(RNLength depth);
@@ -219,7 +226,12 @@ public:
   void EnableViewingExtent(void) const;
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;
+
+  // Viewing frustum
   void UpdateViewingFrustum(void);
+
+  // Ground Z grid
+  void UpdateGroundZGrid(void);
  
   // Surfel drawing
   void DrawSurfels(RNFlags color_draw_flags = 0) const;
@@ -277,6 +289,7 @@ protected:
   // Viewing properties
   R3Viewer viewer;
   R3Box viewing_extent;
+  RNInterval elevation_range;
   R3Frustum viewing_frustum;
   R3Point center_point;
   R3SurfelPoint *selected_point;
@@ -348,6 +361,9 @@ protected:
 
   // Screen capture
   char *screenshot_name;
+
+  // Ground height
+  R2Grid ground_z_grid;
 
   // Vertex buffer objects
   GLuint vbo_position_buffer;
@@ -447,6 +463,15 @@ ViewingExtent(void) const
 {
   // Return viewing extent
   return viewing_extent;
+}
+
+
+
+inline const RNInterval& R3SurfelViewer::
+ElevationRange(void) const
+{
+  // Return elevation range
+  return elevation_range;
 }
 
 
@@ -769,6 +794,39 @@ SubsamplingFactor(void) const
 
 
 
+inline RNCoord R3SurfelViewer::
+GroundZ(const R2Point& position) const
+{
+  // Update ground z grid
+  if (ground_z_grid.NEntries() == 0) {
+    ((R3SurfelViewer *) this)->UpdateGroundZGrid();
+  }
+
+  // Return z coordinate of ground at position
+  if (ground_z_grid.NEntries() == 0) return 0;
+  return ground_z_grid.WorldValue(position);
+}
+
+
+
+inline RNCoord R3SurfelViewer::
+GroundZ(const R3Point& position) const
+{
+  // Return z coordinate of ground at position
+  return GroundZ(R2Point(position.X(), position.Y()));
+}
+
+
+
+inline RNScalar R3SurfelViewer::
+Elevation(const R3Point& position) const
+{
+  // Return elevation at position
+  return position.Z() - GroundZ(position);
+}
+
+
+
 inline RNScalar R3SurfelViewer::
 FrameRate(void) const
 {
@@ -828,6 +886,18 @@ SetViewingExtent(const R3Box& box)
 {
   // Set viewing extent
   viewing_extent = box;
+}
+
+
+
+inline void R3SurfelViewer::
+SetElevationRange(const RNInterval& range)
+{
+  // Set elevation range
+  elevation_range = range;
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
 }
 
 

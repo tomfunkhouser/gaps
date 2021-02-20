@@ -39,6 +39,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     resident_nodes(),
     viewer(),
     viewing_extent(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
+    elevation_range(FLT_MAX, -FLT_MAX),
     viewing_frustum(),
     center_point(0,0,0),
     selected_point(NULL),
@@ -92,6 +93,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     frame_timer(),
     frame_time(-1),
     screenshot_name(NULL),
+    ground_z_grid(),
     vbo_position_buffer(0),
     vbo_normal_buffer(0),
     vbo_color_buffer(0),
@@ -177,7 +179,7 @@ NodeVisibility(R3SurfelNode *node) const
   if (subsampling_factor > 1) {
     if (node->Complexity() < subsampling_factor) return 0;
   }
-  
+
   // Check if drawing human labeled objects
   if (!human_labeled_object_visibility) {
     R3SurfelObject *object = node->Object(TRUE, TRUE);
@@ -197,6 +199,12 @@ NodeVisibility(R3SurfelNode *node) const
     }
   }
 
+  // Check elevation range
+  if (!elevation_range.IsEmpty()) {
+    RNInterval node_range = node->ElevationRange();
+    if (!elevation_range.Contains(node_range)) return 0;
+  }
+  
 #if (R3_SURFEL_VIEWER_DRAW_METHOD != R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Check viewing frustum
   if (node->Complexity() > 1000) {
@@ -564,6 +572,57 @@ UpdateViewingFrustum(void)
   const R3Camera& camera = viewer.Camera();
   viewing_frustum = R3Frustum(camera.Origin(), camera.Towards(), camera.Up(),
     camera.XFOV(), camera.YFOV(), camera.Near(), camera.Far());
+}
+
+
+
+void R3SurfelViewer::
+UpdateGroundZGrid(void)
+{
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return;
+ 
+  // Initialize grids
+  R3Box b = scene->BBox();
+  R2Box grid_box(b.XMin(), b.YMin(), b.XMax(), b.YMax());
+  RNScalar spacing = grid_box.DiagonalRadius() / 128.0;
+  if (spacing < 0.1) spacing = 0.1;
+  ground_z_grid = R2Grid(grid_box, spacing, 5, 512);
+  R2Grid weight_grid = ground_z_grid;
+
+  // Fill grids
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      database->ReadBlock(block);
+      for (int k = 0; k < block->NSurfels(); k++) {
+        unsigned int encoded_elevation = (block->SurfelAttribute(k) >> 16) & 0xFFFF;
+        double elevation = (encoded_elevation - 32768.0) / 400.0;
+        R3Point sfl_position = block->SurfelPosition(k);
+        double ground_z = sfl_position.Z() - elevation;
+        R2Point world_position(sfl_position.X(), sfl_position.Y());
+        R2Point grid_position = ground_z_grid.GridPosition(world_position);
+        int ix = (int) (grid_position.X() + 0.5);
+        if ((ix < 0) || (ix >= ground_z_grid.XResolution())) continue;
+        int iy = (int) (grid_position.Y() + 0.5);
+        if ((iy < 0) || (iy >= ground_z_grid.YResolution())) continue;
+        ground_z_grid.AddGridValue(ix, iy, ground_z);
+        weight_grid.AddGridValue(ix, iy, 1.0);
+      }
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Compute average Z at ground
+  ground_z_grid.Divide(weight_grid);
+
+  // Fill holes
+  ground_z_grid.FillHoles();
 }
 
 
@@ -1336,6 +1395,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'f':
       SetBackfacingVisibility(-1);
       break;
+
+    case 'G':
+    case 'g':
+      if (ElevationRange().IsEmpty()) SetElevationRange(RNInterval(-FLT_MAX, 0.25));
+      else SetElevationRange(RNnull_interval);
+      break;
       
     case 'I':
       SetImagePlaneVisibility(-1);
@@ -1454,11 +1519,21 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case ',': 
-    case '.': {
+    case '.':
+      if (!ElevationRange().IsEmpty()) {
+        RNInterval range = ElevationRange();
+        if (key == ',') range.SetMax(0.9 * range.Max());
+        else if (key == '.') range.SetMax(1.1 * range.Max());
+        SetElevationRange(range);
+      }
+      break;
+      
+    case '<':
+    case '>': {
       // Select next/prev image
       int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
-      if (key == ',') image_index++;
-      else if (key == '.') image_index--;
+      if (key == '>') image_index++;
+      else if (key == '<') image_index--;
       if (image_index < 0) image_index = 0;
       if (image_index > scene->NImages()-1) image_index = scene->NImages()-1;
       SelectImage(scene->Image(image_index), FALSE, FALSE);
@@ -1766,6 +1841,9 @@ SetScene(R3SurfelScene *scene)
 
   // Lock coarsest blocks in memory (~500MB)
   // ReadCoarsestBlocks(1 * 1024 * 1024);
+
+  // Update ground z grid
+  // UpdateGroundZGrid();
 
   // Update working set
   UpdateWorkingSet();

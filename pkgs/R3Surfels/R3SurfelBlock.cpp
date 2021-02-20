@@ -458,6 +458,31 @@ BBox(void) const
 
 
 
+RNInterval R3SurfelBlock::
+ElevationRange(void) const
+{
+  // Initialize elevation range
+  RNInterval elevation_range = RNnull_interval;
+
+  // Read block
+  if (database) database->ReadBlock((R3SurfelBlock *) this);
+  
+  // Compute elevation range
+  for (int i = 0; i < nsurfels; i++) {
+    unsigned int encoded_elevation = (SurfelAttribute(i) >> 16) & 0xFFFF;
+    double elevation = (encoded_elevation - 32768.0) / 400.0;
+    elevation_range.Union(elevation);
+  }
+
+  // Release block
+  if (database) database->ReleaseBlock((R3SurfelBlock *) this);
+
+  // Return elevation range
+  return elevation_range;
+}
+
+
+
 const RNInterval& R3SurfelBlock::
 TimestampRange(void) const
 {

@@ -45,6 +45,9 @@ public:
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
 
+  // Elevation property functions
+  RNInterval ElevationRange(void) const;
+  
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
 

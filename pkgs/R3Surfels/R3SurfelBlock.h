@@ -69,6 +69,9 @@ public:
   RNLength AverageRadius(void) const;
   const R3Point& PositionOrigin(void) const;
 
+  // Elevation property functions
+  RNInterval ElevationRange(void) const;
+  
   // Timestamp property functions
   const RNInterval& TimestampRange(void) const;
   RNScalar TimestampOrigin(void) const;
