@@ -583,6 +583,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     case 'g': 
       if (ElevationRange().IsEmpty()) SetElevationRange(RNInterval(-FLT_MAX, 0.25));
       else SetElevationRange(RNnull_interval);
+      redraw = 1;
       break;
       
     case 'I':
