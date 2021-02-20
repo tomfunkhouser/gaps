@@ -653,6 +653,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
         if (key == ',') range.SetMax(0.9 * range.Max());
         else if (key == '.') range.SetMax(1.1 * range.Max());
         SetElevationRange(range);
+        redraw = 1;
       }
       break;
 
