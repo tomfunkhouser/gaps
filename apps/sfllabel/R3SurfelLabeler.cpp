@@ -646,7 +646,19 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       break; 
 
     case ',': 
-    case '.': {
+    case '.':
+      // Copied from R3SurfelViewer
+      if (!ElevationRange().IsEmpty()) {
+        RNInterval range = ElevationRange();
+        if (key == ',') range.SetMax(0.9 * range.Max());
+        else if (key == '.') range.SetMax(1.1 * range.Max());
+        SetElevationRange(range);
+      }
+      break;
+
+#if 0      
+    case '<': 
+    case '>': {
       // Select next/prev image
       int image_index = (selected_image) ? selected_image->SceneIndex() : 0;
       if (key == ',') image_index++;
@@ -656,7 +668,8 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       SelectImage(scene->Image(image_index), FALSE, FALSE);
       redraw = 1;
       break; }
-
+#endif
+      
     case '_': 
       // Copied from R3SurfelViewer
       SetImagePlaneDepth(0.9 * ImagePlaneDepth());
@@ -1002,10 +1015,7 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
     R3SurfelObject *object = scene->Object(i);
     if (object->Parent() != scene->RootObject()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
-    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
-    R3SurfelLabel *label = object->CurrentLabel();
-    if (label && !LabelVisibility(label)) continue;
-    if (!viewing_extent.IsEmpty() && !R3Contains(viewing_extent, object->BBox())) continue;
+    if (!ObjectVisibility(object)) continue;
     if (picked_objects.FindEntry(object)) continue;
 
     // Check if object's projected bounding box is inside selection box
@@ -1085,10 +1095,7 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
     R3SurfelObject *object = scene->Object(i);
     if (object->Parent() != scene->RootObject()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
-    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
-    R3SurfelLabel *label = object->CurrentLabel();
-    if (label && !LabelVisibility(label)) continue;
-    if (!viewing_extent.IsEmpty() && !R3Contains(viewing_extent, object->BBox())) continue;
+    if (!ObjectVisibility(object)) continue;
     if (picked_objects.FindEntry(object)) continue;
     
     // Check if object's projected bounding box is inside selection polygon
@@ -1268,7 +1275,7 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
     if (object_marks[object_index] > 0) continue;
     R3SurfelObject *object = scene->Object(object_index);
     if (unlabeled_only && object->HumanLabel()) continue;
-    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
+    if (!ObjectVisibility(object)) continue;
     picked_objects.Insert(object);
     object_marks[object_index] = 1;
   }
@@ -1391,7 +1398,6 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
 
     // Check if should select if overlapped
     if (object_is_selected[top_level_object->SceneIndex()]) continue;
-    if (!HumanLabeledObjectVisibility() && top_level_object->HumanLabel()) continue;
     if (unlabeled_only && top_level_object->HumanLabel()) continue;
 
     // Count overlaps
@@ -1400,6 +1406,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     FindLeafObjects(top_level_object, leaf_objects);
     for (int i = 0; i < leaf_objects.NEntries(); i++) {
       R3SurfelObject *object = leaf_objects.Kth(i);
+      if (!ObjectVisibility(object)) continue;
       for (int j = 0; j < object->NNodes(); j++) {
         R3SurfelNode *node = object->Node(j);
         for (int k = 0; k < node->NBlocks(); k++) {
@@ -1464,9 +1471,7 @@ SelectAllObjects(RNBoolean unlabeled_only)
     if (object->Parent() != scene->RootObject()) continue;
     if (!object->Name()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
-    if (!HumanLabeledObjectVisibility() && object->HumanLabel()) continue;
-    R3SurfelLabel *label = object->CurrentLabel();
-    if (label && !LabelVisibility(label)) continue;
+    if (!ObjectVisibility(object)) continue;
     InsertObjectSelection(object);
   }
 

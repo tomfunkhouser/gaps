@@ -226,6 +226,11 @@ NodeVisibility(R3SurfelNode *node) const
     RNInterval node_range = node->ElevationRange();
     if (!elevation_range.Contains(node_range)) return 0;
   }
+
+  // Check viewing extent
+  if (!viewing_extent.IsEmpty()) {
+    if (!R3Intersects(viewing_extent, node->BBox())) return 0;
+  }
   
 #if (R3_SURFEL_VIEWER_DRAW_METHOD != R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   // Check viewing frustum
