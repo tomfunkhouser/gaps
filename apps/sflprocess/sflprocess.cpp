@@ -485,7 +485,7 @@ LoadSurfelsList(R3SurfelScene *scene, const char *list_filename,
       char *start = strrchr(node_filename, '/');
       start = (start) ? start+1 : node_filename;
       char node_name[1024];
-      strncpy(node_name, start, 1024);
+      strncpy(node_name, start, 1023);
       char *end = strrchr(node_name, '.');
       if (end) *end = '\0';
       if (!LoadSurfels(scene, node_filename, node_name, parent_object_name, node_name, parent_node_name)) return 0;
