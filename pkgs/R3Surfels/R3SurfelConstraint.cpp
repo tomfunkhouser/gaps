@@ -793,9 +793,6 @@ R3SurfelViewConstraint(const R3Point& world_viewpoint,
 int R3SurfelViewConstraint::
 Check(const R3Box& box) const
 {
-  // Return whether any point in box can satisfy constraint
-  if (!frustum.Intersects(box)) return R3_SURFEL_CONSTRAINT_FAIL;
-  
   // Passed all tests
   return R3_SURFEL_CONSTRAINT_MAYBE;
 }
