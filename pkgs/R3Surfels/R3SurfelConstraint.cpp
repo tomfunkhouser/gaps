@@ -793,6 +793,9 @@ R3SurfelViewConstraint(const R3Point& world_viewpoint,
 int R3SurfelViewConstraint::
 Check(const R3Box& box) const
 {
+  // Check if box is behind camera
+  if (!R3Intersects(frustum.Halfspace(RN_LO, RN_Z), box)) return R3_SURFEL_CONSTRAINT_FAIL;
+
   // Passed all tests
   return R3_SURFEL_CONSTRAINT_MAYBE;
 }
