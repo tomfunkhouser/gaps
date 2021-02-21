@@ -817,6 +817,7 @@ UpdateProperties(void)
   dummy += Complexity();
   dummy += Resolution();
   dummy += BBox().Min().X();
+  dummy += ElevationRange().Min();
   dummy += TimestampRange().Min();
   if (dummy == 927612.21242) {
     printf("Amazing!\n");
