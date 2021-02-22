@@ -1853,8 +1853,8 @@ SetScene(R3SurfelScene *scene)
 
   // Set focus radius
   focus_radius = 400;
-  if (focus_radius > 0.5 * scene->BBox().DiagonalRadius()) {
-    focus_radius = 0.5 * scene->BBox().DiagonalRadius();
+  if (focus_radius > scene->BBox().DiagonalRadius()) {
+    focus_radius = scene->BBox().DiagonalRadius();
   }
 
   // Set camera and viewport
