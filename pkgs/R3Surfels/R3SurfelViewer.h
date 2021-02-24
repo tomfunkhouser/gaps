@@ -343,6 +343,7 @@ protected:
   // Subsampling parameters
   RNBoolean adapt_subsampling_automatically;
   int subsampling_factor;
+  int subsampling_multiplier_when_mouse_down;
 
   // UI state
   int window_height;

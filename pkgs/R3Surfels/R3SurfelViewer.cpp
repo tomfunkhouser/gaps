@@ -84,6 +84,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     last_focus_radius(0),
     adapt_subsampling_automatically(0),
     subsampling_factor(1),
+    subsampling_multiplier_when_mouse_down(1),
     window_height(0),
     window_width(0),
     shift_down(0),
@@ -1351,6 +1352,9 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
         }
       }
     }
+
+    // Redraw if was subsampling
+    if (subsampling_multiplier_when_mouse_down > 1) redraw = TRUE;
   }
 
   // Remember mouse position 
@@ -1359,7 +1363,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
 
   // Remember button state 
   mouse_button[button] = state;
-
+  
   // Remember modifiers 
   shift_down = shift;
   ctrl_down = ctrl;
@@ -1444,6 +1448,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'L': 
     case 'l':
       SetHumanLabeledObjectVisibility(-1);
+      break;
+      
+    case 'M':
+    case 'm':
+      subsampling_multiplier_when_mouse_down = (subsampling_multiplier_when_mouse_down <= 1) ? 8 : 1;
       break;
       
     case 'N':
@@ -2656,12 +2665,22 @@ DrawVBO(int color_scheme) const
   // Check VBO
   if (vbo_nsurfels == 0) return;
 
+  // Determine stride and point size
+  int subsampling = 1;
+  float pointSize = SurfelSize();
+  if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX)
+    pointSize = 0.01 * Viewport().Width() + 1;
+  if (subsampling_multiplier_when_mouse_down > 1) {
+    if (mouse_button[0] || mouse_button[1] || mouse_button[2]) {
+      subsampling = subsampling_multiplier_when_mouse_down;
+      pointSize *= sqrt(subsampling_multiplier_when_mouse_down);
+      glPointSize(pointSize);
+    }
+  }
+
   // Assign shader and its variables
   if (shader_program > 0) {
     glUseProgram(shader_program);
-    float pointSize = SurfelSize();
-    if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX)
-      pointSize = 0.01 * Viewport().Width() + 1;
     int pointSizeLocation = glGetUniformLocation(shader_program, "pointSize");
     glUniform1f(pointSizeLocation, pointSize);
   }
@@ -2669,6 +2688,7 @@ DrawVBO(int color_scheme) const
   // Enable position buffer
   if (vbo_position_buffer > 0) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+    glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat) * subsampling, 0);
     glEnableClientState(GL_VERTEX_ARRAY);
   }
 
@@ -2679,7 +2699,7 @@ DrawVBO(int color_scheme) const
       // Set color pointer to second half of buffer where pick colors are
       void *pick_color_offset = (void *) (3 * vbo_nsurfels * sizeof(GLubyte));
       glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
-      glColorPointer(3, GL_UNSIGNED_BYTE, 0, pick_color_offset);
+      glColorPointer(3, GL_UNSIGNED_BYTE, 3 * sizeof(GLubyte) * subsampling, pick_color_offset);
       glEnableClientState(GL_COLOR_ARRAY);
     }
 
@@ -2689,13 +2709,14 @@ DrawVBO(int color_scheme) const
     // Reset color pointer to start of buffer where regular colors are
     if (vbo_color_buffer > 0) {
       glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
-      glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+      glColorPointer(3, GL_UNSIGNED_BYTE,  3 * sizeof(GLubyte) * subsampling, 0);
     }
   }
   else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SHADING) {
     // Enable normal buffer
     if (vbo_normal_buffer > 0) {
       glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glNormalPointer(GL_FLOAT,  3 * sizeof(GLfloat) * subsampling, 0);
       glEnableClientState(GL_NORMAL_ARRAY);
     }
 
@@ -2709,6 +2730,7 @@ DrawVBO(int color_scheme) const
     // Enable color buffer
     if (vbo_color_buffer > 0) {
       glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+      glColorPointer(3, GL_UNSIGNED_BYTE, 3 * sizeof(GLubyte) * subsampling, 0);
       glEnableClientState(GL_COLOR_ARRAY);
     }
 

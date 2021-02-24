@@ -603,6 +603,12 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       redraw = 1;
       break;
       
+    case 'M':
+    case 'm':
+      subsampling_multiplier_when_mouse_down = (subsampling_multiplier_when_mouse_down <= 1) ? 8 : 1;
+      redraw = 1;
+      break;
+      
     case 'P':
     case 'p':
       // Copied from R3SurfelViewer
