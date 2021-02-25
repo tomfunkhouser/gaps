@@ -173,21 +173,20 @@ SurfelColorSchemeName(void) const
 int R3SurfelViewer::
 ObjectVisibility(R3SurfelObject *object) const
 {
-  // Check if any node is visible
-  RNBoolean any_node_visible = 0;
-  for (int i = 0; i < object->NNodes(); i++) {
-    R3SurfelNode *node = object->Node(i);
-    if (NodeVisibility(node)) {
-      any_node_visible = 1;
-      break;
-    }
+  // Check if any part is visible
+  for (int i = 0; i < object->NParts(); i++) {
+    R3SurfelObject *part = object->Part(i);
+    if (ObjectVisibility(part)) return 1;
   }
 
-  // Return false if not any node is visible
-  if (!any_node_visible) return 0;
+  // Check if any node is visible
+  for (int i = 0; i < object->NNodes(); i++) {
+    R3SurfelNode *node = object->Node(i);
+    if (NodeVisibility(node)) return 1;
+  }
 
-  // Passed all tests
-  return 1;
+  // Not visible
+  return 0;
 }
 
   
