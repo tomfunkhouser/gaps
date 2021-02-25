@@ -676,6 +676,9 @@ DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags) const
 void R3SurfelViewer::
 DrawSurfels(RNFlags color_draw_flags) const
 {
+  // Check surfel visibility
+  if (!SurfelVisibility()) return;
+  
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   if (!shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
     // Draw with VBO
