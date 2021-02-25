@@ -1304,8 +1304,8 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
       R3Plane camera_plane(camera.Origin(), camera.Towards());
       RNScalar signed_distance = R3SignedDistance(camera_plane, viewing_center_point);
       if (signed_distance < 0) viewing_center_point -= (signed_distance - 1) * camera.Towards();
-      if (button == 3) viewer.ScaleWorld(viewing_center_point, 0.9);
-      else if (button == 4) viewer.ScaleWorld(viewing_center_point, 1.1);
+      if (button == 3) viewer.ScaleWorld(viewing_center_point, 1.1);
+      else if (button == 4) viewer.ScaleWorld(viewing_center_point, 0.9);
       redraw = TRUE;
     }
   }

@@ -520,21 +520,23 @@ MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl
     }
 
     // Process click commands
-    if (!drag && !double_click && !click_polygon_active) {
-      if (alt) {
-        // Start click polygon
-        num_rubber_polygon_points = 2;
-        rubber_polygon_points[0] = R2Point(x, y);
-        rubber_polygon_points[1] = R2Point(x, y);
-        click_polygon_active = TRUE;
-        DrawRubberPolygon();
-        redraw = 0;
-      }
-      else {
-        if (PickCommandMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
-        else if (PickLabelMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
-        else if (PickImage(x, y)) redraw = 1;
-        else if (SelectPickedObject(x, y, shift, ctrl, alt)) redraw = 1;
+    if (button == 0) {
+      if (!drag && !double_click && !click_polygon_active) {
+        if (alt) {
+          // Start click polygon
+          num_rubber_polygon_points = 2;
+          rubber_polygon_points[0] = R2Point(x, y);
+          rubber_polygon_points[1] = R2Point(x, y);
+          click_polygon_active = TRUE;
+          DrawRubberPolygon();
+          redraw = 0;
+        }
+        else {
+          if (PickCommandMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
+          else if (PickLabelMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
+          else if (PickImage(x, y)) redraw = 1;
+          else if (SelectPickedObject(x, y, shift, ctrl, alt)) redraw = 1;
+        }
       }
     }
   }
