@@ -674,7 +674,7 @@ DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags) const
 
 
 void R3SurfelViewer::
-DrawSurfels(RNFlags color_draw_flags) const
+DrawSurfels(int color_scheme) const
 {
   // Check surfel visibility
   if (!SurfelVisibility()) return;
@@ -682,17 +682,17 @@ DrawSurfels(RNFlags color_draw_flags) const
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   if (!shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
     // Draw with VBO
-    DrawVBO(color_draw_flags);
+    DrawVBO(color_scheme);
     return;
   }
 #endif
 
   // Draw resident nodes
-  switch (surfel_color_scheme) {
+  switch (color_scheme) {
   case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX:
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
-      LoadColor(surfel_color_scheme, NULL, NULL, node, NULL, NULL);
+      LoadColor(color_scheme, NULL, NULL, node, NULL, NULL);
       DrawSurfels(node);
     }
     break;
@@ -818,23 +818,23 @@ DrawSurfels(RNFlags color_draw_flags) const
         glBegin(GL_POINTS);
         for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
           const R3Surfel *surfel = block->Surfel(k);
-          if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
+          if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
             double z = block_origin.Z() + surfel->Z();
             double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
             double value = 0.5 * sqrt(dz);
             LoadColor(value);
           }
-          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
+          else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
             unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
             double elevation = (encoded_elevation - 32768.0) / 400.0;
             double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
             LoadColor(value);
           }
-          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
+          else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL) {
             int label_identifier = surfel->Attribute() & 0xFF;
             LoadColor(label_identifier);
           }
-          else if (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE) {
+          else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE) {
             double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
             LoadColor(confidence);
           }

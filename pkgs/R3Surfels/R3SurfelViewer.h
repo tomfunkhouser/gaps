@@ -235,7 +235,7 @@ public:
   void UpdateGroundZGrid(void);
  
   // Surfel drawing
-  void DrawSurfels(RNFlags color_draw_flags = 0) const;
+  void DrawSurfels(int color_scheme = 0) const;
   void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
   
   
