@@ -1481,6 +1481,16 @@ SyncFile(const char *output_scene_filename)
 int R3SurfelScene::
 CloseFile(const char *output_scene_filename)
 {
+#if 0
+  // Clean up
+  if (tree) {
+    R3SurfelDatabase *database = tree->Database();
+    if (database) {
+      if (!database->PurgeDeletedBlocks()) return 0;
+    }
+  }
+#endif
+  
   // Sync file
   if (!SyncFile(output_scene_filename)) return 0;
 

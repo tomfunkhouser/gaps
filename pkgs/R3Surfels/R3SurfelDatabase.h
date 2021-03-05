@@ -142,6 +142,9 @@ public:
   // Identifier manipulation functions
   void SetMaxIdentifier(unsigned int identifier);
 
+  // Internal block manipulation functions
+  virtual int PurgeDeletedBlocks(void);
+
 protected:
   // Internal block I/O functions
   virtual int InternalReadBlock(R3SurfelBlock *block, FILE *fp, int swap_endian);

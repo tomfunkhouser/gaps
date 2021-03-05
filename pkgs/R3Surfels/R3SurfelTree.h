@@ -42,6 +42,7 @@ public:
   const RNInterval& TimestampRange(void) const;
 
   // Statistics functions
+  int NBlocks(void) const;
   long long NSurfels(void) const;
 
   
@@ -212,12 +213,39 @@ TimestampRange(void) const
 
 
 
+inline int R3SurfelTree::
+NBlocks(void) const
+{
+  // Return number of blocks in tree
+  long long n = 0;
+  for (int i = 0; i < NNodes(); i++) {
+    R3SurfelNode *node = Node(i);
+    n += node->NBlocks();
+  }
+  return n;
+}
+
+
+
 inline long long R3SurfelTree::
 NSurfels(void) const
 {
+#if 0
   // Return number of surfels in database
   if (!database) return 0;
   return database->NSurfels();
+#else
+  // Return number of surfels in tree
+  long long n = 0;
+  for (int i = 0; i < NNodes(); i++) {
+    R3SurfelNode *node = Node(i);
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      n += block->NSurfels();
+    }
+  }
+  return n;
+#endif
 }
 
 

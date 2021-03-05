@@ -950,6 +950,33 @@ ReadBlockHeader(FILE *fp, unsigned int nblocks, int swap_endian)
 
 
 int R3SurfelDatabase::
+PurgeDeletedBlocks(void)
+{
+  // Execute pending deletes
+  RNArray<R3SurfelBlock *> blocks_to_delete;
+  for (int i = 0; i < blocks.NEntries(); i++) {
+    R3SurfelBlock *block = blocks.Kth(i);
+    if (block->flags[R3_SURFEL_BLOCK_DELETE_PENDING_FLAG]) {
+      printf("%d %p\n", i, block->Node());
+      blocks_to_delete.Insert(block);
+    }
+  }
+
+  // Delete blocks
+  for (int i = 0; i < blocks_to_delete.NEntries(); i++) {
+    R3SurfelBlock *block = blocks_to_delete.Kth(i);
+    block->file_read_count = 0;
+    RemoveBlock(block);
+    delete block;
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelDatabase::
 OpenFile(const char *filename, const char *rwaccess)
 {
   // Remember file name
@@ -1004,10 +1031,23 @@ SyncFile(void)
 
   // Update blocks offset
   unsigned int nblocks = blocks.NEntries();
-  if (nblocks  > file_blocks_count) {
-    RNFileSeek(fp, 0, RN_FILE_SEEK_END);
-    file_blocks_offset = RNFileTell(fp);
+  if (nblocks > file_blocks_count) {
+    // Update block header size
     file_blocks_count = nblocks;
+
+    // Update block header offset (after last block)
+    file_blocks_offset = 0;
+    for (int i = 0; i < blocks.NEntries(); i++) {
+      R3SurfelBlock *block = blocks.Kth(i);
+      unsigned long long offset = block->file_surfels_offset + block->file_surfels_count * sizeof(R3Surfel);
+      if (offset > file_blocks_offset) file_blocks_offset = offset;
+    }
+
+    // Double check block header offset
+    if (file_blocks_offset <= 0) {
+      RNFileSeek(fp, 0, RN_FILE_SEEK_END);
+      file_blocks_offset = RNFileTell(fp);
+    }
   }
 
   // Write blocks

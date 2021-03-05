@@ -78,8 +78,8 @@ OpenScene(const char *scene_name, const char *database_name)
     printf("  # Scans = %d\n", scene->NScans());
     printf("  # Images = %d\n", scene->NImages());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
-    printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Blocks = %d\n", scene->Tree()->NBlocks());
+    printf("  # Surfels = %lld\n", scene->Tree()->NSurfels());
     fflush(stdout);
   }
 
@@ -146,8 +146,8 @@ CloseScene(R3SurfelScene *scene)
     printf("  # Scans = %d\n", scene->NScans());
     printf("  # Images = %d\n", scene->NImages());
     printf("  # Nodes = %d\n", scene->Tree()->NNodes());
-    printf("  # Blocks = %d\n", scene->Tree()->Database()->NBlocks());
-    printf("  # Surfels = %lld\n", scene->Tree()->Database()->NSurfels());
+    printf("  # Blocks = %d\n", scene->Tree()->NBlocks());
+    printf("  # Surfels = %lld\n", scene->Tree()->NSurfels());
     fflush(stdout);
   }
 
