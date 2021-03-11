@@ -2015,7 +2015,7 @@ MergeSelectedObjects(void)
   // Create assignment to label
   if (label) {
     R3SurfelLabelAssignment *a = new R3SurfelLabelAssignment(parent, label, confidence, originator);
-    InsertLabelAssignment(a);
+    scene->InsertLabelAssignment(a);
   }
 
   // Compute feature vector
@@ -2153,6 +2153,8 @@ UnmergeSelectedObjects(void)
 
 
 
+#if 0
+
 int R3SurfelLabeler::
 SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
   RNArray<R3SurfelObject *> *resultA, RNArray<R3SurfelObject *> *resultB)
@@ -2281,6 +2283,155 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
   // Return success
   return 1;
 }
+
+#else
+
+int R3SurfelLabeler::
+SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
+  RNArray<R3SurfelObject *> *resultA, RNArray<R3SurfelObject *> *resultB)
+{
+  // Just checking
+  assert(object);
+  assert(strcmp(object->Name(), "Root"));
+  assert(parent == scene->RootObject());
+
+  // Get label assignment info
+  R3SurfelObject *ancestor = object;
+  while (ancestor && ancestor->Parent() && (ancestor->Parent() != scene->RootObject())) ancestor = ancestor->Parent();
+  R3SurfelLabelAssignment *assignment = ancestor->CurrentLabelAssignment();
+  R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
+  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+  double confidence = (assignment) ? assignment->Confidence() : 0;
+
+  // Create constraint
+  R3SurfelMultiConstraint multi_constraint;
+  R3SurfelObjectConstraint object_constraint(object);
+  multi_constraint.InsertConstraint(&constraint);
+  multi_constraint.InsertConstraint(&object_constraint);
+
+  // Split Nodes
+  RNArray<R3SurfelNode *> nodesA, nodesB;
+  if (object->NNodes() > 0) {
+    // Create array of nodes
+    RNArray<R3SurfelNode *> nodes;
+    for (int i = 0; i < object->NNodes(); i++) {
+      R3SurfelNode *node = object->Node(i);
+      nodes.Insert(node);
+    }
+
+    // Split all nodes
+    for (int i = 0; i < nodes.NEntries(); i++) {
+      R3SurfelNode *node = nodes.Kth(i);
+      SplitLeafNodes(node, constraint, &nodesA, &nodesB);
+    }
+  }
+
+  // Split parts
+  RNArray<R3SurfelObject *> partsA, partsB;
+  if (object->NParts() > 0) {
+    // Create array of parts
+    RNArray<R3SurfelObject *> parts;
+    for (int i = 0; i < object->NParts(); i++) {
+      R3SurfelObject *part = object->Part(i);
+      parts.Insert(part);
+    }
+
+    // Split parts  
+    for (int i = 0; i < parts.NEntries(); i++) {
+      R3SurfelObject *part = parts.Kth(i);
+      SplitObject(part, object, constraint, &partsA, &partsB);
+    }
+  }
+
+  // Split object
+  if (nodesB.IsEmpty() && partsB.IsEmpty()) {
+    SetObjectParent(object, parent);
+    if (resultA) resultA->Insert(object);
+  }
+  else if (nodesA.IsEmpty() && partsA.IsEmpty()) {
+    SetObjectParent(object, parent);
+    if (resultB) resultB->Insert(object);
+  }
+  else {
+    // Create new objects
+    R3SurfelObject *objectA = new R3SurfelObject();
+    R3SurfelObject *objectB = new R3SurfelObject();
+    if (!objectA || !objectB) return 0;
+      
+    // Insert objects into scene
+    scene->InsertObject(objectA, object);
+    scene->InsertObject(objectB, object);
+    
+    // Set names
+    const char *name = object->Name();
+    if (!name) name = "SPLIT";
+    char nameA[4096], nameB[4096];
+    sprintf(nameA, "%s_A", name);
+    sprintf(nameB, "%s_B", name);
+    objectA->SetName(nameA);
+    objectB->SetName(nameB);
+
+    // Set feature vectors ???
+    objectA->SetFeatureVector(object->FeatureVector());
+    objectB->SetFeatureVector(object->FeatureVector());
+
+    // Create assignments
+    R3SurfelLabelAssignment *assignmentA = new R3SurfelLabelAssignment(objectA, label, confidence, originator);
+    R3SurfelLabelAssignment *assignmentB = new R3SurfelLabelAssignment(objectB, label, confidence, originator);
+    scene->InsertLabelAssignment(assignmentA);
+    scene->InsertLabelAssignment(assignmentB);
+
+    // Remove nodes from object
+    while (object->NNodes() > 0) {
+      R3SurfelNode *node = object->Node(0);
+      object->RemoveNode(node);
+    }
+
+    // Insert nodes into objectA
+    for (int j = 0; j < nodesA.NEntries(); j++) {
+      R3SurfelNode *nodeA = nodesA.Kth(j);
+      objectA->InsertNode(nodeA);
+    }
+  
+    // Insert nodes into objectB
+    for (int j = 0; j < nodesB.NEntries(); j++) {
+      R3SurfelNode *nodeB = nodesB.Kth(j);
+      objectB->InsertNode(nodeB);
+    }
+
+    // Move parts into objectA
+    for (int j = 0; j < partsA.NEntries(); j++) {
+      R3SurfelObject *partA = partsA.Kth(j);
+      partA->SetParent(objectA);
+    }
+      
+    // Move parts into objectB
+    for (int j = 0; j < partsB.NEntries(); j++) {
+      R3SurfelObject *partB = partsB.Kth(j);
+      partB->SetParent(objectB);
+    }
+      
+    // Set parents (use this function so can undo)
+    SetObjectParent(objectA, parent);
+    SetObjectParent(objectB, parent);
+
+    // Assign labels (use this function so can undo)
+    InsertLabelAssignment(assignmentA);
+    InsertLabelAssignment(assignmentB);
+    
+    // Insert objects into result
+    if (resultA) resultA->Insert(objectA);
+    if (resultB) resultB->Insert(objectB);
+  }
+  
+  // Invalidate VBO colors
+  InvalidateVBO();
+
+  // Return success
+  return 1;
+}
+
+#endif
 
 
 
