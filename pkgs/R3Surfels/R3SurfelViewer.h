@@ -1278,7 +1278,7 @@ SetSubsamplingFactor(int subsampling_factor)
 {
   // Just checking
   if (subsampling_factor < 1) subsampling_factor = 1;
-  static const int max_subsampling_factor = 1024*1024*1024;
+  static const int max_subsampling_factor = 1024*1024;
   if (subsampling_factor > max_subsampling_factor) subsampling_factor = max_subsampling_factor;
 
   // Set subsampling factor

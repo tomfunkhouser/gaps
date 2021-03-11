@@ -1648,6 +1648,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
       SetSubsamplingFactor(SubsamplingFactor() * 2);
+      printf("%d\n", SubsamplingFactor());
       break;
 
     case R3_SURFEL_VIEWER_RIGHT_KEY: 
