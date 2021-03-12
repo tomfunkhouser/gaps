@@ -2504,7 +2504,7 @@ SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint,
       RNArray<R3SurfelNode *> partsA, partsB;
       if (tree->SplitLeafNodes(node, constraint, &partsA, &partsB)) {
         // Update resident set
-        if (resident_index > 0) {
+        if (resident_index >= 0) {
           node->ReleaseBlocks(); // ???
           resident_nodes.RemoveNode(resident_index);
           for (int j = 0; j < partsA.NEntries(); j++) {
