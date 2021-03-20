@@ -1085,8 +1085,9 @@ Redraw(void)
       // Determine image coordinates
       double x2 = w-1;
       double y2 = h-1;
+      double aspect = (double) image->ImageHeight() / (double) image->ImageWidth();
       double x1 = x2 - image_inset_size * w;
-      double y1 = y2 - image_inset_size * h;
+      double y1 = y2 - image_inset_size * w * aspect;
 
       // Determine focal point
       R2Point focal_point(0.5*image->ImageWidth(), 0.5*image->ImageHeight());
@@ -1110,13 +1111,19 @@ Redraw(void)
       glLoadIdentity();
 
       // Translate so that focal point is in view
+      if (x1 < 0) {
+        if (focal_point.X() < 0.25*w) {
+          double dx = 0.25*w - focal_point.X();
+          glTranslated(dx, 0.0, 0.0);
+        }
+      }
       if (y1 < 0) {
         if (focal_point.Y() < 0.25*h) {
           double dy = 0.25*h - focal_point.Y();
           glTranslated(0.0, dy, 0.0);
         }
       }
-     
+      
       // Draw image as textured quad
       glDisable(GL_LIGHTING);
       RNLoadRgb(1.0, 1.0, 1.0);
@@ -1599,7 +1606,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     switch(key) {
     case 'M':
     case 'm': // Enter
-      if (image_inset_size < 0.45) SetImageInsetSize(0.7);
+      if (image_inset_size < 0.5) SetImageInsetSize(0.8);
       else SetImageInsetSize(0.2);
       break;
 

@@ -921,7 +921,7 @@ SetImageInsetSize(RNScalar fraction)
 {
   // Set size of inset image as fraction of window size
   if (fraction < 0.01) fraction = 0.01;
-  else if (fraction > 1) fraction = 1;
+  else if (fraction > 2) fraction = 2;
   this->image_inset_size = fraction;
 }
 
