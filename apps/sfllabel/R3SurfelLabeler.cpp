@@ -683,25 +683,25 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
       
     case '_': 
       // Copied from R3SurfelViewer
-      SetImagePlaneDepth(0.9 * ImagePlaneDepth());
+      SetSubsamplingFactor(SubsamplingFactor() / 2);
       redraw = 1;
       break;
 
     case '+': 
       // Copied from R3SurfelViewer
-      SetImagePlaneDepth(1.1 * ImagePlaneDepth());
+      SetSubsamplingFactor(SubsamplingFactor() * 2);
       redraw = 1;
       break;
 
     case '-': 
       // Copied from R3SurfelViewer
-      SetImageInsetSize(0.8 * ImageInsetSize());
+      SetSurfelSize(0.8 * SurfelSize());
       redraw = 1;
       break;
 
     case '=': 
       // Copied from R3SurfelViewer
-      SetImageInsetSize(1.25 * ImageInsetSize());
+      SetSurfelSize(1.25 * SurfelSize());
       redraw = 1;
       break;
 

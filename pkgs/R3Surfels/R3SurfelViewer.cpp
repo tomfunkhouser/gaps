@@ -1085,9 +1085,8 @@ Redraw(void)
       // Determine image coordinates
       double x2 = w-1;
       double y2 = h-1;
-      double aspect = (double) image->ImageHeight() / (double)  image->ImageWidth();
       double x1 = x2 - image_inset_size * w;
-      double y1 = y2 - image_inset_size * w * aspect;
+      double y1 = y2 - image_inset_size * h;
 
       // Determine focal point
       R2Point focal_point(0.5*image->ImageWidth(), 0.5*image->ImageHeight());
@@ -1576,19 +1575,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break; }
 
     case '_': 
-      SetImagePlaneDepth(0.8 * ImagePlaneDepth());
+      SetSubsamplingFactor(SubsamplingFactor() / 2);
       break;
 
     case '+': 
-      SetImagePlaneDepth(1.25 * ImagePlaneDepth());
+      SetSubsamplingFactor(SubsamplingFactor() * 2);
       break;
 
     case '-': 
-      SetImageInsetSize(0.8 * ImageInsetSize());
+      SetSurfelSize(0.8 * SurfelSize());
       break;
 
     case '=': 
-      SetImageInsetSize(1.25 * ImageInsetSize());
+      SetSurfelSize(1.25 * SurfelSize());
       break;
 
     default:
@@ -1600,7 +1599,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     switch(key) {
     case 'M':
     case 'm': // Enter
-      if (image_inset_size < 0.5) SetImageInsetSize(0.8);
+      if (image_inset_size < 0.45) SetImageInsetSize(0.7);
       else SetImageInsetSize(0.2);
       break;
 
@@ -1635,19 +1634,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case R3_SURFEL_VIEWER_DOWN_KEY:
-      SetSurfelSize(0.8 * SurfelSize());
+      SetImageInsetSize(0.8 * ImageInsetSize());
       break;
 
     case R3_SURFEL_VIEWER_UP_KEY:
-      SetSurfelSize(1.25 * SurfelSize());
+      SetImageInsetSize(1.25 * ImageInsetSize());
       break;
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
-      SetSubsamplingFactor(SubsamplingFactor() * 2);
+      SetImagePlaneDepth(0.8 * ImagePlaneDepth());
       break;
 
     case R3_SURFEL_VIEWER_RIGHT_KEY: 
-      SetSubsamplingFactor(SubsamplingFactor() / 2);
+      SetImagePlaneDepth(1.25 * ImagePlaneDepth());
       break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
