@@ -1010,7 +1010,8 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
   // Check scene
   if (!scene) return 0;
   if (box.IsEmpty()) return 0;
-
+  if (!SurfelVisibility()) return 0;
+  
   // Get projection matrices
   GLdouble p[3];
   GLdouble modelview_matrix[16];
@@ -1086,6 +1087,7 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
   if (!scene) return 0;
   if (polygon.IsLinear()) return 0;
   if (polygon.NPoints() < 3) return 0;
+  if (!SurfelVisibility()) return 0;
 
   // Get projection matrices
   GLdouble p[3];
@@ -1259,6 +1261,7 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
   if (scene->NObjects() == 0) return 0;
   if (polygon.IsLinear()) return 0;
   if (polygon.NPoints() < 3) return 0;
+  if (!SurfelVisibility()) return 0;
   int width = viewer.Viewport().Width();
   if (width <= 0) return 0;
   int height = viewer.Viewport().Height();
@@ -1352,6 +1355,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
 {
   // Get/check scene stuff
   if (!scene) return 0;
+  if (!SurfelVisibility()) return 0;
   if (NObjectSelections() == 0) return 0;
   R3SurfelTree *tree = scene->Tree();
   if (!tree) return 0;
@@ -1469,6 +1473,7 @@ SelectAllObjects(RNBoolean unlabeled_only)
 {
   // Check scene
   if (!scene) return 0;
+  if (!SurfelVisibility()) return 0;
 
   // Begin logging command 
   BeginCommand(R3_SURFEL_LABELER_SELECT_UNLABELED_COMMAND);
