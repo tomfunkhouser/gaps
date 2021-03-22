@@ -94,8 +94,10 @@ R3SurfelViewer(R3SurfelScene *scene)
     frame_time(-1),
     screenshot_name(NULL),
     ground_z_grid(),
-    selected_image_texture_image(NULL),
+    selected_image_color_pixels(),
+    previous_color_image(NULL),
     selected_image_texture_id(0),
+    previous_texture_image(NULL),
     vbo_position_buffer(0),
     vbo_normal_buffer(0),
     vbo_color_buffer(0),
@@ -660,17 +662,38 @@ UpdateGroundZGrid(void)
 
 
 void R3SurfelViewer::
+UpdateSelectedImageColorPixels(void)
+{
+  // Check stuff
+  if (!selected_image) return;
+  if (selected_image == previous_color_image) return;
+
+  // Get color image
+  selected_image_color_pixels = selected_image->ColorChannels();
+  if ((selected_image_color_pixels.Width() <= 0) ||
+      (selected_image_color_pixels.Height() <= 0) ||
+      (selected_image_color_pixels.Depth() != 3)) {
+    selected_image_color_pixels = R2Image();
+  }
+
+  // Remember last selected image
+  previous_color_image = selected_image;
+}
+
+
+
+void R3SurfelViewer::
 UpdateSelectedImageTexture(void)
 {
   // Check stuff
   if (!selected_image) return;
-  if (selected_image == selected_image_texture_image) return;
+  if (selected_image == previous_texture_image) return;
 
   // Get color image
-  R2Image color_image = selected_image->ColorChannels();
-  if (color_image.Width() <= 0) return;
-  if (color_image.Height() <= 0) return;
-  if (color_image.Depth() != 3) return;
+  UpdateSelectedImageColorPixels();
+  if (selected_image_color_pixels.Width() <= 0) return;
+  if (selected_image_color_pixels.Height() <= 0) return;
+  if (selected_image_color_pixels.Depth() != 3) return;
 
   // Generate a texture id
   if (selected_image_texture_id == 0) {
@@ -686,13 +709,13 @@ UpdateSelectedImageTexture(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_image.Width(), color_image.Height(), 0, GL_RGB, GL_UNSIGNED_BYTE, color_image.Pixels() );
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, selected_image_color_pixels.Width(), selected_image_color_pixels.Height(), 0, GL_RGB, GL_UNSIGNED_BYTE, selected_image_color_pixels.Pixels() );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, color_image.Width(), color_image.Height(), GL_RGB, GL_UNSIGNED_BYTE, color_image.Pixels());
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, selected_image_color_pixels.Width(), selected_image_color_pixels.Height(), GL_RGB, GL_UNSIGNED_BYTE, selected_image_color_pixels.Pixels());
   }
 
   // Remember last selected image
-  selected_image_texture_image = selected_image;
+  previous_texture_image = selected_image;
 }
 
 
@@ -1140,6 +1163,7 @@ DrawImageInset(void) const
   if (selected_image->ImageWidth() <= 0) return;
   if (selected_image->ImageHeight() <= 0) return;
   if (!image_inset_visibility) return;
+  if (image_inset_size <= 0) return;
   
   // Determine image coordinates
   int w = viewer.Viewport().Width();
@@ -1166,25 +1190,57 @@ DrawImageInset(void) const
   glMatrixMode(GL_PROJECTION);
   glPushMatrix();
   glLoadIdentity();
-  glOrtho(0, w-1, 0, h-1, 0.1, 1);
+  glOrtho(0, w, 0, h, 0.1, 1);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
 
-  // Translate so that focal point is in view
+  // Get image translation (so that focal point is in view)
+  double tx = 0;
+  double ty = 0;
   if (x1 < 0) {
     if (focal_point.X() < 0.25*w) {
-      double dx = 0.25*w - focal_point.X();
-      glTranslated(dx, 0.0, 0.0);
+      tx = 0.25*w - focal_point.X();
     }
   }
   if (y1 < 0) {
     if (focal_point.Y() < 0.25*h) {
-      double dy = 0.25*h - focal_point.Y();
-      glTranslated(0.0, dy, 0.0);
+      ty = 0.25*h - focal_point.Y();
     }
   }
-      
+
+#if (RN_OS == RN_MAC)
+  // For some unknown reason, drawing a textured quad hangs the GPU for some images
+  // (very rarely, but it is repeatable).   So, draw the with glPixelDraw instead.
+  
+  // Get color image
+  ((R3SurfelViewer *) this)->UpdateSelectedImageColorPixels();
+  int color_width = selected_image_color_pixels.Width();
+  int color_height = selected_image_color_pixels.Height();
+  if ((color_width <= 0) || (color_height <= 0)) return;
+  const unsigned char *color_pixels = selected_image_color_pixels.Pixels();
+  if (!color_pixels) return;
+
+  // Set viewport 
+  glViewport(x1, y1, x2 - x1, y2 - y1);
+
+  // Set image scale 
+  GLfloat sx = (x2 - x1) / color_width;
+  GLfloat sy = (y2 - y1) / color_height;
+  glPixelZoom(sx, sy);
+
+  // Set image translation
+  // Can't send point outside viewport to glRasterPos, so add translation this way
+  glRasterPos3d(0, 0, -0.5);
+  glBitmap(0, 0, 0, 0, tx, ty, NULL);
+  
+  // Draw image
+  glDrawPixels(color_width, color_height, GL_RGB, GL_UNSIGNED_BYTE, color_pixels);
+
+  // Reset everything
+  glPixelZoom(1, 1);
+  glViewport(0, 0, w, h);
+#else
   // Update selected image texture
   ((R3SurfelViewer *) this)->UpdateSelectedImageTexture();
 
@@ -1199,27 +1255,28 @@ DrawImageInset(void) const
     RNLoadRgb(1.0, 1.0, 1.0);
     glBegin(GL_QUADS);
     R3LoadTextureCoords(0.0, 0.0);
-    R3LoadPoint(x1, y1, -0.5);
+    R3LoadPoint(x1 + tx, y1 + ty, -0.5);
     R3LoadTextureCoords(1.0, 0.0);
-    R3LoadPoint(x2, y1, -0.5);
+    R3LoadPoint(x2 + tx, y1 + ty, -0.5);
     R3LoadTextureCoords(1.0, 1.0);
-    R3LoadPoint(x2, y2, -0.5);
+    R3LoadPoint(x2 + tx, y2 + ty, -0.5);
     R3LoadTextureCoords(0.0, 1.0);
-    R3LoadPoint(x1, y2, -0.5);
+    R3LoadPoint(x1 + tx, y2 + ty, -0.5);
     glEnd();
 
     // Unbind texture
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
   }
-
+#endif
+  
   // Draw projected center point
   if (selected_point) {
     RNLoadRgb(1.0, 0.0, 0.0);
-    R3Point p(focal_point.X(), focal_point.Y(), -0.25);
+    R3Point p(focal_point.X() + tx, focal_point.Y() + ty, -0.25);
     R3Box(p[0]-4, p[1]-4, -0.25, p[0]+4, p[1]+4, -0.25).Draw();
   }
-     
+
   // Pop ortho viewing matrices
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
@@ -1237,6 +1294,10 @@ DrawImagePlane(void) const
   if (selected_image->ImageWidth() <= 0) return;
   if (selected_image->ImageHeight() <= 0) return;
   if (!image_plane_visibility) return;
+
+#if (RN_OS != RN_MAC)
+  // For some unknown reason, drawing a textured quad hangs the GPU for some images
+  // (very rarely, but it is repeatable). 
 
   // Get convenient variables
   RNLength depth = image_plane_depth;
@@ -1274,6 +1335,7 @@ DrawImagePlane(void) const
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
   }
+#endif
 }
 
 

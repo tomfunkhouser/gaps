@@ -231,6 +231,7 @@ public:
   // Update
   void UpdateViewingFrustum(void);
   void UpdateGroundZGrid(void);
+  void UpdateSelectedImageColorPixels(void);
   void UpdateSelectedImageTexture(void);
   void AdaptWorkingSet(void);
  
@@ -382,9 +383,11 @@ protected:
   // Ground height
   R2Grid ground_z_grid;
 
-  // Texture image stuff
-  R3SurfelImage *selected_image_texture_image;
+  // Image drawing stuff
+  R2Image selected_image_color_pixels;
+  R3SurfelImage *previous_color_image;
   GLuint selected_image_texture_id;
+  R3SurfelImage *previous_texture_image;
   
   // Vertex buffer objects
   GLuint vbo_position_buffer;
