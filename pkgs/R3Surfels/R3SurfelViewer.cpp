@@ -44,7 +44,6 @@ R3SurfelViewer(R3SurfelScene *scene)
     center_point(0,0,0),
     selected_point(NULL),
     selected_image(NULL),
-    current_image_texture(),
     image_inset_size(0.2),
     image_plane_depth(2),
     surfel_size(2),
@@ -95,6 +94,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     frame_time(-1),
     screenshot_name(NULL),
     ground_z_grid(),
+    selected_image_texture_image(NULL),
+    selected_image_texture_id(-1),
     vbo_position_buffer(0),
     vbo_normal_buffer(0),
     vbo_color_buffer(0),
@@ -654,6 +655,77 @@ UpdateGroundZGrid(void)
 
 
 
+void R3SurfelViewer::
+UpdateSelectedImageTexture(void)
+{
+  // Check stuff
+  if (!selected_image) return;
+  if (selected_image == selected_image_texture_image) return;
+
+  // Get color image
+  R2Image color_image = selected_image->ColorChannels();
+  if (color_image.Width() <= 0) return;
+  if (color_image.Height() <= 0) return;
+  if (color_image.Depth() != 3) return;
+
+  // Generate a texture id
+  if (selected_image_texture_id <= 0) {
+    GLuint texture_id = -1;
+    glGenTextures(1, &texture_id);
+    if (selected_image_texture_id <= 0) return;
+    selected_image_texture_id = texture_id;
+  }
+
+  // Load texture
+  if (selected_image_texture_id > 0) {
+    glBindTexture(GL_TEXTURE_2D, selected_image_texture_id);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_image.Width(), color_image.Height(), 0, GL_RGB, GL_UNSIGNED_BYTE, color_image.Pixels() );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, color_image.Width(), color_image.Height(), GL_RGB, GL_UNSIGNED_BYTE, color_image.Pixels());
+  }
+
+  // Remember last selected image
+  selected_image_texture_image = selected_image;
+}
+
+
+
+void R3SurfelViewer::
+AdaptWorkingSet(void)
+{
+  // Check if adapting automatically
+  if (!adapt_working_set_automatically) return;
+
+  // Adjust target resolution based on frame time
+  if (frame_time > 0.05) {
+    SetTargetResolution(0.9 * TargetResolution());
+  }
+  else if (frame_time < 0.025) {
+    SetTargetResolution(1.1 * TargetResolution());
+  }
+
+  // Make gross estimate of visible radius
+  RNLength camera_height = viewer.Camera().Origin().Z();
+  RNLength visible_radius = camera_height;
+
+  // Adjust focus radius 
+  SetFocusRadius(visible_radius);
+
+  // Adjust surfel size based on visible radius
+  if ((TargetResolution() > 0) && (visible_radius > 0)) {
+    RNLength window_width = viewer.Viewport().Width();
+    RNLength npixels = window_width / (visible_radius * TargetResolution());
+    SetSurfelSize(npixels);
+  }
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
@@ -678,11 +750,19 @@ DrawSurfels(int color_scheme) const
 {
   // Check surfel visibility
   if (!SurfelVisibility()) return;
-  
+
+  // Set default lighting
+  glDisable(GL_LIGHTING);
+
+  // Set point size
+  if (color_scheme != R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX) glPointSize(surfel_size);
+  else glPointSize(0.01 * Viewport().Width() + 1);
+
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
   if (!shape_draw_flags[R3_SURFEL_DISC_DRAW_FLAG]) {
     // Draw with VBO
     DrawVBO(color_scheme);
+    glPointSize(1);    
     return;
   }
 #endif
@@ -855,6 +935,431 @@ DrawSurfels(int color_scheme) const
     }
     break;
   }
+
+  // Reset point size
+  glPointSize(1);    
+}
+
+
+
+void R3SurfelViewer::
+DrawNormals(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!normal_visibility) return;
+
+  // Draw normals
+  RNLoadRgb(normal_color);
+  RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      const R3Point& block_origin = block->PositionOrigin();
+      glPushMatrix();
+      glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
+      glBegin(GL_LINES);
+      for (int k = 0; k < block->NSurfels(); k++) {
+        const R3Surfel *surfel = block->Surfel(k);
+        double px = surfel->X();
+        double py = surfel->Y();
+        double pz = surfel->Z();
+        double nx = surfel->NX();
+        double ny = surfel->NY();
+        double nz = surfel->NZ();
+        R3LoadPoint(px, py, pz);
+        R3LoadPoint(px + r * nx, py + r * ny, pz + r * nz);
+      }
+      glEnd();
+      glPopMatrix();
+    }
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawObjectProperties(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!object_property_visibility) return;
+  
+  // Draw object properties
+  RNLoadRgb(object_property_color);
+  for (int i = 0; i < scene->NObjectProperties(); i++) {
+    R3SurfelObjectProperty *property = scene->ObjectProperty(i);
+    property->Draw(0);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawObjectRelationships(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!object_relationship_visibility) return;
+  
+  // Draw object relationships
+  RNLoadRgb(1.0, 1.0, 1.0);
+  for (int i = 0; i < scene->NObjectRelationships(); i++) {
+    R3SurfelObjectRelationship *relationship = scene->ObjectRelationship(i);
+    relationship->Draw();
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawNodeBBoxes(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!node_bbox_visibility) return;
+  
+  // Draw node bounding boxes
+  RNLoadRgb(node_bbox_color);
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    node->BBox().Outline();
+    if (node->NParts() > 0) glColor3d(0, 1, 0);
+    else glColor3d(1, 0, 0);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawBlockBBoxes(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!block_bbox_visibility) return;
+
+  // Draw block bounding boxes
+  RNLoadRgb(block_bbox_color);
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      block->BBox().Outline();
+    }
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawCenterPoint(void) const
+{
+  // Check stuff
+  if (!center_point_visibility) return;
+  
+  // Draw center point
+  glEnable(GL_LIGHTING);
+  RNLoadRgb(center_point_color);
+  R3Sphere(center_point, 0.1).Draw();
+  glDisable(GL_LIGHTING);
+}
+
+
+
+void R3SurfelViewer::
+DrawSelectedPoint(void) const
+{
+  // Check stuff
+  if (!selected_point) return;
+  // if (!selected_point_visibility) return;
+
+  // Draw selected point
+  glEnable(GL_LIGHTING);
+  RNLoadRgb(RNred_rgb);
+  R3Sphere(selected_point->Position(), 0.05).Draw();
+  glDisable(GL_LIGHTING);
+}
+
+
+
+void R3SurfelViewer::
+DrawScanViewpoints(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!scan_viewpoint_visibility) return;
+  
+  // Draw scan viewpoints
+  glDisable(GL_LIGHTING);
+  RNLoadRgb(scan_viewpoint_color);
+  glBegin(GL_LINES);
+  for (int i = 0; i < scene->NScans(); i++) {
+    R3SurfelScan *scan = scene->Scan(i);
+    const R3Point& viewpoint = scan->Viewpoint();
+    const R3Vector towards = scan->Towards();
+    const R3Vector up = scan->Up();
+    R3LoadPoint(viewpoint);
+    R3LoadPoint(viewpoint + towards);
+    R3LoadPoint(viewpoint);
+    R3LoadPoint(viewpoint + 0.5 * up);
+  }
+  glEnd();
+}
+
+
+
+void R3SurfelViewer::
+DrawImageViewpoints(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!image_viewpoint_visibility) return;
+  
+  // Draw image viewpoints
+  glDisable(GL_LIGHTING);
+  RNLoadRgb(image_viewpoint_color);
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    if (image == selected_image) glLineWidth(5);
+    image->Draw();
+    if (image == selected_image) glLineWidth(1);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawImageInset(void) const
+{
+  // Get/check stuff
+  if (!selected_image) return;
+  if (selected_image->ImageWidth() <= 0) return;
+  if (selected_image->ImageHeight() <= 0) return;
+  if (!image_inset_visibility) return;
+  
+  // Determine image coordinates
+  int w = viewer.Viewport().Width();
+  int h = viewer.Viewport().Height();
+  double x2 = w-1;
+  double y2 = h-1;
+  double aspect = (double) selected_image->ImageHeight() / (double) selected_image->ImageWidth();
+  double x1 = x2 - image_inset_size * w;
+  double y1 = y2 - image_inset_size * w * aspect;
+
+  // Determine focal point
+  R2Point focal_point(0.5*selected_image->ImageWidth(), 0.5*selected_image->ImageHeight());
+  if (selected_point) {
+    focal_point = selected_image->ImagePosition(selected_point->Position());
+    if ((focal_point.X() >= 0) && (focal_point.Y() >= 0) &&
+        (focal_point.X() <= selected_image->ImageWidth()-0.5) &&
+        (focal_point.Y() <= selected_image->ImageHeight()-0.5)) {
+      focal_point[0] = x1 + (x2 - x1) * focal_point.X()/selected_image->ImageWidth();
+      focal_point[1] = y1 + (y2 - y1) * focal_point.Y()/selected_image->ImageHeight();
+    }
+  }
+
+  // Push ortho viewing matrices
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  glOrtho(0, w-1, 0, h-1, 0.1, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  // Translate so that focal point is in view
+  if (x1 < 0) {
+    if (focal_point.X() < 0.25*w) {
+      double dx = 0.25*w - focal_point.X();
+      glTranslated(dx, 0.0, 0.0);
+    }
+  }
+  if (y1 < 0) {
+    if (focal_point.Y() < 0.25*h) {
+      double dy = 0.25*h - focal_point.Y();
+      glTranslated(0.0, dy, 0.0);
+    }
+  }
+      
+  // Update selected image texture
+  ((R3SurfelViewer *) this)->UpdateSelectedImageTexture();
+
+  // Draw image as textured quad
+  if (selected_image_texture_id > 0) {
+    // Bind texture
+    glBindTexture(GL_TEXTURE_2D, selected_image_texture_id);
+    glEnable(GL_TEXTURE_2D);
+
+    // Draw quad
+    glDisable(GL_LIGHTING);
+    RNLoadRgb(1.0, 1.0, 1.0);
+    glBegin(GL_QUADS);
+    R3LoadTextureCoords(0.0, 0.0);
+    R3LoadPoint(x1, y1, -0.5);
+    R3LoadTextureCoords(1.0, 0.0);
+    R3LoadPoint(x2, y1, -0.5);
+    R3LoadTextureCoords(1.0, 1.0);
+    R3LoadPoint(x2, y2, -0.5);
+    R3LoadTextureCoords(0.0, 1.0);
+    R3LoadPoint(x1, y2, -0.5);
+    glEnd();
+
+    // Unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+  }
+
+  // Draw projected center point
+  if (selected_point) {
+    RNLoadRgb(1.0, 0.0, 0.0);
+    R3Point p(focal_point.X(), focal_point.Y(), -0.25);
+    R3Box(p[0]-4, p[1]-4, -0.25, p[0]+4, p[1]+4, -0.25).Draw();
+  }
+     
+  // Pop ortho viewing matrices
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+}
+
+
+
+void R3SurfelViewer::
+DrawImagePlane(void) const
+{
+  // Get/check stuff
+  if (!selected_image) return;
+  if (selected_image->ImageWidth() <= 0) return;
+  if (selected_image->ImageHeight() <= 0) return;
+  if (!image_plane_visibility) return;
+
+  // Get convenient variables
+  RNLength depth = image_plane_depth;
+  R3SurfelImage *image = selected_image;
+  R3Point c = image->Viewpoint() + depth * image->Towards();
+  c -= ((image->ImageCenter().X() - 0.5*image->ImageWidth()) / (0.5*image->ImageWidth())) * image->Right() * depth;
+  c -= ((image->ImageCenter().Y() - 0.5*image->ImageHeight()) / (0.5*image->ImageHeight())) * image->Up() * depth;
+  R3Vector dx = depth * tan(image->XFOV()) * image->Right();
+  R3Vector dy = depth * tan(image->YFOV()) * image->Up();
+
+  // Update selected image texture
+  ((R3SurfelViewer *) this)->UpdateSelectedImageTexture();
+
+  // Draw image as textured quad
+  if (selected_image_texture_id > 0) {
+    // Bind texture
+    glBindTexture(GL_TEXTURE_2D, selected_image_texture_id);
+    glEnable(GL_TEXTURE_2D);
+
+    // Draw quad
+    glDisable(GL_LIGHTING);
+    RNLoadRgb(1.0, 1.0, 1.0);
+    glBegin(GL_QUADS);
+    R3LoadTextureCoords(0.0, 0.0);
+    R3LoadPoint(c - dx - dy);
+    R3LoadTextureCoords(1.0, 0.0);
+    R3LoadPoint(c + dx - dy);
+    R3LoadTextureCoords(1.0, 1.0);
+    R3LoadPoint(c + dx + dy);
+    R3LoadTextureCoords(0.0, 1.0);
+    R3LoadPoint(c - dx + dy);
+    glEnd();
+
+    // Unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawImagePoints(void) const
+{
+  // Get/check stuff
+  if (!selected_image) return;
+  if (selected_image->ImageWidth() <= 0) return;
+  if (selected_image->ImageHeight()<= 0) return;
+  if (!image_points_visibility) return;
+
+  // Get depth and color channels
+  const R2Grid *depth_channel = selected_image->DepthChannel();
+  if (!depth_channel) return;
+  if (depth_channel->XResolution() <= 0) return;
+  if (depth_channel->YResolution() <= 0) return;
+  const R2Image color_channels = selected_image->ColorChannels();
+  if (color_channels.Width() <= 0) return;
+  if (color_channels.Height() <= 0) return;
+
+  // Draw image points
+  glDisable(GL_LIGHTING);
+  glPointSize(surfel_size);
+  glBegin(GL_POINTS);
+  for (int iy = 0; iy < selected_image->ImageHeight(); iy++) {
+    for (int ix = 0; ix < selected_image->ImageWidth(); ix++) {
+      RNScalar depth = depth_channel->GridValue(ix, iy);
+      if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) return;
+      R2Point image_position(ix, iy);
+      R3Point world_position = selected_image->TransformFromImageToWorld(image_position);
+      RNLoadRgb(color_channels.PixelRGB(ix, iy));
+      R3LoadPoint(world_position);
+    }
+  }
+  glEnd();
+  glPointSize(1);
+}
+
+
+
+void R3SurfelViewer::
+DrawAxes(void) const
+{
+  // Check stuff
+  if (!axes_visibility) return;
+
+  // Draw axes
+  RNScalar d = 1.0;
+  glDisable(GL_LIGHTING);
+  glLineWidth(3);
+  R3BeginLine();
+  glColor3f(1, 0, 0);
+  R3LoadPoint(R3zero_point);
+  R3LoadPoint(R3zero_point + d * R3posx_vector);
+  R3EndLine();
+  R3BeginLine();
+  glColor3f(0, 1, 0);
+  R3LoadPoint(R3zero_point);
+  R3LoadPoint(R3zero_point + d * R3posy_vector);
+  R3EndLine();
+  R3BeginLine();
+  glColor3f(0, 0, 1);
+  R3LoadPoint(R3zero_point);
+  R3LoadPoint(R3zero_point + d * R3posz_vector);
+  R3EndLine();
+  glLineWidth(1);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Screen capture functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelViewer::
+CaptureImage(const char *filename) const
+{
+  // Check stuff
+  if (!filename) return;
+
+  // Capture iamge
+  R2Image image(viewer.Viewport().Width(), viewer.Viewport().Height(), 3);
+  image.Capture();
+
+  // Wrimte to file
+  image.Write(filename);
 }
 
 
@@ -882,307 +1387,42 @@ Redraw(void)
   static GLfloat light1_position[] = { -3.0, -2.0, -3.0, 0.0 };
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
 
-  // Set viewing extent
-  DrawViewingExtent();
-  EnableViewingExtent();
-  UpdateViewingFrustum();
-  
-  // Set draw modes
-  glDisable(GL_LIGHTING);
-  glPointSize(surfel_size);
-  glLineWidth(1);
+  // Set opengl modes
   if (backfacing_visibility) glDisable(GL_CULL_FACE);
   else glEnable(GL_CULL_FACE);
-
-  // Draw surfels
-  DrawSurfels(surfel_color_scheme);
-  
-  // Reset opengl modes
   glDisable(GL_LIGHTING);
   glPointSize(1);
   glLineWidth(1);
 
-  // Draw normals
-  if (normal_visibility) {
-    RNLoadRgb(normal_color);
-    RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
-    for (int i = 0; i < resident_nodes.NNodes(); i++) {
-      R3SurfelNode *node = resident_nodes.Node(i);
-      if (!NodeVisibility(node)) continue;
-      for (int j = 0; j < node->NBlocks(); j++) {
-        R3SurfelBlock *block = node->Block(j);
-        const R3Point& block_origin = block->PositionOrigin();
-        glPushMatrix();
-        glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-        glBegin(GL_LINES);
-        for (int k = 0; k < block->NSurfels(); k++) {
-          const R3Surfel *surfel = block->Surfel(k);
-          double px = surfel->X();
-          double py = surfel->Y();
-          double pz = surfel->Z();
-          double nx = surfel->NX();
-          double ny = surfel->NY();
-          double nz = surfel->NZ();
-          R3LoadPoint(px, py, pz);
-          R3LoadPoint(px + r * nx, py + r * ny, pz + r * nz);
-        }
-        glEnd();
-        glPopMatrix();
-      }
-    }
-  }
+  // Set viewing extent
+  DrawViewingExtent();
+  EnableViewingExtent();
+  UpdateViewingFrustum();
 
-  // Draw object properties
-  if (object_property_visibility) {
-    RNLoadRgb(object_property_color);
-    for (int i = 0; i < scene->NObjectProperties(); i++) {
-      R3SurfelObjectProperty *property = scene->ObjectProperty(i);
-      property->Draw(0);
-    }
-  }
-
-  // Draw object relationships
-  if (object_relationship_visibility) {
-    RNLoadRgb(1.0, 1.0, 1.0);
-    for (int i = 0; i < scene->NObjectRelationships(); i++) {
-      R3SurfelObjectRelationship *relationship = scene->ObjectRelationship(i);
-      relationship->Draw();
-    }
-  }
-
-  // Draw node bounding boxes
-  if (node_bbox_visibility) {
-    RNLoadRgb(node_bbox_color);
-    for (int i = 0; i < resident_nodes.NNodes(); i++) {
-      R3SurfelNode *node = resident_nodes.Node(i);
-      node->BBox().Outline();
-      if (node->NParts() > 0) glColor3d(0, 1, 0);
-      else glColor3d(1, 0, 0);
-    }
-  }
-
-  // Draw block bounding boxes
-  if (block_bbox_visibility) {
-    RNLoadRgb(block_bbox_color);
-    for (int i = 0; i < resident_nodes.NNodes(); i++) {
-      R3SurfelNode *node = resident_nodes.Node(i);
-      for (int j = 0; j < node->NBlocks(); j++) {
-        R3SurfelBlock *block = node->Block(j);
-        block->BBox().Outline();
-      }
-    }
-  }
-
-  // Draw image points
-  if (image_points_visibility && selected_image) {
-    glDisable(GL_LIGHTING);
-    glPointSize(surfel_size);
-    glBegin(GL_POINTS);
-    for (int i = 0; i < scene->NImages(); i++) {
-      R3SurfelImage *image = scene->Image(i);
-      if (selected_image && (image != selected_image)) continue;
-      const R2Grid *depth_channel = image->DepthChannel();
-      if (!depth_channel) continue;
-      const R2Image color_channels = image->ColorChannels();
-      for (int iy = 0; iy < image->ImageHeight(); iy++) {
-        for (int ix = 0; ix < image->ImageWidth(); ix++) {
-          RNScalar depth = depth_channel->GridValue(ix, iy);
-          if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
-          R2Point image_position(ix, iy);
-          R3Point world_position = image->TransformFromImageToWorld(image_position);
-          RNLoadRgb(color_channels.PixelRGB(ix, iy));
-          R3LoadPoint(world_position);
-        }
-      }
-    }
-    glEnd();
-    glPointSize(1);
-  }
-  
-  // Draw center point
-  if (center_point_visibility) {
-    glEnable(GL_LIGHTING);
-    RNLoadRgb(center_point_color);
-    R3Sphere(center_point, 0.1).Draw();
-    glDisable(GL_LIGHTING);
-  }
+  // Draw everything else (with culling to viewing extent)
+  DrawSurfels(surfel_color_scheme);
+  DrawNormals();
+  DrawObjectProperties();
+  DrawObjectRelationships();
+  DrawNodeBBoxes();
+  DrawBlockBBoxes();
+  DrawImagePoints();
+  DrawCenterPoint();
 
   // Reset viewing modes
   DisableViewingExtent();
 
-  // Draw selected point
-  if (selected_point) {
-    glEnable(GL_LIGHTING);
-    RNLoadRgb(RNred_rgb);
-    R3Sphere(selected_point->Position(), 0.05).Draw();
-    glDisable(GL_LIGHTING);
-  }
-
-  // Draw scan viewpoints
-  if (scan_viewpoint_visibility) {
-    glDisable(GL_LIGHTING);
-    RNLoadRgb(scan_viewpoint_color);
-    glBegin(GL_LINES);
-    for (int i = 0; i < scene->NScans(); i++) {
-      R3SurfelScan *scan = scene->Scan(i);
-      const R3Point& viewpoint = scan->Viewpoint();
-      const R3Vector towards = scan->Towards();
-      const R3Vector up = scan->Up();
-      R3LoadPoint(viewpoint);
-      R3LoadPoint(viewpoint + towards);
-      R3LoadPoint(viewpoint);
-      R3LoadPoint(viewpoint + 0.5 * up);
-    }
-    glEnd();
-  }
-
-  // Draw image viewpoints
-  if (image_viewpoint_visibility) {
-    glDisable(GL_LIGHTING);
-    RNLoadRgb(image_viewpoint_color);
-    for (int i = 0; i < scene->NImages(); i++) {
-      R3SurfelImage *image = scene->Image(i);
-      if (image == selected_image) glLineWidth(5);
-      image->Draw();
-      if (image == selected_image) glLineWidth(1);
-    }
-  }
-
-  // Draw image plane
-  if ((image_plane_visibility) && (current_image_texture.Image()) && selected_image) {
-    RNLength depth = image_plane_depth;
-    glDisable(GL_LIGHTING);
-    RNLoadRgb(1.0, 1.0, 1.0);
-    R3SurfelImage *image = selected_image;
-    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
-      R3Point c = image->Viewpoint() + depth * image->Towards();
-      c -= ((image->ImageCenter().X() - 0.5*image->ImageWidth()) / (0.5*image->ImageWidth())) * image->Right() * depth;
-      c -= ((image->ImageCenter().Y() - 0.5*image->ImageHeight()) / (0.5*image->ImageHeight())) * image->Up() * depth;
-      R3Vector dx = depth * tan(image->XFOV()) * image->Right();
-      R3Vector dy = depth * tan(image->YFOV()) * image->Up();
-      current_image_texture.Draw();
-      glBegin(GL_QUADS);
-      R3LoadTextureCoords(0.0, 0.0);
-      R3LoadPoint(c - dx - dy);
-      R3LoadTextureCoords(1.0, 0.0);
-      R3LoadPoint(c + dx - dy);
-      R3LoadTextureCoords(1.0, 1.0);
-      R3LoadPoint(c + dx + dy);
-      R3LoadTextureCoords(0.0, 1.0);
-      R3LoadPoint(c - dx + dy);
-      glEnd();
-      R2null_texture.Draw();
-    }
-  }
-
-  // Draw image inset
-  if ((image_inset_visibility) && (current_image_texture.Image()) && selected_image) {
-    R3SurfelImage *image = selected_image;
-    if ((image->ImageWidth() > 0) && (image->ImageHeight() > 0)) {
-      int w = viewer.Viewport().Width();
-      int h = viewer.Viewport().Height();
-
-      // Determine image coordinates
-      double x2 = w-1;
-      double y2 = h-1;
-      double aspect = (double) image->ImageHeight() / (double) image->ImageWidth();
-      double x1 = x2 - image_inset_size * w;
-      double y1 = y2 - image_inset_size * w * aspect;
-
-      // Determine focal point
-      R2Point focal_point(0.5*image->ImageWidth(), 0.5*image->ImageHeight());
-      if (selected_point) {
-        focal_point = image->ImagePosition(selected_point->Position());
-        if ((focal_point.X() >= 0) && (focal_point.Y() >= 0) &&
-            (focal_point.X() <= image->ImageWidth()-0.5) &&
-            (focal_point.Y() <= image->ImageHeight()-0.5)) {
-          focal_point[0] = x1 + (x2 - x1) * focal_point.X()/image->ImageWidth();
-          focal_point[1] = y1 + (y2 - y1) * focal_point.Y()/image->ImageHeight();
-        }
-      }
-
-      // Push ortho viewing matrices
-      glMatrixMode(GL_PROJECTION);
-      glPushMatrix();
-      glLoadIdentity();
-      glOrtho(0, w-1, 0, h-1, 0.1, 1);
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-
-      // Translate so that focal point is in view
-      if (x1 < 0) {
-        if (focal_point.X() < 0.25*w) {
-          double dx = 0.25*w - focal_point.X();
-          glTranslated(dx, 0.0, 0.0);
-        }
-      }
-      if (y1 < 0) {
-        if (focal_point.Y() < 0.25*h) {
-          double dy = 0.25*h - focal_point.Y();
-          glTranslated(0.0, dy, 0.0);
-        }
-      }
-      
-      // Draw image as textured quad
-      glDisable(GL_LIGHTING);
-      RNLoadRgb(1.0, 1.0, 1.0);
-      current_image_texture.Draw();
-      glBegin(GL_QUADS);
-      R3LoadTextureCoords(0.0, 0.0);
-      R3LoadPoint(x1, y1, -0.5);
-      R3LoadTextureCoords(1.0, 0.0);
-      R3LoadPoint(x2, y1, -0.5);
-      R3LoadTextureCoords(1.0, 1.0);
-      R3LoadPoint(x2, y2, -0.5);
-      R3LoadTextureCoords(0.0, 1.0);
-      R3LoadPoint(x1, y2, -0.5);
-      glEnd();
-      R2null_texture.Draw();
-
-      // Draw projected center point
-      if (selected_point) {
-        RNLoadRgb(1.0, 0.0, 0.0);
-        R3Point p(focal_point.X(), focal_point.Y(), -0.25);
-        R3Box(p[0]-4, p[1]-4, -0.25, p[0]+4, p[1]+4, -0.25).Draw();
-      }
-     
-      // Pop ortho viewing matrices
-      glMatrixMode(GL_PROJECTION);
-      glPopMatrix();
-      glMatrixMode(GL_MODELVIEW);
-      glPopMatrix();
-    }
-  }
-
-  // Draw axes
-  if (axes_visibility) {
-    RNScalar d = 1.0;
-    glDisable(GL_LIGHTING);
-    glLineWidth(3);
-    R3BeginLine();
-    glColor3f(1, 0, 0);
-    R3LoadPoint(R3zero_point);
-    R3LoadPoint(R3zero_point + d * R3posx_vector);
-    R3EndLine();
-    R3BeginLine();
-    glColor3f(0, 1, 0);
-    R3LoadPoint(R3zero_point);
-    R3LoadPoint(R3zero_point + d * R3posy_vector);
-    R3EndLine();
-    R3BeginLine();
-    glColor3f(0, 0, 1);
-    R3LoadPoint(R3zero_point);
-    R3LoadPoint(R3zero_point + d * R3posz_vector);
-    R3EndLine();
-    glLineWidth(1);
-  }
+  // Draw everything else (without culling to viewing extent)
+  DrawSelectedPoint();
+  DrawScanViewpoints();
+  DrawImageViewpoints();
+  DrawImagePlane();
+  DrawImageInset();
+  DrawAxes();
 
   // Capture image
   if (screenshot_name) {
-    R2Image image(viewer.Viewport().Width(), viewer.Viewport().Height(), 3);
-    image.Capture();
-    image.Write(screenshot_name);
+    CaptureImage(screenshot_name);
     free(screenshot_name);
     screenshot_name = NULL;
   }
@@ -1193,29 +1433,7 @@ Redraw(void)
   frame_timer.Read();
 
   // Adapt working set
-  if (adapt_working_set_automatically) {
-    // Adjust target resolution based on frame time
-    if (frame_time > 0.05) {
-      SetTargetResolution(0.9 * TargetResolution());
-    }
-    else if (frame_time < 0.025) {
-      SetTargetResolution(1.1 * TargetResolution());
-    }
-
-    // Make gross estimate of visible radius
-    RNLength camera_height = viewer.Camera().Origin().Z();
-    RNLength visible_radius = camera_height;
-
-    // Adjust focus radius 
-    SetFocusRadius(visible_radius);
-
-    // Adjust surfel size based on visible radius
-    if ((TargetResolution() > 0) && (visible_radius > 0)) {
-      RNLength window_width = viewer.Viewport().Width();
-      RNLength npixels = window_width / (visible_radius * TargetResolution());
-      SetSurfelSize(npixels);
-    }
-  }
+  AdaptWorkingSet();
 
   // Check if there are any GL errors
   GLenum status = glGetError();
@@ -1809,19 +2027,6 @@ SelectImage(R3SurfelImage *image, RNBoolean update_working_set, RNBoolean jump_t
       EmptyWorkingSet();
       center_point = node->Centroid();
       InsertIntoWorkingSet(node, TRUE);
-    }
-  }
-  
-  // Update image texture
-  static R3SurfelImage *previous_image = NULL;
-  if (image && (image != previous_image) && (image_plane_visibility || image_inset_visibility)) {
-    previous_image = image;
-    static R2Image color_image;
-    color_image = image->ColorChannels();
-    if (color_image.Depth() == 3) {
-      if ((color_image.Width() == image->ImageWidth()) && (color_image.Height() == image->ImageHeight())) {
-        current_image_texture.SetImage(&color_image);
-      }
     }
   }
 

@@ -173,6 +173,9 @@ DrawObjectSelections(void) const
 void R3SurfelLabeler::
 DrawObjectLabels(void) const
 {
+  // Check stuff
+  if (!object_label_visibility) return;
+  
   // Set opengl stuff
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
@@ -227,7 +230,7 @@ Redraw(void)
   // Check scene
   if (!scene) return 0;
 
-  // Draw everything except surfels
+  // Draw everything 
   R3SurfelViewer::Redraw();
   
   // Set draw modes
@@ -235,35 +238,13 @@ Redraw(void)
   glPointSize(surfel_size);
   glLineWidth(1);
 
-  // Draw selected objects
-  if (selection_visibility) {
-    DrawObjectSelections();
-  }
-  
-  // Draw object labels
-  if (object_label_visibility) {
-    DrawObjectLabels();
-  }
-
-  // Draw status
-  if (status_visibility) {
-    DrawStatus();
-  }
-
-  // Draw message
-  if (message_visibility) {
-    DrawMessage();
-  }
-
-  // Draw command menu
-  if (command_menu_visibility) {
-    DrawCommandMenu();
-  }
-
-  // Draw label menu
-  if (label_menu_visibility) {
-    DrawLabelMenu();
-  }
+  // Draw labeling stuff
+  DrawObjectSelections();
+  DrawObjectLabels();
+  DrawStatus();
+  DrawMessage();
+  DrawCommandMenu();
+  DrawLabelMenu();
 
   // Draw select stuff
   DrawRubberBox(FALSE, TRUE);
@@ -3364,8 +3345,9 @@ DrawRubberLine(RNBoolean front_buffer, RNBoolean xor_op) const
 void R3SurfelLabeler::
 DrawMessage(void) const
 {
-  // Check message
+  // Check stuff
   if (!message) return;
+  if (!message_visibility) return;
 
   // Get convenient variables
   int width = viewer.Viewport().Width();
@@ -3406,6 +3388,9 @@ DrawMessage(void) const
 void R3SurfelLabeler::
 DrawStatus(void) const
 {
+  // Check stuff
+  if (!status_visibility) return;
+
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();

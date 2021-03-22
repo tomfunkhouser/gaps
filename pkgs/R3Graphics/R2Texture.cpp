@@ -194,7 +194,7 @@ SetImage(const R2Image *image)
   if ((image) && ((image->NComponents() == 2) || (image->NComponents() == 4)))
     flags.Add(R2_TEXTURE_TRANSPARENCY_FLAG);
   this->image = image;
-  this->id = -1;
+  this->id = (image) ? -1 : 0;
 }
 
 
@@ -224,6 +224,7 @@ Load(void) const
 {
   // Check if needs to be loaded
   if (id >= 0) return;
+  assert(image);
 
   // Create texture id
   GLuint i;
@@ -279,7 +280,9 @@ Unload(void) const
 {
   // Check id
   if (!IsLoaded()) return;
-
+  assert(id > 0);
+  assert(image);
+  
   // Delete texture
   GLuint i = id;
   glDeleteTextures(1, &i);
@@ -308,7 +311,7 @@ Draw(RNBoolean force) const
   else {
     // Load texture
     if (!IsLoaded()) Load();
-
+    
     // Set texture
     glBindTexture(GL_TEXTURE_2D, id);
 

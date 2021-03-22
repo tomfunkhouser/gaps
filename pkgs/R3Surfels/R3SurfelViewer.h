@@ -228,15 +228,31 @@ public:
   void DisableViewingExtent(void) const;
   void DrawViewingExtent(void) const;
 
-  // Viewing frustum
+  // Update
   void UpdateViewingFrustum(void);
-
-  // Ground Z grid
   void UpdateGroundZGrid(void);
+  void UpdateSelectedImageTexture(void);
+  void AdaptWorkingSet(void);
  
-  // Surfel drawing
+  // Drawing 
   void DrawSurfels(int color_scheme = 0) const;
   void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
+  void DrawNormals(void) const;
+  void DrawObjectProperties(void) const;
+  void DrawObjectRelationships(void) const;
+  void DrawNodeBBoxes(void) const;
+  void DrawBlockBBoxes(void) const;
+  void DrawCenterPoint(void) const;
+  void DrawSelectedPoint(void) const;
+  void DrawScanViewpoints(void) const;
+  void DrawImageViewpoints(void) const;
+  void DrawImageInset(void) const;
+  void DrawImagePlane(void) const;
+  void DrawImagePoints(void) const;
+  void DrawAxes(void) const;
+
+  // Image capture
+  void CaptureImage(const char *filename) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -295,7 +311,6 @@ protected:
   R3Point center_point;
   R3SurfelPoint *selected_point;
   R3SurfelImage *selected_image;
-  R2Texture current_image_texture;
   RNScalar image_inset_size;
   RNLength image_plane_depth;
   RNScalar surfel_size;
@@ -367,6 +382,10 @@ protected:
   // Ground height
   R2Grid ground_z_grid;
 
+  // Texture image stuff
+  R3SurfelImage *selected_image_texture_image;
+  GLuint selected_image_texture_id;
+  
   // Vertex buffer objects
   GLuint vbo_position_buffer;
   GLuint vbo_normal_buffer;
