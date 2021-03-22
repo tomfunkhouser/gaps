@@ -1168,8 +1168,8 @@ DrawImageInset(void) const
   // Determine image coordinates
   int w = viewer.Viewport().Width();
   int h = viewer.Viewport().Height();
-  double x2 = w-1;
-  double y2 = h-1;
+  double x2 = w;
+  double y2 = h;
   double aspect = (double) selected_image->ImageHeight() / (double) selected_image->ImageWidth();
   double x1 = x2 - image_inset_size * w;
   double y1 = y2 - image_inset_size * w * aspect;
