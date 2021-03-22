@@ -1230,14 +1230,10 @@ UpdateSurfelNormals(void)
 void R3SurfelBlock::
 Draw(RNFlags flags, int subsampling_factor) const
 {
-  // Get convenient variables
-  int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
-  int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
-  int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
-
   // Just checking
   if (nsurfels == 0) return;
   if (subsampling_factor < 1) subsampling_factor = 1;
+  int c = flags[R3_SURFEL_COLOR_DRAW_FLAG];
   
   // Push translation to position_origin
   glPushMatrix();
@@ -1383,6 +1379,10 @@ Draw(RNFlags flags, int subsampling_factor) const
   if (c) glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(R3Surfel), surfels[0].ColorPtr());
   glDrawArrays(GL_POINTS, 0, NSurfels());
 #else
+  // Get convenient variables
+  int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
+  int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
+
   // Draw surfels using glBegin ... glEnd
   if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
     // Draw discs

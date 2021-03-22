@@ -95,7 +95,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     screenshot_name(NULL),
     ground_z_grid(),
     selected_image_texture_image(NULL),
-    selected_image_texture_id(-1),
+    selected_image_texture_id(0),
     vbo_position_buffer(0),
     vbo_normal_buffer(0),
     vbo_color_buffer(0),
@@ -133,7 +133,11 @@ R3SurfelViewer(R3SurfelScene *scene)
 R3SurfelViewer::
 ~R3SurfelViewer(void)
 {
+  // Delete selected image texture
+  if (selected_image_texture_id > 0) glDeleteTextures(1, &selected_image_texture_id);
+
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
+  // Delete VBO buffers
   if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
   if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
   if (vbo_color_buffer > 0) glDeleteBuffers(1, &vbo_color_buffer);
@@ -669,11 +673,9 @@ UpdateSelectedImageTexture(void)
   if (color_image.Depth() != 3) return;
 
   // Generate a texture id
-  if (selected_image_texture_id <= 0) {
-    GLuint texture_id = -1;
-    glGenTextures(1, &texture_id);
+  if (selected_image_texture_id == 0) {
+    glGenTextures(1, &selected_image_texture_id);
     if (selected_image_texture_id <= 0) return;
-    selected_image_texture_id = texture_id;
   }
 
   // Load texture
