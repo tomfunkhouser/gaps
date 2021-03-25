@@ -1165,6 +1165,14 @@ DrawImageInset(void) const
   if (!image_inset_visibility) return;
   if (image_inset_size <= 0) return;
   
+  // Get/check color image
+  ((R3SurfelViewer *) this)->UpdateSelectedImageColorPixels();
+  int color_width = selected_image_color_pixels.Width();
+  int color_height = selected_image_color_pixels.Height();
+  if ((color_width <= 0) || (color_height <= 0)) return;
+  const unsigned char *color_pixels = selected_image_color_pixels.Pixels();
+  if (!color_pixels) return;
+
   // Determine image coordinates
   int w = viewer.Viewport().Width();
   int h = viewer.Viewport().Height();
@@ -1213,14 +1221,6 @@ DrawImageInset(void) const
   // For some unknown reason, drawing a textured quad hangs the GPU for some images
   // (very rarely, but it is repeatable).   So, draw the with glPixelDraw instead.
   
-  // Get color image
-  ((R3SurfelViewer *) this)->UpdateSelectedImageColorPixels();
-  int color_width = selected_image_color_pixels.Width();
-  int color_height = selected_image_color_pixels.Height();
-  if ((color_width <= 0) || (color_height <= 0)) return;
-  const unsigned char *color_pixels = selected_image_color_pixels.Pixels();
-  if (!color_pixels) return;
-
   // Set viewport 
   glViewport(x1, y1, x2 - x1, y2 - y1);
 
