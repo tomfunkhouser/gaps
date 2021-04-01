@@ -3359,11 +3359,18 @@ DrawMessage(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
+
+  // Get position
   R2Box label_menu_bbox = LabelMenuBBox();
   double x = label_menu_bbox[1][0] + label_menu_item_height;
   double y = label_menu_item_height;
-  void *font = GLUT_BITMAP_HELVETICA_18;
 
+  // Get font
+  void *font = GLUT_BITMAP_HELVETICA_10;
+  if (height > 300) font = GLUT_BITMAP_HELVETICA_12;
+  if (height > 600) font = GLUT_BITMAP_HELVETICA_18;
+  if (height > 1200) font = GLUT_BITMAP_TIMES_ROMAN_24;
+  
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
   glMatrixMode(GL_MODELVIEW);
@@ -3409,11 +3416,17 @@ DrawStatus(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
+
+  // Get position
   R2Box label_menu_bbox = LabelMenuBBox();
   R2Point origin = label_menu_bbox[1];
   origin[0] += label_menu_item_height;
   origin[1] -= label_menu_item_height;
-  void *font = GLUT_BITMAP_HELVETICA_12;
+
+  // Get font
+  void *font = GLUT_BITMAP_HELVETICA_10;
+  if (height > 600) font = GLUT_BITMAP_HELVETICA_12;
+  if (height > 1200) font = GLUT_BITMAP_HELVETICA_18;
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
