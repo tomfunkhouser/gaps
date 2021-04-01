@@ -22,11 +22,12 @@ using namespace gaps;
 
 // Program arguments
 
-static const char *scene_name = NULL;
-static const char *database_name = NULL;
-static const char *history_name = NULL;
-static const char *pixel_database = NULL;
-static const char *image_directory = NULL;
+static const char *scene_filename = NULL;
+static const char *database_filename = NULL;
+static const char *input_pixel_database_filename = NULL;
+static const char *input_image_directory = NULL;
+static const char *output_history_filename = NULL;
+static const char *output_snapshot_directory = NULL;
 static double depth_scale = 2000;
 static double depth_exponent = 0.5;
 static int multiresolution = 0;
@@ -48,7 +49,7 @@ static R3SurfelLabeler *labeler = NULL;
 ////////////////////////////////////////////////////////////////////////
 
 static R3SurfelScene *
-OpenScene(const char *scene_name, const char *database_name)
+OpenScene(const char *scene_filename, const char *database_filename)
 {
   // Start statistics
   RNTime start_time;
@@ -62,7 +63,7 @@ OpenScene(const char *scene_name, const char *database_name)
   }
 
   // Open scene files
-  if (!scene->OpenFile(scene_name, database_name, "r+", "r+")) {
+  if (!scene->OpenFile(scene_filename, database_filename, "r+", "r+")) {
     delete scene;
     return NULL;
   }
@@ -168,14 +169,14 @@ CloseScene(R3SurfelScene *scene)
 ////////////////////////////////////////////////////////////////////////
 
 static int
-ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
+ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *filename)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
   // Read all image channels
-  if (!ReadPixelDatabase(scene, pixel_database, max_images)) return 0;
+  if (!ReadPixelDatabase(scene, filename, max_images)) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -189,7 +190,7 @@ ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
     }
 
     // Print statistics
-    printf("Read image channels from %s ...\n", pixel_database);
+    printf("Read image channels from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", scene->NImages());
     printf("  # Color Reads = %d\n", color_count);
@@ -204,14 +205,14 @@ ReadImagesFromPixelDatabase(R3SurfelScene *scene, const char *pixel_database)
 
 
 static int
-ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
+ReadImagesFromDirectory(R3SurfelScene *scene, const char *directory_name)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
   // Read all image channels
-  if (!ReadImageDirectory(scene, image_directory,
+  if (!ReadImageDirectory(scene, directory_name,
     depth_scale, depth_exponent, max_images)) return 0;
 
   // Print statistics
@@ -226,7 +227,7 @@ ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
     }
 
     // Print statistics
-    printf("Read image channels from %s ...\n", image_directory);
+    printf("Read image channels from %s ...\n", directory_name);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Images = %d\n", scene->NImages());
     printf("  # Color Reads = %d\n", color_count);
@@ -237,49 +238,6 @@ ReadImagesFromDirectory(R3SurfelScene *scene, const char *image_directory)
   // Return success
   return 1;
 }
-
-
-
-///////////////////////////////////////////////////////////////////////
-// Temporary Label processing Functions
-////////////////////////////////////////////////////////////////////////
-
-static void
-AssignLabelColor(R3SurfelScene *scene, const char *name, int r, int g, int b)
-{
-  // Find label
-  R3SurfelLabel *label = scene->FindLabelByName(name);
-  if (!label) return;
-
-  // Set color
-  RNRgb color(r/255.0, g/255.0, b/255.0);
-  label->SetColor(color);
-}
-
-
-
-static void
-UpdateLabels(R3SurfelScene *scene)
-{
-  // Create wire label
-  if (!scene->FindLabelByName("Wire")) {
-    R3SurfelLabel *parent = scene->FindLabelByName("Static");
-    if (parent) {
-      R3SurfelLabel *label = new R3SurfelLabel("Wire");
-      label->SetIdentifier(49);
-      label->SetAssignmentKeystroke('L');
-      label->SetColor(RNRgb(240/255.0, 180.0/255.0, 180.0/255.0));
-      scene->InsertLabel(label, parent);
-    }
-  }
-
-  // Assign label colors  
-  AssignLabelColor(scene, "Sidewalk",             0, 140, 0);
-  AssignLabelColor(scene, "Driveway",             0, 120, 240);
-  AssignLabelColor(scene, "Terrain",              40, 40, 220);
-  AssignLabelColor(scene, "Motorcycle",           0, 0, 240);
-  AssignLabelColor(scene, "Rider",                240, 160, 80);
-}  
 
 
 
@@ -315,14 +273,17 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-dynamic_cache")) { 
         dynamic_cache = 1;
       }      
+      else if (!strcmp(*argv, "-input_pixel_database_filename")) { 
+        argv++; argc--; input_pixel_database_filename = *argv;
+      }
+      else if (!strcmp(*argv, "-input_image_directory")) { 
+        argv++; argc--; input_image_directory = *argv;
+      }
       else if (!strcmp(*argv, "-history")) { 
-        argc--; argv++; history_name = *argv; 
+        argc--; argv++; output_history_filename = *argv; 
       }
-      else if (!strcmp(*argv, "-pixel_database")) { 
-        argv++; argc--; pixel_database = *argv;
-      }
-      else if (!strcmp(*argv, "-image_directory")) { 
-        argv++; argc--; image_directory = *argv;
+      else if (!strcmp(*argv, "-snapshot_directory")) { 
+        argc--; argv++; output_snapshot_directory = *argv; 
       }
       else if (!strcmp(*argv, "-depth_scale")) { 
         argv++; argc--; depth_scale = atof(*argv);
@@ -340,15 +301,15 @@ ParseArgs(int argc, char **argv)
       argv++; argc--;
     }
     else {
-      if (!scene_name) scene_name = *argv;
-      else if (!database_name) database_name = *argv;
+      if (!scene_filename) scene_filename = *argv;
+      else if (!database_filename) database_filename = *argv;
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check surfels name
-  if (!scene_name || !database_name) {
+  if (!scene_filename || !database_filename) {
     RNFail("Usage: sfllabel scenefile databasefile [options]\n");
     return FALSE;
   }
@@ -369,23 +330,20 @@ int main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(-1);
 
   // Open scene
-  scene = OpenScene(scene_name, database_name);
+  scene = OpenScene(scene_filename, database_filename);
   if (!scene) exit(-1);
 
   // Read images
-  if (pixel_database) {
-    if (!ReadImagesFromPixelDatabase(scene, pixel_database)) exit(-1);
+  if (input_pixel_database_filename) {
+    if (!ReadImagesFromPixelDatabase(scene, input_pixel_database_filename)) exit(-1);
   }
-  else if (image_directory) {
-    if (!ReadImagesFromDirectory(scene, image_directory)) exit(-1);
+  else if (input_image_directory) {
+    if (!ReadImagesFromDirectory(scene, input_image_directory)) exit(-1);
   }
-  
-  // Create labeler
-  labeler = new R3SurfelLabeler(scene, history_name);
-  if (!labeler) exit(-1);
 
-  // Temporary (for surfel tests)
-  UpdateLabels(scene);
+  // Create labeler
+  labeler = new R3SurfelLabeler(scene, output_history_filename);
+  if (!labeler) exit(-1);
 
   // Check if should read everything into memory always
   if (!dynamic_cache) {
@@ -396,6 +354,12 @@ int main(int argc, char **argv)
   if (!multiresolution) {
     labeler->SetFocusRadius(RN_INFINITY);
     labeler->SetTargetResolution(RN_INFINITY);
+  }
+
+  // Check if should output snapshots
+  if (output_snapshot_directory) {
+    labeler->SetSnapshotDirectory(output_snapshot_directory);
+    labeler->Snapshot();
   }
 
   // Run interface

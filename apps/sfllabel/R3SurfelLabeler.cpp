@@ -46,6 +46,7 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     label_menu_item_width(190),
     label_menu_item_height(14),
     label_menu_font(GLUT_BITMAP_HELVETICA_12),
+    snapshot_directory(NULL),
     object_selection_times()
 {
   // Get/create unknown label
@@ -782,7 +783,7 @@ Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 
     case 'S':
     case 's':
-      Sync();
+      Snapshot();
       SetMessage("Saved scene file");
       redraw = 1;
       break;
@@ -888,11 +889,8 @@ Terminate(void)
 int R3SurfelLabeler::
 Sync(void) 
 {
-  // Check everything
+  // Check scene
   if (!scene) return 0;
-
-  // Set message
-  SetMessage("Saved label assignments");
 
   // Begin logging command
   BeginCommand(R3_SURFEL_LABELER_SYNC_COMMAND);
@@ -902,6 +900,40 @@ Sync(void)
 
   // End logging command 
   EndCommand();
+
+  // Return success
+  return 1;
+}
+
+
+
+
+int R3SurfelLabeler::
+Snapshot(void)
+{
+  // Sync file
+  Sync();
+  
+  // Check snapshot directory
+  if (!snapshot_directory) return 1;
+
+  // Get convenient variables
+  if (!scene) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+  char cmd[1024];
+
+  // Create snapshot directory
+  sprintf(cmd, "mkdir -p %s", snapshot_directory);
+  system(cmd);
+  
+  // Copy files to snapshot directory
+  sprintf(cmd, "cp %s %s/snapshot.ssa", scene->Filename(), snapshot_directory);
+  system(cmd);
+  sprintf(cmd, "cp %s %s/snapshot.ssb", database->Filename(), snapshot_directory);
+  system(cmd);
 
   // Return success
   return 1;

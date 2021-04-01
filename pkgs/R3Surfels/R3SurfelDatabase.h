@@ -139,6 +139,9 @@ public:
   ////////////////////////////////////////////////////////////////////////
 
 public:
+  // Filename query functions
+  const char *Filename(void) const;
+
   // Identifier manipulation functions
   void SetMaxIdentifier(unsigned int identifier);
 
@@ -362,6 +365,15 @@ SyncBlock(R3SurfelBlock *block)
 
 
 
+inline const char *R3SurfelDatabase::
+Filename(void) const
+{
+  // Return scene filename
+  return filename;
+}
+
+  
+  
 // End namespace
 }
 

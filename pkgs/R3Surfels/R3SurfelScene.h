@@ -220,6 +220,9 @@ public:
   virtual int WriteAsciiStream(FILE *fp);
   virtual int WriteBinaryStream(FILE *fp);
 
+  // Filename functions
+  const char *Filename(void) const;
+
 protected:
   // Structure access stuff
   friend class R3SurfelTree;
@@ -512,7 +515,16 @@ Feature(int k) const
 }
 
 
+  
+inline const char *R3SurfelScene::
+Filename(void) const
+{
+  // Return scene filename
+  return filename;
+}
 
+  
+  
 inline void R3SurfelScene::
 SetDirty(void)
 {

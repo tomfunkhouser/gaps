@@ -38,8 +38,11 @@ public:
   //// COMMANDS ////
   //////////////////
 
-  // Save scene events
+  // Save scene 
   int Sync(void);
+
+  // Snapshot scene (save copy)
+  int Snapshot(void);
 
   // Camera control
   int ZoomCamera(RNScalar scale = 0);
@@ -75,24 +78,21 @@ public:
   int Redo(void);
   int Reset(void);
 
-  // Logging functions
-  int StartLogging(const char *filename) const;
-  int EndLogging(void) const;
-  int IsLogging(void) const;
-  int ReadLog(const char *filename);
-
-
+  
   ////////////////////////
   //// PROPERTY QUERY ////
   ////////////////////////
 
- // Subwindow/menu properties
+  // Subwindow/menu properties
   const char *Message(void) const;
   int SelectionVisibility(void) const;
   int MessageVisibility(void) const;
   int StatusVisibility(void) const;
   int CommandMenuVisibility(void) const;
   int LabelMenuVisibility(void) const;
+
+  // Snapshot properties
+  const char *SnapshotDirectory(void) const;
 
   // Labeling statistics
   RNScalar CurrentLabelPrecision(void) const;
@@ -122,6 +122,20 @@ public:
   void SetCommandMenuVisibility(int visibility);
   void SetLabelMenuVisibility(int visibility);
 
+  // Snapshot manipulation
+  void SetSnapshotDirectory(const char *directory_name);
+
+  
+  ////////////////////////
+  //// LOGGING
+  ////////////////////////
+
+  // Logging functions
+  int StartLogging(const char *filename) const;
+  int EndLogging(void) const;
+  int IsLogging(void) const;
+  int ReadLog(const char *filename);
+  
 public:
 
   //////////////////////////////////////////
@@ -268,6 +282,9 @@ protected:
   int label_menu_item_height;
   void *label_menu_font;
 
+  // Snapshots
+  char *snapshot_directory;
+  
   // Object stuff
   std::vector<RNScalar> object_selection_times;
 };
@@ -319,6 +336,15 @@ LabelMenuVisibility(void) const
 {
   // Return label menu visibililty
   return label_menu_visibility;
+}
+
+
+
+inline const char *R3SurfelLabeler::
+SnapshotDirectory(void) const
+{
+  // Return snapshot directory
+  return snapshot_directory;
 }
 
 
@@ -393,6 +419,23 @@ SetLabelMenuVisibility(int visibility)
   if (visibility == -1) label_menu_visibility = 1 - label_menu_visibility;
   else if (visibility == 0) label_menu_visibility = 0;
   else label_menu_visibility = 1;
+}
+
+
+
+inline void R3SurfelLabeler::
+SetSnapshotDirectory(const char *directory_name)
+{
+  // Delete previous snapshot directory
+  if (this->snapshot_directory) {
+    free(this->snapshot_directory);
+    this->snapshot_directory = NULL;
+  }
+  
+  // Set new snapshot directory
+  if (directory_name) {
+    this->snapshot_directory = strdup(directory_name);
+  }
 }
 
 
