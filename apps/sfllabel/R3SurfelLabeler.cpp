@@ -3147,7 +3147,7 @@ SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent)
 
 
 ////////////////////////////////////////////////////////////////////////
-// SUBWINDOW DRAWING AND PICKING
+// INTERACTION
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelLabeler::
@@ -3342,6 +3342,10 @@ DrawRubberLine(RNBoolean front_buffer, RNBoolean xor_op) const
 
 
 
+////////////////////////////////////////////////////////////////////////
+// MESSAGE
+////////////////////////////////////////////////////////////////////////
+
 void R3SurfelLabeler::
 DrawMessage(void) const
 {
@@ -3384,6 +3388,10 @@ DrawMessage(void) const
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// STATUS
+////////////////////////////////////////////////////////////////////////
 
 void R3SurfelLabeler::
 DrawStatus(void) const
@@ -3459,6 +3467,10 @@ DrawStatus(void) const
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// COMMAND MENU
+////////////////////////////////////////////////////////////////////////
 
 void R3SurfelLabeler::
 DrawCommandMenu(void) const
@@ -3572,12 +3584,33 @@ PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift
 
 
 
+////////////////////////////////////////////////////////////////////////
+// LABEL MENU
+////////////////////////////////////////////////////////////////////////
+
 // Global variables so that DrawLabelMenu and PickLabelMenu agree
 // Should be in R3SurfelLabeler class
 static int label_text_offset;
 static int label_text_spacing;
 static int label_text_width;
 static void *label_font;
+
+
+static int
+NLeafLabels(R3SurfelScene *scene)
+{
+  // Count leaf labels
+  int count = 0;
+  for (int i = 0; i < scene->NLabels(); i++) {
+    R3SurfelLabel *label = scene->Label(i);
+    if (label->NParts() > 0) continue;
+    if (!strcmp(label->Name(), "Root")) continue;
+    count++;
+  }
+
+  // Return number of leaf labels
+  return count;
+}
 
 
 
@@ -3590,22 +3623,27 @@ DrawLabelMenu(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
-  int x = 16;
-  int y = height - label_text_spacing;
   char buffer[2048];
 
   // Set spacing variables based on window size
+  int nslots = NLeafLabels(scene) + 2;
+  label_font = GLUT_BITMAP_TIMES_ROMAN_24;
   label_text_offset = 3;
-  label_text_spacing = 24;
-  label_text_width = 240;
-  label_font = GLUT_BITMAP_HELVETICA_18;
-  if (height < label_text_spacing * scene->NLabels()) {
+  label_text_spacing = 30;
+  label_text_width = 260;
+  if (height < label_text_spacing * nslots) {
+    label_font = GLUT_BITMAP_HELVETICA_18;
+    label_text_offset = 3;
+    label_text_spacing = 24;
+    label_text_width = 240;
+  }
+  if ((nslots <= 3) || (height < label_text_spacing * nslots)) {
     label_font = GLUT_BITMAP_HELVETICA_12;
     label_text_offset = 3;
     label_text_spacing = 18;
     label_text_width = 190;
   }
-  if (height < label_text_spacing * scene->NLabels()) {
+  if (height < label_text_spacing * nslots) {
     label_font = GLUT_BITMAP_HELVETICA_10;
     label_text_offset = 2;
     label_text_spacing = 14;
@@ -3626,6 +3664,10 @@ DrawLabelMenu(void) const
   glDepthMask(FALSE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
+
+  // Set upper left corner of menu
+  int x = 16;
+  int y = height - 2*label_text_spacing;
 
   // Check if all labels are visible
   int all_visible = 1;
@@ -3719,7 +3761,7 @@ DrawLabelMenu(void) const
 
   // Draw box around labels
   glColor4d(1, 0, 0, 1);
-  R2Box(8, y + label_text_spacing - 8, x + label_text_width + 8, height).Outline();
+  R2Box(8, y + label_text_spacing - 8, x + label_text_width + 8, height - label_text_spacing).Outline();
 
   // Reset OpenGL modes
   glDisable(GL_BLEND);
@@ -3748,7 +3790,7 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
   R2Point cursor(xcursor, ycursor);
   int height = viewer.Viewport().Height();
   int x = 16;
-  int y = height - label_text_spacing;
+  int y = height - 2*label_text_spacing;
 
   // Pick "All" visibility box 
   R2Box visibility_box(x, y+label_text_offset, x+15, y+label_text_spacing - 2*label_text_offset);

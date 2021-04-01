@@ -141,7 +141,7 @@ GLFWScroll(GLFWwindow *window,
   double xoffset, double yoffset)
 {
   // Get button
-  int button = (yoffset < 0) ? 3 : 4;
+  int button = (yoffset < 0) ? 4 : 3;
 
   // Get cursor position
   double xpos, ypos;
