@@ -929,10 +929,10 @@ Snapshot(void)
   sprintf(cmd, "mkdir -p %s", snapshot_directory);
   system(cmd);
   
-  // Copy files to snapshot directory
-  sprintf(cmd, "cp %s %s/snapshot.ssa", scene->Filename(), snapshot_directory);
+  // Copy current scene files to snapshot directory
+  sprintf(cmd, "cp -f %s %s/snapshot.ssa", scene->Filename(), snapshot_directory);
   system(cmd);
-  sprintf(cmd, "cp %s %s/snapshot.ssb", database->Filename(), snapshot_directory);
+  sprintf(cmd, "cp -f %s %s/snapshot.ssb", database->Filename(), snapshot_directory);
   system(cmd);
 
   // Return success
