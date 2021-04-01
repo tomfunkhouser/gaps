@@ -3369,14 +3369,19 @@ DrawMessage(void) const
   glDisable(GL_DEPTH_TEST);
   glDepthMask(FALSE);
 
+  // Set bottom left corner of message
+  int x = width / 4;
+  if (x > 270) x = 270;
+  int y = 16;
+  
   // Draw message (haloed in background color)
   RNLoadRgb(background_color);
-  DrawText(R2Point(250-1, 16-1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(250-1, 16+1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(250+1, 16-1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(250+1, 16+1), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x-1, y-1), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x-1, y+1), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x+1, y-1), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x+1, y+1), message, GLUT_BITMAP_HELVETICA_18);
   RNLoadRgb(RNwhite_rgb - background_color);
-  DrawText(R2Point(250, 16), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x, y), message, GLUT_BITMAP_HELVETICA_18);
 
   // Reset OpenGL modes
   glDepthMask(TRUE);
