@@ -176,10 +176,11 @@ public:
   int PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
 
   // Label menu functions
+  R2Box LabelMenuBBox(void) const;
+  void UpdateLabelMenu(void);
   void DrawLabelMenu(void) const;
   int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
-
-
+  
   /////////////////////////////////////
   //// LOW_LEVEL DRAWING FUNCTIONS ////
   /////////////////////////////////////
@@ -212,6 +213,9 @@ protected:
   ////////////////////////////
   //// INTERNAL VARIABLES ////
   ////////////////////////////
+
+  // Label visibility
+  int object_label_visibility;
 
   // Classifier
   R3SurfelClassifier classifier;
@@ -258,9 +262,11 @@ protected:
   // Command menu
   int command_menu_visibility;
 
-  // Label stuff
-  int object_label_visibility;
+  // Label menu
   int label_menu_visibility;
+  int label_menu_item_width;
+  int label_menu_item_height;
+  void *label_menu_font;
 
   // Object stuff
   std::vector<RNScalar> object_selection_times;

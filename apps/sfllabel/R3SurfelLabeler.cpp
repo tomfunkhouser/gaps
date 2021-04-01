@@ -26,6 +26,7 @@ using namespace gaps;
 R3SurfelLabeler::
 R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
   : R3SurfelViewer(scene),
+    object_label_visibility(0),
     classifier(scene),
     classify_after_change_label(0),
     segmenter(scene),
@@ -41,8 +42,10 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     message_visibility(1),
     status_visibility(1),
     command_menu_visibility(0),
-    object_label_visibility(0),
     label_menu_visibility(1),
+    label_menu_item_width(190),
+    label_menu_item_height(14),
+    label_menu_font(GLUT_BITMAP_HELVETICA_12),
     object_selection_times()
 {
   // Get/create unknown label
@@ -3356,6 +3359,10 @@ DrawMessage(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
+  R2Box label_menu_bbox = LabelMenuBBox();
+  double x = label_menu_bbox[1][0] + label_menu_item_height;
+  double y = label_menu_item_height;
+  void *font = GLUT_BITMAP_HELVETICA_18;
 
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
@@ -3369,19 +3376,14 @@ DrawMessage(void) const
   glDisable(GL_DEPTH_TEST);
   glDepthMask(FALSE);
 
-  // Set bottom left corner of message
-  int x = width / 4;
-  if (x > 270) x = 270;
-  int y = 16;
-  
   // Draw message (haloed in background color)
   RNLoadRgb(background_color);
-  DrawText(R2Point(x-1, y-1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(x-1, y+1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(x+1, y-1), message, GLUT_BITMAP_HELVETICA_18);
-  DrawText(R2Point(x+1, y+1), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x-1, y-1), message, font);
+  DrawText(R2Point(x-1, y+1), message, font);
+  DrawText(R2Point(x+1, y-1), message, font);
+  DrawText(R2Point(x+1, y+1), message, font);
   RNLoadRgb(RNwhite_rgb - background_color);
-  DrawText(R2Point(x, y), message, GLUT_BITMAP_HELVETICA_18);
+  DrawText(R2Point(x, y), message, font);
 
   // Reset OpenGL modes
   glDepthMask(TRUE);
@@ -3407,7 +3409,12 @@ DrawStatus(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
-
+  R2Box label_menu_bbox = LabelMenuBBox();
+  R2Point origin = label_menu_bbox[1];
+  origin[0] += label_menu_item_height;
+  origin[1] -= label_menu_item_height;
+  void *font = GLUT_BITMAP_HELVETICA_12;
+  
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
   glColor3f(1,1,1);
@@ -3421,47 +3428,14 @@ DrawStatus(void) const
   glDisable(GL_DEPTH_TEST);
   glDepthMask(FALSE);
 
-#if 1
-  // Draw display status
+  // Draw status
   char buffer[1024];
   const char *surfel_shape = (shape_draw_flags & R3_SURFEL_DISC_DRAW_FLAG) ? "Ellipse" : "Point";
   sprintf(buffer, "ColorScheme = %s,  SurfelShape = %s,  PointSize = %.1f, Subsampling = %d, DrawLabeled = %s, Frame rate = %.1f",
     SurfelColorSchemeName(), surfel_shape, SurfelSize(), SubsamplingFactor(),
     (HumanLabeledObjectVisibility()) ? "Yes" : "No", FrameRate());
-  if (height < 600) DrawText(R2Point(240, height - 20), buffer, GLUT_BITMAP_HELVETICA_10);
-  else if (height < 1200) DrawText(R2Point(280, height - 20), buffer, GLUT_BITMAP_HELVETICA_12);
-  else DrawText(R2Point(320, height - 20), buffer, GLUT_BITMAP_HELVETICA_18);
-#else
-  // Count assignments
-  int ntotal = 0;
-  int npredicted = 0;
-  int nconfirmed = 0;
-  int nunlabeled = 0;
-  for (int i = 0; i < scene->NObjects(); i++) {
-    R3SurfelObject *object = scene->Object(i);
-    if (object->NParts() > 0) continue;
-    if (!object->GroundTruthLabel()) continue;
-    if (object->HumanLabel() && strcmp(object->HumanLabel()->Name(), "Unknown")) nconfirmed++;
-    else if (object->PredictedLabel() && strcmp(object->PredictedLabel()->Name(), "Unknown")) npredicted++;
-    else nunlabeled++;
-    ntotal++;
-  }
+  DrawText(origin, buffer, font);
 
-  // Draw labeling status
-  char buffer[1024];
-  // sprintf(buffer,"SurfelSize = %.1f, Resolution = %.1f, FocusRadius = %.1f,  Complexity = %.0f, Frame rate = %.1f", 
-  //   SurfelSize(), TargetResolution(), FocusRadius(), objects.Complexity(), FrameRate());
-  sprintf(buffer, "%d confirmed (%.1f%%).   %d predicted (%.1f%%).    %d unlabeled (%.1f%%)", 
-    nconfirmed, 100.0 * nconfirmed / ntotal, npredicted, 100.0 * npredicted / ntotal, nunlabeled, 100.0 * nunlabeled / ntotal);
-  DrawText(R2Point(240, height - 32), buffer, GLUT_BITMAP_HELVETICA_18);
-#if 1
-  sprintf(buffer, "Human:     p=%5.3f, r=%5.3f, f=%5.3f", HumanLabelPrecision(), HumanLabelRecall(), HumanLabelFMeasure());
-  DrawText(R2Point(240, height - 64), buffer, GLUT_BITMAP_HELVETICA_18);
-  sprintf(buffer, "Predicted: p=%5.3f, r=%5.3f, f=%5.3f", PredictedLabelPrecision(), PredictedLabelRecall(), PredictedLabelFMeasure());
-  DrawText(R2Point(240, height - 96), buffer, GLUT_BITMAP_HELVETICA_18);
-#endif
-#endif
-  
   // Reset OpenGL modes
   glDepthMask(TRUE);
   glEnable(GL_DEPTH_TEST);
@@ -3593,16 +3567,8 @@ PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift
 // LABEL MENU
 ////////////////////////////////////////////////////////////////////////
 
-// Global variables so that DrawLabelMenu and PickLabelMenu agree
-// Should be in R3SurfelLabeler class
-static int label_text_offset;
-static int label_text_spacing;
-static int label_text_width;
-static void *label_font;
-
-
 static int
-NLeafLabels(R3SurfelScene *scene)
+NLabelMenuItems(R3SurfelScene *scene)
 {
   // Count leaf labels
   int count = 0;
@@ -3613,8 +3579,54 @@ NLeafLabels(R3SurfelScene *scene)
     count++;
   }
 
-  // Return number of leaf labels
-  return count;
+  // Return number of leaf labels, plus one for "All"
+  return count + 1;
+}
+
+
+
+R2Box R3SurfelLabeler::
+LabelMenuBBox(void) const
+{
+  // Update dimension parameters of label menu
+  ((R3SurfelLabeler *) this)->UpdateLabelMenu();
+  
+  // Determine bbox of entire label menu
+  int nitems = NLabelMenuItems(scene);
+  int height = viewer.Viewport().Height();
+  double x1 = label_menu_item_height / 2;
+  double x2 = x1 + label_menu_item_width;
+  double y2 = height - label_menu_item_height / 2;
+  double y1 = y2 - nitems * label_menu_item_height;
+  return R2Box(x1, y1, x2, y2);
+}
+
+
+
+void R3SurfelLabeler::
+UpdateLabelMenu(void)
+{
+  // Set size variables based on window size
+  int nitems = NLabelMenuItems(scene);
+  int height = viewer.Viewport().Height();
+  label_menu_font = GLUT_BITMAP_TIMES_ROMAN_24;
+  label_menu_item_height = 28;
+  label_menu_item_width = 260;
+  if (height < label_menu_item_height * nitems) {
+    label_menu_font = GLUT_BITMAP_HELVETICA_18;
+    label_menu_item_height = 24;
+    label_menu_item_width = 240;
+  }
+  if ((nitems <= 2) || (height < label_menu_item_height * nitems)) {
+    label_menu_font = GLUT_BITMAP_HELVETICA_12;
+    label_menu_item_height = 18;
+    label_menu_item_width = 190;
+  }
+  if (height < label_menu_item_height * nitems) {
+    label_menu_font = GLUT_BITMAP_HELVETICA_10;
+    label_menu_item_height = 14;
+    label_menu_item_width = 140;
+  }
 }
 
 
@@ -3628,33 +3640,14 @@ DrawLabelMenu(void) const
   // Get convenient variables
   int width = viewer.Viewport().Width();
   int height = viewer.Viewport().Height();
-  char buffer[2048];
 
-  // Set spacing variables based on window size
-  int nslots = NLeafLabels(scene) + 2;
-  label_font = GLUT_BITMAP_TIMES_ROMAN_24;
-  label_text_offset = 3;
-  label_text_spacing = 28;
-  label_text_width = 260;
-  if (height < label_text_spacing * nslots) {
-    label_font = GLUT_BITMAP_HELVETICA_18;
-    label_text_offset = 3;
-    label_text_spacing = 24;
-    label_text_width = 240;
-  }
-  if ((nslots <= 3) || (height < label_text_spacing * nslots)) {
-    label_font = GLUT_BITMAP_HELVETICA_12;
-    label_text_offset = 3;
-    label_text_spacing = 18;
-    label_text_width = 190;
-  }
-  if (height < label_text_spacing * nslots) {
-    label_font = GLUT_BITMAP_HELVETICA_10;
-    label_text_offset = 2;
-    label_text_spacing = 14;
-    label_text_width = 140;
-  }
-
+  // Get label menu dimension parameters
+  // Note: this must match PickLabelMenu
+  R2Box menu_bbox = LabelMenuBBox();
+  int small_gap = label_menu_item_height / 8;
+  int x = menu_bbox.XMin();
+  int y = menu_bbox.YMax() - label_menu_item_height;
+  
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
   glColor3f(0,0,0);
@@ -3670,27 +3663,26 @@ DrawLabelMenu(void) const
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
 
-  // Set upper left corner of menu
-  int x = 16;
-  int y = height - 2*label_text_spacing;
-
   // Check if all labels are visible
   int all_visible = 1;
   for (int i = 0; i < scene->NLabels(); i++) {
     if (!LabelVisibility(i)) { all_visible = 0; break; }
   }
 
-  // Draw "All" visibility box and "Label" header
-  R2Box visibility_box(x, y+label_text_offset, x+15, y+label_text_spacing - 2*label_text_offset);
+  // Draw "All" visibility box and "All Labels" header
+  // Note: this must match PickLabelMenu
+  R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
+  R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
+  R2Point visibility_origin(visibility_box[0][0] + small_gap, visibility_box[0][1] + small_gap);
+  R2Point name_origin(name_box[0][0]+small_gap, name_box[0][1]+small_gap);
   if (all_visible) glColor4d(1, 1, 1, 0.5);
   else glColor4d(0, 0, 0, 0.5);
   visibility_box.Draw();
   glColor4d(1, 1, 1, 1);
   visibility_box.Outline();
-  R2Point visibility_origin(visibility_box[0][0]+2, visibility_box[0][1]);
-  DrawText(visibility_origin, "v", label_font); 
-  DrawText(R2Point(x+20, y+label_text_offset), "All Labels", label_font); 
-  y -= label_text_spacing;
+  DrawText(visibility_origin, "v", label_menu_font); 
+  DrawText(name_origin, "All Labels", label_menu_font); 
+  y -= label_menu_item_height;
 
   // Draw labels
   for (int i = 0; i < scene->NLabels(); i++) {
@@ -3698,11 +3690,12 @@ DrawLabelMenu(void) const
     if (label->NParts() > 0) continue;
     if (!strcmp(label->Name(), "Root")) continue;
 
-    // Get label info
+    // Get label placement info
     // Note: this must match PickLabelMenu
-    R2Box visibility_box(x, y+label_text_offset, x+15, y+label_text_spacing-2*label_text_offset);
-    R2Box count_box(x, y, x+15, y+15);
-    R2Box name_box(x+20, y, x + label_text_width, y + label_text_spacing - label_text_offset);
+    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
+    R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
+    R2Point visibility_origin(visibility_box[0][0], visibility_box[0][1]);
+    R2Point name_origin(name_box[0][0]+small_gap, name_box[0][1]+small_gap);
     RNRgb color = label->Color();
 
     // Get label hierarchy level
@@ -3713,22 +3706,6 @@ DrawLabelMenu(void) const
       level++; 
     }
 
-#if 0
-    // Compute label assignment count
-    int count = 0;
-    for (int i = 0; i < label->NLabelAssignments(); i++) {
-      R3SurfelLabelAssignment *assignment = label->LabelAssignment(i);
-      if (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
-      count++;
-    }
-
-    // Draw label assignment count
-    glColor4d(color[0], color[1], color[2], 1);
-    sprintf(buffer, "%d", count);
-    R2Point count_origin(count_box[0][0]-8, count_box[0][1]+4);
-    DrawText(count_origin, buffer, label_font); 
-#endif
-
     // Draw visibility box
     if (LabelVisibility(label)) glColor4d(1, 1, 1, 0.5);
     else glColor4d(0, 0, 0, 0.5);
@@ -3736,8 +3713,7 @@ DrawLabelMenu(void) const
     glColor4d(color[0], color[1], color[2], 1);
     visibility_box.Outline();
     glColor4d(color[0] + 0.5, color[1] + 0.5, color[2] + 0.5, 1);
-    R2Point visibility_origin(visibility_box[0][0]+2, visibility_box[0][1]);
-    DrawText(visibility_origin, "v", label_font); 
+    DrawText(visibility_origin, "v", label_menu_font); 
 
     // Draw label box
     glColor3d(0.0, 0.0, 0.0);
@@ -3746,27 +3722,28 @@ DrawLabelMenu(void) const
     name_box.Outline();
 
     // Draw label name 
+    char buffer[2048];
     int key = label->AssignmentKeystroke();
     char prefix[1024] = { '\0' };
     for (int j = 0; j < level; j++) strcat(prefix, " ");
     if (isalpha(key)) sprintf(buffer, "%s%s (%c)", prefix, label->Name(), key);
     else sprintf(buffer, "%s%s", prefix, label->Name());
-    R2Point name_origin(name_box[0][0]+label_text_offset, name_box[0][1]+label_text_offset);
     glColor3d(1.5*color[0], 1.5*color[1], 1.5*color[2]);
-    DrawText(name_origin, buffer, label_font); 
+    DrawText(name_origin, buffer, label_menu_font); 
 
     // Update location
-    y -= label_text_spacing;
-    if (y < label_text_spacing) {
+    // Note: this must match PickLabelMenu
+    y -= label_menu_item_height;
+    if (y < label_menu_item_height) {
       break; // temporary -- so doesn't wrap
-      y = height - 2 * label_text_spacing;
-      x += 16 + label_text_width;
+      y = menu_bbox.YMax() - label_menu_item_height;
+      x += 2*small_gap + label_menu_item_width;
     }
   }
 
-  // Draw box around labels
+  // Draw box around menu
   glColor4d(1, 0, 0, 1);
-  R2Box(8, y + label_text_spacing - 8, x + label_text_width + 8, height - label_text_spacing).Outline();
+  menu_bbox.Outline();
 
   // Reset OpenGL modes
   glDisable(GL_BLEND);
@@ -3789,21 +3766,22 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
   // Only process left-button down clicks
   if (button != 0) return 0;
   if (state != 0) return 0;
-
-  // Get convenient variables
-  // Note: this must match DrawLabelMenu
   R2Point cursor(xcursor, ycursor);
-  int height = viewer.Viewport().Height();
-  int x = 16;
-  int y = height - 2*label_text_spacing;
 
+  // Get label menu dimension parameters
+  // Note: this must match DrawLabelMenu
+  R2Box menu_bbox = LabelMenuBBox();
+  int small_gap = label_menu_item_height / 8;
+  int x = menu_bbox.XMin();
+  int y = menu_bbox.YMax() - label_menu_item_height;
+  
   // Pick "All" visibility box 
-  R2Box visibility_box(x, y+label_text_offset, x+15, y+label_text_spacing - 2*label_text_offset);
+  R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
   if (R2Contains(visibility_box, cursor)) {
     // Toggle all
     SetLabelVisibility(-1, -1);
   }
-  y -= label_text_spacing;
+  y -= label_menu_item_height;
 
   // Pick label
   for (int i = 0; i < scene->NLabels(); i++) {
@@ -3813,8 +3791,8 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
 
     // Get label info
     // Note: this must match DrawLabelMenu
-    R2Box visibility_box(x, y+label_text_offset, x+15, y+label_text_spacing-2*label_text_offset);
-    R2Box name_box(x+20, y, x + label_text_width, y + label_text_spacing - label_text_offset);
+    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
+    R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
 
     // Process command
     if (R2Contains(visibility_box, cursor)) {
@@ -3839,11 +3817,12 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
     }
 
     // Update location
-    y -= label_text_spacing;
-    if (y < label_text_spacing) {
+    // Note: this must match DrawLabelMenu
+    y -= label_menu_item_height;
+    if (y < label_menu_item_height) {
       break; // temporary -- so doesn't wrap
-      y = height - 2 * label_text_spacing;
-      x += 16 + label_text_width;
+      y = menu_bbox.YMax() - label_menu_item_height;
+      x += 2*small_gap + label_menu_item_width;
     }
   }
 
