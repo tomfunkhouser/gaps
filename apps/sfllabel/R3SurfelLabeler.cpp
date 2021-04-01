@@ -3629,7 +3629,7 @@ DrawLabelMenu(void) const
   int nslots = NLeafLabels(scene) + 2;
   label_font = GLUT_BITMAP_TIMES_ROMAN_24;
   label_text_offset = 3;
-  label_text_spacing = 30;
+  label_text_spacing = 28;
   label_text_width = 260;
   if (height < label_text_spacing * nslots) {
     label_font = GLUT_BITMAP_HELVETICA_18;
