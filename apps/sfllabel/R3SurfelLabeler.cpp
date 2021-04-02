@@ -3773,7 +3773,7 @@ DrawLabelMenu(void) const
     for (int j = 0; j < level; j++) strcat(prefix, " ");
     if (isalpha(key)) sprintf(buffer, "%s%s (%c)", prefix, label->Name(), key);
     else sprintf(buffer, "%s%s", prefix, label->Name());
-    glColor3d(1.5*color[0], 1.5*color[1], 1.5*color[2]);
+    RNLoadRgb(RNgray_rgb + 0.5*color);
     DrawText(name_origin, buffer, label_menu_font); 
 
     // Update location
