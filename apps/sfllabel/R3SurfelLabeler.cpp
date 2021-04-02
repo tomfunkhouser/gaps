@@ -3745,11 +3745,11 @@ DrawLabelMenu(void) const
 
     // Get label hierarchy level
     int level = 0;
-    R3SurfelLabel *ancestor = label->Parent();
-    while (ancestor) { 
-      ancestor = ancestor->Parent(); 
-      level++; 
-    }
+    // R3SurfelLabel *ancestor = label->Parent();
+    // while (ancestor) { 
+    //   ancestor = ancestor->Parent(); 
+    //   level++; 
+    // }
 
     // Draw visibility box
     if (LabelVisibility(label)) glColor4d(1, 1, 1, 0.5);
