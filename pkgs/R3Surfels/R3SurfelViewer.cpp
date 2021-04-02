@@ -1056,7 +1056,6 @@ DrawObjectBBoxes(void) const
   RNLoadRgb(object_bbox_color);
   for (int i = 0; i < scene->NObjects(); i++) {
     R3SurfelObject *object = scene->Object(i);
-    if (object->NParts() > 0) continue;
     object->BBox().Outline();
   }
 }
