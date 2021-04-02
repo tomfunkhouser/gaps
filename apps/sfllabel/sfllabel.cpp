@@ -273,10 +273,10 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-dynamic_cache")) { 
         dynamic_cache = 1;
       }      
-      else if (!strcmp(*argv, "-input_pixel_database_filename")) { 
+      else if (!strcmp(*argv, "-pixel_database")) { 
         argv++; argc--; input_pixel_database_filename = *argv;
       }
-      else if (!strcmp(*argv, "-input_image_directory")) { 
+      else if (!strcmp(*argv, "-image_directory")) { 
         argv++; argc--; input_image_directory = *argv;
       }
       else if (!strcmp(*argv, "-history")) { 
