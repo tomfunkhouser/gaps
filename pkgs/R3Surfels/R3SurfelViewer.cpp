@@ -55,6 +55,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     human_labeled_object_visibility(1),
     object_property_visibility(0),
     object_relationship_visibility(0),
+    object_bbox_visibility(0),
     node_bbox_visibility(0),
     block_bbox_visibility(0),
     scan_viewpoint_visibility(0),
@@ -70,6 +71,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     normal_color(0,1,0),
     background_color(0,0,0),
     object_property_color(0,1,1),
+    object_bbox_color(0,1,1),
     node_bbox_color(0,0,1),
     block_bbox_color(0,1,0),
     scan_viewpoint_color(0,1,1),
@@ -975,6 +977,7 @@ DrawNormals(void) const
   if (!normal_visibility) return;
 
   // Draw normals
+  glDisable(GL_LIGHTING);
   RNLoadRgb(normal_color);
   RNLength r = 0.00025 * scene->BBox().DiagonalRadius();
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
@@ -1013,6 +1016,7 @@ DrawObjectProperties(void) const
   if (!object_property_visibility) return;
   
   // Draw object properties
+  glDisable(GL_LIGHTING);
   RNLoadRgb(object_property_color);
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
@@ -1030,10 +1034,30 @@ DrawObjectRelationships(void) const
   if (!object_relationship_visibility) return;
   
   // Draw object relationships
+  glDisable(GL_LIGHTING);
   RNLoadRgb(1.0, 1.0, 1.0);
   for (int i = 0; i < scene->NObjectRelationships(); i++) {
     R3SurfelObjectRelationship *relationship = scene->ObjectRelationship(i);
     relationship->Draw();
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawObjectBBoxes(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!object_bbox_visibility) return;
+  
+  // Draw node bounding boxes
+  glDisable(GL_LIGHTING);
+  RNLoadRgb(object_bbox_color);
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->NParts() > 0) continue;
+    object->BBox().Outline();
   }
 }
 
@@ -1047,12 +1071,13 @@ DrawNodeBBoxes(void) const
   if (!node_bbox_visibility) return;
   
   // Draw node bounding boxes
+  glDisable(GL_LIGHTING);
   RNLoadRgb(node_bbox_color);
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
-    node->BBox().Outline();
     if (node->NParts() > 0) glColor3d(0, 1, 0);
     else glColor3d(1, 0, 0);
+    node->BBox().Outline();
   }
 }
 
@@ -1066,6 +1091,7 @@ DrawBlockBBoxes(void) const
   if (!block_bbox_visibility) return;
 
   // Draw block bounding boxes
+  glDisable(GL_LIGHTING);
   RNLoadRgb(block_bbox_color);
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
@@ -1468,6 +1494,7 @@ Redraw(void)
   DrawNormals();
   DrawObjectProperties();
   DrawObjectRelationships();
+  DrawObjectBBoxes();
   DrawNodeBBoxes();
   DrawBlockBBoxes();
   DrawImagePoints();
@@ -1677,11 +1704,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
       
     case 'B':
-      SetBlockBBoxVisibility(-1);
+      SetNodeBBoxVisibility(-1);
       break;
 
     case 'b':
-      SetNodeBBoxVisibility(-1);
+      SetObjectBBoxVisibility(-1);
       break;
 
     case 'C':

@@ -77,6 +77,7 @@ public:
   int HumanLabeledObjectVisibility(void) const;
   int ObjectPropertyVisibility(void) const;
   int ObjectRelationshipVisibility(void) const;
+  int ObjectBBoxVisibility(void) const;
   int NodeBBoxVisibility(void) const;
   int BlockBBoxVisibility(void) const;
   int ScanViewpointVisibility(void) const;
@@ -98,6 +99,7 @@ public:
   const RNRgb& NormalColor(void) const;
   const RNRgb& BackgroundColor(void) const;
   const RNRgb& ObjectPropertyColor(void) const;
+  const RNRgb& ObjectBBoxColor(void) const;
   const RNRgb& NodeBBoxColor(void) const;
   const RNRgb& BlockBBoxColor(void) const;
   const RNRgb& ScanViewpointColor(void) const;
@@ -152,6 +154,7 @@ public:
   void SetHumanLabeledObjectVisibility(int visibility);
   void SetObjectPropertyVisibility(int visibility);
   void SetObjectRelationshipVisibility(int visibility);
+  void SetObjectBBoxVisibility(int visibility);
   void SetNodeBBoxVisibility(int visibility);
   void SetBlockBBoxVisibility(int visibility);
   void SetScanViewpointVisibility(int visibility);
@@ -170,6 +173,7 @@ public:
   void SetNormalColor(const RNRgb& color);
   void SetBackgroundColor(const RNRgb& color);
   void SetObjectPropertyColor(const RNRgb& color);
+  void SetObjectBBoxColor(const RNRgb& color);
   void SetNodeBBoxColor(const RNRgb& color);
   void SetBlockBBoxColor(const RNRgb& color);
   void SetScanViewpointColor(const RNRgb& color);
@@ -241,6 +245,7 @@ public:
   void DrawNormals(void) const;
   void DrawObjectProperties(void) const;
   void DrawObjectRelationships(void) const;
+  void DrawObjectBBoxes(void) const;
   void DrawNodeBBoxes(void) const;
   void DrawBlockBBoxes(void) const;
   void DrawCenterPoint(void) const;
@@ -325,6 +330,7 @@ protected:
   int human_labeled_object_visibility;
   int object_property_visibility;
   int object_relationship_visibility;
+  int object_bbox_visibility;
   int node_bbox_visibility;
   int block_bbox_visibility;
   int scan_viewpoint_visibility;
@@ -342,6 +348,7 @@ protected:
   RNRgb normal_color;
   RNRgb background_color;
   RNRgb object_property_color;
+  RNRgb object_bbox_color;
   RNRgb node_bbox_color;
   RNRgb block_bbox_color;
   RNRgb scan_viewpoint_color;
@@ -609,6 +616,15 @@ ObjectRelationshipVisibility(void) const
 
 
 inline int R3SurfelViewer::
+ObjectBBoxVisibility(void) const
+{
+  // Return object bbox visibililty
+  return object_bbox_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
 NodeBBoxVisibility(void) const
 {
   // Return node bbox visibililty
@@ -742,6 +758,15 @@ ObjectPropertyColor(void) const
 {
   // Return object property color
   return object_property_color;
+}
+
+
+
+inline const RNRgb& R3SurfelViewer::
+ObjectBBoxColor(void) const
+{
+  // Return object bbox color
+  return object_bbox_color;
 }
 
 
@@ -1066,6 +1091,17 @@ SetObjectRelationshipVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
+SetObjectBBoxVisibility(int visibility)
+{
+  // Set object bbox visibililty
+  if (visibility == -1) object_bbox_visibility = 1 - object_bbox_visibility;
+  else if (visibility == 0) object_bbox_visibility = 0;
+  else object_bbox_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
 SetNodeBBoxVisibility(int visibility)
 {
   // Set node bbox visibililty
@@ -1222,6 +1258,15 @@ SetObjectPropertyColor(const RNRgb& color)
 {
   // Set object property color
   object_property_color = color;
+}
+
+
+
+inline void R3SurfelViewer::
+SetObjectBBoxColor(const RNRgb& color)
+{
+  // Set object bbox color
+  object_bbox_color = color;
 }
 
 
