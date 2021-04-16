@@ -3891,11 +3891,11 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
       if (ctrl) {
         // Toggle all except selected label
         SetLabelVisibility(-1, -1);
-        SetLabelVisibility(i, -1);
+        SetLabelVisibility(label->SceneIndex(), -1);
       }
       else {
         // Toggle selected label
-        SetLabelVisibility(i, -1);
+        SetLabelVisibility(label->SceneIndex(), -1);
       }
 
       EndCommand();
