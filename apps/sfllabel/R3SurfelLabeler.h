@@ -30,8 +30,8 @@ public:
   int Redraw(void);
   int Resize(int width, int height);
   int MouseMotion(int x, int y);
-  int MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
-  int Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+  int MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point = 1);
+  int Keyboard(int x, int y, int key, int shift, int ctrl, int alt);
 
 
   //////////////////

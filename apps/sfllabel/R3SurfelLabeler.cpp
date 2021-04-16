@@ -357,10 +357,10 @@ MouseMotion(int x, int y)
 
 
 int R3SurfelLabeler::
-MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
+MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point)
 {
   // Send event to viewer
-  RNBoolean update_center_point = !R2Contains(LabelMenuBBox(), R2Point(x,y));
+  update_center_point &= !R2Contains(LabelMenuBBox(), R2Point(x,y));
   int redraw = R3SurfelViewer::MouseButton(x, y, button, state, shift, ctrl, alt, update_center_point);
 
   // Process mouse button event
@@ -535,7 +535,7 @@ MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl
 
 
 int R3SurfelLabeler::
-Keyboard(int x, int y, int key, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
+Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 {
   // Do not redraw by default
   int redraw = 0;
