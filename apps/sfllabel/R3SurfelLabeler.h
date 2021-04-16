@@ -277,6 +277,7 @@ protected:
   int command_menu_visibility;
 
   // Label menu
+  RNArray<R3SurfelLabel *> label_menu_list;
   int label_menu_visibility;
   int label_menu_item_width;
   int label_menu_item_height;

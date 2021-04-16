@@ -42,6 +42,7 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     message_visibility(1),
     status_visibility(1),
     command_menu_visibility(0),
+    label_menu_list(),
     label_menu_visibility(1),
     label_menu_item_width(190),
     label_menu_item_height(14),
@@ -359,7 +360,8 @@ int R3SurfelLabeler::
 MouseButton(int x, int y, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 {
   // Send event to viewer
-  int redraw = R3SurfelViewer::MouseButton(x, y, button, state, shift, ctrl, alt);
+  RNBoolean update_center_point = !R2Contains(LabelMenuBBox(), R2Point(x,y));
+  int redraw = R3SurfelViewer::MouseButton(x, y, button, state, shift, ctrl, alt, update_center_point);
 
   // Process mouse button event
   if (state == 1) { // Down
@@ -3613,19 +3615,13 @@ PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift
 ////////////////////////////////////////////////////////////////////////
 
 static int
-NLabelMenuItems(R3SurfelScene *scene)
+CompareSurfelLabelNames(const void *data1, const void *data2)
 {
-  // Count leaf labels
-  int count = 0;
-  for (int i = 0; i < scene->NLabels(); i++) {
-    R3SurfelLabel *label = scene->Label(i);
-    if (label->NParts() > 0) continue;
-    if (!strcmp(label->Name(), "Root")) continue;
-    count++;
-  }
-
-  // Return number of leaf labels, plus one for "All"
-  return count + 1;
+  R3SurfelLabel *label1 = *((R3SurfelLabel **) data1);
+  R3SurfelLabel *label2 = *((R3SurfelLabel **) data2);
+  if (!label1->Name()) return 1;
+  if (!label2->Name()) return -1;
+  return strcmp(label1->Name(), label2->Name());
 }
 
 
@@ -3637,7 +3633,7 @@ LabelMenuBBox(void) const
   ((R3SurfelLabeler *) this)->UpdateLabelMenu();
   
   // Determine bbox of entire label menu
-  int nitems = NLabelMenuItems(scene);
+  int nitems = label_menu_list.NEntries() + 1;
   int height = viewer.Viewport().Height();
   double x1 = label_menu_item_height / 2;
   double x2 = x1 + label_menu_item_width;
@@ -3651,8 +3647,22 @@ LabelMenuBBox(void) const
 void R3SurfelLabeler::
 UpdateLabelMenu(void)
 {
+  // Update label menu list
+  if (label_menu_list.IsEmpty()) {
+    // Add labels to list
+    for (int i = 0; i < scene->NLabels(); i++) {
+      R3SurfelLabel *label = scene->Label(i);
+      if (label->NParts() > 0) continue;
+      if (!strcmp(label->Name(), "Root")) continue;
+      label_menu_list.Insert(label);
+    }
+
+    // Sort list
+    label_menu_list.Sort(CompareSurfelLabelNames);
+  }
+
   // Set size variables based on window size
-  int nitems = NLabelMenuItems(scene);
+  int nitems = label_menu_list.NEntries() + 1;
   int height = viewer.Viewport().Height();
   label_menu_font = GLUT_BITMAP_TIMES_ROMAN_24;
   label_menu_item_height = 28;
@@ -3714,6 +3724,10 @@ DrawLabelMenu(void) const
     if (!LabelVisibility(i)) { all_visible = 0; break; }
   }
 
+  // Clear area behind menu
+  glColor4d(0, 0, 0, 1);
+  menu_bbox.Draw();
+
   // Draw "All" visibility box and "All Labels" header
   // Note: this must match PickLabelMenu
   R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
@@ -3730,10 +3744,8 @@ DrawLabelMenu(void) const
   y -= label_menu_item_height;
 
   // Draw labels
-  for (int i = 0; i < scene->NLabels(); i++) {
-    R3SurfelLabel *label = scene->Label(i);
-    if (label->NParts() > 0) continue;
-    if (!strcmp(label->Name(), "Root")) continue;
+  for (int i = 0; i < label_menu_list.NEntries(); i++) {
+    R3SurfelLabel *label = label_menu_list.Kth(i);
 
     // Get label placement info
     // Note: this must match PickLabelMenu
@@ -3830,10 +3842,8 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
   y -= label_menu_item_height;
 
   // Pick label
-  for (int i = 0; i < scene->NLabels(); i++) {
-    R3SurfelLabel *label = scene->Label(i);
-    if (label->NParts() > 0) continue;
-    if (!strcmp(label->Name(), "Root")) continue;
+  for (int i = 0; i < label_menu_list.NEntries(); i++) {
+    R3SurfelLabel *label = label_menu_list.Kth(i);
 
     // Get label info
     // Note: this must match DrawLabelMenu

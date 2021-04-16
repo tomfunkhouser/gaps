@@ -41,7 +41,7 @@ public:
   virtual int Redraw(void);
   virtual int Resize(int width, int height);
   virtual int MouseMotion(int x, int y);
-  virtual int MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt);
+  virtual int MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point = 1);
   virtual int Keyboard(int x, int y, int key, int shift, int ctrl, int alt);
   virtual int Idle(void);
 

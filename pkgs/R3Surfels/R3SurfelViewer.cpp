@@ -1595,7 +1595,7 @@ MouseMotion(int x, int y)
 
 
 int R3SurfelViewer::
-MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
+MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point)
 {
   // Initialize
   int redraw = 0;
@@ -1632,7 +1632,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt)
     last_mouse_down_time.Read();
 
     // Select stuff on left click 
-    if (!drag) {
+    if (!drag && update_center_point) {
       // Select image
       R3Point pick_position;
       R3SurfelImage *picked_image = PickImage(x, y, &pick_position);
