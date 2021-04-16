@@ -1089,6 +1089,12 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
     }
   }
 
+  // Set viewing center point
+  R3Box selection_bbox = ObjectSelectionBBox();
+  if (!selection_bbox.IsEmpty()) {
+    SetCenterPoint(selection_bbox.Centroid());
+  }
+  
   // End logging command
   EndCommand();
 
@@ -1171,6 +1177,12 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
     }
   }
 
+  // Set viewing center point
+  R3Box selection_bbox = ObjectSelectionBBox();
+  if (!selection_bbox.IsEmpty()) {
+    SetCenterPoint(selection_bbox.Centroid());
+  }
+  
   // End logging command
   EndCommand();
 
@@ -1340,6 +1352,12 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
     }
   }
 
+  // Set viewing center point
+  R3Box selection_bbox = ObjectSelectionBBox();
+  if (!selection_bbox.IsEmpty()) {
+    SetCenterPoint(selection_bbox.Centroid());
+  }
+  
   // End logging command
   EndCommand();
 
@@ -2938,6 +2956,22 @@ PredictedLabelFMeasure(void) const
 ////////////////////////////////////////////////////////////////////////
 // OBJECT SELECTION UTILITY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
+
+R3Box R3SurfelLabeler::
+ObjectSelectionBBox(void) const
+{
+  // Compute bbox of object selections
+  R3Box selection_bbox = R3null_box;
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *object = ObjectSelection(i);
+    selection_bbox.Union(object->BBox());
+  }
+
+  // Return bbox of object selections
+  return selection_bbox;
+}
+  
+
 
 void R3SurfelLabeler::
 InsertObjectSelection(R3SurfelObject *object) 

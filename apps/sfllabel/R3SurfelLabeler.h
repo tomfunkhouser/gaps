@@ -151,6 +151,7 @@ public:
   // Object selection functions
   int NObjectSelections(void) const;
   R3SurfelObject *ObjectSelection(int k) const;
+  R3Box ObjectSelectionBBox(void) const;
   void InsertObjectSelection(R3SurfelObject *object);
   void RemoveObjectSelection(R3SurfelObject *object);
   int EmptyObjectSelections(void);
