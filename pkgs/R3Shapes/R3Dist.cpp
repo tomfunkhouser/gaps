@@ -14,14 +14,6 @@ namespace gaps {
 
 
 
-/* Public variables */
-
-#ifdef R3_USER_DEFINED_SHAPE_TYPES
-R3DistanceFunction *R3distance_functions[R3_NUM_SHAPE_TYPES][R3_NUM_SHAPE_TYPES] = { NULL };
-#endif
-
-
-
 /* Public functions */
 
 int R3InitDistance()
@@ -1040,7 +1032,19 @@ RNLength R3Distance(const R3Shape& shape1, const R3Shape& shape2)
 
 
 
+
+////////////////////////////////////////////////////////////////////////
+
 #ifdef R3_USER_DEFINED_SHAPE_TYPES
+
+
+/* Abstract shape function type definition */
+
+#define R3_NUM_SHAPE_TYPES 32
+typedef RNLength R3DistanceFunction(const R3Shape& shape1, const R3Shape& shape2);
+R3DistanceFunction *R3distance_functions[R3_NUM_SHAPE_TYPES][R3_NUM_SHAPE_TYPES] = { NULL };
+
+
 
 RNLength R3Distance(const R3Shape& shape1, const R3Shape& shape2)
 {

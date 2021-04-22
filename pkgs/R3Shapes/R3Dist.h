@@ -142,15 +142,6 @@ RNLength R3Distance(const R3Shape& shape1, const R3Shape& shape2);
 
 
 
-/* Abstract shape function type definition */
-
-#ifdef TYPES
-#define R3_NUM_SHAPE_TYPES 32
-typedef RNLength R3DistanceFunction(const R3Shape& shape1, const R3Shape& shape2);
-#endif
-
-
-
 /* Inline functions */
 
 inline RNLength R3Distance(const R3Line& line, const R3Point& point)
