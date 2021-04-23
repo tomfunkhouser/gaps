@@ -302,7 +302,7 @@ InsertSubsetBlocks(R3SurfelBlock *block,
   if ((block->file_surfels_offset > 0) && (block->file_surfels_count > 0)) {
     block1->file_surfels_offset = block->file_surfels_offset;
     block1->file_surfels_count = block1->NSurfels();
-    block2->file_surfels_offset = block->file_surfels_offset + block1->NSurfels() * sizeof(R3Surfel);
+    block2->file_surfels_offset = block->file_surfels_offset + block1->NSurfels() * NBytesPerSurfel();
     block2->file_surfels_count = block2->NSurfels();
     block->file_surfels_offset = 0;
     block->file_surfels_count = 0;
@@ -544,9 +544,11 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
         fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
         fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
         unsigned int encoded_elevation = (attribute >> 16) & 0xFFFF;
-        float elevation = (encoded_elevation - 32768.0) / 400.0;
-        ptr[i].SetElevation(elevation);
-        ptr[i].SetAttribute(attribute & 0x0000FFFF);
+        if (encoded_elevation != 0) {
+          float elevation = (encoded_elevation - 32768.0) / 400.0;
+          ptr[i].SetElevation(elevation);
+          ptr[i].SetAttribute(attribute & 0x0000FFFF);
+        }
       }
     }
     else if (major_version == 4) {
@@ -606,6 +608,29 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
 
 
 int R3SurfelDatabase::
+NBytesPerSurfel(void) const
+{
+  // Return number of bytes per surfel
+  if (major_version == current_major_version) {
+    return sizeof(R3Surfel);
+  }
+  else {
+    switch (major_version) {
+    case 6: return 48;
+    case 5: return 44;
+    case 4: return 40;
+    case 3: return 24;
+    default: return 16;
+    }
+  }
+
+  // Should never get here
+  return sizeof(R3Surfel);
+}
+
+
+
+int R3SurfelDatabase::
 WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian, 
   unsigned int major_version, unsigned int minor_version) const
 {
@@ -640,7 +665,8 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   else {
     if (major_version == 5) {
       for (int i = 0; i < count; i++) {
-        unsigned int encoded_elevation = 400 * ptr[i].Elevation() + 32768;
+        unsigned int encoded_elevation = 0;
+        if (ptr[i].Elevation() != 0) encoded_elevation = 400 * ptr[i].Elevation() + 32768;
         RNUInt32 attribute = (ptr[i].Attribute() & 0x0000FFFF) | (encoded_elevation << 16);
         fwrite(ptr[i].position, sizeof(RNScalar32), 3, fp);
         fwrite(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
@@ -1124,7 +1150,7 @@ SyncFile(void)
     file_blocks_offset = 0;
     for (int i = 0; i < blocks.NEntries(); i++) {
       R3SurfelBlock *block = blocks.Kth(i);
-      unsigned long long offset = block->file_surfels_offset + block->file_surfels_count * sizeof(R3Surfel);
+      unsigned long long offset = block->file_surfels_offset + block->file_surfels_count * NBytesPerSurfel();
       if (offset > file_blocks_offset) file_blocks_offset = offset;
     }
 

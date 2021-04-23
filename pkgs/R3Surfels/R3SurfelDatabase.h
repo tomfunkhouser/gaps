@@ -35,8 +35,10 @@ public:
   ////////////////////////////
 
   // Property functions
-  long long NSurfels(void) const;
   const char *Name(void) const;
+  long long NSurfels(void) const;
+  unsigned int MajorVersion(void) const;
+  unsigned int MinorVersion(void) const;
 
   // Geometric property functions
   const R3Box& BBox(void) const;
@@ -148,6 +150,9 @@ public:
   // Internal block manipulation functions
   virtual int PurgeDeletedBlocks(void);
 
+  // Internal surfel size functions
+  int NBytesPerSurfel(void) const;
+
 protected:
   // Internal block I/O functions
   virtual int InternalReadBlock(R3SurfelBlock *block, FILE *fp, int swap_endian);
@@ -192,11 +197,38 @@ protected:
 // INLINE FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
 
+inline const char *R3SurfelDatabase::
+Name(void) const
+{
+  // Return name
+  return name;
+}
+
+
+
 inline long long R3SurfelDatabase::
 NSurfels(void) const
 {
   // Return total number of surfels in all blocks
   return nsurfels;
+}
+
+
+
+inline unsigned int R3SurfelDatabase::
+MajorVersion(void) const
+{
+  // Return major version
+  return major_version;
+}
+
+
+
+inline unsigned int R3SurfelDatabase::
+MinorVersion(void) const
+{
+  // Return minor version
+  return minor_version;
 }
 
 
@@ -233,15 +265,6 @@ MaxIdentifier(void) const
 {
   // Return maximum identifier in database
   return max_identifier;
-}
-
-
-
-inline const char *R3SurfelDatabase::
-Name(void) const
-{
-  // Return name
-  return name;
 }
 
 

@@ -255,6 +255,7 @@ PrintInfo(R3SurfelScene *scene)
   const R3Point& centroid = scene->Centroid();
   printf("Scene:\n");
   printf("  Name = %s\n", (scene->Name()) ? scene->Name() : "None");
+  printf("  Version = %d.%d\n", database->MajorVersion(), database->MinorVersion());
   printf("  Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
   printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
   printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
