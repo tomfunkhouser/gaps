@@ -53,6 +53,12 @@ public:
   float Radius(void) const;
   float Radius(int axis) const;
 
+  // Depth property functions
+  RNLength Depth(void) const;
+
+  // Elevation property functions
+  RNLength Elevation(void) const;
+
   // Timestamp property functions
   RNScalar Timestamp(void) const;
 
@@ -95,6 +101,8 @@ public:
   void SetRadius(float radius);
   void SetRadius(int axis, float radius);
   void SetColor(const RNRgb& color);
+  void SetDepth(RNLength depth);
+  void SetElevation(RNLength elevation);
   void SetTimestamp(RNScalar timestamp);
   void SetIdentifier(unsigned int identifier);
   void SetAttribute(unsigned int attribute);
@@ -334,6 +342,24 @@ Rgb(void) const
 {
   // Return RGB
   return surfel->Rgb();
+}
+
+
+
+inline RNLength R3SurfelPoint::
+Depth(void) const
+{
+  // Return depth of surfel
+  return surfel->Depth();
+}
+
+
+
+inline RNLength R3SurfelPoint::
+Elevation(void) const
+{
+  // Return elevation of surfel
+  return surfel->Elevation();
 }
 
 

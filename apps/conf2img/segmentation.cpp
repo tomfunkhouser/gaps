@@ -35,11 +35,13 @@ double max_cluster_primitive_distance = 0.01;
 double max_cluster_normal_angle = RN_PI / 4.0;
 double max_cluster_color_difference = 0.5;
 double max_cluster_timestamp_difference = 0;
+double max_cluster_category_difference = 0;
 double max_pair_centroid_distance = 16;
 double max_pair_primitive_distance = 0.01;
 double max_pair_normal_angle = RN_PI / 4.0;
 double max_pair_color_difference = 0.5;
 double max_pair_timestamp_difference = 0;
+double max_pair_category_difference = 0;
 double min_pair_affinity = RN_EPSILON;
 int max_refinement_iterations = 3;
 int max_reassignment_iterations = 1;
@@ -65,11 +67,15 @@ Point(void)
     tangent(0,0,0),
     radius1(0),
     radius2(0),
+    elevation(0),
     timestamp(0),
-    identifier(0),
     area(0),
     color(0,0,0),
+    category_identifier(-1),
+    category_confidence(0),
+    attribute(0),
     boundary(0),
+    identifier(0),
     neighbors(),
     cluster(NULL),
     cluster_affinity(0),
@@ -421,6 +427,8 @@ Cluster(Point *seed_point, int primitive_type)
     area(0),
     color(0,0,0),
     timestamp(0),
+    category_identifier(-1),
+    category_confidence(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -431,6 +439,8 @@ Cluster(Point *seed_point, int primitive_type)
   if (seed_point) color = seed_point->color;
   if (seed_point) timestamp = seed_point->timestamp;
   if (seed_point) area = seed_point->area;
+  if (seed_point) category_identifier = seed_point->category_identifier;
+  if (seed_point) category_confidence = seed_point->category_confidence;
 }
 
 
@@ -446,6 +456,8 @@ Cluster(Point *seed_point, const Primitive& primitive)
     area(0),
     color(0,0,0),
     timestamp(0),
+    category_identifier(-1),
+    category_confidence(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -455,6 +467,8 @@ Cluster(Point *seed_point, const Primitive& primitive)
   if (seed_point) color = seed_point->color;
   if (seed_point) timestamp = seed_point->timestamp;
   if (seed_point) area = seed_point->area;
+  if (seed_point) category_identifier = seed_point->category_identifier;
+  if (seed_point) category_confidence = seed_point->category_confidence;
 }
 
 
@@ -470,6 +484,8 @@ Cluster(Cluster *child1, Cluster *child2)
     area(0),
     color(0,0,0),
     timestamp(0),
+    category_identifier(-1),
+    category_confidence(0),
     possible_affinity(0),
     total_affinity(0),
     segmentation(NULL),
@@ -486,6 +502,30 @@ Cluster(Cluster *child1, Cluster *child2)
     color += child1->points.NEntries() * child1->color;
     color += child2->points.NEntries() * child2->color;
     color /= child1->points.NEntries() + child2->points.NEntries();
+  }
+
+  // Update category info
+  if (child1->points.NEntries() + child2->points.NEntries() > 0) {
+    if (child1->category_identifier == child2->category_identifier) {
+      // Categories match -- average confidences
+      category_identifier = child1->category_identifier;
+      category_confidence += child1->points.NEntries() * child1->category_confidence;
+      category_confidence += child2->points.NEntries() * child2->category_confidence;
+      category_confidence /= child1->points.NEntries() + child2->points.NEntries();
+    }
+    else {
+      // Categories don't match -- trust larger cluster
+      if ((child2->category_identifier < 0) || (child1->points.NEntries() > child2->points.NEntries())) {
+        category_identifier = child1->category_identifier;
+        category_confidence += child1->points.NEntries() * child1->category_confidence;
+        category_confidence /= child1->points.NEntries() + child2->points.NEntries();
+      }
+      else {
+        category_identifier = child2->category_identifier;
+        category_confidence += child2->points.NEntries() * child2->category_confidence;
+        category_confidence /= child1->points.NEntries() + child2->points.NEntries();
+      }
+    }
   }
 
   // Update timestamp
@@ -651,6 +691,12 @@ InsertPoint(Point *point, RNScalar affinity)
   timestamp = (point->timestamp + points.NEntries()*timestamp) / (points.NEntries()+1);
   area += point->area;
 
+  // Update category
+  if ((category_identifier < 0) && (point->category_identifier >= 0)) {
+    category_identifier = point->category_identifier;
+    category_confidence = point->category_confidence;
+  }
+
   // Update point
   point->cluster = this;
   point->cluster_index = points.NEntries();
@@ -712,6 +758,27 @@ InsertChild(Cluster *child)
 
   // Update primitive
   primitive.Update(this->primitive, child->primitive, this->points.NEntries(), child->points.NEntries());
+
+  // Update category info
+  if (points.NEntries() + child->points.NEntries() > 0) {
+    if (category_identifier == child->category_identifier) {
+      // Categories match -- average confidences
+      category_confidence = (points.NEntries() * category_confidence + child->points.NEntries() * child->category_confidence);
+      category_confidence /= points.NEntries() + child->points.NEntries();
+    }
+    else {
+      // Categories don't match -- trust larger cluster
+      if ((child->category_identifier < 0) || (points.NEntries() > child->points.NEntries())) {
+        category_confidence = points.NEntries() * category_confidence;
+        category_confidence /= points.NEntries() + child->points.NEntries();
+      }
+      else {
+        category_identifier = child->category_identifier;
+        category_confidence += child->points.NEntries() * child->category_confidence;
+        category_confidence /= points.NEntries() + child->points.NEntries();
+      }
+    }
+  }
 
   // Update affinities for current points
   if (points.NEntries() < 4 * child->points.NEntries()) {
@@ -967,6 +1034,15 @@ Affinity(Point *point) const
     }
   }
 
+  // Check category difference
+  if (max_cluster_category_difference > 0) {
+    if (category_identifier != point->category_identifier) {
+      RNScalar min_category_confidence = (category_confidence <  point->category_confidence) ? category_confidence : point->category_confidence;
+      RNScalar category_difference_affinity = exp(min_category_confidence * min_category_confidence / (-2.0 * max_cluster_category_difference * max_cluster_category_difference));
+      affinity *= category_difference_affinity;
+    }
+  }
+
   // Check primitive distance 
   if (max_cluster_primitive_distance > 0) {
     RNLength primitive_distance = primitive.Distance(position);
@@ -1033,6 +1109,15 @@ Affinity(Cluster *cluster) const
       RNScalar timestamp_difference_affinity = exp(timestamp_difference * timestamp_difference / (-2.0 *  max_pair_timestamp_difference * max_pair_timestamp_difference));
       affinity *= timestamp_difference_affinity;
       assert(affinity >= 0);
+    }
+  }
+
+  // Check category difference
+  if (max_pair_category_difference > 0) {
+    if (category_identifier != cluster->category_identifier) {
+      RNScalar min_category_confidence = (category_confidence <  cluster->category_confidence) ? category_confidence : cluster->category_confidence;
+      RNScalar category_difference_affinity = exp(min_category_confidence * min_category_confidence / (-2.0 * max_pair_category_difference * max_pair_category_difference));
+      affinity *= category_difference_affinity;
     }
   }
 
@@ -1316,8 +1401,6 @@ AverageNeighborCount(void) const
 
 
 
-#if 1
-
 static RNScalar
 PointAffinity(
   const Point *point1, const Point *point2,
@@ -1326,17 +1409,41 @@ PointAffinity(
   double max_normal_angle,
   double max_color_difference,
   double max_timestamp_difference,
+  double max_category_difference,
   double min_affinity = 0)
 {
   // Initialize affinity
   RNScalar affinity = 1.0;
+
+  // Check category difference
+  if (max_category_difference > 0) {
+    if (point1->category_identifier != point2->category_identifier) {
+      RNScalar max_d = max_category_difference;
+      RNScalar d = (point1->category_confidence <  point2->category_confidence) ? point1->category_confidence : point2->category_confidence;
+      if (d > max_d) return 0;
+      affinity *= 1.0 - (d/max_d);
+      // affinity *= exp(d*d / (-2.0*max_d*max_d));
+      if (affinity < min_affinity) return 0;
+    }
+  }
+
+  // Check timestamp difference
+  if (max_timestamp_difference > 0) {
+    RNScalar max_d = max_timestamp_difference;
+    RNLength d = fabs(point1->timestamp - point2->timestamp);
+    if (d > max_d) return 0;
+    // affinity *= exp(d*d / (-2.0*max_d*max_d));
+    affinity *= 1.0 - (d/max_d);
+    if (affinity < min_affinity) return 0;
+  }
 
   // Check distance
   if (max_distance > 0) {
     RNScalar max_dd = max_distance * max_distance;
     RNScalar dd = R3SquaredDistance(point1->position, point2->position);
     if (dd > max_dd) return 0;
-    affinity *= exp(dd / (-2.0 * max_dd));
+    // affinity *= exp(dd / (-2.0 * max_dd));
+    affinity *= 1.0 - (dd/max_dd);
     if (affinity < min_affinity) return 0;
   }
 
@@ -1347,8 +1454,10 @@ PointAffinity(
     if (d1 > max_d) return 0;
     RNLength d2 = R3Distance(R3Plane(point2->position, point2->normal), point1->position);
     if (d2 > max_d) return 0;
-    affinity *= exp(d1*d1 / (-2.0 * 0.25 * max_d * max_d));
-    affinity *= exp(d2*d2 / (-2.0 * 0.25 * max_d * max_d));
+    // affinity *= exp(d1*d1 / (-2.0 * 0.25 * max_d * max_d));
+    // affinity *= exp(d2*d2 / (-2.0 * 0.25 * max_d * max_d));
+    affinity *= 1.0 - (d1/max_d);
+    affinity *= 1.0 - (d2/max_d);
     if (affinity < min_affinity) return 0;
   }
 
@@ -1358,7 +1467,8 @@ PointAffinity(
     RNScalar dot = point1->normal.Dot(point2->normal);
     RNAngle a = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
     if (a > max_a) return 0;
-    affinity *= exp(a*a / (-2.0 * 0.25 * max_a * max_a));
+    // affinity *= exp(a*a / (-2.0 * 0.25 * max_a * max_a));
+    affinity *= 1.0 - (a/max_a);
     if (affinity < min_affinity) return 0;
   }
 
@@ -1370,20 +1480,13 @@ PointAffinity(
     d += fabs(point1->color.G() - point2->color.G());
     d += fabs(point1->color.B() - point2->color.B());
     if (d > max_d) return 0;
-    affinity *= exp(d*d / (-2.0*0.25*max_d*max_d));
-    if (affinity < min_affinity) return 0;
-  }
-
-  // Check timestamp difference
-  if (max_timestamp_difference > 0) {
-    RNScalar max_d = max_timestamp_difference;
-    RNLength d = fabs(point1->timestamp - point2->timestamp);
-    if (d > max_d) return 0;
-    affinity *= exp(d*d / (-2.0*max_d*max_d));
+    // affinity *= exp(d*d / (-2.0*0.25*max_d*max_d));
+    affinity *= 1.0 - (d/max_d);
     if (affinity < min_affinity) return 0;
   }
 
   // Just checking
+  assert(affinity <= 1);
   assert(affinity >= 0);
 
   // Return affinity
@@ -1391,6 +1494,8 @@ PointAffinity(
 }
 
 
+
+#if 0
 
 int Segmentation::
 CreateNeighbors(
@@ -1401,6 +1506,7 @@ CreateNeighbors(
   double max_neighbor_color_difference,
   double max_neighbor_distance_factor,
   double max_neighbor_timestamp_difference,
+  double max_neighbor_category_difference,
   RNBoolean partition_identifiers)
 {
   // Compute bounding box
@@ -1426,9 +1532,9 @@ CreateNeighbors(
   if (zlength < max_neighbor_distance) zlength = max_neighbor_distance;
 
   // Compute grid resolution
-  int xres = xlength / max_neighbor_distance + RN_EPSILON;
-  int yres = ylength / max_neighbor_distance + RN_EPSILON;
-  int zres = zlength / max_neighbor_distance + RN_EPSILON;
+  int xres = 2 * xlength / max_neighbor_distance + RN_EPSILON;
+  int yres = 2 * ylength / max_neighbor_distance + RN_EPSILON;
+  int zres = 2 * zlength / max_neighbor_distance + RN_EPSILON;
   if (xres > 512) xres = 512;
   if (yres > 512) yres = 512;
   if (zres > 512) zres = 512;
@@ -1458,12 +1564,16 @@ CreateNeighbors(
     for (int cy = 0; cy < yres; cy++ ) {
       for (int cx = 0; cx < xres; cx++ ) {
         // Get array of points
-        const RNArray<Point *>& points = cells[cz*xres*yres + cy*xres + cx];
-        if (points.IsEmpty()) continue;
+        const RNArray<Point *>& cell_points = cells[cz*xres*yres + cy*xres + cx];
+        if (cell_points.IsEmpty()) continue;
+        double radius_sum = 0;
+        int cell_count = 0;
+        int point_count = 0;
+        int neighbor_count = 0;
         
         // Create neighbors for each point
-        for (int i = 0; i < points.NEntries(); i++) {
-          Point *point = points.Kth(i);
+        for (int i = 0; i < cell_points.NEntries(); i++) {
+          Point *point = cell_points.Kth(i);
 
           // Refine maximum distance for this point
           RNScalar max_d = max_neighbor_distance;
@@ -1471,67 +1581,93 @@ CreateNeighbors(
              max_d = max_neighbor_distance_factor * point->radius1;
           if (max_d == 0) max_d = 10 * point->radius1;
           if (max_d == 0) max_d = 1;
-
+          radius_sum += max_d;
+          
           // Compute search window based on max_d
           int max_dz = zscale*max_d + 1;
           int max_dy = yscale*max_d + 1;
           int max_dx = xscale*max_d + 1;
-          
-          // Check candidate neighbor points
-          for (int dz = -max_dz; dz <= max_dz; dz++) {
-            int iz = cz + dz;
-            if ((iz < 0) || (iz >= zres)) continue;
-            for (int dy = -max_dy; dy <= max_dy; dy++) {
-              int iy = cy + dy;
-              if ((iy < 0) || (iy >= yres)) continue;
-              for (int dx = -max_dx; dx <= max_dx; dx++) {
-                int ix = cx + dx;
-                if ((ix < 0) || (ix >= xres)) continue;
 
-                // Find neighbors with highest affinity
-                double min_affinity = 0;
-                const RNArray<Point *>& neighbors = cells[iz*xres*yres + iy*xres + ix];
-                for (int j = 0; j < neighbors.NEntries(); j++) {
-                  Point *neighbor = neighbors.Kth(j);
+          // Find neighbor points
+          // by searching neighbor cells (closest to furthest)
+          double min_affinity = 0;
+          for (int dz = 0; dz <= max_dz; dz++) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+              if ((dz == 0) && (sz == -1)) continue;
+              int iz = cz + sz*dz;
+              if ((iz < 0) || (iz >= zres)) continue;
+              for (int dy = 0; dy <= max_dy; dy++) {
+                for (int sy = -1; sy <= 1; sy += 2) {
+                  if ((dy == 0) && (sy == -1)) continue;
+                  int iy = cy + sy*dy;
+                  if ((iy < 0) || (iy >= yres)) continue;
+                  for (int dx = 0; dx <= max_dx; dx++) {
+                    for (int sx = -1; sx <= 1; sx += 2) {
+                      if ((dx == 0) && (sx == -1)) continue;
+                      int ix = cx + sx*dx;
+                      if ((ix < 0) || (ix >= xres)) continue;
 
-                  // Check identifier
-                  if (partition_identifiers) {
-                    if (point->identifier != neighbor->identifier) continue;
-                  }
+                      // Get points from cell
+                      const RNArray<Point *> &neighbors = cells[iz*xres*yres + iy*xres + ix];
+                      cell_count++;
 
-                  // Compute affinity
-                  RNScalar affinity = PointAffinity(point, neighbor,
-                    max_neighbor_distance, max_neighbor_primitive_distance,
-                    max_neighbor_normal_angle, max_neighbor_color_difference,
-                    max_neighbor_timestamp_difference, min_affinity);
-                  if (affinity <= min_affinity) continue;
+                      // Find neighbors with highest affinity
+                      for (int j = 0; j < neighbors.NEntries(); j++) {
+                        Point *neighbor = neighbors.Kth(j);
+                        point_count++;
 
-                  // Insert neighbor
-                  if (max_neighbor_count > 0) {
-                    // Find slot for neighbor in list sorted by affinity
-                    int slot = point->neighbors.NEntries();
-                    while (slot > 0) {
-                      RNScalar s_affinity = point->neighbors[slot-1]->cluster_affinity;
-                      if (s_affinity > affinity) break;
-                      slot--;
+                        // Check identifier
+                        if (partition_identifiers) {
+                          if (point->identifier != neighbor->identifier) continue;
+                        }
+
+                        // Compute affinity
+                        RNScalar affinity = PointAffinity(point, neighbor,
+                          max_d, max_neighbor_primitive_distance,
+                          max_neighbor_normal_angle, max_neighbor_color_difference,
+                          max_neighbor_timestamp_difference,
+                          max_neighbor_category_difference, min_affinity);
+                        if (affinity <= min_affinity) continue;
+                        neighbor_count++;
+                        
+                        // Insert neighbor
+                        if (max_neighbor_count > 0) {
+                          // Find slot for neighbor in list sorted by affinity
+                          int slot = point->neighbors.NEntries();
+                          while (slot > 0) {
+                            RNScalar s_affinity = point->neighbors[slot-1]->cluster_affinity;
+                            if (s_affinity > affinity) break;
+                            slot--;
+                          }
+                          if (slot < max_neighbor_count) {
+                            neighbor->cluster_affinity = affinity;
+                            point->neighbors.InsertKth(neighbor, slot);
+                            point->neighbors.Truncate(max_neighbor_count);
+                          }
+                          if (point->neighbors.NEntries() == max_neighbor_count) {
+                            min_affinity = point->neighbors[point->neighbors.NEntries()-1]->cluster_affinity;
+                          }
+                        }
+                        else {
+                          // Insert neighbor at end of growing list
+                          point->neighbors.Insert(neighbor);
+                        }
+                      }
                     }
-                    if (slot < max_neighbor_count) {
-                      neighbor->cluster_affinity = affinity;
-                      point->neighbors.InsertKth(neighbor, slot);
-                      point->neighbors.Truncate(max_neighbor_count);
-                    }
-                    if (point->neighbors.NEntries() == max_neighbor_count) {
-                      min_affinity = point->neighbors[point->neighbors.NEntries()-1]->cluster_affinity;
-                    }
-                  }
-                  else {
-                    // Insert neighbor at end of growing list
-                    point->neighbors.Insert(neighbor);
                   }
                 }
               }
             }
           }
+        }
+
+        if (0 && !cell_points.IsEmpty()) {
+          printf("%d %d %d/%d: %d : %8.2f %8.2f %8.2f %8.2f\n",
+            cx, cy, cz, zres, cell_points.NEntries(),
+            radius_sum / (double) cell_points.NEntries(),
+            (double) cell_count / (double) cell_points.NEntries(),
+            (double) point_count / (double) cell_points.NEntries(),
+            (double) neighbor_count / (double) cell_points.NEntries());
         }
       }
     }
@@ -1560,7 +1696,9 @@ CreateNeighbors(
   double max_neighbor_normal_angle,
   double max_neighbor_color_difference,
   double max_neighbor_distance_factor,
-  double max_neighbor_timestamp_difference)
+  double max_neighbor_timestamp_difference,
+  double max_neighbor_category_difference,
+  RNBoolean partition_identifiers)
 {
   // Create kdtree of points
   Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
@@ -1573,41 +1711,68 @@ CreateNeighbors(
   // Create arrays of neighbor points
   for (int i = 0; i < points.NEntries(); i++) {
     Point *point = points.Kth(i);
+
+    // Refine maximum distance for this point
+    RNScalar max_d = max_neighbor_distance;
+    if ((max_neighbor_distance_factor > 0) && (point->radius1 > 0)) 
+      max_d = max_neighbor_distance_factor * point->radius1;
+    if (max_d == 0) max_d = 10 * point->radius1;
+    if (max_d == 0) max_d = 1;
+
+    // Create neighbors
+    double min_affinity = 0;
     RNArray<Point *> neighbors;
-    if ((max_neighbor_distance_factor > 0) && (point->radius1 > 0)) {
-      RNScalar max_d = max_neighbor_distance_factor * point->radius1;
-      if ((max_neighbor_distance == 0) || (max_d < max_neighbor_distance)) max_neighbor_distance = max_d;
-    }
-    if (max_neighbor_distance == 0) max_neighbor_distance = 10 * point->radius1;
-    if (max_neighbor_distance == 0) max_neighbor_distance = 1;
-    if (kdtree->FindClosest(point, 0, max_neighbor_distance, max_neighbor_count, neighbors)) {
+    if (kdtree->FindClosest(point, 0, max_d, max_neighbor_count, neighbors)) {
       for (int j = 0; j < neighbors.NEntries(); j++) {
         Point *neighbor = neighbors.Kth(j);
         if (neighbor == point) continue;
-        if (max_neighbor_primitive_distance > 0) {
-          RNLength primitive_distance = R3Distance(R3Plane(point->position, point-> normal), neighbor->position);
-          if (primitive_distance > max_neighbor_primitive_distance) continue;
+        
+        // Check identifier
+        if (partition_identifiers) {
+          if (point->identifier != neighbor->identifier) continue;
         }
-        if (max_neighbor_normal_angle > 0) {
-          RNAngle normal_angle = R3InteriorAngle(point->normal, neighbor->normal);
-          if (normal_angle > max_neighbor_normal_angle) continue;
+
+        // Compute affinity
+        RNScalar affinity = PointAffinity(point, neighbor,
+          max_d, max_neighbor_primitive_distance,
+          max_neighbor_normal_angle, max_neighbor_color_difference,
+          max_neighbor_timestamp_difference,
+          max_neighbor_category_difference, min_affinity);
+        if (affinity <= min_affinity) continue;
+        
+        // Insert neighbor
+        if ((max_neighbor_count > 0) &&
+            (neighbors.NEntries() - j > max_neighbor_count - point->neighbors.NEntries())) {
+          // Find slot for neighbor in list sorted by affinity
+          int slot = point->neighbors.NEntries();
+          while (slot > 0) {
+            RNScalar s_affinity = point->neighbors[slot-1]->cluster_affinity;
+            if (s_affinity > affinity) break;
+            slot--;
+          }
+          if (slot < max_neighbor_count) {
+            neighbor->cluster_affinity = affinity;
+            point->neighbors.InsertKth(neighbor, slot);
+            point->neighbors.Truncate(max_neighbor_count);
+          }
+          if (point->neighbors.NEntries() == max_neighbor_count) {
+            min_affinity = point->neighbors[point->neighbors.NEntries()-1]->cluster_affinity;
+          }
         }
-        if (max_neighbor_color_difference > 0) {
-          RNLength color_difference = 0;
-          color_difference += fabs(neighbor->color.R() - point->color.R());
-          color_difference += fabs(neighbor->color.G() - point->color.G());
-          color_difference += fabs(neighbor->color.B() - point->color.B());
-          if (color_difference > max_neighbor_color_difference) continue;
+        else {
+          // Insert neighbor at end of unconstrained list
+          point->neighbors.Insert(neighbor);
         }
-        if (max_neighbor_timestamp_difference > 0) {
-          RNLength timestamp_difference = fabs(neighbor->timestamp - point->timestamp);
-          if (timestamp_difference > max_neighbor_timestamp_difference) continue; 
-        }
-        point->neighbors.Insert(neighbor);
       }
     }
   }
 
+  // Reset cluster affinities
+  for (int i = 0; i < points.NEntries(); i++) {
+    Point *point = points.Kth(i);
+    point->cluster_affinity = 0;
+  }
+  
   // Return success
   return 1;
 }

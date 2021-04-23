@@ -173,6 +173,26 @@ SetColor(const RNRgb& color)
 
 
 void R3SurfelPoint::
+SetDepth(RNLength depth)
+{
+  // Set depth
+  assert(block && surfel);
+  block->SetSurfelDepth(block->SurfelIndex(surfel), depth);
+}
+
+
+
+void R3SurfelPoint::
+SetElevation(RNLength elevation)
+{
+  // Set elevation
+  assert(block && surfel);
+  block->SetSurfelElevation(block->SurfelIndex(surfel), elevation);
+}
+
+
+
+void R3SurfelPoint::
 SetTimestamp(RNScalar timestamp)
 {
   // Set timestamp

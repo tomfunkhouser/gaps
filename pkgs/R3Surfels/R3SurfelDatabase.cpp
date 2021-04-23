@@ -30,7 +30,7 @@ namespace gaps {
 // Versioning variables
 ////////////////////////////////////////////////////////////////////////
 
-static unsigned int current_major_version = 5;
+static unsigned int current_major_version = 6;
 static unsigned int current_minor_version = 0;
 
 
@@ -531,14 +531,32 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
     }
   }
   else {
-    if (major_version == 4) {
+    if (major_version == 5) {
+      for (int i = 0; i < count; i++) {
+        RNUInt32 attribute;
+        fread(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fread(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
+        fread(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fread(ptr[i].tangent, sizeof(RNInt16), 3, fp);
+        fread(ptr[i].radius, sizeof(RNInt16), 2, fp);
+        fread(&ptr[i].identifier, sizeof(RNUInt32), 1, fp);
+        fread(&attribute, sizeof(RNUInt32), 1, fp);
+        fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+        ptr[i].SetAttribute(attribute & 0x0000FFFF);
+        unsigned int encoded_elevation = (attribute >> 16) & 0xFFFF;
+        float elevation = (encoded_elevation - 32768.0) / 400.0;
+        ptr[i].SetElevation(elevation);
+      }
+    }
+    else if (major_version == 4) {
       for (int i = 0; i < count; i++) {
         fread(ptr[i].position, sizeof(RNScalar32), 3, fp);
         fread(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
         fread(ptr[i].normal, sizeof(RNInt16), 3, fp);
         fread(ptr[i].tangent, sizeof(RNInt16), 3, fp);
         fread(ptr[i].radius, sizeof(RNInt16), 2, fp);
-        fread(&ptr[i].identifier, sizeof(RNInt32), 1, fp);
+        fread(&ptr[i].identifier, sizeof(RNUInt32), 1, fp);
         fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
         fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
       }
@@ -573,6 +591,8 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap2(&ptr[i].depth, 1);
+      RNSwap2(&ptr[i].elevation, 1);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
       RNSwap4(&ptr[i].attribute, 1);
@@ -596,6 +616,8 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap2(&ptr[i].depth, 1);
+      RNSwap2(&ptr[i].elevation, 1);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
       RNSwap4(&ptr[i].attribute, 1);
@@ -621,6 +643,8 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
       RNSwap2(ptr[i].normal, 3);
       RNSwap2(ptr[i].tangent, 3);
       RNSwap2(ptr[i].radius, 2);
+      RNSwap2(&ptr[i].depth, 1);
+      RNSwap2(&ptr[i].elevation, 1);
       RNSwap4(&ptr[i].timestamp, 1);
       RNSwap4(&ptr[i].identifier, 1);
       RNSwap4(&ptr[i].attribute, 1);

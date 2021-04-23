@@ -148,6 +148,8 @@ R3SurfelBlock(const R3SurfelPointSet *set)
       surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
+      surfel->SetDepth(point->Depth());
+      surfel->SetElevation(point->Elevation());
       surfel->SetColor(point->Color());
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
       surfel->SetIdentifier(point->Identifier());
@@ -202,6 +204,8 @@ R3SurfelBlock(const R3SurfelPointSet *set,
       surfel->SetTangent(tangent[0], tangent[1], tangent[2]);
       surfel->SetRadius(0, point->Radius(0));
       surfel->SetRadius(1, point->Radius(1));
+      surfel->SetDepth(point->Depth());
+      surfel->SetElevation(point->Elevation());
       surfel->SetColor(point->Color());
       surfel->SetTimestamp(point->Timestamp() - timestamp_origin);
       surfel->SetIdentifier(point->Identifier());
@@ -469,8 +473,7 @@ ElevationRange(void) const
   
   // Compute elevation range
   for (int i = 0; i < nsurfels; i++) {
-    unsigned int encoded_elevation = (SurfelAttribute(i) >> 16) & 0xFFFF;
-    double elevation = (encoded_elevation - 32768.0) / 400.0;
+    double elevation = SurfelElevation(i);
     elevation_range.Union(elevation);
   }
 
@@ -758,6 +761,42 @@ SetSurfelRadius(int surfel_index, int axis, RNLength radius)
 
   // Set surfel normal
   surfels[surfel_index].SetRadius(axis, radius);
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
+SetSurfelDepth(int surfel_index, RNLength depth)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel normal
+  surfels[surfel_index].SetDepth(depth);
+
+  // Remember that block is dirty
+  SetDirty();
+}
+
+
+
+void R3SurfelBlock::
+SetSurfelElevation(int surfel_index, RNLength elevation)
+{
+  // Check if surfels are resident
+  if (!surfels) {
+    RNFail("Unable to set surfel position for non-resident block\n");
+    abort();
+  }
+
+  // Set surfel normal
+  surfels[surfel_index].SetElevation(elevation);
 
   // Remember that block is dirty
   SetDirty();

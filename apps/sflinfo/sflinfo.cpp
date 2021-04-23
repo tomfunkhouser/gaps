@@ -544,6 +544,8 @@ PrintInfo(R3SurfelScene *scene)
           printf("      Tangent = %f %f %f\n", surfel->TX(), surfel->TY(), surfel->TZ());
           printf("      Color = %d %d %d\n", surfel->R(), surfel->G(), surfel->B());
           printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
+          printf("      Depth = %.6f\n", surfel->Depth());
+          printf("      Elevation = %.6f\n", surfel->Elevation());
           printf("      Timestamp = %.6f\n", surfel->Timestamp());
           printf("      Identifier = %u\n", surfel->Identifier());
           printf("      Attribute = %u\n", surfel->Attribute());

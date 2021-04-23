@@ -30,6 +30,14 @@ public:
     unsigned char r, unsigned char g, unsigned char b, 
     float timestamp, unsigned int identifier,
     unsigned char flags = 0);
+  R3Surfel(float px, float py, float pz, 
+    float nx, float ny, float nz, 
+    float tx, float ty, float tz, 
+    float radius0, float radius1,
+    float depth, float elevation,
+    unsigned char r, unsigned char g, unsigned char b, 
+    float timestamp, unsigned int identifier,
+    unsigned char flags = 0);
 
   // Position property functions
   // NOTE THAT THESE COORDINATES ARE RELATIVE TO THE BLOCK ORIGIN
@@ -62,6 +70,12 @@ public:
   float Radius(int axis) const;
   float AspectRatio(void) const;
 
+  // Depth property functions
+  float Depth(void) const;
+  
+  // Elevation property functions
+  float Elevation(void) const;
+  
   // Timestamp property functions
   float Timestamp(void) const;
   
@@ -96,6 +110,8 @@ public:
   void SetTangent(const float *xyz);
   void SetRadius(float radius);
   void SetRadius(int axis, float radius);
+  void SetDepth(float depth);
+  void SetElevation(float elevation);
   void SetColor(unsigned char r, unsigned char g, unsigned char b);
   void SetColor(const unsigned char *rgb);
   void SetColor(const RNRgb& rgb);
@@ -150,6 +166,8 @@ private:
   RNUInt16 radius[2]; // x 2^13 (8192)
   RNUInt32 identifier;
   RNUInt32 attribute;
+  RNUInt16 depth;
+  RNInt16 elevation;
   RNUChar8 color[3];
   RNUChar8 flags;
 
@@ -312,6 +330,24 @@ AspectRatio(void) const
   // Return radius[0] / radius[1]
   if (radius[1] == 0) return 1.0F;
   return (float) radius[0] / (float) radius[1];
+}
+
+
+
+inline float R3Surfel::
+Depth(void) const
+{
+  // Return depth (or distance to scan origin if not depth image)
+  return depth / 400.0;
+}
+
+
+
+inline float R3Surfel::
+Elevation(void) const
+{
+  // Return elevation (height off ground)
+  return elevation / 400.0;
 }
 
 
@@ -604,6 +640,29 @@ SetRadius(int axis, float radius)
   float r = 8192.0 * radius + 0.5;
   if (r > 65535) r = 65535;
   this->radius[axis] = (RNUInt16) r;
+}
+
+
+
+inline void R3Surfel::
+SetDepth(float depth)
+{
+  // Set depth
+  float d = 400.0 * depth + 0.5;
+  if (d > 65535) d = 65535;
+  this->depth = (RNUInt16) d;
+}
+
+
+
+inline void R3Surfel::
+SetElevation(float elevation)
+{
+  // Set elevation
+  float d = 400.0 * elevation + 0.5;
+  if (d < -32767) d = -32767;
+  else if (d > 32767) d = 32767;
+  this->elevation = (RNInt16) d;
 }
 
 

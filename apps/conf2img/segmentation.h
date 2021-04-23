@@ -36,11 +36,13 @@ extern double max_cluster_primitive_distance;
 extern double max_cluster_normal_angle;
 extern double max_cluster_color_difference;
 extern double max_cluster_timestamp_difference;
+extern double max_cluster_category_difference;
 extern double max_pair_centroid_distance;
 extern double max_pair_primitive_distance;
 extern double max_pair_normal_angle;
 extern double max_pair_color_difference;
 extern double max_pair_timestamp_difference;
+extern double max_pair_category_difference;
 extern double min_pair_affinity;
 extern int max_refinement_iterations;  
 extern int max_reassignment_iterations;  
@@ -84,11 +86,15 @@ public:
   R3Vector tangent;
   RNLength radius1;
   RNLength radius2;
+  RNScalar elevation;
   RNScalar timestamp;
-  unsigned int identifier;
   RNArea area;
   RNRgb color;
+  int category_identifier;
+  RNScalar category_confidence;
+  unsigned int attribute;
   unsigned int boundary;
+  unsigned int identifier;
   RNArray<Point *> neighbors;
   struct Cluster *cluster;
   RNScalar cluster_affinity;
@@ -146,6 +152,8 @@ public:
   RNArea area;
   RNRgb color;
   RNScalar timestamp;
+  int category_identifier;
+  RNScalar category_confidence;
   RNScalar possible_affinity; 
   RNScalar total_affinity;
   struct Segmentation *segmentation;
@@ -178,6 +186,7 @@ public:
     double max_neighbor_color_difference = 0,
     double max_neighbor_distance_factor = 10,
     double max_timestamp_difference = 0,
+    double max_category_difference = 0,
     RNBoolean partition_identifiers = FALSE);
   int UpdatePoints(void);
 public:

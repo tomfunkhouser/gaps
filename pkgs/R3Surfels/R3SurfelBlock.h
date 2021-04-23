@@ -102,6 +102,8 @@ public:
   R3Vector SurfelTangent(int surfel_index) const;
   RNLength SurfelRadius(int surfel_index) const;
   RNLength SurfelRadius(int surfel_index, int axis) const;
+  RNLength SurfelDepth(int surfel_index) const;
+  RNLength SurfelElevation(int surfel_index) const;
   RNRgb SurfelColor(int surfel_index) const;
   RNScalar SurfelTimestamp(int surfel_index) const;
   unsigned int SurfelIdentifier(int surfel_index) const;
@@ -142,6 +144,8 @@ public:
   void SetSurfelTangent(int surfel_index, const R3Vector& tangent);
   void SetSurfelRadius(int surfel_index, RNLength radius);
   void SetSurfelRadius(int surfel_index, int axis, RNLength radius);
+  void SetSurfelDepth(int surfel_index, RNLength depth);
+  void SetSurfelElevation(int surfel_index, RNLength elevation);
   void SetSurfelColor(int surfel_index, const RNRgb& color);
   void SetSurfelTimestamp(int surfel_index, RNLength timestamp);
   void SetSurfelIdentifier(int surfel_index, unsigned int identifier);
@@ -486,6 +490,26 @@ SurfelRadius(int surfel_index, int axis) const
   // Return radius of kth surfel
   R3Surfel& surfel = surfels[surfel_index];
   return surfel.Radius(axis);
+}
+
+
+
+inline RNLength R3SurfelBlock::
+SurfelDepth(int surfel_index) const
+{
+  // Return depth of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return surfel.Depth();
+}
+
+
+
+inline RNLength R3SurfelBlock::
+SurfelElevation(int surfel_index) const
+{
+  // Return elevation of kth surfel
+  R3Surfel& surfel = surfels[surfel_index];
+  return surfel.Elevation();
 }
 
 

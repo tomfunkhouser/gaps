@@ -465,8 +465,7 @@ CreateColor(unsigned char *color, int color_scheme,
       
   case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: {
     assert(surfel);
-    unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
-    double elevation = (encoded_elevation - 32768.0) / 400.0;
+    double elevation = surfel->Elevation();
     double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
     CreateColor(color, value);
     break; }
@@ -637,8 +636,7 @@ UpdateGroundZGrid(void)
       R3SurfelBlock *block = node->Block(j);
       database->ReadBlock(block);
       for (int k = 0; k < block->NSurfels(); k++) {
-        unsigned int encoded_elevation = (block->SurfelAttribute(k) >> 16) & 0xFFFF;
-        double elevation = (encoded_elevation - 32768.0) / 400.0;
+        double elevation = block->SurfelElevation(k);
         R3Point sfl_position = block->SurfelPosition(k);
         double ground_z = sfl_position.Z() - elevation;
         R2Point world_position(sfl_position.X(), sfl_position.Y());
@@ -932,8 +930,7 @@ DrawSurfels(int color_scheme) const
             LoadColor(value);
           }
           else if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION) {
-            unsigned int encoded_elevation = (surfel->Attribute() >> 16) & 0xFFFF;
-            double elevation = (encoded_elevation - 32768.0) / 400.0;
+            double elevation = surfel->Elevation();
             double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
             LoadColor(value);
           }
