@@ -110,6 +110,10 @@ public:
   R3SurfelFeature *Feature(int k) const;
   R3SurfelFeature *FindFeatureByName(const char *feature_name) const;
 
+  // Comment access functions
+  int NComments(void) const;
+  const char *Comment(int k) const;
+  
 
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
@@ -167,6 +171,10 @@ public:
   // Feature manipulation functions
   virtual void InsertFeature(R3SurfelFeature *feature);
   virtual void RemoveFeature(R3SurfelFeature *feature);
+
+  // Comment manipulation functions
+  virtual void InsertComment(const char *comment);
+  virtual void RemoveComment(const char *comment);
 
   // Scene merging
   virtual void InsertScene(const R3SurfelScene& scene2, 
@@ -245,6 +253,7 @@ protected:
   char *filename;
   char *rwaccess;
   char *name;
+  RNArray<char *> comments;
   RNFlags flags;
 };
 
@@ -512,6 +521,24 @@ Feature(int k) const
 {
   // Return kth feature
   return features.Kth(k);
+}
+
+
+  
+inline int R3SurfelScene::
+NComments(void) const
+{
+  // Return number of comments
+  return comments.NEntries();
+}
+
+
+
+inline const char *R3SurfelScene::
+Comment(int k) const
+{
+  // Return kth comment
+  return comments.Kth(k);
 }
 
 

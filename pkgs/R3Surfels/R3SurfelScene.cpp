@@ -47,6 +47,7 @@ R3SurfelScene(const char *name)
     filename(NULL),
     rwaccess(NULL),
     name((name) ? RNStrdup(name) : NULL),
+    comments(),
     flags(R3_SURFEL_SCENE_DIRTY_FLAG)
 {
   // Create tree
@@ -99,6 +100,9 @@ R3SurfelScene::
 
   // Delete name
   if (name) free(name);
+
+  // Delete comments
+  for (int i = 0; i < comments.NEntries(); i++) free(comments[i]);
 }
 
 
@@ -1083,6 +1087,41 @@ RemoveFeature(R3SurfelFeature *feature)
 
 
 void R3SurfelScene::
+InsertComment(const char *comment)
+{
+  // Check if already have same comment
+  for (int i = 0; i < comments.NEntries(); i++) {
+    if (!strcmp(comment, comments[i])) return;
+  }
+  
+  // Insert comment
+  comments.Insert(strdup(comment));
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+}
+
+
+
+void R3SurfelScene::
+RemoveComment(const char *comment)
+{
+  // Remove comment
+  for (int i = 0; i < comments.NEntries(); i++) {
+    if (!strcmp(comment, comments[i])) {
+      free(comments[i]);
+      comments.RemoveKth(i);
+      break;
+    }
+  }
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+}
+
+
+
+void R3SurfelScene::
 InsertScene(const R3SurfelScene& scene2, 
   R3SurfelObject *parent_object1, 
   R3SurfelLabel *parent_label1,
@@ -1099,6 +1138,14 @@ InsertScene(const R3SurfelScene& scene2,
   if (!parent_node1) parent_node1 = tree1->RootNode();
   if (!parent_object1) parent_object1 = scene1.RootObject();
   if (!parent_label1) parent_label1 = scene1.RootLabel();
+
+ // COPY COMMENTS
+
+  // Copy comments from scene2
+  for (int i = 0; i < scene2.NComments(); i++) {
+    const char *comment2 = scene2.Comment(i);
+    scene1.InsertComment(comment2);
+  }
 
  // COPY FEATURES
 
@@ -1619,7 +1666,7 @@ WriteAsciiFile(const char *filename)
 
 
 static int 
-ReadAsciiName(FILE *fp, char *buffer)
+ReadAsciiString(FILE *fp, char *buffer)
 {
   // Read string
   if (fscanf(fp, "%s", buffer) != (unsigned int) 1) {
@@ -1627,9 +1674,11 @@ ReadAsciiName(FILE *fp, char *buffer)
     return 0;
   }
 
-  // Replace '+' with ' '
+  // Restore space characters
   char *bufferp = buffer;
   while (*bufferp) {
+    if (*bufferp == '^') *bufferp = '\t';
+    if (*bufferp == '&') *bufferp = '\n';
     if (*bufferp == '+') *bufferp = ' ';
     bufferp++;
   }
@@ -1641,16 +1690,18 @@ ReadAsciiName(FILE *fp, char *buffer)
 
 
 static int 
-WriteAsciiName(FILE *fp, const char *name)
+WriteAsciiString(FILE *fp, const char *name)
 {
   // Copy name
   char buffer[1024];
   if (name) strncpy(buffer, name, 1023);
   else strncpy(buffer, "None", 1023);
 
-  // Replace ' ' with '+'
+  // Replace space characters
   char *bufferp = buffer;
   while (*bufferp) {
+    if (*bufferp == '\t') *bufferp = '^';
+    if (*bufferp == '\n') *bufferp = '&';
     if (*bufferp == ' ') *bufferp = '+';
     bufferp++;
   }
@@ -1658,9 +1709,11 @@ WriteAsciiName(FILE *fp, const char *name)
   // Write string
   fprintf(fp, "%s", buffer);
 
-  // Replace '+' with ' '
+  // Restore space characters
   bufferp = buffer;
   while (*bufferp) {
+    if (*bufferp == '^') *bufferp = '\t';
+    if (*bufferp == '&') *bufferp = '\n';
     if (*bufferp == '+') *bufferp = ' ';
     bufferp++;
   }
@@ -1692,13 +1745,13 @@ ReadAsciiStream(FILE *fp)
   int nobjects, nlabels; 
   int nobject_properties, nlabel_properties;
   int nobject_relationships, nlabel_relationships;
-  int nassignments, nfeatures, nscans, nimages, dummy;
-  ReadAsciiName(fp, buffer);
+  int nassignments, nfeatures, nscans, nimages, ncomments, dummy;
+  ReadAsciiString(fp, buffer);
   if (strcmp(buffer, "None")) SetName(buffer);
-  fscanf(fp, "%d%d%d%d%d%d%d%d%d%d%d", &nnodes, &nobjects, &nlabels, &nfeatures, 
+  fscanf(fp, "%d%d%d%d%d%d%d%d%d%d%d%d", &nnodes, &nobjects, &nlabels, &nfeatures, 
     &nobject_relationships, &nlabel_relationships, &nassignments, &nscans, 
-    &nobject_properties, &nlabel_properties, &nimages);
-  for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
+         &nobject_properties, &nlabel_properties, &nimages, &ncomments);
+  for (int j = 0; j < 3; j++) fscanf(fp, "%s", buffer);
 
   // Read transformation (not present in version 1.0)
   if (strcmp(version, "1.0")) {
@@ -1707,6 +1760,15 @@ ReadAsciiStream(FILE *fp)
     if (strcmp(buffer, "T")) { RNFail("Error reading xform in %s\n", filename); return 0; }
     for (int i = 0; i < 16; i++) fscanf(fp, "%lf", &m[i]);
     SetTransformation(R3Affine(R4Matrix(m), 0));
+  }
+
+  // Read comments
+  for (int i = 0; i < ncomments; i++) {
+    char comment[1024];
+    fscanf(fp, "%s", buffer);
+    if (strcmp(buffer, "C")) { RNFail("Error reading comment %d in %s\n", i, filename); return 0; }
+    ReadAsciiString(fp, comment); 
+    InsertComment(comment);
   }
 
   // Create nodes
@@ -1725,7 +1787,7 @@ ReadAsciiStream(FILE *fp)
     double complexity, resolution;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "N")) { RNFail("Error reading node %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, node_name); 
+    ReadAsciiString(fp, node_name); 
     fscanf(fp, "%d%d%d%d%lf%lf", &parent_index, &nparts, &nblocks, &dummy, &complexity, &resolution);
     for (int j = 0; j < 8; j++) fscanf(fp, "%s", buffer);
     if (strcmp(node_name, "None")) node->SetName(node_name);
@@ -1756,7 +1818,7 @@ ReadAsciiStream(FILE *fp)
     double complexity;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "O")) { RNFail("Error reading object %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, object_name); 
+    ReadAsciiString(fp, object_name); 
     fscanf(fp, "%d%d%d%d%d%lf", &identifier, &parent_index, &nparts, &nnodes, &nvalues, &complexity);
     for (int j = 0; j < 8; j++) fscanf(fp, "%s", buffer);
     if (strcmp(object_name, "None")) object->SetName(object_name);
@@ -1794,7 +1856,7 @@ ReadAsciiStream(FILE *fp)
     double red, green, blue;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "L")) { RNFail("Error reading label %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, label_name); 
+    ReadAsciiString(fp, label_name); 
     fscanf(fp, "%d%d%d%d%d%lf%lf%lf", &identifier, &assignment_key, &dummy, &parent_index, &nparts, &red, &green, &blue);
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     if (strcmp(label_name, "None")) label->SetName(label_name);
@@ -1812,7 +1874,7 @@ ReadAsciiStream(FILE *fp)
     int type, format;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "F")) { RNFail("Error reading feature %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, feature_name); 
+    ReadAsciiString(fp, feature_name); 
     fscanf(fp, "%lf%lf%lf%d%d", &minimum, &maximum, &weight, &type, &format);
     for (int j = 0; j < 1; j++) fscanf(fp, "%s", buffer);
     R3SurfelFeature *feature = NULL;
@@ -1908,7 +1970,7 @@ ReadAsciiStream(FILE *fp)
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "S")) { RNFail("Error reading scan %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, scan_name); 
+    ReadAsciiString(fp, scan_name); 
     fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%u%lf", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &node_index, &width, &height, &xfocal, &xcenter, &ycenter, &flags, &yfocal);
     for (int j = 0; j < 1; j++) fscanf(fp, "%s", buffer);
     if (xcenter == 0) xcenter = width/2.0;
@@ -1943,7 +2005,7 @@ ReadAsciiStream(FILE *fp)
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "S") && strcmp(buffer, "I")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
-    ReadAsciiName(fp, image_name); 
+    ReadAsciiString(fp, image_name); 
     fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &xfocal, &yfocal, &xcenter, &ycenter, &flags);
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
     if (xcenter == 0) xcenter = width/2.0;
@@ -2022,13 +2084,14 @@ WriteAsciiStream(FILE *fp)
   fprintf(fp, "SSA 1.1\n");
 
   // Write scene header
-  WriteAsciiName(fp, name);
-  fprintf(fp, " %d %d %d %d %d %d %d %d %d %d %d", 
+  WriteAsciiString(fp, name);
+  fprintf(fp, " %d %d %d %d %d %d %d %d %d %d %d %d", 
     tree->NNodes(), NObjects(), NLabels(), NFeatures(),
     NObjectRelationships(), NLabelRelationships(), 
     NLabelAssignments(), NScans(), 
-    NObjectProperties(), NLabelProperties(), NImages());
-  for (int j = 0; j < 4; j++) fprintf(fp, " 0");
+    NObjectProperties(), NLabelProperties(),
+    NImages(), NComments());
+  for (int j = 0; j < 3; j++) fprintf(fp, " 0");
   fprintf(fp, "\n");
 
   // Write transformation
@@ -2040,12 +2103,19 @@ WriteAsciiStream(FILE *fp)
   }
   fprintf(fp, "\n");
 
+  // Write comments
+  for (int i = 0; i < NComments(); i++) {
+    fprintf(fp, "C ");
+    WriteAsciiString(fp, Comment(i));
+    fprintf(fp, "\n");
+  }
+
   // Write nodes
   for (int i = 0; i < tree->NNodes(); i++) {
     R3SurfelNode *node = tree->Node(i);
     int parent_index = (node->Parent()) ? node->Parent()->TreeIndex() : -1;
     fprintf(fp, "N ");
-    WriteAsciiName(fp, node->Name());
+    WriteAsciiString(fp, node->Name());
     fprintf(fp, " %d %d %d %d %g %g", parent_index, node->NParts(), node->NBlocks(), 0, node->Complexity(), node->Resolution());
     for (int j = 0; j < 8; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
@@ -2063,7 +2133,7 @@ WriteAsciiStream(FILE *fp)
     // const R3SurfelFeatureVector& feature_vector = object->FeatureVector();
     const R3SurfelFeatureVector& feature_vector = object->feature_vector;
     fprintf(fp, "O ");
-    WriteAsciiName(fp, object->Name());
+    WriteAsciiString(fp, object->Name());
     fprintf(fp, " %d %d %d %d %d %g", object->Identifier(), parent_index, object->NParts(), object->NNodes(), 
       feature_vector.NValues(), object->Complexity());
     for (int j = 0; j < 8; j++) fprintf(fp, " 0");
@@ -2086,7 +2156,7 @@ WriteAsciiStream(FILE *fp)
     const RNRgb& color = label->Color();
     int parent_index = (label->Parent()) ? label->Parent()->SceneIndex() : -1;
     fprintf(fp, "L ");
-    WriteAsciiName(fp, label->Name());
+    WriteAsciiString(fp, label->Name());
     fprintf(fp, " %d %d %d %d %d %g %g %g", label->Identifier(), label->AssignmentKeystroke(), 
       dummy, parent_index, label->NParts(), color.R(), color.G(), color.B());
     for (int j = 0; j < 4; j++) fprintf(fp, " 0");
@@ -2097,7 +2167,7 @@ WriteAsciiStream(FILE *fp)
   for (int i = 0; i < NFeatures(); i++) {
     R3SurfelFeature *feature = Feature(i);
     fprintf(fp, "F ");
-    WriteAsciiName(fp, feature->Name());
+    WriteAsciiString(fp, feature->Name());
     fprintf(fp, " %g %g %g %d %d", feature->Minimum(), feature->Maximum(), feature->Weight(), feature->Type(), 1);
     for (int j = 0; j < 1; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
@@ -2148,7 +2218,7 @@ WriteAsciiStream(FILE *fp)
     R3Vector towards = scan->Towards();
     R3Vector up = scan->Up();
     fprintf(fp, "S ");
-    WriteAsciiName(fp, scan->Name());
+    WriteAsciiString(fp, scan->Name());
     fprintf(fp, " %g %g %g", viewpoint.X(), viewpoint.Y(), viewpoint.Z());
     fprintf(fp, " %g %g %g", towards.X(), towards.Y(), towards.Z());
     fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
@@ -2168,7 +2238,7 @@ WriteAsciiStream(FILE *fp)
     R3Vector towards = image->Towards();
     R3Vector up = image->Up();
     fprintf(fp, "I ");
-    WriteAsciiName(fp, image->Name());
+    WriteAsciiString(fp, image->Name());
     fprintf(fp, " %g %g %g", viewpoint.X(), viewpoint.Y(), viewpoint.Z());
     fprintf(fp, " %g %g %g", towards.X(), towards.Y(), towards.Z());
     fprintf(fp, " %g %g %g", up.X(), up.Y(), up.Z());
@@ -2262,13 +2332,13 @@ WriteBinaryFile(const char *filename)
 
 
 static int 
-WriteBinaryName(FILE *fp, const char *name, int size = 256)
+WriteBinaryString(FILE *fp, const char *name, int size = 256)
 {
   // Copy name
   char buffer[1024] = { '\0' };
-  if (size > 256) size = 256;
-  if (name) strncpy(buffer, name, size);
-  else strncpy(buffer, "None", 256);
+  if (size > 1024) size = 1024;
+  if (name) strncpy(buffer, name, size-1);
+  else strncpy(buffer, "None", size-1);
   if (fwrite(buffer, sizeof(char), size, fp) != (unsigned int) size) {
     RNFail("Unable to write name to binary file\n");
     return 0;
@@ -2311,7 +2381,7 @@ WriteBinaryDouble(FILE *fp, double value)
 
 
 static int 
-ReadBinaryName(FILE *fp, char *name, int size = 256)
+ReadBinaryString(FILE *fp, char *name, int size = 256)
 {
   // Copy name
   if (fread(name, sizeof(char), size, fp) != (unsigned int) size) {
@@ -2360,7 +2430,7 @@ ReadBinaryStream(FILE *fp)
 {
   // Read file header
   char magic[16];
-  if (!ReadBinaryName(fp, magic, 16)) {
+  if (!ReadBinaryString(fp, magic, 16)) {
     RNFail("Unable to read to %s\n", filename);
     return 0;
   }
@@ -2377,8 +2447,8 @@ ReadBinaryStream(FILE *fp)
   int nobjects, nlabels, nfeatures;
   int nobject_properties, nlabel_properties;
   int nobject_relationships, nlabel_relationships;
-  int nassignments, nscans, nimages, dummy;
-  ReadBinaryName(fp, name);
+  int nassignments, nscans, nimages, ncomments, dummy;
+  ReadBinaryString(fp, name);
   ReadBinaryInteger(fp, &nnodes);
   ReadBinaryInteger(fp, &nobjects);
   ReadBinaryInteger(fp, &nlabels);
@@ -2390,13 +2460,21 @@ ReadBinaryStream(FILE *fp)
   ReadBinaryInteger(fp, &nobject_properties);
   ReadBinaryInteger(fp, &nlabel_properties);
   ReadBinaryInteger(fp, &nimages);
-  for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
+  ReadBinaryInteger(fp, &ncomments);
+  for (int j = 0; j < 3; j++) ReadBinaryInteger(fp, &dummy);
 
   // Read transformation (not present in version 1.0)
   if (strcmp(magic, "SSB 1.0")) {
     double m[16];
     for (int i = 0; i < 16; i++) ReadBinaryDouble(fp, &m[i]);
     SetTransformation(R3Affine(R4Matrix(m), 0));
+  }
+
+  // Read comments
+  for (int i = 0; i < ncomments; i++) {
+    char comment[1024];
+    ReadBinaryString(fp, comment);
+    InsertComment(comment);
   }
 
   // Create nodes
@@ -2413,7 +2491,7 @@ ReadBinaryStream(FILE *fp)
     char node_name[1024];
     int parent_index, nparts, nblocks;
     double complexity, resolution;
-    ReadBinaryName(fp, node_name); 
+    ReadBinaryString(fp, node_name); 
     ReadBinaryInteger(fp, &parent_index);
     ReadBinaryInteger(fp, &nparts);
     ReadBinaryInteger(fp, &nblocks);
@@ -2446,7 +2524,7 @@ ReadBinaryStream(FILE *fp)
     char object_name[1024];
     int identifier, parent_index, nparts, nvalues, nnodes;
     double complexity;
-    ReadBinaryName(fp, object_name);
+    ReadBinaryString(fp, object_name);
     ReadBinaryInteger(fp, &identifier);
     ReadBinaryInteger(fp, &parent_index);
     ReadBinaryInteger(fp, &nparts);
@@ -2487,7 +2565,7 @@ ReadBinaryStream(FILE *fp)
     char label_name[1024];
     int identifier, assignment_key, parent_index, nparts, dummy;
     double red, green, blue;
-    ReadBinaryName(fp, label_name);
+    ReadBinaryString(fp, label_name);
     ReadBinaryInteger(fp, &identifier);
     ReadBinaryInteger(fp, &assignment_key);
     ReadBinaryInteger(fp, &parent_index);
@@ -2509,7 +2587,7 @@ ReadBinaryStream(FILE *fp)
     int type;
     char feature_name[1024];
     double minimum, maximum, weight;
-    ReadBinaryName(fp, feature_name);
+    ReadBinaryString(fp, feature_name);
     ReadBinaryDouble(fp, &minimum);
     ReadBinaryDouble(fp, &maximum);
     ReadBinaryDouble(fp, &weight);
@@ -2521,7 +2599,7 @@ ReadBinaryStream(FILE *fp)
     }
     else if (type == R3_SURFEL_OVERHEAD_GRID_FEATURE_TYPE) {
       char grid_filename[1024];
-      ReadBinaryName(fp, grid_filename);
+      ReadBinaryString(fp, grid_filename);
       feature = new R3SurfelOverheadGridFeature(grid_filename, feature_name, minimum, maximum, weight);
     }
     else {
@@ -2608,7 +2686,7 @@ ReadBinaryStream(FILE *fp)
     char scan_name[1024];
     int node_index, width, height, flags;
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
-    ReadBinaryName(fp, scan_name); 
+    ReadBinaryString(fp, scan_name); 
     ReadBinaryDouble(fp, &px);
     ReadBinaryDouble(fp, &py);
     ReadBinaryDouble(fp, &pz);
@@ -2652,7 +2730,7 @@ ReadBinaryStream(FILE *fp)
     char image_name[1024];
     int scan_index, width, height, flags;
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
-    ReadBinaryName(fp, image_name); 
+    ReadBinaryString(fp, image_name); 
     ReadBinaryDouble(fp, &px);
     ReadBinaryDouble(fp, &py);
     ReadBinaryDouble(fp, &pz);
@@ -2745,13 +2823,13 @@ int R3SurfelScene::
 WriteBinaryStream(FILE *fp) 
 {
   // Write file header
-  if (!WriteBinaryName(fp, "SSB 1.1", 16)) {
+  if (!WriteBinaryString(fp, "SSB 1.1", 16)) {
     RNFail("Unable to write to %s\n", filename);
     return 0;
   }
 
   // Write scene header
-  WriteBinaryName(fp, name);
+  WriteBinaryString(fp, name);
   WriteBinaryInteger(fp, tree->NNodes());
   WriteBinaryInteger(fp, NObjects());
   WriteBinaryInteger(fp, NLabels());
@@ -2763,7 +2841,8 @@ WriteBinaryStream(FILE *fp)
   WriteBinaryInteger(fp, NObjectProperties());
   WriteBinaryInteger(fp, NLabelProperties());
   WriteBinaryInteger(fp, NImages());
-  for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
+  WriteBinaryInteger(fp, NComments());
+  for (int j = 0; j < 3; j++) WriteBinaryInteger(fp, 0);
 
   // Write transformation
   for (int i = 0; i < 4; i++) {
@@ -2772,11 +2851,16 @@ WriteBinaryStream(FILE *fp)
     }
   }
 
+  // Write comments
+  for (int i = 0; i < NComments(); i++) {
+    WriteBinaryString(fp, Comment(i));
+  }
+
   // Write nodes
   for (int i = 0; i < tree->NNodes(); i++) {
     R3SurfelNode *node = tree->Node(i);
     int parent_index = (node->Parent()) ? node->Parent()->TreeIndex() : -1;
-    WriteBinaryName(fp, node->Name());
+    WriteBinaryString(fp, node->Name());
     WriteBinaryInteger(fp, parent_index);
     WriteBinaryInteger(fp, node->NParts());
     WriteBinaryInteger(fp, node->NBlocks());
@@ -2794,7 +2878,7 @@ WriteBinaryStream(FILE *fp)
     R3SurfelObject *object = Object(i);
     int parent_index = (object->Parent()) ? object->Parent()->SceneIndex() : -1;
     const R3SurfelFeatureVector& feature_vector = object->FeatureVector();
-    WriteBinaryName(fp, object->Name());
+    WriteBinaryString(fp, object->Name());
     WriteBinaryInteger(fp, object->Identifier());
     WriteBinaryInteger(fp, parent_index);
     WriteBinaryInteger(fp, object->NParts());
@@ -2816,7 +2900,7 @@ WriteBinaryStream(FILE *fp)
     R3SurfelLabel *label = Label(i);
     const RNRgb& color = label->Color();
     int parent_index = (label->Parent()) ? label->Parent()->SceneIndex() : -1;
-    WriteBinaryName(fp, label->Name());
+    WriteBinaryString(fp, label->Name());
     WriteBinaryInteger(fp, label->Identifier());
     WriteBinaryInteger(fp, label->AssignmentKeystroke());
     WriteBinaryInteger(fp, parent_index);
@@ -2830,14 +2914,14 @@ WriteBinaryStream(FILE *fp)
   // Write features
   for (int i = 0; i < NFeatures(); i++) {
     R3SurfelFeature *feature = Feature(i);
-    WriteBinaryName(fp, feature->Name());
+    WriteBinaryString(fp, feature->Name());
     WriteBinaryDouble(fp, feature->Minimum());
     WriteBinaryDouble(fp, feature->Maximum());
     WriteBinaryDouble(fp, feature->Weight());
     WriteBinaryInteger(fp, feature->Type());
     for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
     if (feature->Type() == R3_SURFEL_OVERHEAD_GRID_FEATURE_TYPE) {
-      WriteBinaryName(fp, ((R3SurfelOverheadGridFeature *) feature)->filename);
+      WriteBinaryString(fp, ((R3SurfelOverheadGridFeature *) feature)->filename);
     }
   }
 
@@ -2882,7 +2966,7 @@ WriteBinaryStream(FILE *fp)
   // Write scans
   for (int i = 0; i < NScans(); i++) {
     R3SurfelScan *scan = Scan(i);
-    WriteBinaryName(fp, scan->Name());
+    WriteBinaryString(fp, scan->Name());
     WriteBinaryDouble(fp, scan->Viewpoint().X());
     WriteBinaryDouble(fp, scan->Viewpoint().Y());
     WriteBinaryDouble(fp, scan->Viewpoint().Z());
@@ -2907,7 +2991,7 @@ WriteBinaryStream(FILE *fp)
   // Write images
   for (int i = 0; i < NImages(); i++) {
     R3SurfelImage *image = Image(i);
-    WriteBinaryName(fp, image->Name());
+    WriteBinaryString(fp, image->Name());
     WriteBinaryDouble(fp, image->Viewpoint().X());
     WriteBinaryDouble(fp, image->Viewpoint().Y());
     WriteBinaryDouble(fp, image->Viewpoint().Z());

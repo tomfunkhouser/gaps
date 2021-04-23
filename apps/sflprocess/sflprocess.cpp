@@ -53,6 +53,7 @@ OpenScene(const char *scene_name, const char *database_name)
   if (print_verbose) {
     printf("Opened scene ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Comments = %d\n", scene->NComments());
     printf("  # Objects = %d\n", scene->NObjects());
     printf("  # Labels = %d\n", scene->NLabels());
     printf("  # Assignments = %d\n", scene->NLabelAssignments());
@@ -85,6 +86,7 @@ CloseScene(R3SurfelScene *scene)
   if (print_verbose) {
     printf("Closed scene ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Comments = %d\n", scene->NComments());
     printf("  # Objects = %d\n", scene->NObjects());
     printf("  # Labels = %d\n", scene->NLabels());
     printf("  # Assignments = %d\n", scene->NLabelAssignments());
@@ -2278,79 +2280,84 @@ int main(int argc, char **argv)
     else if (!strcmp(*argv, "-debug")) print_debug = 1;
     else if (!strcmp(*argv, "-aerial_only")) aerial_only = 1;
     else if (!strcmp(*argv, "-terrestrial_only")) terrestrial_only = 1;
+    else if (!strcmp(*argv, "-create_comment")) { 
+      argc--; argv++; const char *comment = *argv; 
+      scene->InsertComment(comment);
+      noperations++;
+    }
     else if (!strcmp(*argv, "-create_node")) { 
-      argc--; argv++; char *node_name = *argv; 
-      argc--; argv++; char *parent_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
+      argc--; argv++; const char *parent_name = *argv; 
       if (!CreateNode(scene, node_name, parent_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-create_object")) { 
-      argc--; argv++; char *object_name = *argv; 
-      argc--; argv++; char *parent_name = *argv; 
-      argc--; argv++; char *node_name = *argv; 
+      argc--; argv++; const char *object_name = *argv; 
+      argc--; argv++; const char *parent_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
       if (!CreateObject(scene, object_name, parent_name, node_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-create_label")) { 
-      argc--; argv++; char *label_name = *argv; 
-     argc--; argv++; char *parent_name = *argv; 
+      argc--; argv++; const char *label_name = *argv; 
+      argc--; argv++; const char *parent_name = *argv; 
       if (!CreateLabel(scene, label_name, parent_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_surfels")) { 
-      argc--; argv++; char *surfels_filename = *argv; 
-      argc--; argv++; char *node_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *surfels_filename = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       if (!LoadSurfels(scene, surfels_filename, NULL, NULL, 
         node_name, parent_node_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_surfels_list")) { 
-      argc--; argv++; char *list_filename = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *list_filename = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       if (!LoadSurfelsList(scene, list_filename, 
         NULL, parent_node_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_object")) { 
-      argc--; argv++; char *surfels_filename = *argv; 
-      argc--; argv++; char *object_name = *argv; 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *node_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *surfels_filename = *argv; 
+      argc--; argv++; const char *object_name = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       if (!LoadSurfels(scene, surfels_filename, 
         object_name, parent_object_name, 
         node_name, parent_node_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_object_list")) { 
-      argc--; argv++; char *list_filename = *argv; 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *list_filename = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       if (!LoadSurfelsList(scene, list_filename, 
         parent_object_name, parent_node_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_label_list")) { 
-      argc--; argv++; char *list_filename = *argv; 
-      argc--; argv++; char *parent_label_name = *argv; 
+      argc--; argv++; const char *list_filename = *argv; 
+      argc--; argv++; const char *parent_label_name = *argv; 
       if (!LoadLabelList(scene, list_filename, parent_label_name)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_assignment_list")) { 
-      argc--; argv++; char *list_filename = *argv; 
+      argc--; argv++; const char *list_filename = *argv; 
       if (!LoadAssignmentList(scene, list_filename)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_feature_list")) { 
-      argc--; argv++; char *list_filename = *argv; 
+      argc--; argv++; const char *list_filename = *argv; 
       if (!LoadFeatureList(scene, list_filename)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_mesh")) { 
-      argc--; argv++; char *mesh_filename = *argv; 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *mesh_filename = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       argc--; argv++; double surfel_spacing = atof(*argv); 
       if (!LoadSurfelsFromMesh(scene, mesh_filename,
         parent_object_name, parent_node_name,
@@ -2358,23 +2365,23 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-load_scene")) { 
-      argc--; argv++; char *scene_filename = *argv; 
-      argc--; argv++; char *database_filename = *argv; 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *parent_label_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
+      argc--; argv++; const char *scene_filename = *argv; 
+      argc--; argv++; const char *database_filename = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_label_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
       if (!LoadScene(scene, scene_filename, database_filename, 
         parent_object_name, parent_label_name, parent_node_name)) exit(-1);
       noperations++;
     }
     // else if (!strcmp(*argv, "-transfer_labels")) { 
-    //   argc--; argv++; char *label_scene_filename = *argv; 
-    //   argc--; argv++; char *label_database_filename = *argv; 
+    //   argc--; argv++; const char *label_scene_filename = *argv; 
+    //   argc--; argv++; const char *label_database_filename = *argv; 
     //   if (!TransferLabels(scene, label_scene_filename, label_database_filename)) exit(-1);
     //     noperations++;
     // }
     else if (!strcmp(*argv, "-mask")) { 
-      argc--; argv++; char *source_node_name = *argv; 
+      argc--; argv++; const char *source_node_name = *argv; 
       R3SurfelConstraint *constraint = ParseConstraint(argc, argv);
       if (!constraint) exit(-1);
       if (!Mask(scene, source_node_name, constraint)) exit(-1);
@@ -2394,7 +2401,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-estimate_surfel_colors")) { 
-      argc--; argv++; char *image_directory = *argv; 
+      argc--; argv++; const char *image_directory = *argv; 
       argc--; argv++; double depth_scale = atof(*argv); 
       argc--; argv++; double depth_exponent = atof(*argv); 
       if (!ReadImageDirectory(scene, image_directory, depth_scale, depth_exponent)) exit(-1);
@@ -2406,7 +2413,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-overwrite_surfel_category_identifiers")) { 
-      argc--; argv++; char *category_identifier_filename = *argv; 
+      argc--; argv++; const char *category_identifier_filename = *argv; 
       if (!OverwriteSurfelCategoryIdentifiers(scene, category_identifier_filename)) exit(-1);
       noperations++;
     }
@@ -2422,12 +2429,12 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
-      argc--; argv++; char *configuration_filename = *argv; 
+      argc--; argv++; const char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-inverse_transform_with_configuration_file")) { 
-      argc--; argv++; char *configuration_filename = *argv; 
+      argc--; argv++; const char *configuration_filename = *argv; 
       if (!TransformWithConfigurationFile(scene, configuration_filename, TRUE)) exit(-1);
       noperations++;
     }
@@ -2440,16 +2447,16 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-create_lores_nodes")) { 
-      argc--; argv++; char *lores_scene_filename = *argv; 
-      argc--; argv++; char *lores_database_filename = *argv; 
+      argc--; argv++; const char *lores_scene_filename = *argv; 
+      argc--; argv++; const char *lores_database_filename = *argv; 
       argc--; argv++; double max_distance = atof(*argv); 
       if (!CreateLoResNodes(scene, lores_scene_filename, lores_database_filename, max_distance)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-create_cluster_objects")) { 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
-      argc--; argv++; char *source_node_name = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
+      argc--; argv++; const char *source_node_name = *argv; 
       argc--; argv++; int max_neighbors = atoi(*argv); 
       argc--; argv++; double max_neighbor_distance = atof(*argv); 
       argc--; argv++; double max_offplane_distance = atof(*argv); 
@@ -2462,9 +2469,9 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-create_planar_objects")) { 
-      argc--; argv++; char *parent_object_name = *argv; 
-      argc--; argv++; char *parent_node_name = *argv; 
-      argc--; argv++; char *source_node_name = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv; 
+      argc--; argv++; const char *source_node_name = *argv; 
       argc--; argv++; int max_neighbors = atoi(*argv); 
       argc--; argv++; double max_neighbor_distance = atof(*argv); 
       argc--; argv++; double max_offplane_distance = atof(*argv); 
@@ -2500,7 +2507,7 @@ int main(int argc, char **argv)
 
     }
     else if (!strcmp(*argv, "-create_tree_hierarchy")) { 
-      argc--; argv++; char *node_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
       argc--; argv++; int max_parts_per_node = atoi(*argv);
       argc--; argv++; int max_blocks_per_node = atoi(*argv);
       argc--; argv++; double max_node_complexity = atof(*argv); 
@@ -2518,7 +2525,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-split_nodes")) { 
-      argc--; argv++; char *node_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
       argc--; argv++; int max_parts_per_node = atoi(*argv);
       argc--; argv++; int max_blocks_per_node = atoi(*argv);
       argc--; argv++; double max_node_complexity = atof(*argv); 
@@ -2533,7 +2540,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-create_multiresolution_nodes")) { 
-      argc--; argv++; char *node_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
       argc--; argv++; double min_complexity = atof(*argv); 
       argc--; argv++; double min_resolution = atof(*argv); 
       argc--; argv++; double min_multiresolution_factor = atof(*argv); 
@@ -2542,7 +2549,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-create_multiresolution_blocks")) { 
-      argc--; argv++; char *node_name = *argv; 
+      argc--; argv++; const char *node_name = *argv; 
       argc--; argv++; double multiresolution_factor = atof(*argv); 
       argc--; argv++; double max_node_complexity = atof(*argv); 
       if (!CreateMultiresolutionBlocks(scene, node_name, 
@@ -2550,7 +2557,7 @@ int main(int argc, char **argv)
       noperations++;
     }
     else if (!strcmp(*argv, "-output_blobs")) { 
-      argc--; argv++; char *blob_directory_name = *argv; 
+      argc--; argv++; const char *blob_directory_name = *argv; 
       if (!OutputBlobs(scene, blob_directory_name)) exit(-1);
       noperations++;
     }

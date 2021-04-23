@@ -18,6 +18,7 @@ using namespace gaps;
 
 static char *input_scene_name = NULL;
 static char *input_database_name = NULL;
+static int print_comments = 0;
 static int print_features = 0;
 static int print_scans = 0;
 static int print_images = 0;
@@ -260,8 +261,9 @@ PrintInfo(R3SurfelScene *scene)
   printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
   printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
   printf("  Max surfel identifier = %u\n", database->MaxIdentifier());
-  printf("  # Objects = %d\n", scene->NObjects());
+  printf("  # Comments = %d\n", scene->NComments());
   printf("  # Labels = %d\n", scene->NLabels());
+  printf("  # Objects = %d\n", scene->NObjects());
   printf("  # Features = %d\n", scene->NFeatures());
   printf("  # Scans = %d\n", scene->NScans());
   printf("  # Images = %d\n", scene->NImages());
@@ -275,6 +277,17 @@ PrintInfo(R3SurfelScene *scene)
   printf("  # Surfels = %lld\n", database->NSurfels());
   printf("\n\n");
   
+  // Print comment info
+  if (print_comments) {
+    printf("Comments:\n");
+    for (int i = 0; i < scene->NComments(); i++) {
+      const char *comment = scene->Comment(i);
+      printf("  Comment %d = %s\n", i, comment);
+      printf("\n");
+    }
+    printf("\n");
+  }
+
   // Print label info
   if (print_labels) {
     printf("Labels:\n");
@@ -642,6 +655,7 @@ ParseArgs(int argc, char **argv)
   argc -= 3; argv += 3;
   while (argc > 0) {
     if (!strcmp(*argv, "-v")) { print_labels = 1; print_objects = 1; }
+    else if (!strcmp(*argv, "-comments")) { print_comments = 1; }
     else if (!strcmp(*argv, "-features")) { print_features = 1; }
     else if (!strcmp(*argv, "-objects")) { print_objects = 1; }
     else if (!strcmp(*argv, "-labels")) { print_labels = 1; }
