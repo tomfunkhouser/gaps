@@ -276,6 +276,9 @@ InsertSubsetBlocks(R3SurfelBlock *block,
   const RNArray<const R3Surfel *>& subset1, const RNArray<const R3Surfel *>& subset2, 
   R3SurfelBlock **blockA, R3SurfelBlock **blockB)
 {
+  // Check subset sizes
+  assert(subset1.NEntries() + subset2.NEntries() <= block->NSurfels());
+  
   // Check subset1
   if (subset1.IsEmpty()) {
     if (blockA) *blockA = NULL;
@@ -300,17 +303,10 @@ InsertSubsetBlocks(R3SurfelBlock *block,
 
   // Update file offsets
   if ((block->file_surfels_offset > 0) && (block->file_surfels_count > 0)) {
-    if (block->file_surfels_count >= (unsigned int) block1->NSurfels()) {
-      block1->file_surfels_offset = block->file_surfels_offset;
-      block1->file_surfels_count = block1->NSurfels();
-    }
-    if (block->file_surfels_count >= (unsigned int) (block1->NSurfels() + block2->NSurfels())) {
-      block2->file_surfels_offset = block->file_surfels_offset + block1->NSurfels() * NBytesPerSurfel();
-      block2->file_surfels_count = block2->NSurfels();
-    }
-    else {
-      printf("HERE\n");
-    }
+    block1->file_surfels_offset = block->file_surfels_offset;
+    block1->file_surfels_count = block1->NSurfels();
+    block2->file_surfels_offset = block->file_surfels_offset + block1->NSurfels() * NBytesPerSurfel();
+    block2->file_surfels_count = block2->NSurfels();
     block->file_surfels_offset = 0;
     block->file_surfels_count = 0;
   }
