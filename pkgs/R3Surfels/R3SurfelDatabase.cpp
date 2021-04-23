@@ -543,10 +543,10 @@ ReadSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
         fread(&attribute, sizeof(RNUInt32), 1, fp);
         fread(ptr[i].color, sizeof(RNUChar8), 3, fp);
         fread(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
-        ptr[i].SetAttribute(attribute & 0x0000FFFF);
         unsigned int encoded_elevation = (attribute >> 16) & 0xFFFF;
         float elevation = (encoded_elevation - 32768.0) / 400.0;
         ptr[i].SetElevation(elevation);
+        ptr[i].SetAttribute(attribute & 0x0000FFFF);
       }
     }
     else if (major_version == 4) {
@@ -628,14 +628,61 @@ WriteSurfel(FILE *fp, R3Surfel *ptr, int count, int swap_endian,
   for (int i = 0; i < count; i++) ptr[i].SetMark(FALSE);
 
   // Write current version of surfel
-  int sofar = 0;
   int status = 1;
-  while (sofar < count) {
-    size_t n = fwrite(ptr, sizeof(R3Surfel), count - sofar, fp);
-    if (n > 0) sofar += n;
-    else { RNFail("Unable to write surfel to database file\n"); status = 0; }
+  if ((major_version == current_major_version) && (minor_version == current_minor_version)) {
+    int sofar = 0;
+    while (sofar < count) {
+      size_t n = fwrite(ptr, sizeof(R3Surfel), count - sofar, fp);
+      if (n > 0) sofar += n;
+      else { RNFail("Unable to write surfel to database file\n"); status = 0; }
+    }
   }
-
+  else {
+    if (major_version == 5) {
+      for (int i = 0; i < count; i++) {
+        unsigned int encoded_elevation = 400 * ptr[i].Elevation() + 32768;
+        RNUInt32 attribute = (ptr[i].Attribute() & 0x0000FFFF) | (encoded_elevation << 16);
+        fwrite(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fwrite(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
+        fwrite(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fwrite(ptr[i].tangent, sizeof(RNInt16), 3, fp);
+        fwrite(ptr[i].radius, sizeof(RNInt16), 2, fp);
+        fwrite(&ptr[i].identifier, sizeof(RNUInt32), 1, fp);
+        fwrite(&attribute, sizeof(RNUInt32), 1, fp);
+        fwrite(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fwrite(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+      }
+    }
+    else if (major_version == 4) {
+      for (int i = 0; i < count; i++) {
+        fwrite(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fwrite(&ptr[i].timestamp, sizeof(RNScalar32), 1, fp);
+        fwrite(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fwrite(ptr[i].tangent, sizeof(RNInt16), 3, fp);
+        fwrite(ptr[i].radius, sizeof(RNInt16), 2, fp);
+        fwrite(&ptr[i].identifier, sizeof(RNUInt32), 1, fp);
+        fwrite(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fwrite(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+      }
+    }
+    else if (major_version == 3) {
+      for (int i = 0; i < count; i++) {
+        fwrite(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fwrite(ptr[i].normal, sizeof(RNInt16), 3, fp);
+        fwrite(&ptr[i].radius[0], sizeof(RNInt16), 1, fp);
+        fwrite(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fwrite(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+      }
+    }
+    else if (major_version < 2) {
+      for (int i = 0; i < count; i++) {
+        fwrite(ptr[i].position, sizeof(RNScalar32), 3, fp);
+        fwrite(ptr[i].color, sizeof(RNUChar8), 3, fp);
+        fwrite(&ptr[i].flags, sizeof(RNUChar8), 1, fp);
+      }
+    }
+  }
+  
   // Swap endian back
   if (swap_endian) {
     for (int i = 0; i < count; i++) {
@@ -763,12 +810,14 @@ InternalSyncBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
     return 0;
   }
 
+#if 0
   // Check database version
   if ((major_version != current_major_version) || (minor_version != current_minor_version)) {
     RNFail("Unable to write block to database with different version\n");
     return 0;
   }
-
+#endif
+  
   // Just checking
   assert(block->database == this);
 
@@ -818,7 +867,7 @@ WriteFileHeader(FILE *fp, int swap_endian)
   // Seek to start of file
   RNFileSeek(fp, 0, RN_FILE_SEEK_SET);
 
-  // Write header
+  // Write first part of header
   if (!RNWriteChar(fp, magic, 32, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &endian_test, 1, swap_endian)) return 0;
@@ -827,7 +876,19 @@ WriteFileHeader(FILE *fp, int swap_endian)
   if (!RNWriteUnsignedLongLong(fp, &file_blocks_offset, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &file_blocks_count, 1, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &nblocks, 1, swap_endian)) return 0;
-  if (!RNWriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+
+  // Write number of surfels
+  if (major_version < 4) {
+    // nsurfels used to be an int
+    int nsurfels32 = nsurfels;
+    if (!RNWriteInt(fp, &nsurfels32, 1, swap_endian)) return 0;
+  }
+  else {
+    // nsurfels now is an RNInt64
+    if (!RNWriteLongLong(fp, &nsurfels, 1, swap_endian)) return 0;
+  }
+
+  // Write rest of header
   if (!RNWriteDouble(fp, &bbox[0][0], 6, swap_endian)) return 0;
   if (!RNWriteDouble(fp, &timestamp_range[0], 2, swap_endian)) return 0;
   if (!RNWriteUnsignedInt(fp, &max_identifier, 1, swap_endian)) return 0;
