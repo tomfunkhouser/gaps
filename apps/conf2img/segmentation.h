@@ -49,6 +49,7 @@ extern int max_reassignment_iterations;
 extern RNBoolean equalize_cluster_sizes;
 extern RNBoolean balance_cluster_sizes;
 extern RNBoolean favor_convex_clusters;
+extern RNBoolean scale_tolerances_with_depth;
 extern RNBoolean initialize_hierarchically;
 extern RNBoolean allow_outlier_points;
 extern RNBoolean refine_boundaries;
