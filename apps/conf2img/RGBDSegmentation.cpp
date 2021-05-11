@@ -8,8 +8,8 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+#include "R3Utils/R3Utils.h"
 #include "RGBD/RGBD.h"
-#include "segmentation.h"
 
 
 
@@ -37,14 +37,14 @@ double max_neighbor_color_difference = 0;
 ////////////////////////////////////////////////////////////////////////
 
 static int 
-RGBDCreateSegmentationPoints(Segmentation *segmentation,
+RGBDCreateSegmentationPoints(R3Segmentation *segmentation,
   const R2Grid& px_image, const R2Grid& py_image, const R2Grid& pz_image, 
   const R2Grid& nx_image, const R2Grid& ny_image, const R2Grid& nz_image,
   const R2Grid& depth_image, const R2Grid& radius_image,
   const R2Grid& boundary_image, const R2Image& color_image)
 {
   // Allocate points 
-  segmentation->point_buffer = new Point [ depth_image.NEntries() ];
+  segmentation->point_buffer = new R3SegmentationPoint [ depth_image.NEntries() ];
   if (!segmentation->point_buffer) {
     RNFail("Unable to allocate points\n");
     return 0;
@@ -55,7 +55,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
     for (int iy = 0; iy < depth_image.YResolution(); iy++) {
       int i;
       depth_image.IndicesToIndex(ix, iy, i);
-      Point *point = &segmentation->point_buffer[i];
+      R3SegmentationPoint *point = &segmentation->point_buffer[i];
 
       // Check depth
       RNScalar depth = depth_image.GridValue(i);
@@ -96,8 +96,8 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
   }
 
   // Create kdtree of points
-  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-  segmentation->kdtree = new R3Kdtree<Point *>(segmentation->points, position_offset);
+  R3SegmentationPoint tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  segmentation->kdtree = new R3Kdtree<R3SegmentationPoint *>(segmentation->points, position_offset);
   if (!segmentation->kdtree) {
     RNFail("Unable to create kdtree\n");
     return 0;
@@ -105,7 +105,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
   
   // Create arrays of neighbor points
   for (int i = 0; i < segmentation->points.NEntries(); i++) {
-    Point *point = segmentation->points.Kth(i);
+    R3SegmentationPoint *point = segmentation->points.Kth(i);
     int ix, iy, neighbor_index;
     depth_image.IndexToIndices(point->data_index, ix, iy);
     for (int s = -1; s <= 1; s++) {
@@ -114,7 +114,7 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
         if ((s == 0) && (t == 0)) continue;
         if ((iy+t < 0) || (iy+t >= depth_image.YResolution())) continue;
         depth_image.IndicesToIndex(ix+s, iy+t, neighbor_index);
-        Point *neighbor = &segmentation->point_buffer[neighbor_index];
+        R3SegmentationPoint *neighbor = &segmentation->point_buffer[neighbor_index];
 
         // Check if across boundary
         if ((point->boundary & RGBD_SHADOW_BOUNDARY) && (neighbor->boundary & RGBD_SILHOUETTE_BOUNDARY)) continue;
@@ -157,23 +157,23 @@ RGBDCreateSegmentationPoints(Segmentation *segmentation,
                
 
 
-static Segmentation *
+static R3Segmentation *
 RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2Grid& pz_image,
   const R2Grid& nx_image, const R2Grid& ny_image, const R2Grid& nz_image,
   const R2Grid& depth_image, const R2Grid& radius_image, 
   const R2Grid& boundary_image, const R2Image& color_image,
   const R3Point& viewpoint, const R3Vector& towards, const R3Vector& up)
 {
-  // Adjust segmentation parameters ???
-  min_cluster_points = 10 * depth_image.NEntries() / (640 * 480);
-  
   // Allocate segmentation
-  Segmentation *segmentation = new Segmentation();
+  R3Segmentation *segmentation = new R3Segmentation();
   if (!segmentation) {
     RNFail("Unable to allocate segmentation.\n");
     return NULL;
   }
 
+  // Adjust segmentation parameters ???
+  segmentation->min_cluster_points = 10 * depth_image.NEntries() / (640 * 480);
+  
   // Create points
   if (!RGBDCreateSegmentationPoints(segmentation,
     px_image, py_image, pz_image, nx_image, ny_image, nz_image,
@@ -191,7 +191,7 @@ RGBDCreateSegmentation(const R2Grid& px_image, const R2Grid& py_image, const R2G
   }
 
   // Create clusters
-  if (!segmentation->CreateClusters(PLANE_PRIMITIVE_TYPE)) {
+  if (!segmentation->CreateClusters(R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)) {
     RNFail("Unable to create clusters for segmentation.\n");
     delete segmentation;
     return 0;
@@ -248,7 +248,7 @@ RGBDCreateSegmentationChannel(const R2Grid& depth_image,
   output_segmentation_image.Clear(R2_GRID_UNKNOWN_VALUE);
   
   // Create segmentation
-  Segmentation *segmentation = RGBDCreateSegmentation(
+  R3Segmentation *segmentation = RGBDCreateSegmentation(
     px_image, py_image, pz_image, nx_image, ny_image, nz_image, 
     depth_image, radius_image, boundary_image, color_image, 
     viewpoint, towards, up);
@@ -258,9 +258,9 @@ RGBDCreateSegmentationChannel(const R2Grid& depth_image,
 
   // Fill segmentation image
   for (int i = 0; i < segmentation->clusters.NEntries(); i++) {
-    Cluster *cluster = segmentation->clusters.Kth(i);
+    R3SegmentationCluster *cluster = segmentation->clusters.Kth(i);
     for (int j = 0; j < cluster->points.NEntries(); j++) {
-      Point *point = cluster->points.Kth(j);
+      R3SegmentationPoint *point = cluster->points.Kth(j);
       if (RNIsNegativeOrZero(point->depth)) continue;
       if (point->data_index < 0) continue;
       if (point->data_index >= output_segmentation_image.NEntries()) continue;

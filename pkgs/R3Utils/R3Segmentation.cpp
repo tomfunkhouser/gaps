@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // Source file for code that does segmentation of points
 ////////////////////////////////////////////////////////////////////////
 
@@ -8,8 +8,7 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
-#include "R3Shapes/R3Shapes.h"
-#include "segmentation.h"
+#include "R3Utils/R3Utils.h"
 
 
 
@@ -19,49 +18,21 @@
 
 namespace gaps {
 
-
+  
 
 //////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////
 
-int min_clusters = 0;
-int max_clusters = 0;
-int min_cluster_points = 0;
-double min_cluster_area = 0;
-double min_cluster_coverage = 0;
-double max_cluster_diameter = 16;
-double max_cluster_primitive_distance = 0.01;
-double max_cluster_normal_angle = RN_PI / 4.0;
-double max_cluster_color_difference = 0.5;
-double max_cluster_timestamp_difference = 0;
-double max_cluster_category_difference = 0;
-double max_pair_centroid_distance = 16;
-double max_pair_primitive_distance = 0.01;
-double max_pair_normal_angle = RN_PI / 4.0;
-double max_pair_color_difference = 0.5;
-double max_pair_timestamp_difference = 0;
-double max_pair_category_difference = 0;
-double min_pair_affinity = RN_EPSILON;
-int max_refinement_iterations = 3;
-int max_reassignment_iterations = 1;
-RNBoolean equalize_cluster_sizes = TRUE;
-RNBoolean balance_cluster_sizes = TRUE;
-RNBoolean favor_convex_clusters = FALSE;
-RNBoolean scale_tolerances_with_depth = FALSE;
-RNBoolean initialize_hierarchically = TRUE;
-RNBoolean allow_outlier_points = FALSE;
-RNBoolean refine_boundaries = TRUE;
-int print_progress = FALSE;
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Point member functions
+// R3SegmentationPoint member functions
 ////////////////////////////////////////////////////////////////////////
 
-Point::
-Point(void)
+R3SegmentationPoint::
+R3SegmentationPoint(void)
   : depth(0),
     position(0,0,0),
     normal(0,0,0),
@@ -89,11 +60,11 @@ Point(void)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Primitive member functions
+// R3SegmentationPrimitive member functions
 ////////////////////////////////////////////////////////////////////////
 
-Primitive::
-Primitive(int primitive_type)
+R3SegmentationPrimitive::
+R3SegmentationPrimitive(int primitive_type)
   : primitive_type(primitive_type),
     bbox(R3null_box),
     centroid(R3zero_point),
@@ -104,8 +75,8 @@ Primitive(int primitive_type)
 
 
 
-Primitive::
-Primitive(const Primitive& primitive)
+R3SegmentationPrimitive::
+R3SegmentationPrimitive(const R3SegmentationPrimitive& primitive)
   : primitive_type(primitive.primitive_type),
     bbox(primitive.bbox),
     centroid(primitive.centroid),
@@ -116,9 +87,9 @@ Primitive(const Primitive& primitive)
 
 
 
-Primitive::
-Primitive(Point *seed_point, const RNArray<Point *> *points)
-  : primitive_type(NULL_PRIMITIVE_TYPE),
+R3SegmentationPrimitive::
+R3SegmentationPrimitive(R3SegmentationPoint *seed_point, const RNArray<R3SegmentationPoint *> *points)
+  : primitive_type(R3_SEGMENTATION_NULL_PRIMITIVE_TYPE),
     bbox(R3null_box),
     centroid(R3zero_point),
     line(R3null_line),
@@ -130,16 +101,16 @@ Primitive(Point *seed_point, const RNArray<Point *> *points)
 
 
 
-RNLength Primitive::
+RNLength R3SegmentationPrimitive::
 Distance(const R3Point& position) const
 {
   // Return distance from primitive to point
-  if (primitive_type == POINT_PRIMITIVE_TYPE) return R3Distance(centroid, position);
-  else if (primitive_type == LINE_PRIMITIVE_TYPE) return R3Distance(line, position);
-  else if (primitive_type == PLANE_PRIMITIVE_TYPE) return R3Distance(plane, position);
+  if (primitive_type == R3_SEGMENTATION_POINT_PRIMITIVE_TYPE) return R3Distance(centroid, position);
+  else if (primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) return R3Distance(line, position);
+  else if (primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) return R3Distance(plane, position);
 #if 0
-  else if (primitive_type == PLANAR_GRID_PRIMITIVE_TYPE) {
-    R2Point grid_position = planar_grid.GridPosition(position);
+  else if (primitive_type == R3_SEGMENTATION_PLANAR_GRID_PRIMITIVE_TYPE) {
+    R2R3SegmentationPoint grid_position = planar_grid.GridPosition(position);
     int ix = (int) (grid_position.X() + 0.5);
     if ((ix < 0) || (ix >= planar_grid.XResolution())) return RN_INFINITY;
     int iy = (int) (grid_position.Y() + 0.5);
@@ -157,11 +128,11 @@ Distance(const R3Point& position) const
 
 
 
-void Primitive::
+void R3SegmentationPrimitive::
 Update(const R3Point& point)
 {
   // Set everything
-  primitive_type = POINT_PRIMITIVE_TYPE;
+  primitive_type = R3_SEGMENTATION_POINT_PRIMITIVE_TYPE;
   this->centroid = point;
   line = R3null_line;
   plane = R3null_plane;
@@ -169,11 +140,11 @@ Update(const R3Point& point)
 
 
 
-void Primitive::
+void R3SegmentationPrimitive::
 Update(const R3Line& line)
 {
   // Set everything
-  primitive_type = LINE_PRIMITIVE_TYPE;
+  primitive_type = R3_SEGMENTATION_LINE_PRIMITIVE_TYPE;
   centroid = R3zero_point;
   centroid.Project(line);
   this->line = line;
@@ -182,11 +153,11 @@ Update(const R3Line& line)
 
 
 
-void Primitive::
+void R3SegmentationPrimitive::
 Update(const R3Plane& plane)
 {
   // Set everything
-  primitive_type = PLANE_PRIMITIVE_TYPE;
+  primitive_type = R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE;
   centroid = R3zero_point;
   centroid.Project(plane);
   line = R3null_line;
@@ -195,19 +166,19 @@ Update(const R3Plane& plane)
 
 
 
-void Primitive::
-Update(Point *seed_point, const RNArray<Point *> *points)
+void R3SegmentationPrimitive::
+Update(R3SegmentationPoint *seed_point, const RNArray<R3SegmentationPoint *> *points)
 {
   // Remember stuff about primitive (so can set same orientation)
   R3Vector previous_vector(0,0,0);
-  if (primitive_type == LINE_PRIMITIVE_TYPE) previous_vector = line.Vector();
-  if (primitive_type == PLANE_PRIMITIVE_TYPE) previous_vector = plane.Normal();
+  if (primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) previous_vector = line.Vector();
+  if (primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) previous_vector = plane.Normal();
 
   // Update bounding box
   bbox = R3null_box;
   if (points) {
     for (int i = 0; i < points->NEntries(); i++) {
-      Point *point = points->Kth(i);
+      R3SegmentationPoint *point = points->Kth(i);
       bbox.Union(point->position);
     }
   }
@@ -236,11 +207,13 @@ Update(Point *seed_point, const RNArray<Point *> *points)
     int npositions = 0;
     int skip = points->NEntries() / max_positions + 1;
     for (int i = 0; i < points->NEntries(); i += skip) {
-      Point *point = points->Kth(i);
+      R3SegmentationPoint *point = points->Kth(i);
       if (npositions >= max_positions-1) break;
       positions[npositions] = point->position;
-      if (primitive_type == PLANE_PRIMITIVE_TYPE) weights[npositions] = fabs(plane.Normal().Dot(point->normal));
-      else if (primitive_type == LINE_PRIMITIVE_TYPE) weights[npositions] = 1.0 - fabs(plane.Normal().Dot(point->normal));
+      if (primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)
+        weights[npositions] = fabs(plane.Normal().Dot(point->normal));
+      else if (primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE)
+        weights[npositions] = 1.0 - fabs(plane.Normal().Dot(point->normal));
       else weights[npositions] = 1.0;
       npositions++;
     }
@@ -256,7 +229,7 @@ Update(Point *seed_point, const RNArray<Point *> *points)
     centroid = R3Centroid(npositions, positions, weights);
 
     // Update primitive parameters
-    if ((primitive_type == NULL_PRIMITIVE_TYPE) && (npositions >= 2)) {
+    if ((primitive_type == R3_SEGMENTATION_NULL_PRIMITIVE_TYPE) && (npositions >= 2)) {
       RNScalar variances[3];
       R3Triad axes = R3PrincipleAxes(centroid, npositions, positions, weights, variances);
       if (variances[0] > RN_EPSILON) {
@@ -264,17 +237,17 @@ Update(Point *seed_point, const RNArray<Point *> *points)
           RNScalar ratio10 = variances[1] / variances[0];
           RNScalar ratio21 = variances[2] / variances[1];
           if (ratio10 < ratio21) {
-            primitive_type = LINE_PRIMITIVE_TYPE;
+            primitive_type = R3_SEGMENTATION_LINE_PRIMITIVE_TYPE;
             line.Reset(centroid, axes[0]);
           }
           else {
-            primitive_type = PLANE_PRIMITIVE_TYPE;
+            primitive_type = R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE;
             plane.Reset(centroid, axes[2]);
           }
         }
       }
     }
-    else if ((primitive_type == LINE_PRIMITIVE_TYPE) && (npositions >= 2)) {
+    else if ((primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) && (npositions >= 2)) {
       // Compute principle directions
       RNScalar variances[3];
       R3Triad axes = R3PrincipleAxes(centroid, npositions, positions, weights, variances);
@@ -288,7 +261,7 @@ Update(Point *seed_point, const RNArray<Point *> *points)
         if (dot < 0) line.Flip();
       }
     }
-    else if ((primitive_type == PLANE_PRIMITIVE_TYPE) && (npositions >= 3)) {
+    else if ((primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) && (npositions >= 3)) {
       // Compute principle directions
       RNScalar variances[3];
       R3Triad axes = R3PrincipleAxes(centroid, npositions, positions, weights, variances);
@@ -311,19 +284,19 @@ Update(Point *seed_point, const RNArray<Point *> *points)
 
 #if 0
     // Rasterize planar grid
-    if (primitive_type == PLANAR_GRID_PRIMITIVE_TYPE) {
+    if (primitive_type == R3_SEGMENTATION_PLANAR_GRID_PRIMITIVE_TYPE) {
       // Rasterize points into planar grid
       R3PlanarGrid density(plane, bbox, min_cluster_spacing);
       for (int i = 0; i < points->NEntries(); i++) {
-        Point *point = points->Kth(i);
+        R3SegmentationPoint *point = points->Kth(i);
         R3Point position = point->position;
-        density.RasterizeWorldPoint(position.X(), position.Y(), position.Z(), 1.0);
+        density.RasterizeWorldR3SegmentationPoint(position.X(), position.Y(), position.Z(), 1.0);
       }
 
       // Reset planar grid
       planar_grid.Reset(plane, bbox, min_cluster_spacing);
       R3Point seed_position = seed_point->position;
-      R2Point grid_position = planar_grid.GridPosition(seed_position);
+      R2R3SegmentationPoint grid_position = planar_grid.GridPosition(seed_position);
       int ix = (int) (grid_position.X() + 0.5);
       int iy = (int) (grid_position.Y() + 0.5);
       FloodCopy(density.grid, planar_grid.grid, ix, iy);
@@ -338,8 +311,8 @@ Update(Point *seed_point, const RNArray<Point *> *points)
 
 
 
-void Primitive::
-Update(Primitive primitive1, Primitive primitive2, RNScalar weight1, RNScalar weight2)
+void R3SegmentationPrimitive::
+Update(R3SegmentationPrimitive primitive1, R3SegmentationPrimitive primitive2, RNScalar weight1, RNScalar weight2)
 {
   // Just checking
   if (weight1 == 0) {
@@ -384,7 +357,7 @@ Update(Primitive primitive1, Primitive primitive2, RNScalar weight1, RNScalar we
     // Update other stuff
     line = R3null_line;
     plane = R3null_plane;
-    if (primitive_type == LINE_PRIMITIVE_TYPE) {
+    if (primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) {
       // Compute line
       R3Vector vector1 = primitive1.line.Vector();
       R3Vector vector2 = primitive2.line.Vector();
@@ -396,7 +369,7 @@ Update(Primitive primitive1, Primitive primitive2, RNScalar weight1, RNScalar we
       vector.Normalize();
       line.Reset(centroid, vector);
     }
-    else if (primitive_type == PLANE_PRIMITIVE_TYPE) {
+    else if (primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) {
       // Compute plane
       R3Vector normal1 = primitive1.plane.Normal();
       R3Vector normal2 = primitive2.plane.Normal();
@@ -414,11 +387,11 @@ Update(Primitive primitive1, Primitive primitive2, RNScalar weight1, RNScalar we
 
 
 ////////////////////////////////////////////////////////////////////////
-// Cluster member functions
+// R3SegmentationCluster member functions
 ////////////////////////////////////////////////////////////////////////
 
-Cluster::
-Cluster(Point *seed_point, int primitive_type)
+R3SegmentationCluster::
+R3SegmentationCluster(R3SegmentationPoint *seed_point, int primitive_type)
   : seed_point(seed_point),
     points(),
     parent(NULL),
@@ -446,8 +419,8 @@ Cluster(Point *seed_point, int primitive_type)
 
 
 
-Cluster::
-Cluster(Point *seed_point, const Primitive& primitive)
+R3SegmentationCluster::
+R3SegmentationCluster(R3SegmentationPoint *seed_point, const R3SegmentationPrimitive& primitive)
   : seed_point(seed_point),
     points(),
     parent(NULL),
@@ -474,8 +447,8 @@ Cluster(Point *seed_point, const Primitive& primitive)
 
 
 
-Cluster::
-Cluster(Cluster *child1, Cluster *child2)
+R3SegmentationCluster::
+R3SegmentationCluster(R3SegmentationCluster *child1, R3SegmentationCluster *child2)
   : seed_point(NULL),
     points(),
     parent(NULL),
@@ -537,7 +510,7 @@ Cluster(Cluster *child1, Cluster *child2)
 
   // Insert points from child1
   while (!child1->points.IsEmpty()) {
-    Point *point = child1->points.Tail();
+    R3SegmentationPoint *point = child1->points.Tail();
     child1->RemovePoint(point);
     RNScalar affinity = Affinity(point);
     if (affinity < 0) affinity = 0;
@@ -547,7 +520,7 @@ Cluster(Cluster *child1, Cluster *child2)
 
   // Insert points from child2
   while (!child2->points.IsEmpty()) {
-    Point *point = child2->points.Tail();
+    R3SegmentationPoint *point = child2->points.Tail();
     child2->RemovePoint(point);
     RNScalar affinity = Affinity(point);
     if (affinity < 0) affinity = 0;
@@ -564,8 +537,8 @@ Cluster(Cluster *child1, Cluster *child2)
 
 
 
-Cluster::
-~Cluster(void)
+R3SegmentationCluster::
+~R3SegmentationCluster(void)
 {
   // Delete children
   // for (int i = 0; i < children.NEntries(); i++) {
@@ -581,7 +554,7 @@ Cluster::
 
 
 
-RNScalar Cluster::
+RNScalar R3SegmentationCluster::
 Coverage(void)
 {
   // Return metric of how well cluster covers points
@@ -591,7 +564,7 @@ Coverage(void)
 
 
 
-R3Triad Cluster::
+R3Triad R3SegmentationCluster::
 PrincipleAxes(R3Point *returned_center, RNScalar *returned_variances) const
 {
   // Check if there are at least three points
@@ -615,10 +588,10 @@ PrincipleAxes(R3Point *returned_center, RNScalar *returned_variances) const
   R3Triad axes = R3PrincipleAxes(center, positions, NULL, returned_variances);
 
   // Check if orientation is compatible with primitive
-  if (primitive.primitive_type == LINE_PRIMITIVE_TYPE) {
+  if (primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) {
     if (primitive.line.Vector().Dot(axes[0]) < 0) axes.Reset(-axes[0], -axes[1], axes[2]);
   }
-  else if (primitive.primitive_type == PLANE_PRIMITIVE_TYPE) {
+  else if (primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) {
     if (primitive.plane.Normal().Dot(axes[2]) < 0) axes.Reset(-axes[0], axes[1], -axes[2]);
   }
 
@@ -628,7 +601,7 @@ PrincipleAxes(R3Point *returned_center, RNScalar *returned_variances) const
 
 
 
-R3Box Cluster::
+R3Box R3SegmentationCluster::
 AxisExtents(void)
 {
   // Get centroid and axes
@@ -652,12 +625,12 @@ AxisExtents(void)
 
 
 
-void Cluster::
+void R3SegmentationCluster::
 EmptyPoints(void)
 {
   // Update points
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     point->cluster = NULL;
     point->cluster_affinity = 0;
     point->cluster_index = -1;
@@ -677,8 +650,8 @@ EmptyPoints(void)
 
 
 
-void Cluster::
-InsertPoint(Point *point, RNScalar affinity)
+void R3SegmentationCluster::
+InsertPoint(R3SegmentationPoint *point, RNScalar affinity)
 {
   // Remove from previous cluster
   if (point->cluster ) {
@@ -709,8 +682,8 @@ InsertPoint(Point *point, RNScalar affinity)
 
 
 
-void Cluster::
-RemovePoint(Point *point)
+void R3SegmentationCluster::
+RemovePoint(R3SegmentationPoint *point)
 {
   // Just checking
   assert(point->cluster == this);
@@ -724,7 +697,7 @@ RemovePoint(Point *point)
 
   // Remove point
   RNArrayEntry *entry = points.KthEntry(point->cluster_index);
-  Point *tail = points.Tail();
+  R3SegmentationPoint *tail = points.Tail();
   tail->cluster_index = point->cluster_index;
   points.EntryContents(entry) = tail;
   points.RemoveTail();
@@ -737,8 +710,8 @@ RemovePoint(Point *point)
 
 
 
-void Cluster::
-InsertChild(Cluster *child)
+void R3SegmentationCluster::
+InsertChild(R3SegmentationCluster *child)
 {
   // Check
   assert(child != this);
@@ -784,7 +757,7 @@ InsertChild(Cluster *child)
   // Update affinities for current points
   if (points.NEntries() < 4 * child->points.NEntries()) {
     for (int i = 0; i < points.NEntries(); i++) {
-      Point *point = points.Kth(i);
+      R3SegmentationPoint *point = points.Kth(i);
       RNScalar affinity = Affinity(point);
       if (affinity < 0) affinity = 0;
       possible_affinity += affinity - point->cluster_affinity;
@@ -795,7 +768,7 @@ InsertChild(Cluster *child)
 
   // Insert points from child
   while (!child->points.IsEmpty()) {
-    Point *point = child->points.Tail();
+    R3SegmentationPoint *point = child->points.Tail();
     child->RemovePoint(point);
     RNScalar affinity = Affinity(point);
     if (affinity < 0) affinity = 0;
@@ -815,8 +788,8 @@ InsertChild(Cluster *child)
 
 
 
-void Cluster::
-RemoveChild(Cluster *child)
+void R3SegmentationCluster::
+RemoveChild(R3SegmentationCluster *child)
 {
   // Update area
   area -= child->area;
@@ -839,9 +812,14 @@ RemoveChild(Cluster *child)
 
 
 
-int Cluster::
-UpdatePoints(const R3Kdtree<Point *> *kdtree)
+int R3SegmentationCluster::
+UpdatePoints(const R3Kdtree<R3SegmentationPoint *> *kdtree)
 {
+  // Get convenient variables
+  double max_cluster_primitive_distance = (segmentation) ? segmentation->max_cluster_primitive_distance : 0;
+  RNBoolean allow_outlier_points = (segmentation) ? segmentation->allow_outlier_points : TRUE;
+  int min_cluster_points = (segmentation) ? segmentation->min_cluster_points : 0;
+  
   // Empty points
   possible_affinity = 0;
   EmptyPoints();  
@@ -850,15 +828,15 @@ UpdatePoints(const R3Kdtree<Point *> *kdtree)
   if (seed_point) {
     // Find connected set of points near primitive
     static int mark = 1;
-    RNArray<Point *> stack;
+    RNArray<R3SegmentationPoint *> stack;
     InsertPoint(seed_point, 1.0);
     stack.Insert(seed_point);
     seed_point->mark = ++mark;
     while (!stack.IsEmpty()) {
-      Point *point = stack.Tail();
+      R3SegmentationPoint *point = stack.Tail();
       stack.RemoveTail();
       for (int i = 0; i < point->neighbors.NEntries(); i++) {
-        Point *neighbor = point->neighbors.Kth(i);
+        R3SegmentationPoint *neighbor = point->neighbors.Kth(i);
         if (neighbor->mark == mark) continue;
         neighbor->mark = mark;
         RNScalar affinity = Affinity(neighbor);
@@ -873,10 +851,13 @@ UpdatePoints(const R3Kdtree<Point *> *kdtree)
   }
   else if (kdtree) {
     // Find all points near primitive
-    RNArray<Point *> points1;
-    if (primitive.primitive_type == POINT_PRIMITIVE_TYPE) kdtree->FindAll(primitive.centroid, 0, max_cluster_primitive_distance, points1);
-    else if (primitive.primitive_type == LINE_PRIMITIVE_TYPE) kdtree->FindAll(primitive.line, 0, max_cluster_primitive_distance, points1);
-    else if (primitive.primitive_type == PLANE_PRIMITIVE_TYPE) kdtree->FindAll(primitive.plane, 0, max_cluster_primitive_distance, points1);
+    RNArray<R3SegmentationPoint *> points1;
+    if (primitive.primitive_type == R3_SEGMENTATION_POINT_PRIMITIVE_TYPE)
+      kdtree->FindAll(primitive.centroid, 0, max_cluster_primitive_distance, points1);
+    else if (primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE)
+      kdtree->FindAll(primitive.line, 0, max_cluster_primitive_distance, points1);
+    else if (primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)
+      kdtree->FindAll(primitive.plane, 0, max_cluster_primitive_distance, points1);
     else RNAbort("Unrecognized primitive type");
 
     // Check points
@@ -886,7 +867,7 @@ UpdatePoints(const R3Kdtree<Point *> *kdtree)
   
     // Insert points
     for (int i = 0; i < points1.NEntries(); i++) {
-      Point *point = points1.Kth(i);
+      R3SegmentationPoint *point = points1.Kth(i);
       RNScalar affinity = Affinity(point);
       if (affinity <= 0) continue;
       possible_affinity += affinity;
@@ -906,18 +887,18 @@ UpdatePoints(const R3Kdtree<Point *> *kdtree)
 
 
 
-int Cluster::
+int R3SegmentationCluster::
 UpdatePrimitive(void)
 {
   // Update primitive
   primitive.Update(seed_point, &points);
-  if (primitive.primitive_type == NULL_PRIMITIVE_TYPE) return 0;
+  if (primitive.primitive_type == R3_SEGMENTATION_NULL_PRIMITIVE_TYPE) return 0;
   else return 1;
 }
 
 
 
-int Cluster::
+int R3SegmentationCluster::
 UpdateColor(void)
 {
   // Update color
@@ -931,7 +912,7 @@ UpdateColor(void)
 
 
 
-int Cluster::
+int R3SegmentationCluster::
 UpdateTimestamp(void)
 {
   // Update timestamp
@@ -945,7 +926,7 @@ UpdateTimestamp(void)
 
 
 
-int Cluster::
+int R3SegmentationCluster::
 UpdateArea(void)
 {
   // Update area
@@ -958,7 +939,7 @@ UpdateArea(void)
 
 
 static RNScalar
-MergedConvexity(const Cluster *cluster1, const Cluster *cluster2)
+MergedConvexity(const R3SegmentationCluster *cluster1, const R3SegmentationCluster *cluster2)
 {
   // THIS DOES NOT MAKE CLUSTERS MORE CONVEX :(
   
@@ -973,9 +954,9 @@ MergedConvexity(const Cluster *cluster1, const Cluster *cluster2)
   int step1 = cluster1->points.NEntries() / max_samples;
   if (step1 == 0) step1 = 1;
   for (int i1 = 0; i1 < cluster1->points.NEntries(); i1 += step1) {
-    Point *point1 = cluster1->points.Kth(i1);
+    R3SegmentationPoint *point1 = cluster1->points.Kth(i1);
     for (int j1 = 0; j1 < point1->neighbors.NEntries(); j1++) {
-      Point *neighbor = point1->neighbors.Kth(j1);
+      R3SegmentationPoint *neighbor = point1->neighbors.Kth(j1);
       if (neighbor->cluster == cluster1) internal1++;
       else if (neighbor->cluster == cluster2) interface1++;
       else external1++;
@@ -989,9 +970,9 @@ MergedConvexity(const Cluster *cluster1, const Cluster *cluster2)
   int step2 = cluster2->points.NEntries() / max_samples;
   if (step2 == 0) step2 = 1;
   for (int i2 = 0; i2 < cluster2->points.NEntries(); i2 += step2) {
-    Point *point2 = cluster2->points.Kth(i2);
+    R3SegmentationPoint *point2 = cluster2->points.Kth(i2);
     for (int j2 = 0; j2 < point2->neighbors.NEntries(); j2++) {
-      Point *neighbor = point2->neighbors.Kth(j2);
+      R3SegmentationPoint *neighbor = point2->neighbors.Kth(j2);
       if (neighbor->cluster == cluster2) internal2++;
       else if (neighbor->cluster == cluster1) interface2++;
       else external2++;
@@ -1007,14 +988,21 @@ MergedConvexity(const Cluster *cluster1, const Cluster *cluster2)
 
 
 
-RNScalar Cluster::
-Affinity(Point *point) const
+RNScalar R3SegmentationCluster::
+Affinity(R3SegmentationPoint *point) const
 {
   // Initialize affinity
   RNScalar affinity = 1.0;
 
   // Get useful variables
   R3Point position = point->position;
+  double max_cluster_diameter = (segmentation) ? segmentation->max_cluster_diameter : 0;
+  double max_cluster_color_difference = (segmentation) ? segmentation->max_cluster_color_difference : 0;
+  double max_cluster_timestamp_difference = (segmentation) ? segmentation->max_cluster_timestamp_difference : 0;
+  double max_cluster_category_difference = (segmentation) ? segmentation->max_cluster_category_difference : 0;
+  double max_cluster_primitive_distance = (segmentation) ? segmentation->max_cluster_primitive_distance : 0;
+  double max_cluster_normal_angle = (segmentation) ? segmentation->max_cluster_normal_angle : 0;
+  RNBoolean scale_tolerances_with_depth = (segmentation) ? segmentation->scale_tolerances_with_depth : FALSE;
 
   // Check color difference
   if (max_cluster_color_difference > 0) {
@@ -1061,14 +1049,14 @@ Affinity(Point *point) const
 
   // Check normal angle
   if (max_cluster_normal_angle > 0) {
-    if (primitive.primitive_type == LINE_PRIMITIVE_TYPE) {
+    if (primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) {
       RNScalar dot = fabs(primitive.line.Vector().Dot(point->normal));
       RNAngle normal_angle = (dot < 1) ? RN_PI_OVER_TWO - acos(dot) : RN_PI_OVER_TWO;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle /= seed_point->depth;
       RNScalar normal_angle_affinity = exp(normal_angle * normal_angle / (-2.0 * 0.25 * max_cluster_normal_angle * max_cluster_normal_angle));
       affinity *= normal_angle_affinity;
     }
-    else if (primitive.primitive_type == PLANE_PRIMITIVE_TYPE) {
+    else if (primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) {
       RNScalar dot = primitive.plane.Normal().Dot(point->normal);
       RNAngle normal_angle = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle /= seed_point->depth;
@@ -1086,9 +1074,22 @@ Affinity(Point *point) const
 
 
 
-RNScalar Cluster::
-Affinity(Cluster *cluster) const
+RNScalar R3SegmentationCluster::
+Affinity(R3SegmentationCluster *cluster) const
 {
+  // Get convenient variables
+  R3Segmentation *segmentation = cluster->segmentation;
+  double max_pair_color_difference = (segmentation) ? segmentation->max_pair_color_difference : 0;
+  double max_pair_timestamp_difference = (segmentation) ? segmentation->max_pair_timestamp_difference : 0;
+  double max_pair_category_difference = (segmentation) ? segmentation->max_pair_category_difference : 0;
+  double max_pair_centroid_distance = (segmentation) ? segmentation->max_pair_centroid_distance : 0;
+  double max_pair_primitive_distance = (segmentation) ? segmentation->max_pair_primitive_distance : 0;
+  double max_pair_normal_angle = (segmentation) ? segmentation->max_pair_normal_angle : 0;
+  RNBoolean equalize_cluster_sizes = (segmentation) ? segmentation->equalize_cluster_sizes : FALSE;
+  RNBoolean balance_cluster_sizes = (segmentation) ? segmentation->balance_cluster_sizes : FALSE;
+  RNBoolean favor_convex_clusters = (segmentation) ? segmentation->favor_convex_clusters : FALSE;
+  RNBoolean scale_tolerances_with_depth = (segmentation) ? segmentation->scale_tolerances_with_depth : FALSE;
+
   // Initialize affinity
   RNScalar affinity = 1;
 
@@ -1149,7 +1150,8 @@ Affinity(Cluster *cluster) const
 
   // Compute normal angle
   if (max_pair_normal_angle > 0) {
-    if ((primitive.primitive_type == LINE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == LINE_PRIMITIVE_TYPE)) {
+    if ((primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) &&
+      (cluster->primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE)) {
       RNScalar dot = fabs(primitive.line.Vector().Dot(cluster->primitive.line.Vector()));
       RNAngle normal_angle = (dot < 1) ? acos(dot) : 0;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle  /= seed_point->depth;
@@ -1157,7 +1159,8 @@ Affinity(Cluster *cluster) const
       affinity *= normal_angle_affinity;
       assert(affinity >= 0);
     }
-    else if ((primitive.primitive_type == PLANE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == LINE_PRIMITIVE_TYPE)) {
+    else if ((primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) &&
+      (cluster->primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE)) {
       RNScalar dot = fabs(primitive.plane.Normal().Dot(cluster->primitive.line.Vector()));
       RNAngle normal_angle = (dot < 1) ? RN_PI_OVER_TWO - acos(dot) : RN_PI_OVER_TWO;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle  /= seed_point->depth;
@@ -1165,7 +1168,8 @@ Affinity(Cluster *cluster) const
       affinity *= normal_angle_affinity;
       assert(affinity >= 0);
     }
-    else if ((primitive.primitive_type == LINE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == PLANE_PRIMITIVE_TYPE)) {
+    else if ((primitive.primitive_type == R3_SEGMENTATION_LINE_PRIMITIVE_TYPE) &&
+      (cluster->primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)) {
       RNScalar dot = fabs(primitive.line.Vector().Dot(cluster->primitive.plane.Normal()));
       RNAngle normal_angle = (dot < 1) ? RN_PI_OVER_TWO - acos(dot) : RN_PI_OVER_TWO;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle  /= seed_point->depth;
@@ -1173,7 +1177,8 @@ Affinity(Cluster *cluster) const
       affinity *= normal_angle_affinity;
       assert(affinity >= 0);
     }
-    else if ((primitive.primitive_type == PLANE_PRIMITIVE_TYPE) && (cluster->primitive.primitive_type == PLANE_PRIMITIVE_TYPE)) {
+    else if ((primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE) &&
+      (cluster->primitive.primitive_type == R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)) {
       RNScalar dot = primitive.plane.Normal().Dot(cluster->primitive.plane.Normal());
       RNAngle normal_angle = (dot > -1) ? ((dot < 1) ? acos(dot) : 0) : RN_PI;
       if (seed_point && (seed_point->depth > 0) && scale_tolerances_with_depth) normal_angle  /= seed_point->depth;
@@ -1227,8 +1232,8 @@ Affinity(Cluster *cluster) const
 static int
 CompareClusters(const void *data1, const void *data2)
 {
-  Cluster *cluster1 = *((Cluster **) data1);
-  Cluster *cluster2 = *((Cluster **) data2);
+  R3SegmentationCluster *cluster1 = *((R3SegmentationCluster **) data1);
+  R3SegmentationCluster *cluster2 = *((R3SegmentationCluster **) data2);
   if (cluster2->total_affinity > cluster1->total_affinity) return 1;
   else if (cluster1->total_affinity > cluster2->total_affinity) return -1;
   else return 0;
@@ -1237,11 +1242,11 @@ CompareClusters(const void *data1, const void *data2)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Pair member functions
+// R3SegmentationPair member functions
 ////////////////////////////////////////////////////////////////////////
 
-Pair::
-Pair(Cluster *cluster1, Cluster *cluster2, RNScalar affinity)
+R3SegmentationPair::
+R3SegmentationPair(R3SegmentationCluster *cluster1, R3SegmentationCluster *cluster2, RNScalar affinity)
   : affinity(affinity),
     heapentry(NULL)
 {
@@ -1272,14 +1277,14 @@ Pair(Cluster *cluster1, Cluster *cluster2, RNScalar affinity)
 
 
 
-Pair::
-~Pair(void)
+R3SegmentationPair::
+~R3SegmentationPair(void)
 {
   // Remove this pair from first cluster
   if (clusters[0]) {
     assert(cluster_index[0] >= 0);
     RNArrayEntry *entry = clusters[0]->pairs.KthEntry(cluster_index[0]);
-    Pair *tail = clusters[0]->pairs.Tail();
+    R3SegmentationPair *tail = clusters[0]->pairs.Tail();
     if (tail->clusters[0] == clusters[0]) tail->cluster_index[0] = cluster_index[0];
     else if (tail->clusters[1] == clusters[0]) tail->cluster_index[1] = cluster_index[0];
     clusters[0]->pairs.EntryContents(entry) = tail;
@@ -1290,7 +1295,7 @@ Pair::
   if (clusters[1]) {
     assert(cluster_index[1] >= 0);
     RNArrayEntry *entry = clusters[1]->pairs.KthEntry(cluster_index[1]);
-    Pair *tail = clusters[1]->pairs.Tail();
+    R3SegmentationPair *tail = clusters[1]->pairs.Tail();
     if (tail->clusters[0] == clusters[1]) tail->cluster_index[0] = cluster_index[1];
     else if (tail->clusters[1] == clusters[1]) tail->cluster_index[1] = cluster_index[1];
     clusters[1]->pairs.EntryContents(entry) = tail;
@@ -1300,46 +1305,116 @@ Pair::
 
 
 
-static Pair *
-FindPair(Cluster *cluster1, Cluster *cluster2) 
+static R3SegmentationPair *
+FindR3SegmentationPair(R3SegmentationCluster *cluster1, R3SegmentationCluster *cluster2) 
 {
   // Swap clusters so that cluster1 has fewer pairs
   if (cluster1->pairs.NEntries() > cluster2->pairs.NEntries()) {
-    Cluster *swap = cluster1; 
+    R3SegmentationCluster *swap = cluster1; 
     cluster1 = cluster2; 
     cluster2 = swap;
   }
 
   // Search for pair
   for (int i = 0; i < cluster1->pairs.NEntries(); i++) {
-    Pair *pair = cluster1->pairs.Kth(i);
+    R3SegmentationPair *pair = cluster1->pairs.Kth(i);
     if (pair->clusters[0] == cluster2) return pair;
     if (pair->clusters[1] == cluster2) return pair;
   }
 
-  // Pair not found
+  // R3SegmentationPair not found
   return NULL;
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Segmentation functions
+// R3Segmentation functions
 ////////////////////////////////////////////////////////////////////////
 
-Segmentation::
-Segmentation(void)
+R3Segmentation::
+R3Segmentation(void)
   : points(),
     kdtree(NULL),
     clusters(),
-    point_buffer(NULL)
+    point_buffer(NULL),
+    min_clusters(0),
+    max_clusters(0),
+    min_cluster_points(0),
+    min_cluster_area(0),
+    min_cluster_coverage(0),
+    max_cluster_diameter(16),
+    max_cluster_primitive_distance(0.01),
+    max_cluster_normal_angle(RN_PI / 4.0),
+    max_cluster_color_difference(0.5),
+    max_cluster_timestamp_difference(0),
+    max_cluster_category_difference(0),
+    max_pair_centroid_distance(16),
+    max_pair_primitive_distance(0.01),
+    max_pair_normal_angle(RN_PI / 4.0),
+    max_pair_color_difference(0.5),
+    max_pair_timestamp_difference(0),
+    max_pair_category_difference(0),
+    min_pair_affinity(RN_EPSILON),
+    max_refinement_iterations(3),
+    max_reassignment_iterations(0),
+    equalize_cluster_sizes(TRUE),
+    balance_cluster_sizes(TRUE),
+    favor_convex_clusters(FALSE),
+    scale_tolerances_with_depth(FALSE),
+    initialize_hierarchically(TRUE),
+    allow_outlier_points(FALSE),
+    refine_boundaries(TRUE),
+    print_progress(FALSE)
 {
 }
 
 
 
-Segmentation::
-~Segmentation(void)
+R3Segmentation::
+R3Segmentation(const R3Segmentation& segmentation)
+  : points(),
+    kdtree(NULL),
+    clusters(),
+    point_buffer(NULL),
+    min_clusters(segmentation.min_clusters),
+    max_clusters(segmentation.max_clusters),
+    min_cluster_points(segmentation.min_cluster_points),
+    min_cluster_area(segmentation.min_cluster_area),
+    min_cluster_coverage(segmentation.min_cluster_coverage),
+    max_cluster_diameter(segmentation.max_cluster_diameter),
+    max_cluster_primitive_distance(segmentation.max_cluster_primitive_distance),
+    max_cluster_normal_angle(segmentation.max_cluster_normal_angle),
+    max_cluster_color_difference(segmentation.max_cluster_color_difference),
+    max_cluster_timestamp_difference(segmentation.max_cluster_timestamp_difference),
+    max_cluster_category_difference(segmentation.max_cluster_category_difference),
+    max_pair_centroid_distance(segmentation.max_pair_centroid_distance),
+    max_pair_primitive_distance(segmentation.max_pair_primitive_distance),
+    max_pair_normal_angle(segmentation.max_pair_normal_angle),
+    max_pair_color_difference(segmentation.max_pair_color_difference),
+    max_pair_timestamp_difference(segmentation.max_pair_timestamp_difference),
+    max_pair_category_difference(segmentation.max_pair_category_difference),
+    min_pair_affinity(segmentation.min_pair_affinity),
+    max_refinement_iterations(segmentation.max_refinement_iterations),
+    max_reassignment_iterations(segmentation.max_reassignment_iterations),
+    equalize_cluster_sizes(segmentation.equalize_cluster_sizes),
+    balance_cluster_sizes(segmentation.balance_cluster_sizes),
+    favor_convex_clusters(segmentation.favor_convex_clusters),
+    scale_tolerances_with_depth(segmentation.scale_tolerances_with_depth),
+    initialize_hierarchically(segmentation.initialize_hierarchically),
+    allow_outlier_points(segmentation.allow_outlier_points),
+    refine_boundaries(segmentation.refine_boundaries),
+    print_progress(segmentation.print_progress)
+{
+  // Not implemented, unless segmentation is empty
+  assert(points.IsEmpty());
+  assert(clusters.IsEmpty());
+}
+
+
+
+R3Segmentation::
+~R3Segmentation(void)
 {
   // Delete clusters
   for (int i = 0; i < clusters.NEntries(); i++) delete clusters[i];
@@ -1354,7 +1429,7 @@ Segmentation::
 
 
 
-RNScalar Segmentation::
+RNScalar R3Segmentation::
 Affinity(void) const
 {
   RNScalar sum = 0;
@@ -1366,13 +1441,13 @@ Affinity(void) const
 
 
 
-int Segmentation::
+int R3Segmentation::
 NUnclusteredPoints(void) const
 {
   // Count unclustered points
   int count = 0;
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     if (!point->cluster) count++;
   }
 
@@ -1382,7 +1457,7 @@ NUnclusteredPoints(void) const
 
 
 
-RNScalar Segmentation::
+RNScalar R3Segmentation::
 AverageNeighborCount(void) const
 {
   // Compute count
@@ -1392,7 +1467,7 @@ AverageNeighborCount(void) const
   // Compute sum
   int sum = 0;
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     sum += point->neighbors.NEntries();
   }
 
@@ -1403,8 +1478,8 @@ AverageNeighborCount(void) const
 
 
 static RNScalar
-PointAffinity(
-  const Point *point1, const Point *point2,
+R3SegmentationPointAffinity(
+  const R3SegmentationPoint *point1, const R3SegmentationPoint *point2,
   double max_distance,
   double max_primitive_distance,
   double max_normal_angle,
@@ -1498,7 +1573,7 @@ PointAffinity(
 
 #if 0
 
-int Segmentation::
+int R3Segmentation::
 CreateNeighbors(
   int max_neighbor_count,
   double max_neighbor_distance,
@@ -1547,9 +1622,9 @@ CreateNeighbors(
   
   // Create cells with lists of points
   int ncells = xres * yres * zres;
-  RNArray<Point *> *cells = new RNArray<Point *> [ ncells ];
+  RNArray<R3SegmentationPoint *> *cells = new RNArray<R3SegmentationPoint *> [ ncells ];
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     const R3Point& p = point->position;
     int ix = xscale * (p.X() - xmin);
     int iy = yscale * (p.Y() - ymin);
@@ -1565,7 +1640,7 @@ CreateNeighbors(
     for (int cy = 0; cy < yres; cy++ ) {
       for (int cx = 0; cx < xres; cx++ ) {
         // Get array of points
-        const RNArray<Point *>& cell_points = cells[cz*xres*yres + cy*xres + cx];
+        const RNArray<R3SegmentationPoint *>& cell_points = cells[cz*xres*yres + cy*xres + cx];
         if (cell_points.IsEmpty()) continue;
         double radius_sum = 0;
         int cell_count = 0;
@@ -1574,7 +1649,7 @@ CreateNeighbors(
         
         // Create neighbors for each point
         for (int i = 0; i < cell_points.NEntries(); i++) {
-          Point *point = cell_points.Kth(i);
+          R3SegmentationPoint *point = cell_points.Kth(i);
 
           // Refine maximum distance for this point
           RNScalar max_d = max_neighbor_distance;
@@ -1609,12 +1684,12 @@ CreateNeighbors(
                       if ((ix < 0) || (ix >= xres)) continue;
 
                       // Get points from cell
-                      const RNArray<Point *> &neighbors = cells[iz*xres*yres + iy*xres + ix];
+                      const RNArray<R3SegmentationPoint *> &neighbors = cells[iz*xres*yres + iy*xres + ix];
                       cell_count++;
 
                       // Find neighbors with highest affinity
                       for (int j = 0; j < neighbors.NEntries(); j++) {
-                        Point *neighbor = neighbors.Kth(j);
+                        R3SegmentationPoint *neighbor = neighbors.Kth(j);
                         point_count++;
 
                         // Check identifier
@@ -1623,7 +1698,7 @@ CreateNeighbors(
                         }
 
                         // Compute affinity
-                        RNScalar affinity = PointAffinity(point, neighbor,
+                        RNScalar affinity = R3SegmentationPointAffinity(point, neighbor,
                           max_d, max_neighbor_primitive_distance,
                           max_neighbor_normal_angle, max_neighbor_color_difference,
                           max_neighbor_timestamp_difference,
@@ -1679,7 +1754,7 @@ CreateNeighbors(
 
   // Reset cluster affinities
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     point->cluster_affinity = 0;
   }
   
@@ -1689,7 +1764,7 @@ CreateNeighbors(
 
 #else
 
-int Segmentation::
+int R3Segmentation::
 CreateNeighbors(
   int max_neighbor_count,
   double max_neighbor_distance,
@@ -1702,8 +1777,8 @@ CreateNeighbors(
   RNBoolean partition_identifiers)
 {
   // Create kdtree of points
-  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-  kdtree = new R3Kdtree<Point *>(points, position_offset);
+  R3SegmentationPoint tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  kdtree = new R3Kdtree<R3SegmentationPoint *>(points, position_offset);
   if (!kdtree) {
     RNFail("Unable to create kdtree\n");
     return 0;
@@ -1711,7 +1786,7 @@ CreateNeighbors(
   
   // Create arrays of neighbor points
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
 
     // Refine maximum distance for this point
     RNScalar max_d = max_neighbor_distance;
@@ -1722,10 +1797,10 @@ CreateNeighbors(
 
     // Create neighbors
     double min_affinity = 0;
-    RNArray<Point *> neighbors;
+    RNArray<R3SegmentationPoint *> neighbors;
     if (kdtree->FindClosest(point, 0, max_d, max_neighbor_count, neighbors)) {
       for (int j = 0; j < neighbors.NEntries(); j++) {
-        Point *neighbor = neighbors.Kth(j);
+        R3SegmentationPoint *neighbor = neighbors.Kth(j);
         if (neighbor == point) continue;
         
         // Check identifier
@@ -1734,7 +1809,7 @@ CreateNeighbors(
         }
 
         // Compute affinity
-        RNScalar affinity = PointAffinity(point, neighbor,
+        RNScalar affinity = R3SegmentationPointAffinity(point, neighbor,
           max_d, max_neighbor_primitive_distance,
           max_neighbor_normal_angle, max_neighbor_color_difference,
           max_neighbor_timestamp_difference,
@@ -1770,7 +1845,7 @@ CreateNeighbors(
 
   // Reset cluster affinities
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     point->cluster_affinity = 0;
   }
   
@@ -1782,12 +1857,12 @@ CreateNeighbors(
 
 
 
-int Segmentation::
+int R3Segmentation::
 UpdatePoints(void)
 {
   // Update normal, tangent, radii, and area from neighbors
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
     if (point->neighbors.NEntries() < 2) continue;
     if (!point->normal.IsZero() && !point->tangent.IsZero() &&
         (point->radius1 > 0) && (point->radius2 > 0)) continue;
@@ -1819,19 +1894,19 @@ UpdatePoints(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 CreateSingletonClusters(int primitive_type)
 {
   // Create cluster for every point
   for (int i = 0; i < points.NEntries(); i++) {
-    Point *point = points.Kth(i);
+    R3SegmentationPoint *point = points.Kth(i);
 
     // Create primitive
-    Primitive primitive(primitive_type);
+    R3SegmentationPrimitive primitive(primitive_type);
     primitive.Update(point);
     
     // Create cluster
-    Cluster *cluster = new Cluster(point, primitive);
+    R3SegmentationCluster *cluster = new R3SegmentationCluster(point, primitive);
 
     // Insert point
     cluster->InsertPoint(point, 1.0);
@@ -1848,7 +1923,7 @@ CreateSingletonClusters(int primitive_type)
 
 
 
-int Segmentation::
+int R3Segmentation::
 CreateRegionGrowingClusters(int primitive_type)
 {
   // Determine how many seed points to skip each iteration
@@ -1866,9 +1941,9 @@ CreateRegionGrowingClusters(int primitive_type)
   int seed_index = 0;
   while (seed_index < points.NEntries()) {
     // Find next seed point
-    Point *seed_point = NULL;
+    R3SegmentationPoint *seed_point = NULL;
     while ((seed_index < points.NEntries()) && !seed_point) {
-      Point *point = points.Kth(seed_index);
+      R3SegmentationPoint *point = points.Kth(seed_index);
       if (!point->cluster) seed_point = point;
       seed_index += skip; 
     }
@@ -1877,9 +1952,9 @@ CreateRegionGrowingClusters(int primitive_type)
     if (!seed_point) break;
 
     // Create cluster
-    Primitive primitive(primitive_type);
+    R3SegmentationPrimitive primitive(primitive_type);
     primitive.Update(seed_point);
-    Cluster *cluster = new Cluster(seed_point, primitive);
+    R3SegmentationCluster *cluster = new R3SegmentationCluster(seed_point, primitive);
     if (!cluster->UpdatePoints(kdtree)) { delete cluster; continue; }
     if (!cluster->UpdateColor()) { delete cluster; continue; }
     if (!cluster->UpdateTimestamp()) { delete cluster; continue; }
@@ -1897,16 +1972,16 @@ CreateRegionGrowingClusters(int primitive_type)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Clustering manipulation functions
+// R3SegmentationClustering manipulation functions
 ////////////////////////////////////////////////////////////////////////
 
-int Segmentation::
+int R3Segmentation::
 ReassignClusters(void)
 {
   // Iteratively update everything
   for (int iter = 0; iter < max_reassignment_iterations; iter++) {
     // Copy list of clusters
-    RNArray<Cluster *> tmp = clusters;
+    RNArray<R3SegmentationCluster *> tmp = clusters;
     tmp.Sort(CompareClusters);
 
     // Will rebuild list of clusters
@@ -1915,7 +1990,7 @@ ReassignClusters(void)
     // Update each cluster
     RNBoolean converged = TRUE;
     for (int i = 0; i < tmp.NEntries(); i++) {
-      Cluster *cluster = tmp.Kth(i);
+      R3SegmentationCluster *cluster = tmp.Kth(i);
       int prev_npoints = cluster->points.NEntries();
 
       // Update cluster (including reassigning points)
@@ -1947,7 +2022,7 @@ ReassignClusters(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 DeleteClusters(void)
 {
   // Check if should delete clusters
@@ -1957,10 +2032,10 @@ DeleteClusters(void)
   clusters.Sort(CompareClusters);
 
   // Separate viable from nonviable ones
-  RNArray<Cluster *> viable_clusters;
-  RNArray<Cluster *> nonviable_clusters;
+  RNArray<R3SegmentationCluster *> viable_clusters;
+  RNArray<R3SegmentationCluster *> nonviable_clusters;
   for (int i = 0; i < clusters.NEntries(); i++) {
-    Cluster *cluster = clusters.Kth(i);
+    R3SegmentationCluster *cluster = clusters.Kth(i);
 
     // Check min_clusters
     if ((min_clusters <= 0) || (i >= min_clusters)) {
@@ -1997,7 +2072,7 @@ DeleteClusters(void)
       }
     }
     
-    // Cluster is viable
+    // R3SegmentationCluster is viable
     cluster->segmentation = this;
     cluster->segmentation_index = viable_clusters.NEntries();    
     viable_clusters.Insert(cluster);
@@ -2005,7 +2080,7 @@ DeleteClusters(void)
 
   // Delete nonviable clusters
   for (int i = 0; i < nonviable_clusters.NEntries(); i++) {
-    Cluster *cluster = nonviable_clusters.Kth(i);
+    R3SegmentationCluster *cluster = nonviable_clusters.Kth(i);
     delete cluster;
   }
 
@@ -2018,7 +2093,7 @@ DeleteClusters(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 MergeClusters(void)
 {
   // Initialize statistics
@@ -2029,34 +2104,34 @@ MergeClusters(void)
   //////////
 
   // Create pairs between clusters with neighbor points
-  RNArray<Pair *> pairs;
+  RNArray<R3SegmentationPair *> pairs;
   for (int i = 0; i < clusters.NEntries(); i++) {
-    Cluster *cluster0 = clusters.Kth(i);
+    R3SegmentationCluster *cluster0 = clusters.Kth(i);
 
     // Sample points
     const int max_points = 64;
     int jstep = cluster0->points.NEntries() / max_points;
     if (jstep == 0) jstep = 1;
     for (int j = 0; j < cluster0->points.NEntries(); j += jstep) {
-      Point *point0 = cluster0->points.Kth(j);
+      R3SegmentationPoint *point0 = cluster0->points.Kth(j);
 
       // Check neighbors
       for (int k = 0; k < point0->neighbors.NEntries(); k++) {
-        Point *point1 = point0->neighbors.Kth(k);
+        R3SegmentationPoint *point1 = point0->neighbors.Kth(k);
         if (point0 == point1) continue;
-        Cluster *cluster1 = point1->cluster;
+        R3SegmentationCluster *cluster1 = point1->cluster;
         if (!cluster1) continue;
         if (cluster0 == cluster1) continue;
 
         // Check if already have pair
-        if (FindPair(cluster0, cluster1)) continue;
+        if (FindR3SegmentationPair(cluster0, cluster1)) continue;
 
         // Compute affinity
         RNScalar affinity = cluster0->Affinity(cluster1);
         if ((affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0) && (min_cluster_area == 0)) continue;
 
         // Create pair
-        Pair *pair = new Pair(cluster0, cluster1, affinity);
+        R3SegmentationPair *pair = new R3SegmentationPair(cluster0, cluster1, affinity);
         if (!pair) continue;
 
         // Insert pair
@@ -2071,17 +2146,17 @@ MergeClusters(void)
   //////////
 
   // Initialize heap
-  Pair tmp;
-  RNHeap<Pair *> heap(&tmp, &tmp.affinity, &tmp.heapentry, FALSE);
+  R3SegmentationPair tmp;
+  RNHeap<R3SegmentationPair *> heap(&tmp, &tmp.affinity, &tmp.heapentry, FALSE);
   for (int i = 0; i < pairs.NEntries(); i++) {
-    Pair *pair = pairs.Kth(i);
+    R3SegmentationPair *pair = pairs.Kth(i);
     heap.Push(pair);
   }
 
   // Merge clusters hierarchically
   while (!heap.IsEmpty()) {
     // Get pair
-    Pair *pair = heap.Pop();
+    R3SegmentationPair *pair = heap.Pop();
 
     // Check if we are done
     if ((pair->affinity < min_pair_affinity) && (cluster_count <= max_clusters) && (min_cluster_points == 0) && (min_cluster_area == 0)) {
@@ -2089,22 +2164,22 @@ MergeClusters(void)
     }
 
     // Get clusters
-    Cluster *cluster0 = pair->clusters[0];
-    Cluster *cluster1 = pair->clusters[1];
+    R3SegmentationCluster *cluster0 = pair->clusters[0];
+    R3SegmentationCluster *cluster1 = pair->clusters[1];
 
     // Check if either cluster has already been merged
     if (cluster0->parent || cluster1->parent) {
       // Find ancestors
-      Cluster *ancestor0 = cluster0;
-      Cluster *ancestor1 = cluster1;
+      R3SegmentationCluster *ancestor0 = cluster0;
+      R3SegmentationCluster *ancestor1 = cluster1;
       while (ancestor0->parent) ancestor0 = ancestor0->parent;
       while (ancestor1->parent) ancestor1 = ancestor1->parent;
       if (ancestor0 != ancestor1) {
-        if (!FindPair(ancestor0, ancestor1)) {
+        if (!FindR3SegmentationPair(ancestor0, ancestor1)) {
           RNScalar affinity = ancestor0->Affinity(ancestor1);
           if ((cluster_count > max_clusters) || (min_cluster_points > 0) || (min_cluster_area > 0) || (affinity >= min_pair_affinity)) {
             // Create a pair between the ancestors
-            Pair *pair = new Pair(ancestor0, ancestor1, affinity);
+            R3SegmentationPair *pair = new R3SegmentationPair(ancestor0, ancestor1, affinity);
             heap.Push(pair);
             push_count++;
           }
@@ -2134,14 +2209,14 @@ MergeClusters(void)
 
 #if 0
       // Create merged cluster
-      Cluster *cluster = new Cluster(cluster0, cluster1);
+      R3SegmentationCluster *cluster = new R3SegmentationCluster(cluster0, cluster1);
       clusters.Insert(cluster);
       cluster_count--;
       merge_count++;
 #else
       // Merge smaller cluster into bigger one
-      Cluster *parent = (cluster0->points.NEntries() > cluster1->points.NEntries()) ? cluster0 : cluster1;
-      Cluster *child = (cluster0->points.NEntries() > cluster1->points.NEntries()) ? cluster1 : cluster0;
+      R3SegmentationCluster *parent = (cluster0->points.NEntries() > cluster1->points.NEntries()) ? cluster0 : cluster1;
+      R3SegmentationCluster *child = (cluster0->points.NEntries() > cluster1->points.NEntries()) ? cluster1 : cluster0;
       parent->InsertChild(child);
       cluster_count--;
       merge_count++;
@@ -2153,11 +2228,11 @@ MergeClusters(void)
   }
 
   // Remove merged clusters
-  RNArray<Cluster *> merged_clusters;
-  RNArray<Cluster *> all_clusters = clusters;
+  RNArray<R3SegmentationCluster *> merged_clusters;
+  RNArray<R3SegmentationCluster *> all_clusters = clusters;
   clusters.Empty();
   for (int i = 0; i < all_clusters.NEntries(); i++) {
-    Cluster *cluster = all_clusters.Kth(i);
+    R3SegmentationCluster *cluster = all_clusters.Kth(i);
     cluster->segmentation = this;
     cluster->segmentation_index = clusters.NEntries();    
     if (!cluster->parent) { clusters.Insert(cluster); continue; }
@@ -2167,7 +2242,7 @@ MergeClusters(void)
 
   // Delete merged clusters
   for (int i = 0; i < merged_clusters.NEntries(); i++) {
-    Cluster *cluster = merged_clusters.Kth(i);
+    R3SegmentationCluster *cluster = merged_clusters.Kth(i);
     delete cluster;
   }
 
@@ -2177,13 +2252,13 @@ MergeClusters(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 MergeSmallClusters(void)
 {
   // Find small clusters
-  RNArray<Cluster *> small_clusters;
+  RNArray<R3SegmentationCluster *> small_clusters;
   for (int i = 0; i < clusters.NEntries(); i++) {
-    Cluster *cluster = clusters.Kth(i);
+    R3SegmentationCluster *cluster = clusters.Kth(i);
     assert(!cluster->parent);
     if (cluster->points.NEntries() >= min_cluster_points) continue;
     small_clusters.Insert(cluster);
@@ -2193,9 +2268,9 @@ MergeSmallClusters(void)
   if (small_clusters.NEntries() < 2) return 1;
 
   // Merge n-1 small clusters into first one
-  Cluster *cluster0 = small_clusters.Kth(0);
+  R3SegmentationCluster *cluster0 = small_clusters.Kth(0);
   for (int i = 1; i < small_clusters.NEntries(); i++) {
-    Cluster *cluster = small_clusters.Kth(i);
+    R3SegmentationCluster *cluster = small_clusters.Kth(i);
     if (cluster == cluster0) continue;
     cluster0->InsertChild(cluster);
     assert(cluster->parent == cluster0);
@@ -2204,10 +2279,10 @@ MergeSmallClusters(void)
   }
 
   // Rebuild list of clusters
-  RNArray<Cluster *> all_clusters = clusters;
+  RNArray<R3SegmentationCluster *> all_clusters = clusters;
   clusters.Empty();
   for (int i = 0; i < all_clusters.NEntries(); i++) {
-    Cluster *cluster = all_clusters.Kth(i);
+    R3SegmentationCluster *cluster = all_clusters.Kth(i);
     if (!cluster->parent) {
       assert((cluster == cluster0) || (cluster->points.NEntries() >= min_cluster_points));
       cluster->segmentation = this;
@@ -2227,7 +2302,7 @@ MergeSmallClusters(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 SplitClusters(void)
 {
 #if 0
@@ -2235,10 +2310,10 @@ SplitClusters(void)
   if (min_cluster_spacing <= 0) return 1;
 
   // Split connected components
-  RNArray<Cluster *> tmp = clusters;
+  RNArray<R3SegmentationCluster *> tmp = clusters;
   clusters.Empty();
   for (int i = 0; i < tmp.NEntries(); i++) {
-    Cluster *cluster = tmp.Kth(i);
+    R3SegmentationCluster *cluster = tmp.Kth(i);
 
     // Check cluster area
     if (cluster->area < min_cluster_area) continue;
@@ -2249,9 +2324,9 @@ SplitClusters(void)
     // Rasterize points into planar grid
     R3PlanarGrid grid(cluster->primitive.plane, cluster->primitive.bbox, min_cluster_spacing);
     for (int j = 0; j < cluster->points.NEntries(); j++) {
-      Point *point = cluster->points.Kth(j);
+      R3SegmentationPoint *point = cluster->points.Kth(j);
       R3Point position = point->position;
-      grid.RasterizeWorldPoint(position.X(), position.Y(), position.Z(), 1.0);
+      grid.RasterizeWorldR3SegmentationPoint(position.X(), position.Y(), position.Z(), 1.0);
     }
 
     // Compute connected components
@@ -2270,11 +2345,11 @@ SplitClusters(void)
       // Create cluster for each connnected component
       for (int j = 0; j < ncomponents; j++) {
         // Make array of points in component
-        RNArray<Point *> component_points;
+        RNArray<R3SegmentationPoint *> component_points;
         for (int k = 0; k < cluster->points.NEntries(); k++) {
-          Point *point = cluster->points.Kth(k);
+          R3SegmentationPoint *point = cluster->points.Kth(k);
           R3Point world_position = point->position;
-          R2Point grid_position = grid.GridPosition(world_position);
+          R2R3SegmentationPoint grid_position = grid.GridPosition(world_position);
           int ix = (int) (grid_position.X() + 0.5);
           int iy = (int) (grid_position.Y() + 0.5);
           int index; grid.Grid().IndicesToIndex(ix, iy, index);
@@ -2288,17 +2363,17 @@ SplitClusters(void)
           // Find centroid
           R3Point centroid = R3zero_point;
           for (int k = 0; k < component_points.NEntries(); k++) {
-            Point *point = component_points.Kth(k);
+            R3SegmentationPoint *point = component_points.Kth(k);
             R3Point world_position = point->position;
             centroid += world_position;
           }
           centroid /= component_points.NEntries();
 
           // Find seed point
-          Point *seed_point = NULL;
+          R3SegmentationPoint *seed_point = NULL;
           RNLength min_dd = FLT_MAX;
           for (int k = 0; k < component_points.NEntries(); k++) {
-            Point *point = component_points.Kth(k);
+            R3SegmentationPoint *point = component_points.Kth(k);
             R3Point world_position = point->position;
             RNLength dd = R3SquaredDistance(centroid, world_position);
             if (dd < min_dd) { seed_point = point; min_dd = dd; }
@@ -2307,12 +2382,12 @@ SplitClusters(void)
           // Check seed point
           if (seed_point) {
             // Create cluster
-            Cluster *c = new Cluster(seed_point, PLANE_PRIMITIVE_TYPE);
+            R3SegmentationCluster *c = new R3SegmentationCluster(seed_point, R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE);
             c->possible_affinity = cluster->possible_affinity;
 
             // Insert points into cluster
             for (int k = 0; k < component_points.NEntries(); k++) {
-              Point *point = component_points.Kth(k);
+              R3SegmentationPoint *point = component_points.Kth(k);
               c->InsertPoint(point);
             }
 
@@ -2351,7 +2426,7 @@ SplitClusters(void)
 
 
 
-int Segmentation::
+int R3Segmentation::
 RefineBoundaries(void)
 {
   // Check if should refine boundaries
@@ -2361,19 +2436,19 @@ RefineBoundaries(void)
   for (int iter = 0; iter < 1000; iter++) {
     RNBoolean done = TRUE;
     for (int i0 = 0; i0 < points.NEntries(); i0++) {
-      Point *point0 = points.Kth(i0);
+      R3SegmentationPoint *point0 = points.Kth(i0);
       if (point0->neighbors.NEntries() < 3) continue;
-      Cluster *cluster0 = point0->cluster;
+      R3SegmentationCluster *cluster0 = point0->cluster;
       if (!cluster0) continue;
       int i1 = RNRandomScalar() * point0->neighbors.NEntries();
-      Point *point1 = point0->neighbors.Kth(i1);
-      Cluster *cluster1 = point1->cluster;
+      R3SegmentationPoint *point1 = point0->neighbors.Kth(i1);
+      R3SegmentationCluster *cluster1 = point1->cluster;
       if (!cluster1) continue;
       if (cluster0 == cluster1) continue;
       int count = 0;
       for (int i2 = 0; i2 < point0->neighbors.NEntries(); i2++) {
-        Point *point2 = point0->neighbors.Kth(i2);
-        Cluster *cluster2 = point2->cluster;
+        R3SegmentationPoint *point2 = point0->neighbors.Kth(i2);
+        R3SegmentationCluster *cluster2 = point2->cluster;
         if (!cluster2) continue;
         if (cluster2 == cluster1) count++;
       }
@@ -2397,7 +2472,7 @@ RefineBoundaries(void)
 // Top-level segmentation functions
 ////////////////////////////////////////////////////////////////////////
 
-int Segmentation::
+int R3Segmentation::
 CreateClusters(int primitive_type)
 {
   // Print debug message
@@ -2520,7 +2595,7 @@ CreateClusters(int primitive_type)
 
 
 
-int Segmentation::
+int R3Segmentation::
 WriteFile(const char *filename) const
 {
   // Open file
@@ -2532,7 +2607,7 @@ WriteFile(const char *filename) const
 
   // Write clusters to file
   for (int i = 0; i < clusters.NEntries(); i++) {
-    Cluster *cluster = clusters.Kth(i);
+    R3SegmentationCluster *cluster = clusters.Kth(i);
     R3Point center;
     RNScalar variances[3];
     R3Triad axes = cluster->PrincipleAxes(&center, variances);
@@ -2559,4 +2634,42 @@ WriteFile(const char *filename) const
 
 
 
-} // end namespace
+int R3Segmentation::
+PrintParameters(FILE *fp) const
+{
+  // Check fp
+  if (!fp) fp = stdout;
+
+  // Print all parameters
+  fprintf(fp, "Min clusters = %d\n", min_clusters);
+  fprintf(fp, "Max clusters = %d\n", max_clusters);
+  fprintf(fp, "Min cluster points = %d\n", min_cluster_points);
+  fprintf(fp, "Min cluster area = %g\n", min_cluster_area);
+  fprintf(fp, "Min cluster coverage = %g\n", min_cluster_coverage);
+  fprintf(fp, "Max cluster diameter = %g\n", max_cluster_diameter);
+  fprintf(fp, "Max cluster primitive distance = %g\n", max_cluster_primitive_distance);
+  fprintf(fp, "Max cluster normal angle = %g\n", max_cluster_normal_angle);
+  fprintf(fp, "Max cluster color difference = %g\n", max_cluster_color_difference);
+  fprintf(fp, "Max cluster timestamp difference = %g\n", max_cluster_timestamp_difference);
+  fprintf(fp, "Max cluster category difference = %g\n", max_cluster_category_difference);
+  fprintf(fp, "Max pair centroid distance = %g\n", max_pair_centroid_distance);
+  fprintf(fp, "Max pair primitive distance = %g\n", max_pair_primitive_distance);
+  fprintf(fp, "Max pair normal angle = %g\n", max_pair_normal_angle);
+  fprintf(fp, "Max pair color difference = %g\n", max_pair_color_difference);
+  fprintf(fp, "Max pair timestamp difference = %g\n", max_pair_timestamp_difference);
+  fprintf(fp, "Max pair category difference = %g\n", max_pair_category_difference);
+  fprintf(fp, "Min pair affinity = %g\n", min_pair_affinity);
+  fprintf(fp, "Max refinement iterations = %d\n", max_refinement_iterations);  
+  fprintf(fp, "Max reassignment iterations = %d\n", max_reassignment_iterations);  
+  fprintf(fp, "Equalize cluster sizes = %d\n", equalize_cluster_sizes);
+  fprintf(fp, "Balance cluster sizes = %d\n", balance_cluster_sizes);
+  fprintf(fp, "Favor convex clusters = %d\n", favor_convex_clusters);
+  fprintf(fp, "Scale tolerances with depth = %d\n", scale_tolerances_with_depth);
+  fprintf(fp, "Initialize hierarchically = %d\n", initialize_hierarchically);
+  fprintf(fp, "Allow outlier points = %d\n", allow_outlier_points);
+  fprintf(fp, "Refine boundaries = %d\n", refine_boundaries);
+
+  // Return success
+  return 1;
+}
+} // end namespace gaps

@@ -3,7 +3,7 @@
 #
 
 NAME=conf2img
-CCSRCS=$(NAME).cpp RGBDSegmentation.cpp segmentation.cpp
+CCSRCS=$(NAME).cpp RGBDSegmentation.cpp 
 
 
 
@@ -11,7 +11,7 @@ CCSRCS=$(NAME).cpp RGBDSegmentation.cpp segmentation.cpp
 # Dependency libraries
 #
 
-PKG_LIBS=-lRGBD -lR3Graphics -lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng
+PKG_LIBS=-lRGBD -lR3Graphics -lR3Utils -lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng
 
 
 #

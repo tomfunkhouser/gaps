@@ -9,7 +9,7 @@
 namespace gaps {}
 using namespace gaps;
 #include "R3Shapes/R3Shapes.h"
-#include "segmentation.h"
+#include "R3Utils/R3Utils.h"
 
 
 
@@ -25,6 +25,7 @@ static double max_neighbor_normal_angle = 0;
 static double max_neighbor_color_difference = 0;
 static int set_face_materials = 0;
 static int refine_mesh_boundaries = 1;
+static R3Segmentation options;
 static int print_verbose = 0;
 
 
@@ -187,7 +188,7 @@ WriteJson(R3Mesh *mesh, const char *filename)
 
 
 static int
-WriteAscii(Segmentation *segmentation, const char *filename)
+WriteAscii(R3Segmentation *segmentation, const char *filename)
 {
   // Check filename
   if (!filename) return 1;
@@ -217,11 +218,11 @@ WriteAscii(Segmentation *segmentation, const char *filename)
 ////////////////////////////////////////////////////////////////////////
 
 static int 
-CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
+CreatePoints(R3Mesh *mesh, R3Segmentation *segmentation)
 {
   // Allocate points
   int npoints = mesh->NFaces();
-  segmentation->point_buffer = new Point [ npoints ];
+  segmentation->point_buffer = new R3SegmentationPoint [ npoints ];
   if (!segmentation->point_buffer) {
     RNFail("Unable to allocate points\n");
     return 0;
@@ -230,7 +231,7 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
   // Fill points
   for (int i = 0; i < mesh->NFaces(); i++) {
     R3MeshFace *face = mesh->Face(i);
-    Point *point = &segmentation->point_buffer[i];
+    R3SegmentationPoint *point = &segmentation->point_buffer[i];
     point->position = mesh->FaceCentroid(face);
     point->normal = mesh->FaceNormal(face);
     point->radius1 = 2 * sqrt(mesh->FaceArea(face));
@@ -250,8 +251,8 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
   }
 
   // Create kdtree of points
-  Point tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
-  segmentation->kdtree = new R3Kdtree<Point *>(segmentation->points, position_offset);
+  R3SegmentationPoint tmp; int position_offset = (unsigned char *) &(tmp.position) - (unsigned char *) &tmp;
+  segmentation->kdtree = new R3Kdtree<R3SegmentationPoint *>(segmentation->points, position_offset);
   if (!segmentation->kdtree) {
     RNFail("Unable to create kdtree\n");
     return 0;
@@ -260,14 +261,14 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
   // Create arrays of neighbor points
   for (int i = 0; i <  mesh->NFaces(); i++) {
     R3MeshFace *face = mesh->Face(i);
-    Point *point = segmentation->points.Kth(i);
+    R3SegmentationPoint *point = segmentation->points.Kth(i);
     for (int j = 0; j < 3; j++) {
       // Get neighbor face
       R3MeshFace *neighbor_face = mesh->FaceOnFace(face, j);
       if (!neighbor_face) continue;
 
       // Get neighbor point
-      Point *neighbor_point = segmentation->points.Kth(mesh->FaceID(neighbor_face));
+      R3SegmentationPoint *neighbor_point = segmentation->points.Kth(mesh->FaceID(neighbor_face));
 
       // Check normal angle
       if (max_neighbor_normal_angle > 0) {
@@ -297,7 +298,7 @@ CreatePoints(R3Mesh *mesh, Segmentation *segmentation)
 
 
 static int 
-UpdateMesh(R3Mesh *mesh, Segmentation *segmentation)
+UpdateMesh(R3Mesh *mesh, R3Segmentation *segmentation)
 {
   // Clear mesh info
   for (int i = 0; i < mesh->NFaces(); i++) {
@@ -307,9 +308,9 @@ UpdateMesh(R3Mesh *mesh, Segmentation *segmentation)
 
   // Update mesh info
   for (int i = 0; i < segmentation->clusters.NEntries(); i++) {
-    Cluster *cluster = segmentation->clusters.Kth(i);
+    R3SegmentationCluster *cluster = segmentation->clusters.Kth(i);
     for (int j = 0; j < cluster->points.NEntries(); j++) {
-      Point *point = cluster->points.Kth(j);
+      R3SegmentationPoint *point = cluster->points.Kth(j);
       R3MeshFace *face = mesh->Face(point->data_index);
       mesh->SetFaceSegment(face, i);
     }
@@ -321,7 +322,7 @@ UpdateMesh(R3Mesh *mesh, Segmentation *segmentation)
 
 
 
-static Segmentation *
+static R3Segmentation *
 CreateSegmentation(R3Mesh *mesh)
 {
   // Start statistics
@@ -329,23 +330,17 @@ CreateSegmentation(R3Mesh *mesh)
   start_time.Read();
 
   // Allocate segmentation
-  Segmentation *segmentation = new Segmentation();
+  R3Segmentation *segmentation = new R3Segmentation(options);
   if (!segmentation) {
-    RNFail("Unable to allocate segmentation\n");
+    RNFail("Unable to allocation segmentation\n");
     return NULL;
   }
 
   // Create points
-  if (!CreatePoints(mesh, segmentation)) {
-    delete segmentation;
-    return NULL;
-  }
+  if (!CreatePoints(mesh, segmentation)) return NULL;
 
   // Create clusters
-  if (!segmentation->CreateClusters(PLANE_PRIMITIVE_TYPE)) {
-    delete segmentation;
-    return NULL;
-  }
+  if (!segmentation->CreateClusters(R3_SEGMENTATION_PLANE_PRIMITIVE_TYPE)) return NULL;
 
   // Print statistics
   if (print_verbose) {
@@ -392,9 +387,9 @@ RefineBoundaries(R3Mesh *mesh)
       RNAngle angle0 = R3InteriorAngle(normal, normal0);
       RNAngle angle1 = R3InteriorAngle(normal, normal1);
       RNAngle angle2 = R3InteriorAngle(normal, normal2);
-      if (angle0 > max_pair_normal_angle) segment0 = -1;
-      if (angle1 > max_pair_normal_angle) segment1 = -1;
-      if (angle2 > max_pair_normal_angle) segment2 = -1;
+      if (angle0 > options.max_pair_normal_angle) segment0 = -1;
+      if (angle1 > options.max_pair_normal_angle) segment1 = -1;
+      if (angle2 > options.max_pair_normal_angle) segment2 = -1;
       if ((segment != segment0) && (segment0 >= 0) && (segment1 >= 0) && (segment0 == segment1)) {
         mesh->SetFaceSegment(face, segment0);
         done = FALSE;
@@ -513,49 +508,50 @@ RefineBoundaries(R3Mesh *mesh)
 static int 
 ParseArgs(int argc, char **argv)
 {
-  // Set default parameters
-  max_reassignment_iterations = 0;
-
   // Parse arguments
   argc--; argv++;
   while (argc > 0) {
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
-      else if (!strcmp(*argv, "-debug")) print_progress = 1;
+      else if (!strcmp(*argv, "-debug")) options.print_progress = 1;
       else if (!strcmp(*argv, "-dont_refine_boundaries")) refine_mesh_boundaries = 0;
       else if (!strcmp(*argv, "-refine_boundaries")) refine_mesh_boundaries = 1;
       else if (!strcmp(*argv, "-set_face_materials")) set_face_materials = 1;
-      else if (!strcmp(*argv, "-initialize_with_region_growing")) initialize_hierarchically = 0;
-      else if (!strcmp(*argv, "-allow_outlier_points")) allow_outlier_points = 1;
+      else if (!strcmp(*argv, "-initialize_with_region_growing")) {
+        options.initialize_hierarchically = 0;
+      }
+      else if (!strcmp(*argv, "-allow_outlier_points")) {
+        options.allow_outlier_points = 1;
+      }
       else if (!strcmp(*argv, "-min_segments")) {
-        argc--; argv++; min_clusters = atoi(*argv);
+        argc--; argv++; options.min_clusters = atoi(*argv);
       }
       else if (!strcmp(*argv, "-max_segments")) {
-        argc--; argv++; max_clusters = atoi(*argv);
+        argc--; argv++; options.max_clusters = atoi(*argv);
       }
       else if (!strcmp(*argv, "-min_pair_affinity")) {
-        argc--; argv++; min_pair_affinity = atof(*argv);
+        argc--; argv++; options.min_pair_affinity = atof(*argv);
       }
       else if (!strcmp(*argv, "-max_refinement_iterations")) {
-        argc--; argv++; max_refinement_iterations = atoi(*argv);
+        argc--; argv++; options.max_refinement_iterations = atoi(*argv);
       }
       else if (!strcmp(*argv, "-max_reassignment_iterations")) {
-        argc--; argv++; max_reassignment_iterations = atoi(*argv);
+        argc--; argv++; options.max_reassignment_iterations = atoi(*argv);
       }
       else if (!strcmp(*argv, "-max_distance")) {
         argc--; argv++; RNScalar max_distance = atof(*argv);
-        max_cluster_primitive_distance = max_distance;
-        max_pair_primitive_distance = max_distance;
+        options.max_cluster_primitive_distance = max_distance;
+        options.max_pair_primitive_distance = max_distance;
       }
       else if (!strcmp(*argv, "-max_angle")) {
         argc--; argv++; RNScalar max_angle = atof(*argv);
-        max_cluster_normal_angle = max_angle;
-        max_pair_normal_angle = max_angle;
+        options.max_cluster_normal_angle = max_angle;
+        options.max_pair_normal_angle = max_angle;
       }
       else if (!strcmp(*argv, "-max_color_difference")) {
         argc--; argv++; RNScalar max_color_difference = atof(*argv);
-        max_cluster_color_difference = max_color_difference;
-        max_pair_color_difference = max_color_difference;
+        options.max_cluster_color_difference = max_color_difference;
+        options.max_pair_color_difference = max_color_difference;
       }
       else if (!strcmp(*argv, "-max_neighbor_normal_angle")) {
         argc--; argv++; max_neighbor_normal_angle = atof(*argv);
@@ -564,10 +560,10 @@ ParseArgs(int argc, char **argv)
         argc--; argv++; max_neighbor_color_difference = atof(*argv);
       }
       else if (!strcmp(*argv, "-min_faces_per_segment")) {
-        argc--; argv++; min_cluster_points = atoi(*argv);
+        argc--; argv++; options.min_cluster_points = atoi(*argv);
       }
       else if (!strcmp(*argv, "-min_area_per_segment")) {
-        argc--; argv++; min_cluster_area = atof(*argv);
+        argc--; argv++; options.min_cluster_area = atof(*argv);
       }
       else if (!strcmp(*argv, "-output_json")) {
         argc--; argv++; output_json_name = *argv;
@@ -616,7 +612,7 @@ main(int argc, char **argv)
   if (!mesh) exit(-1);
 
   // Create segmentation
-  Segmentation *segmentation = CreateSegmentation(mesh);
+  R3Segmentation *segmentation = CreateSegmentation(mesh);
   if (!segmentation) exit(-1);
 
   // Update mesh
@@ -635,9 +631,6 @@ main(int argc, char **argv)
 
   // Write segments to ascii file
   if (!WriteAscii(segmentation, output_ascii_name)) exit(-1);
-
-  // Delete segmentation
-  delete segmentation;
 
   // Delete mesh
   delete mesh;

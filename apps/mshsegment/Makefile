@@ -3,7 +3,7 @@
 #
 
 NAME=mshsegment
-CCSRCS=$(NAME).cpp segmentation.cpp
+CCSRCS=$(NAME).cpp
 
 
 
@@ -11,7 +11,7 @@ CCSRCS=$(NAME).cpp segmentation.cpp
 # Dependency libraries
 #
 
-PKG_LIBS=-lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng 
+PKG_LIBS=-lR3Utils -lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng 
 
 
 
