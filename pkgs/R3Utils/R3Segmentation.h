@@ -41,7 +41,7 @@ enum {
 // Type definitions
 ////////////////////////////////////////////////////////////////////////
 
-struct R3SegmentationPoint {
+class R3SegmentationPoint {
 public:
   R3SegmentationPoint(void);
 public:
@@ -61,17 +61,19 @@ public:
   unsigned int boundary;
   unsigned int identifier;
   RNArray<R3SegmentationPoint *> neighbors;
-  struct R3SegmentationCluster *cluster;
+  class R3SegmentationCluster *cluster;
   RNScalar cluster_affinity;
   int cluster_index;
   int data_index;
   int mark;
 };
 
-struct R3SegmentationPrimitive {
+class R3SegmentationPrimitive {
+public:
   R3SegmentationPrimitive(int primitive_type = 0);
   R3SegmentationPrimitive(const R3SegmentationPrimitive& primitive);
   R3SegmentationPrimitive(R3SegmentationPoint *seed_point, const RNArray<R3SegmentationPoint *> *points = NULL);
+public:
   RNLength Distance(const R3Point& position) const;
   void Update(const R3Point& point);
   void Update(const R3Line& line);
@@ -86,12 +88,13 @@ public:
   R3Plane plane;
 };
 
-struct R3SegmentationCluster {
+class R3SegmentationCluster {
 public:
   R3SegmentationCluster(R3SegmentationPoint *seed_point = NULL, int primitive_type = 0);
   R3SegmentationCluster(R3SegmentationPoint *seed_point, const R3SegmentationPrimitive& primitive);
   R3SegmentationCluster(R3SegmentationCluster *child1, R3SegmentationCluster *child2);
   ~R3SegmentationCluster(void);
+public:
   RNScalar Coverage(void);
   R3Triad PrincipleAxes(R3Point *returned_center = NULL, RNScalar *returned_variances = NULL) const;
   R3Box AxisExtents(void);
@@ -112,7 +115,7 @@ public:
   RNArray<R3SegmentationPoint *> points;
   R3SegmentationCluster *parent;
   RNArray<R3SegmentationCluster *> children;
-  RNArray<struct R3SegmentationPair *> pairs;
+  RNArray<class R3SegmentationPair *> pairs;
   R3SegmentationPrimitive primitive;
   RNArea area;
   RNRgb color;
@@ -121,11 +124,11 @@ public:
   RNScalar category_confidence;
   RNScalar possible_affinity; 
   RNScalar total_affinity;
-  struct R3Segmentation *segmentation;
+  class R3Segmentation *segmentation;
   int segmentation_index;
 };
 
-struct R3SegmentationPair {
+class R3SegmentationPair {
 public:
   R3SegmentationPair(R3SegmentationCluster *cluster1 = NULL, R3SegmentationCluster *cluster2 = NULL, RNScalar affinity = 0);
   ~R3SegmentationPair(void);
@@ -136,11 +139,12 @@ public:
   R3SegmentationPair **heapentry;
 };
 
-struct R3Segmentation {
+class R3Segmentation {
 public:
   R3Segmentation(void);
   R3Segmentation(const R3Segmentation& segmentation);
   ~R3Segmentation(void);
+public:
   RNScalar Affinity(void) const;
   RNScalar AverageNeighborCount(void) const;
   int NUnclusteredPoints(void) const;
@@ -175,7 +179,6 @@ public:
   R3Kdtree<R3SegmentationPoint *> *kdtree;
   RNArray<R3SegmentationCluster *> clusters;
   R3SegmentationPoint *point_buffer;
-
 public:
   // Parameters
   int min_clusters;
