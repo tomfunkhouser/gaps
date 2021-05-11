@@ -1737,7 +1737,8 @@ CreateNeighbors(
           }
         }
 
-        if (0 && !cell_points.IsEmpty()) {
+#if 0
+        if (!cell_points.IsEmpty()) {
           printf("%d %d %d/%d: %d : %8.2f %8.2f %8.2f %8.2f\n",
             cx, cy, cz, zres, cell_points.NEntries(),
             radius_sum / (double) cell_points.NEntries(),
@@ -1745,6 +1746,7 @@ CreateNeighbors(
             (double) point_count / (double) cell_points.NEntries(),
             (double) neighbor_count / (double) cell_points.NEntries());
         }
+#endif
       }
     }
   }
@@ -2197,8 +2199,9 @@ MergeClusters(void)
       if ((max_clusters > 0) && (cluster_count > max_clusters)) merge = TRUE;
       if (!merge) { delete pair; continue; }
 
+#if 0
       // Print message
-      if (0 && print_progress) {
+      if (print_progress) {
         static unsigned long count = 0;
         if ((count++ % 1000) == 0) {
           printf("        %15.12f : %9d %9d : %15d %15d %15d %15d\n", pair->affinity, 
@@ -2206,7 +2209,8 @@ MergeClusters(void)
                  heap.NEntries(), merge_count, push_count, cluster_count);
         }
       }
-
+#endif
+      
 #if 0
       // Create merged cluster
       R3SegmentationCluster *cluster = new R3SegmentationCluster(cluster0, cluster1);

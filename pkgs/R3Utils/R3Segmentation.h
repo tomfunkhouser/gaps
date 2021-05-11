@@ -149,14 +149,15 @@ public:
   RNScalar AverageNeighborCount(void) const;
   int NUnclusteredPoints(void) const;
 public:
-  int CreateNeighbors(int max_neighbor_count = 16,
+  int CreateNeighbors(
+    int max_neighbor_count = 16,
     double max_neighbor_distance = 0,
     double max_neighbor_primitive_distance = 0.01,
     double max_neighbor_normal_angle = RN_PI / 4.0,
     double max_neighbor_color_difference = 0,
     double max_neighbor_distance_factor = 10,
-    double max_timestamp_difference = 0,
-    double max_category_difference = 0,
+    double max_neighbor_timestamp_difference = 0,
+    double max_neighbor_category_difference = 0,
     RNBoolean partition_identifiers = FALSE);
   int UpdatePoints(void);
 public:
