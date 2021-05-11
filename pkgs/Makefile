@@ -14,6 +14,7 @@ PKG_LIBS= \
   $(LIB_DIR)/libRGBD.a \
   $(LIB_DIR)/libR3Surfels.a \
   $(LIB_DIR)/libR3Graphics.a \
+  $(LIB_DIR)/libR3Utils.a \
   $(LIB_DIR)/libR3Shapes.a \
   $(LIB_DIR)/libR2Shapes.a \
   $(LIB_DIR)/libRNMath.a \
@@ -53,6 +54,7 @@ target:
 	cd RNMath; $(MAKE) $(TARGET)
 	cd R2Shapes; $(MAKE) $(TARGET)
 	cd R3Shapes; $(MAKE) $(TARGET)
+	cd R3Utils; $(MAKE) $(TARGET)
 	cd R3Graphics; $(MAKE) $(TARGET)
 	cd R3Surfels; $(MAKE) $(TARGET)
 	cd RGBD; $(MAKE) $(TARGET)
