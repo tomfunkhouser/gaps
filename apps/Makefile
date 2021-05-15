@@ -21,6 +21,8 @@ release:
 
 target: 
 	cd img2img; $(MAKE) $(TARGET)
+	cd img2pd; $(MAKE) $(TARGET)
+	cd pd2img; $(MAKE) $(TARGET)
 	cd msh2msh; $(MAKE) $(TARGET)
 	cd msh2grd; $(MAKE) $(TARGET)
 	cd msh2pts; $(MAKE) $(TARGET)
