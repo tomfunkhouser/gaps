@@ -46,6 +46,7 @@ R3SurfelObject(const char *name)
     complexity(0),
     bbox(FLT_MAX,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX),
     timestamp_range(FLT_MAX,-FLT_MAX),
+    flags(0),
     data(NULL)
 {
 }
@@ -68,6 +69,7 @@ R3SurfelObject(const R3SurfelObject& object)
     complexity(object.complexity),
     bbox(object.bbox),
     timestamp_range(object.timestamp_range),
+    flags(0),
     data(NULL)
 {
 }
@@ -521,6 +523,18 @@ SetFeatureVector(const R3SurfelFeatureVector& vector)
 {
   // Copy feature vector
   this->feature_vector = vector;
+
+  // Mark scene as dirty
+  if (scene) scene->SetDirty();
+}
+
+
+
+void R3SurfelObject::
+SetFlags(RNFlags flags) 
+{
+  // Set flags
+  this->flags = flags;
 
   // Mark scene as dirty
   if (scene) scene->SetDirty();

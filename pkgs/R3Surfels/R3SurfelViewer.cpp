@@ -67,6 +67,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewing_extent_visibility(1),
     axes_visibility(0),
     label_visibilities(),
+    attribute_visibility_flags(0),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
     normal_color(0,1,0),
     background_color(0,0,0),
@@ -172,6 +173,7 @@ SurfelColorSchemeName(void) const
   case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: return "Surfel Label";
   case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: return "Confidence";
   case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: return "Elevation";
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES: return "Attributes";
   case R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX: return "Pick Index";
   default: return "Unknown";
   }
@@ -224,10 +226,9 @@ NodeVisibility(R3SurfelNode *node) const
   R3SurfelObject *object = node->Object(TRUE, TRUE);
   while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
   if (object) {
+    if (!AttributeVisibility(object->Flags())) return 0;
     R3SurfelLabel *label = object->CurrentLabel();
-    if (label) {
-      if (!LabelVisibility(label)) return 0;
-    }
+    if ((label) && !LabelVisibility(label)) return 0;
   }
 
   // Check elevation range
@@ -304,6 +305,35 @@ SetLabelVisibility(int label_index, int visibility)
     else if (visibility == 0) label_visibilities[label_index] = 0;
     else label_visibilities[label_index] = 1;
   }
+
+  // Invalidate VBO buffers
+  InvalidateVBO();
+}
+
+
+  
+int R3SurfelViewer::
+AttributeVisibility(RNFlags attribute_flags) const
+{
+  // Check if everything is visible
+  if (attribute_visibility_flags == 0) return TRUE;
+  
+  // Return whether attribute is visible
+  return attribute_visibility_flags.Intersects(attribute_flags);
+}
+
+
+  
+void R3SurfelViewer::
+SetAttributeVisibility(RNFlags attribute_flags, int visibility)
+{
+  // Check if disabling all flags
+  if (attribute_flags == 0) attribute_visibility_flags = 0;
+
+  // Update attribute visibility flags
+  if (visibility == -1) attribute_visibility_flags.XOR(attribute_flags);
+  else if (!visibility) attribute_visibility_flags.Remove(attribute_flags);
+  else attribute_visibility_flags.Add(attribute_flags);
 
   // Invalidate VBO buffers
   InvalidateVBO();
@@ -482,6 +512,11 @@ CreateColor(unsigned char *color, int color_scheme,
     CreateColor(color, confidence);
     break; }
 
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES: {
+    RNFlags flags = (object) ? object->Flags() : RNFlags(0);
+    CreateColor(color, (int) flags);
+    break; }
+      
   default: {
     assert(surfel);
     *color++ = surfel->R();
@@ -868,6 +903,19 @@ DrawSurfels(int color_scheme) const
         LoadColor(block->DatabaseIndex());
         block->Draw(shape_draw_flags, subsampling_factor);
       }
+    }
+    break;
+    
+  case R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES:
+    // Draw with colors based on flags encoding object attributes
+    for (int i = 0; i < resident_nodes.NNodes(); i++) {
+      R3SurfelNode *node = resident_nodes.Node(i);
+      if (!NodeVisibility(node)) continue;
+      R3SurfelObject *object = node->Object(TRUE, TRUE);
+      while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+      RNFlags flags = (object) ? object->Flags() : RNFlags(0);
+      LoadColor((int) flags);
+      DrawSurfels(node);
     }
     break;
     

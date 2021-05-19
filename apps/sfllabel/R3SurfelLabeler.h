@@ -73,6 +73,9 @@ public:
   int UnmergeSelectedObjects(void);
   int SplitSelectedObjects(void);
 
+  // Object attribute adjustments
+  int AssignAttributeToSelectedObjects(RNFlags attribute, const char *attribute_name, int value);
+  
   // Other commands
   int Undo(void);
   int Redo(void);
@@ -90,6 +93,7 @@ public:
   int StatusVisibility(void) const;
   int CommandMenuVisibility(void) const;
   int LabelMenuVisibility(void) const;
+  int AttributeMenuVisibility(void) const;
 
   // Snapshot properties
   const char *SnapshotDirectory(void) const;
@@ -121,6 +125,7 @@ public:
   void SetStatusVisibility(int visibility);
   void SetCommandMenuVisibility(int visibility);
   void SetLabelMenuVisibility(int visibility);
+  void SetAttributeMenuVisibility(int visibility);
 
   // Snapshot manipulation
   void SetSnapshotDirectory(const char *directory_name);
@@ -167,6 +172,9 @@ public:
   int SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent);
   int SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
     RNArray<R3SurfelObject *> *resultA = NULL, RNArray<R3SurfelObject *> *resultB = NULL);
+
+  // Attribute assignment functions
+  int AssignAttribute(R3SurfelObject *object, RNFlags attribute, RNBoolean value);
   
   // Pointset functions
   R3SurfelPointSet *ObjectSelectionPointSet(void) const;
@@ -190,11 +198,18 @@ public:
   void DrawCommandMenu(void) const;
   int PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
 
+  // Attribute menu functions
+  R2Box AttributeMenuBBox(void) const;
+  void UpdateAttributeMenu(void);
+  void DrawAttributeMenu(void) const;
+  int PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+
   // Label menu functions
   R2Box LabelMenuBBox(void) const;
   void UpdateLabelMenu(void);
   void DrawLabelMenu(void) const;
   int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+  
   
   /////////////////////////////////////
   //// LOW_LEVEL DRAWING FUNCTIONS ////
@@ -277,9 +292,18 @@ protected:
   // Command menu
   int command_menu_visibility;
 
+  // Attribute menu
+  int attribute_menu_visibility;
+  std::vector<RNFlags> attribute_menu_flags;
+  std::vector<const char *> attribute_menu_names;
+  std::vector<unsigned char> attribute_menu_keystrokes;
+  int attribute_menu_item_width;
+  int attribute_menu_item_height;
+  void *attribute_menu_font;
+
   // Label menu
-  RNArray<R3SurfelLabel *> label_menu_list;
   int label_menu_visibility;
+  RNArray<R3SurfelLabel *> label_menu_list;
   int label_menu_item_width;
   int label_menu_item_height;
   void *label_menu_font;
@@ -290,6 +314,16 @@ protected:
   // Object stuff
   std::vector<RNScalar> object_selection_times;
 };
+
+
+
+////////////////////////////////////////////////////////////////////////
+// ATTRIBUTE CONSTANTS
+////////////////////////////////////////////////////////////////////////
+
+#define R3_SURFEL_MOVING_ATTRIBUTE       R3_SURFEL_OBJECT_USER_FLAG_0
+#define R3_SURFEL_TRANSPARENT_ATTRIBUTE  R3_SURFEL_OBJECT_USER_FLAG_1
+#define R3_SURFEL_GROUP_ATTRIBUTE        R3_SURFEL_OBJECT_USER_FLAG_2
 
 
 
@@ -338,6 +372,15 @@ LabelMenuVisibility(void) const
 {
   // Return label menu visibililty
   return label_menu_visibility;
+}
+
+
+
+inline int R3SurfelLabeler::
+AttributeMenuVisibility(void) const
+{
+  // Return attribute menu visibililty
+  return attribute_menu_visibility;
 }
 
 
@@ -421,6 +464,17 @@ SetLabelMenuVisibility(int visibility)
   if (visibility == -1) label_menu_visibility = 1 - label_menu_visibility;
   else if (visibility == 0) label_menu_visibility = 0;
   else label_menu_visibility = 1;
+}
+
+
+
+inline void R3SurfelLabeler::
+SetAttributeMenuVisibility(int visibility)
+{
+  // Set attribute menu visibililty
+  if (visibility == -1) attribute_menu_visibility = 1 - attribute_menu_visibility;
+  else if (visibility == 0) attribute_menu_visibility = 0;
+  else attribute_menu_visibility = 1;
 }
 
 

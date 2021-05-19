@@ -90,6 +90,7 @@ public:
   int AxesVisibility(void) const;
   int LabelVisibility(R3SurfelLabel *label) const;
   int LabelVisibility(int label_index) const;
+  int AttributeVisibility(RNFlags attribute) const;
   int ObjectVisibility(R3SurfelObject *object) const;
   int NodeVisibility(R3SurfelNode *node) const;
   
@@ -167,6 +168,7 @@ public:
   void SetAxesVisibility(int visibility);
   void SetLabelVisibility(R3SurfelLabel *label, int visibility);
   void SetLabelVisibility(int label_index, int visibility);
+  void SetAttributeVisibility(RNFlags attribute, int visibility);
   
   // Color manipulation
   void SetSurfelColorScheme(int scheme);
@@ -342,6 +344,7 @@ protected:
   int viewing_extent_visibility;
   int axes_visibility;
   std::vector<int> label_visibilities;
+  RNFlags attribute_visibility_flags;
 
   // Color properties
   int surfel_color_scheme;
@@ -461,6 +464,7 @@ enum {
   R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL,
   R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE,
   R3_SURFEL_VIEWER_COLOR_BY_ELEVATION,
+  R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES,
   R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX,
   R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES
 };

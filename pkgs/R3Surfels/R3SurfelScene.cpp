@@ -1816,13 +1816,15 @@ ReadAsciiStream(FILE *fp)
     char object_name[1024];
     int identifier, parent_index, nparts, nvalues, nnodes;
     double complexity;
+    unsigned int flags;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "O")) { RNFail("Error reading object %d in %s\n", i, filename); return 0; }
     ReadAsciiString(fp, object_name); 
-    fscanf(fp, "%d%d%d%d%d%lf", &identifier, &parent_index, &nparts, &nnodes, &nvalues, &complexity);
-    for (int j = 0; j < 8; j++) fscanf(fp, "%s", buffer);
+    fscanf(fp, "%d%d%d%d%d%lf%u", &identifier, &parent_index, &nparts, &nnodes, &nvalues, &complexity, &flags);
+    for (int j = 0; j < 7; j++) fscanf(fp, "%s", buffer);
     if (strcmp(object_name, "None")) object->SetName(object_name);
     object->SetIdentifier(identifier);
+    object->SetFlags(flags);
     R3SurfelFeatureVector vector(nvalues);
     for (int j = 0; j < nvalues; j++) {
       RNScalar value;
@@ -2134,9 +2136,9 @@ WriteAsciiStream(FILE *fp)
     const R3SurfelFeatureVector& feature_vector = object->feature_vector;
     fprintf(fp, "O ");
     WriteAsciiString(fp, object->Name());
-    fprintf(fp, " %d %d %d %d %d %g", object->Identifier(), parent_index, object->NParts(), object->NNodes(), 
-      feature_vector.NValues(), object->Complexity());
-    for (int j = 0; j < 8; j++) fprintf(fp, " 0");
+    fprintf(fp, " %d %d %d %d %d %g %u", object->Identifier(), parent_index, object->NParts(), object->NNodes(), 
+            feature_vector.NValues(), object->Complexity(), (unsigned int) object->Flags());
+    for (int j = 0; j < 7; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
     for (int j = 0; j < feature_vector.NValues(); j++) {
       fprintf(fp, "%g ", feature_vector.Value(j));
@@ -2522,7 +2524,7 @@ ReadBinaryStream(FILE *fp)
   for (int i = 0; i < nobjects; i++) {
     R3SurfelObject *object = read_objects.Kth(i);
     char object_name[1024];
-    int identifier, parent_index, nparts, nvalues, nnodes;
+    int identifier, parent_index, nparts, nvalues, nnodes, flags;
     double complexity;
     ReadBinaryString(fp, object_name);
     ReadBinaryInteger(fp, &identifier);
@@ -2531,9 +2533,11 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryInteger(fp, &nnodes);
     ReadBinaryInteger(fp, &nvalues);
     ReadBinaryDouble(fp, &complexity);
-    for (int j = 0; j < 8; j++) ReadBinaryInteger(fp, &dummy);
+    ReadBinaryInteger(fp, &flags);
+    for (int j = 0; j < 7; j++) ReadBinaryInteger(fp, &dummy);
     if (strcmp(object_name, "None")) object->SetName(object_name);
     object->SetIdentifier(identifier);
+    object->SetFlags(flags);
     R3SurfelFeatureVector vector(nvalues);
     for (int j = 0; j < nvalues; j++) {
       RNScalar value;
@@ -2885,7 +2889,8 @@ WriteBinaryStream(FILE *fp)
     WriteBinaryInteger(fp, object->NNodes());
     WriteBinaryInteger(fp, feature_vector.NValues());
     WriteBinaryDouble(fp, object->Complexity());
-    for (int j = 0; j < 8; j++) WriteBinaryInteger(fp, 0);
+    WriteBinaryInteger(fp, object->Flags());
+    for (int j = 0; j < 7; j++) WriteBinaryInteger(fp, 0);
     for (int j = 0; j < feature_vector.NValues(); j++) {
       WriteBinaryDouble(fp, feature_vector.Value(j));
     }

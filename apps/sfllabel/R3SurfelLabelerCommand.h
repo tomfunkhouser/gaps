@@ -3,10 +3,8 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-// Command logging stuff
-////////////////////////////////////////////////////////////////////////
-
 // Command types
+////////////////////////////////////////////////////////////////////////
 
 enum {
   R3_SURFEL_LABELER_INITIALIZE_COMMAND,  
@@ -42,12 +40,15 @@ enum {
   R3_SURFEL_LABELER_MERGE_SELECTION_COMMAND,
   R3_SURFEL_LABELER_UNMERGE_SELECTION_COMMAND,
   R3_SURFEL_LABELER_SPLIT_SELECTION_COMMAND,
+  R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND,
   R3_SURFEL_LABELER_NUM_COMMANDS
 };
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Command names
+////////////////////////////////////////////////////////////////////////
 
 const char *command_names[R3_SURFEL_LABELER_NUM_COMMANDS] = {
   "INITIALIZE",  
@@ -82,12 +83,33 @@ const char *command_names[R3_SURFEL_LABELER_NUM_COMMANDS] = {
   "RESET",
   "MERGE_SELECTION",
   "UNMERGE_SELECTION",
-  "SPLIT_SELECTION"
+  "SPLIT_SELECTION",
+  "ASSIGN_ATTRIBUTE"
 };
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Command support class definitions
+////////////////////////////////////////////////////////////////////////
+
+struct R3SurfelAttributeAssignment {
+public:
+  R3SurfelAttributeAssignment(void)
+    : object(NULL), attribute(0), 
+      previous_value(0), new_value(0) {};
+public:
+  R3SurfelObject *object;
+  RNFlags attribute;
+  RNBoolean previous_value;
+  RNBoolean new_value;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Command class definition
+////////////////////////////////////////////////////////////////////////
 
 class R3SurfelLabelerCommand {
   // Constructor
@@ -119,13 +141,18 @@ class R3SurfelLabelerCommand {
   RNArray<R3SurfelObject *> inserted_parent_assignments;
   RNArray<R3SurfelObject *> removed_parent_assignments;
 
+  // Attribute assignments
+  std::vector<R3SurfelAttributeAssignment> attribute_assignments;
+  
   // This is only used by R3SurfelLabeler
   friend class R3SurfelLabeler;
 };
 
 
 
+////////////////////////////////////////////////////////////////////////
 // Command class constructor
+////////////////////////////////////////////////////////////////////////
 
 R3SurfelLabelerCommand::
 R3SurfelLabelerCommand(R3SurfelLabeler *labeler, int type, double operand)
@@ -140,11 +167,16 @@ R3SurfelLabelerCommand(R3SurfelLabeler *labeler, int type, double operand)
     removed_label_assignments(),
     part_parent_assignments(),
     inserted_parent_assignments(),
-    removed_parent_assignments()
+    removed_parent_assignments(),
+    attribute_assignments()
 {
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Command class functions
+////////////////////////////////////////////////////////////////////////
 
 void R3SurfelLabeler::
 BeginCommand(int type, double operand)
@@ -187,6 +219,7 @@ EndCommand(void)
   case R3_SURFEL_LABELER_MERGE_SELECTION_COMMAND:
   case R3_SURFEL_LABELER_UNMERGE_SELECTION_COMMAND:
   case R3_SURFEL_LABELER_SPLIT_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND:
     // Delete commands that were undone
     for (int i = undo_index+1; i < undo_stack.NEntries(); i++) 
       delete undo_stack.Kth(i);
@@ -286,6 +319,14 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
     R3SurfelObject *removed_parent = command->removed_parent_assignments[j];
     R3SurfelObject *inserted_parent = command->inserted_parent_assignments[j];
     fprintf(fp, " ( %d %d %d )", part->SceneIndex(), removed_parent->SceneIndex(), inserted_parent->SceneIndex());
+  }
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%lu", command->attribute_assignments.size());
+  for (unsigned int j = 0; j < command->attribute_assignments.size(); j++) {
+    R3SurfelAttributeAssignment& assignment = command->attribute_assignments[j];
+    fprintf(fp, " ( %d %u %d %d )", assignment.object->SceneIndex(), (unsigned int) assignment.attribute,
+      assignment.previous_value, assignment.new_value);
   }
   fprintf(fp, "    ");
 

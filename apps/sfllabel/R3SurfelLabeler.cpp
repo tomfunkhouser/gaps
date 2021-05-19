@@ -42,8 +42,15 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     message_visibility(1),
     status_visibility(1),
     command_menu_visibility(0),
-    label_menu_list(),
+    attribute_menu_visibility(0),
+    attribute_menu_flags(),
+    attribute_menu_names(),
+    attribute_menu_keystrokes(),
+    attribute_menu_item_width(190),
+    attribute_menu_item_height(14),
+    attribute_menu_font(GLUT_BITMAP_HELVETICA_12),
     label_menu_visibility(1),
+    label_menu_list(),
     label_menu_item_width(190),
     label_menu_item_height(14),
     label_menu_font(GLUT_BITMAP_HELVETICA_12),
@@ -83,6 +90,17 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
   rubber_line_points[0] = R2zero_point;
   rubber_line_points[1] = R2zero_point;
   split_line_active = FALSE;
+
+  // Initialize attribute menu items
+  attribute_menu_names.push_back("Group");
+  attribute_menu_names.push_back("Transparent");
+  attribute_menu_names.push_back("Moving");
+  attribute_menu_flags.push_back(R3_SURFEL_GROUP_ATTRIBUTE);
+  attribute_menu_flags.push_back(R3_SURFEL_TRANSPARENT_ATTRIBUTE);
+  attribute_menu_flags.push_back(R3_SURFEL_MOVING_ATTRIBUTE);
+  attribute_menu_keystrokes.push_back('b');
+  attribute_menu_keystrokes.push_back('t');
+  attribute_menu_keystrokes.push_back('v');
 
   // Initialize labels
   for (int i = 0; i < scene->NObjects(); i++) {
@@ -250,6 +268,7 @@ Redraw(void)
   DrawMessage();
   DrawCommandMenu();
   DrawLabelMenu();
+  DrawAttributeMenu();
 
   // Draw select stuff
   DrawRubberBox(FALSE, TRUE);
@@ -521,6 +540,7 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
         else {
           if (PickCommandMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
           else if (PickLabelMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
+          else if (PickAttributeMenu(x, y, button, state, shift, ctrl, alt)) redraw = 1;
           else if (PickImage(x, y)) redraw = 1;
           else if (SelectPickedObject(x, y, shift, ctrl, alt)) redraw = 1;
         }
@@ -642,6 +662,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       redraw = 1;
       break; 
 
+    case '#': 
+      SetAttributeMenuVisibility(-1);
+      redraw = 1;
+      break; 
+
     case ',': 
     case '.':
       // Copied from R3SurfelViewer
@@ -732,7 +757,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'a': 
       SelectAllObjects();
       redraw = 1;
-      break; 
+      break;
+
+    // case 'B':
+    // case 'b':
+      // Save for attribute "Group"
+      // break;
       
     case 'E':
     case 'e': {
@@ -790,6 +820,16 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       redraw = 1;
       break;
 
+    // case 'T':
+    // case 't':
+      // Save for attribute "Transparent"
+      // break;
+      
+    // case 'V':
+    // case 'v':
+      // Save for attribute "Moving"
+      // break;
+      
     case 'Y':
     case 'y':
       Redo();
@@ -801,6 +841,17 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       Undo();
       redraw = 1;
       break;
+
+    default:
+      for (unsigned int i = 0; i < attribute_menu_keystrokes.size(); i++) {
+        if (i >= attribute_menu_flags.size()) continue;
+        if (i >= attribute_menu_names.size()) continue;
+        if (key == attribute_menu_keystrokes[i]) {
+          AssignAttributeToSelectedObjects(attribute_menu_flags[i], attribute_menu_names[i], -1);
+          redraw = 1;
+          break;
+        }
+      } break;
     }
   }
   else {
@@ -817,6 +868,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 27: { // ESC
       SelectPickedObject(-1, -1, 0, 0);
       SetLabelVisibility(-1, 1);
+      SetAttributeVisibility(0, 0);
       SetElevationRange(RNnull_interval);
       SetViewingExtent(R3null_box);
       click_polygon_active = FALSE;
@@ -1911,6 +1963,9 @@ ConfirmLabelOnPickedObject(int x, int y)
   // End logging command
   EndCommand();
 
+  // Invalidate VBO colors
+  InvalidateVBO();
+
   // Return success
   return 1;
 }
@@ -1969,6 +2024,9 @@ ConfirmLabelsOnSelectedObjects(void)
   // End logging command
   EndCommand();
 
+  // Invalidate VBO colors
+  InvalidateVBO();
+
   // Return success
   return 1;
 }
@@ -2008,6 +2066,9 @@ ConfirmLabelsOnAllObjects(void)
 
   // End logging command
   EndCommand();
+
+  // Invalidate VBO colors
+  InvalidateVBO();
 
   // Return success
   return 1;
@@ -2582,6 +2643,69 @@ SplitSelectedObjects(void)
 
 
 
+static RNBoolean 
+DoAllSelectedObjectsHaveAttribute(const R3SurfelLabeler *labeler, RNFlags attribute)
+{
+  // Check if there are any selected objects
+  if (labeler->NObjectSelections() == 0) return FALSE;
+  
+  // Check all selected objects
+  for (int i = 0; i < labeler->NObjectSelections(); i++) {
+    R3SurfelObject *object = labeler->ObjectSelection(i);
+    if (!object->Flags()[attribute]) return FALSE;
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+int R3SurfelLabeler::
+AssignAttributeToSelectedObjects(RNFlags attribute,
+  const char *attribute_name, int value)
+{
+  // Check everything
+  if (!scene) return 0;
+  if (NObjectSelections() == 0) return 0;
+
+  // Resolve value -1
+  if (value < 0) {
+    if (DoAllSelectedObjectsHaveAttribute(this, attribute)) value = FALSE;
+    else value = TRUE;
+  }
+  
+  // Set message
+  const char *action = (value) ? "Assigned" : "Removed";
+  const char *preposition = (value) ? "to" : "from";
+  SetMessage("%s attribute %s %s %d selected objects", action, attribute_name, preposition, NObjectSelections());
+  if (NObjectSelections() == 1) {
+    R3SurfelObject *object = ObjectSelection(0);   
+    const char *object_name = (object->Name()) ? object->Name() : "without name";
+    SetMessage("%s attribute %s %s object %s", action, attribute_name, preposition, object_name);
+  }
+
+  // Begin logging command
+  BeginCommand(R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND);
+  
+  // Assign attributes
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *object = ObjectSelection(i);
+    AssignAttribute(object, attribute, value);
+  }
+
+  // End logging command
+  EndCommand();
+
+  // Invalidate VBO colors
+  InvalidateVBO();
+
+  // Return success
+  return 1;
+}
+
+
+
 int R3SurfelLabeler::
 Undo(void)
 {
@@ -2636,6 +2760,16 @@ Undo(void)
     R3SurfelObject *part = command->part_parent_assignments.Kth(i);
     R3SurfelObject *removed_parent = command->removed_parent_assignments.Kth(i);
     part->SetParent(removed_parent);
+  }
+
+  // Unperform attribute assignments
+  for (unsigned int i = 0; i < command->attribute_assignments.size(); i++) {
+    R3SurfelAttributeAssignment& assignment = command->attribute_assignments[i];
+    R3SurfelObject *object = assignment.object;
+    RNFlags flags = object->Flags();
+    if (!assignment.previous_value) flags.Remove(assignment.attribute);
+    else flags.Add(assignment.attribute);
+    object->SetFlags(flags);
   }
 
   // Predict label assignments for all objects
@@ -2716,6 +2850,16 @@ Redo(void)
     R3SurfelObject *part = command->part_parent_assignments.Kth(i);
     R3SurfelObject *inserted_parent = command->inserted_parent_assignments.Kth(i);
     part->SetParent(inserted_parent);
+  }
+
+  // Perform attribute assignments
+  for (unsigned int i = 0; i < command->attribute_assignments.size(); i++) {
+    R3SurfelAttributeAssignment& assignment = command->attribute_assignments[i];
+    R3SurfelObject *object = assignment.object;
+    RNFlags flags = object->Flags();
+    if (!assignment.new_value) flags.Remove(assignment.attribute);
+    else flags.Add(assignment.attribute);
+    object->SetFlags(flags);
   }
 
   // End logging command
@@ -3053,7 +3197,7 @@ InsertLabelAssignment(R3SurfelLabelAssignment *assignment)
   R3SurfelObject *object = assignment->Object();
   R3SurfelLabel *label = assignment->Label();
 
-  // Check if label is already assigned to object with same attributes
+  // Check if label is already assigned to an equivalent object 
   for (int i = 0; i < object->NLabelAssignments(); i++) {
     R3SurfelLabelAssignment *a = object->LabelAssignment(i);
     if ((a->Label() == label) && 
@@ -3211,6 +3355,43 @@ SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent)
   // Set object parent
   object->SetParent(parent);
 
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// OBJECT ATTRIBUTE UTILITY FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3SurfelLabeler::
+AssignAttribute(R3SurfelObject *object, RNFlags attribute, RNBoolean value)
+{
+  // Check everything
+  if (!scene) return 0;
+  if (!object) return 0;
+
+  // Check if attribute is already set
+  RNBoolean previous_value = object->Flags()[attribute];
+  if (previous_value == value) return 0;
+
+  // Assign attribute
+  RNFlags flags = object->Flags();
+  if (!value) flags.Remove(attribute);
+  else flags.Add(attribute);
+  object->SetFlags(flags);
+
+  // Add attribute assignment to command
+  if (current_command) {
+    R3SurfelAttributeAssignment assignment;
+    assignment.object = object;
+    assignment.attribute = attribute;
+    assignment.previous_value = previous_value;
+    assignment.new_value = value;
+    current_command->attribute_assignments.push_back(assignment);
+  }
+  
   // Return success
   return 1;
 }
@@ -3669,9 +3850,9 @@ LabelMenuBBox(void) const
   // Determine bbox of entire label menu
   int nitems = label_menu_list.NEntries() + 1;
   int height = viewer.Viewport().Height();
-  double x1 = label_menu_item_height / 2;
+  double x1 = label_menu_item_height / 2.0;
   double x2 = x1 + label_menu_item_width;
-  double y2 = height - label_menu_item_height / 2;
+  double y2 = height - label_menu_item_height / 2.0;
   double y1 = y2 - nitems * label_menu_item_height;
   return R2Box(x1, y1, x2, y2);
 }
@@ -3868,7 +4049,8 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
   int y = menu_bbox.YMax() - label_menu_item_height;
   
   // Pick "All" visibility box 
-  R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
+  R2Box visibility_box(x + 2*small_gap, y + 2*small_gap,
+    x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
   if (R2Contains(visibility_box, cursor)) {
     // Toggle all
     SetLabelVisibility(-1, -1);
@@ -3881,8 +4063,10 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
 
     // Get label info
     // Note: this must match DrawLabelMenu
-    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
-    R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
+    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap,
+      x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
+    R2Box name_box(x + label_menu_item_height, y + small_gap,
+      x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
 
     // Process command
     if (R2Contains(visibility_box, cursor)) {
@@ -3914,6 +4098,201 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
       y = menu_bbox.YMax() - label_menu_item_height;
       x += 2*small_gap + label_menu_item_width;
     }
+  }
+
+  // No label picked
+  return 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// ATTRIBUTE MENU
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelLabeler::
+UpdateAttributeMenu(void)
+{
+  // Update label menu first
+  UpdateLabelMenu();
+  
+  // Set parameters to match label menu
+  attribute_menu_item_width = label_menu_item_width;
+  attribute_menu_item_height = label_menu_item_height;
+  attribute_menu_font = label_menu_font;
+}
+
+
+
+R2Box R3SurfelLabeler::
+AttributeMenuBBox(void) const
+{
+  // Update dimension parameters of attribute menu
+  ((R3SurfelLabeler *) this)->UpdateAttributeMenu();
+  
+  // Get bbox of label menu
+  R2Box label_menu_bbox = LabelMenuBBox();
+
+  // Determine bbox of entire attribute menu
+  unsigned int nitems = attribute_menu_names.size();
+  double x1 = label_menu_bbox.XMin();
+  double x2 = label_menu_bbox.XMax();
+  double y1 = attribute_menu_item_height / 2.0;
+  double y2 = y1 + nitems * attribute_menu_item_height;
+  return R2Box(x1, y1, x2, y2);
+}
+
+
+
+void R3SurfelLabeler::
+DrawAttributeMenu(void) const
+{
+  // Only draw menu if it is visible
+  if (!attribute_menu_visibility) return;
+
+  // Get convenient variables
+  int width = viewer.Viewport().Width();
+  int height = viewer.Viewport().Height();
+
+  // Get attribute menu dimension parameters
+  // Note: this must match PickAttributeMenu
+  R2Box menu_bbox = AttributeMenuBBox();
+  int small_gap = attribute_menu_item_height / 8;
+  int x = menu_bbox.XMin();
+  int y = menu_bbox.YMax() - attribute_menu_item_height;
+  
+  // Set OpenGL modes
+  glDisable(GL_LIGHTING);
+  glColor3f(0,0,0);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0, width, 0, height);
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(FALSE);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+
+  // Clear area behind menu
+  glColor4d(0, 0, 0, 1);
+  menu_bbox.Draw();
+
+  // Set some colors
+  static const RNRgb off_color(1.0, 0.7, 0.7);
+  static const RNRgb on_color(0.7, 1.0, 0.7);
+  
+  // Draw attributes
+  for (unsigned int i = 0; i < attribute_menu_names.size(); i++) {
+    const char *attribute_name = attribute_menu_names[i];
+    unsigned char attribute_keystroke = attribute_menu_keystrokes[i];
+    RNFlags attribute_flags = attribute_menu_flags[i];
+
+    // Get attribute placement info
+    // Note: this must match PickAttributeMenu
+    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap,
+      x + attribute_menu_item_height - 2*small_gap, y + attribute_menu_item_height - 2*small_gap);
+    R2Box name_box(x + attribute_menu_item_height, y + small_gap,
+      x + attribute_menu_item_width - small_gap, y + attribute_menu_item_height - small_gap);
+    R2Point visibility_origin(visibility_box[0][0], visibility_box[0][1]);
+    R2Point name_origin(name_box[0][0]+small_gap, name_box[0][1]+small_gap);
+
+    // Draw visibility box
+    RNBoolean vis = FALSE;
+    if (attribute_visibility_flags != 0)
+      vis = attribute_visibility_flags.Intersects(attribute_flags);
+    if (vis) glColor4d(1, 1, 1, 0.5);
+    else glColor4d(0, 0, 0, 0.5);
+    visibility_box.Draw();
+    glColor4d(0.5, 0.5, 0.5, 1);
+    visibility_box.Outline();
+    glColor4d(1, 1, 1, 1);
+    DrawText(visibility_origin, "v", attribute_menu_font); 
+
+    // Determine if attribute is "on"
+    RNBoolean on = DoAllSelectedObjectsHaveAttribute(this, attribute_flags);
+    RNRgb color = (on) ? on_color : off_color;
+    
+    // Draw name box
+    glColor3d(0.0, 0.0, 0.0);
+    name_box.Draw();
+    RNLoadRgb(color);
+    name_box.Outline();
+
+    // Draw attribute name 
+    RNLoadRgb(color);
+    char buffer[2048];
+    sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
+    DrawText(name_origin, buffer, attribute_menu_font); 
+
+    // Update location
+    // Note: this must match PickAttributeMenu
+    y -= attribute_menu_item_height;
+  }
+
+  // Draw box around menu
+  glColor4d(1, 0, 0, 1);
+  menu_bbox.Outline();
+
+  // Reset OpenGL modes
+  glDisable(GL_BLEND);
+  glDepthMask(TRUE);
+  glEnable(GL_DEPTH_TEST);
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+}
+
+
+
+int R3SurfelLabeler::
+PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
+{
+  // Only pick from menu if it is visible
+  if (!attribute_menu_visibility) return 0;
+
+  // Only process left-button down clicks
+  if (button != 0) return 0;
+  if (state != 0) return 0;
+  R2Point cursor(xcursor, ycursor);
+
+  // Get attribute menu dimension parameters
+  // Note: this must match DrawAttributeMenu
+  R2Box menu_bbox = AttributeMenuBBox();
+  int small_gap = attribute_menu_item_height / 8;
+  int x = menu_bbox.XMin();
+  int y = menu_bbox.YMax() - attribute_menu_item_height;
+  
+  // Pick attribute
+  for (unsigned int i = 0; i < attribute_menu_names.size(); i++) {
+    const char *attribute_name = attribute_menu_names[i];
+    RNFlags attribute_flags = attribute_menu_flags[i];
+
+    // Get attribute info
+    // Note: this must match DrawAttributeMenu
+    R2Box visibility_box(x + 2*small_gap, y + 2*small_gap,
+      x + attribute_menu_item_height - 2*small_gap, y + attribute_menu_item_height - 2*small_gap);
+    R2Box name_box(x + attribute_menu_item_height, y + small_gap,
+      x + attribute_menu_item_width - small_gap, y + attribute_menu_item_height - small_gap);
+
+    // Process command
+    if (R2Contains(visibility_box, cursor)) {
+      printf("V %s\n", attribute_name);
+      SetAttributeVisibility(attribute_flags, -1);
+      return 1;
+    }
+    else if (R2Contains(name_box, cursor)) {
+      printf("S %s\n", attribute_name);      
+      AssignAttributeToSelectedObjects(attribute_flags, attribute_name, -1);
+      return 1;
+    }
+
+    // Update location
+    // Note: this must match DrawLabelMenu
+    y -= label_menu_item_height;
   }
 
   // No label picked

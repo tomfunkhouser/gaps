@@ -54,6 +54,9 @@ public:
   // Feature vector functions
   const R3SurfelFeatureVector& FeatureVector(void) const;
 
+  // Other property functions
+  RNFlags Flags(void) const;
+
   // User data property functions
   void *Data(void) const;
 
@@ -120,6 +123,9 @@ public:
 
   // Feature vector manipulation functions
   virtual void SetFeatureVector(const R3SurfelFeatureVector& vector);
+
+  // Other property manipulation functions
+  virtual void SetFlags(RNFlags flags);
 
   // User data manipulation functions
   virtual void SetData(void *data);
@@ -219,11 +225,23 @@ protected:
   RNScalar complexity;
   R3Box bbox;
   RNInterval timestamp_range;
+  RNFlags flags;
   void *data;
 };
 
 
 
+////////////////////////////////////////////////////////////////////////
+// OBJECT FLAGS
+////////////////////////////////////////////////////////////////////////
+
+#define R3_SURFEL_OBJECT_USER_FLAG_0 0x0010
+#define R3_SURFEL_OBJECT_USER_FLAG_1 0x0020
+#define R3_SURFEL_OBJECT_USER_FLAG_2 0x0040
+#define R3_SURFEL_OBJECT_USER_FLAG_3 0x0080
+
+
+  
 ////////////////////////////////////////////////////////////////////////
 // INLINE FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
@@ -251,6 +269,15 @@ Centroid(void) const
 {
   // Return centroid of object
   return BBox().Centroid();
+}
+
+
+
+inline RNFlags R3SurfelObject::
+Flags(void) const
+{
+  // Return bit encoded boolean flags
+  return flags;
 }
 
 
