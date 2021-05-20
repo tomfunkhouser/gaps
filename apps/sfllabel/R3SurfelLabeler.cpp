@@ -42,10 +42,9 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     message_visibility(1),
     status_visibility(1),
     command_menu_visibility(0),
-    attribute_menu_visibility(0),
+    attribute_menu_visibility(1),
     attribute_menu_flags(),
     attribute_menu_names(),
-    attribute_menu_keystrokes(),
     attribute_menu_item_width(190),
     attribute_menu_item_height(14),
     attribute_menu_font(GLUT_BITMAP_HELVETICA_12),
@@ -92,12 +91,15 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
   split_line_active = FALSE;
 
   // Initialize attribute menu items
+  attribute_menu_names.push_back("Attributes");
   attribute_menu_names.push_back("Group");
   attribute_menu_names.push_back("Transparent");
   attribute_menu_names.push_back("Moving");
+  attribute_menu_flags.push_back(R3_SURFEL_OBJECT_NO_ATTRIBUTES_FLAG);
   attribute_menu_flags.push_back(R3_SURFEL_GROUP_ATTRIBUTE);
   attribute_menu_flags.push_back(R3_SURFEL_TRANSPARENT_ATTRIBUTE);
   attribute_menu_flags.push_back(R3_SURFEL_MOVING_ATTRIBUTE);
+  attribute_menu_keystrokes.push_back(' ');
   attribute_menu_keystrokes.push_back('b');
   attribute_menu_keystrokes.push_back('t');
   attribute_menu_keystrokes.push_back('v');
@@ -652,16 +654,19 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       redraw = 1;
       break;
       
+    case '1': 
     case '!': 
       SetStatusVisibility(-1);
       redraw = 1;
       break; 
 
+    case '2': 
     case '@': 
       SetLabelMenuVisibility(-1);
       redraw = 1;
       break; 
 
+    case '3': 
     case '#': 
       SetAttributeMenuVisibility(-1);
       redraw = 1;
@@ -844,6 +849,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     default:
       for (unsigned int i = 0; i < attribute_menu_keystrokes.size(); i++) {
+        if (!isalpha(key)) continue;
         if (i >= attribute_menu_flags.size()) continue;
         if (i >= attribute_menu_names.size()) continue;
         if (key == attribute_menu_keystrokes[i]) {
@@ -868,7 +874,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 27: { // ESC
       SelectPickedObject(-1, -1, 0, 0);
       SetLabelVisibility(-1, 1);
-      SetAttributeVisibility(0, 0);
+      SetAttributeVisibility(0, 1);
       SetElevationRange(RNnull_interval);
       SetViewingExtent(R3null_box);
       click_polygon_active = FALSE;
@@ -3877,7 +3883,9 @@ UpdateLabelMenu(void)
   }
 
   // Set size variables based on window size
-  int nitems = label_menu_list.NEntries() + 1;
+  int nitems = label_menu_list.NEntries();
+  nitems += 1; // for All labels
+  nitems += attribute_menu_names.size(); // for Attribute Menu
   int height = viewer.Viewport().Height();
   label_menu_font = GLUT_BITMAP_TIMES_ROMAN_24;
   label_menu_item_height = 28;
@@ -4054,6 +4062,7 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
   if (R2Contains(visibility_box, cursor)) {
     // Toggle all
     SetLabelVisibility(-1, -1);
+    return 1;
   }
   y -= label_menu_item_height;
 
@@ -4218,13 +4227,16 @@ DrawAttributeMenu(void) const
     // Draw name box
     glColor3d(0.0, 0.0, 0.0);
     name_box.Draw();
-    RNLoadRgb(color);
-    name_box.Outline();
+    if (isalpha(attribute_keystroke)) {
+      RNLoadRgb(color);
+      name_box.Outline();
+    }
 
     // Draw attribute name 
     RNLoadRgb(color);
     char buffer[2048];
-    sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
+    if (isalpha(attribute_keystroke)) sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
+    else sprintf(buffer, "%s", attribute_name);
     DrawText(name_origin, buffer, attribute_menu_font); 
 
     // Update location
@@ -4269,6 +4281,7 @@ PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shi
   // Pick attribute
   for (unsigned int i = 0; i < attribute_menu_names.size(); i++) {
     const char *attribute_name = attribute_menu_names[i];
+    unsigned char attribute_keystroke = attribute_menu_keystrokes[i];
     RNFlags attribute_flags = attribute_menu_flags[i];
 
     // Get attribute info
@@ -4280,14 +4293,15 @@ PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shi
 
     // Process command
     if (R2Contains(visibility_box, cursor)) {
-      printf("V %s\n", attribute_name);
+      if (ctrl) SetAttributeVisibility(0, -1);
       SetAttributeVisibility(attribute_flags, -1);
       return 1;
     }
     else if (R2Contains(name_box, cursor)) {
-      printf("S %s\n", attribute_name);      
-      AssignAttributeToSelectedObjects(attribute_flags, attribute_name, -1);
-      return 1;
+      if (isalpha(attribute_keystroke)) {
+        AssignAttributeToSelectedObjects(attribute_flags, attribute_name, -1);
+        return 1;
+      }
     }
 
     // Update location

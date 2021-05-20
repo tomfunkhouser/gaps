@@ -67,7 +67,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     viewing_extent_visibility(1),
     axes_visibility(0),
     label_visibilities(),
-    attribute_visibility_flags(0),
+    attribute_visibility_flags(0xFFFFFFFF),
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
     normal_color(0,1,0),
     background_color(0,0,0),
@@ -315,9 +315,9 @@ SetLabelVisibility(int label_index, int visibility)
 int R3SurfelViewer::
 AttributeVisibility(RNFlags attribute_flags) const
 {
-  // Check if everything is visible
-  if (attribute_visibility_flags == 0) return TRUE;
-  
+  // Temporary hack
+  if (attribute_flags == 0) attribute_flags.Add(R3_SURFEL_OBJECT_NO_ATTRIBUTES_FLAG);
+
   // Return whether attribute is visible
   return attribute_visibility_flags.Intersects(attribute_flags);
 }
@@ -327,8 +327,8 @@ AttributeVisibility(RNFlags attribute_flags) const
 void R3SurfelViewer::
 SetAttributeVisibility(RNFlags attribute_flags, int visibility)
 {
-  // Check if disabling all flags
-  if (attribute_flags == 0) attribute_visibility_flags = 0;
+  // Check if changing all flags
+  if (attribute_flags == 0) attribute_flags = 0xFFFFFFFF;
 
   // Update attribute visibility flags
   if (visibility == -1) attribute_visibility_flags.XOR(attribute_flags);
