@@ -3951,7 +3951,7 @@ DrawLabelMenu(void) const
   glColor4d(0, 0, 0, 1);
   menu_bbox.Draw();
 
-  // Draw "All" visibility box and "All Labels" header
+  // Draw "All" visibility box and "Labels" header
   // Note: this must match PickLabelMenu
   R2Box visibility_box(x + 2*small_gap, y + 2*small_gap, x + label_menu_item_height - 2*small_gap, y + label_menu_item_height - 2*small_gap);
   R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
@@ -3963,7 +3963,7 @@ DrawLabelMenu(void) const
   glColor4d(1, 1, 1, 1);
   visibility_box.Outline();
   DrawText(visibility_origin, "v", label_menu_font); 
-  DrawText(name_origin, "All Labels", label_menu_font); 
+  DrawText(name_origin, "Labels", label_menu_font); 
   y -= label_menu_item_height;
 
   // Draw labels
@@ -4233,11 +4233,17 @@ DrawAttributeMenu(void) const
     }
 
     // Draw attribute name 
-    RNLoadRgb(color);
     char buffer[2048];
-    if (isalpha(attribute_keystroke)) sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
-    else sprintf(buffer, "%s", attribute_name);
-    DrawText(name_origin, buffer, attribute_menu_font); 
+    if (isalpha(attribute_keystroke)) {
+      RNLoadRgb(color);
+      sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
+      DrawText(name_origin, buffer, attribute_menu_font); 
+    }
+    else {
+      glColor3d(1, 1, 1);
+      sprintf(buffer, "%s", attribute_name);
+      DrawText(name_origin, buffer, attribute_menu_font); 
+    }
 
     // Update location
     // Note: this must match PickAttributeMenu
