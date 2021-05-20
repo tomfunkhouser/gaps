@@ -587,6 +587,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_ELEVATION)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT);
       else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT)
+        SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES);
+      else if (SurfelColorScheme() == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)
         SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL);
       else SetSurfelColorScheme(R3_SURFEL_VIEWER_COLOR_BY_RGB);
       redraw = 1;
