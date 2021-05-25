@@ -388,42 +388,44 @@ ReadFile(const char *filename)
   // Read file of appropriate type
   if (!strncmp(extension, ".ssb", 5)) {
     // Open file
-    FILE *fp = fopen(filename, "rb");
-    if (!fp) {
+    FILE *f = fopen(filename, "rb");
+    if (!f) {
       RNFail("Unable to open file %s\n", filename);
       return 0;
     }
 
     // Read stream
-    if (!ReadStream(fp)) {
-      fclose(fp);
+    if (!ReadStream(f)) {
+      fclose(f);
       return 0;
     }
 
     // Close file
-    fclose(fp);
+    fclose(f);
   }
   else if (!strncmp(extension, ".list", 5)) {
     // Open file
-    FILE *fp = fopen(filename, "r");
-    if (!fp) {
+    FILE *f = fopen(filename, "r");
+    if (!f) {
       RNFail("Unable to open file %s\n", filename);
       return 0;
     }
 
     // Read file names
     char buffer[4096];
-    while (fscanf(fp, "%s", buffer) == (unsigned int) 1) {
+    while (fscanf(f, "%s", buffer) == (unsigned int) 1) {
       // Create block
       R3SurfelBlock *block = new R3SurfelBlock();
       if (!block) {
         RNFail("Unable to create block for %s\n", buffer);
+        fclose(f);
         return 0;
       }
     
       // Read block
       if (!block->ReadFile(buffer)) { 
         delete block; 
+        fclose(f);
         return 0; 
       }
 
@@ -438,7 +440,7 @@ ReadFile(const char *filename)
     }
 
     // Close file
-    fclose(fp);
+    fclose(f);
   }
   else { 
     // Create block
@@ -483,20 +485,20 @@ WriteFile(const char *filename)
   // Write file of appropriate type
   if (!strncmp(extension, ".ssb", 5)) {
     // Open file
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
+    FILE *f = fopen(filename, "wb");
+    if (!f) {
       RNFail("Unable to open file %s\n", filename);
       return 0;
     }
 
     // Write stream
-    if (!WriteStream(fp)) {
-      fclose(fp);
+    if (!WriteStream(f)) {
+      fclose(f);
       return 0;
     }
 
     // Close file
-    fclose(fp);
+    fclose(f);
   }
   else if (NBlocks() == 1) {
     R3SurfelDatabase *database = (R3SurfelDatabase *) this;
@@ -1114,15 +1116,25 @@ OpenFile(const char *filename, const char *rwaccess)
   // Check if file is new
   if (!strcmp(this->rwaccess, "w+b")) {
     // File is new -- write header
-    if (!WriteFileHeader(fp, 0)) return 0;
+    if (!WriteFileHeader(fp, 0)) {
+      fclose(fp);
+      fp = NULL;
+      return 0;
+    }
   }
   else {
     // Read header
     unsigned int nblocks = 0;
-    if (!ReadFileHeader(fp, nblocks)) return 0;
+    if (!ReadFileHeader(fp, nblocks)) {
+      fclose(fp);
+      fp = NULL;
+    }
     
     // Read blocks
-    if (!ReadBlockHeader(fp, nblocks, swap_endian)) return 0;
+    if (!ReadBlockHeader(fp, nblocks, swap_endian)) {
+      fclose(fp);
+      fp = NULL;
+    }
   }
 
   // Return success
