@@ -74,6 +74,7 @@ public:
   int SplitSelectedObjects(void);
 
   // Object attribute adjustments
+  int AssignAttributeToPickedObject(int x, int y, RNFlags attribute, const char *attribute_name, int value);
   int AssignAttributeToSelectedObjects(RNFlags attribute, const char *attribute_name, int value);
   
   // Other commands

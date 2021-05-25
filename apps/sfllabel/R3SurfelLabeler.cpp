@@ -855,6 +855,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
         if (i >= attribute_menu_flags.size()) continue;
         if (i >= attribute_menu_names.size()) continue;
         if (key == attribute_menu_keystrokes[i]) {
+          // if (NObjectSelections() > 0) AssignAttributeToSelectedObjects(attribute_menu_flags[i], attribute_menu_names[i], -1);
+          // else AssignAttributeToPickedObject(x, y, attribute_menu_flags[i], attribute_menu_names[i], -1);
           AssignAttributeToSelectedObjects(attribute_menu_flags[i], attribute_menu_names[i], -1);
           redraw = 1;
           break;
@@ -2665,6 +2667,57 @@ DoAllSelectedObjectsHaveAttribute(const R3SurfelLabeler *labeler, RNFlags attrib
 
   // Passed all tests
   return TRUE;
+}
+
+
+
+int R3SurfelLabeler::
+AssignAttributeToPickedObject(int x, int y,
+  RNFlags attribute, const char *attribute_name, int value)
+{
+  // Check everything
+  if (!scene) return 0;
+
+  // Pick object
+  R3SurfelNode *node = PickNode(x, y, NULL, NULL, NULL, TRUE);
+  if (!node) return 0;
+  R3SurfelObject *object = node->Object(TRUE);
+  if (!object) return 0;
+
+  // Find top level object
+  while (object && object->Parent() && (object->Parent() != scene->RootObject())) {
+    object = object->Parent();
+  }
+
+  // Resolve value -1
+  if (value < 0) {
+    if (object->Flags() & attribute) value = FALSE;
+    else value = TRUE;
+  }
+  
+  // Set center point 
+  SetCenterPoint(object->Centroid());
+
+  // Set message
+  const char *action = (value) ? "Assigned" : "Removed";
+  const char *preposition = (value) ? "to" : "from";
+  const char *object_name = (object->Name()) ? object->Name() : "without name";
+  SetMessage("%s attribute %s %s object %s", action, attribute_name, preposition, object_name);
+
+  // Begin logging command
+  BeginCommand(R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND);
+  
+  // Assign attributes
+  AssignAttribute(object, attribute, value);
+
+  // End logging command
+  EndCommand();
+
+  // Invalidate VBO colors
+  InvalidateVBO();
+
+  // Return success
+  return 1;
 }
 
 
