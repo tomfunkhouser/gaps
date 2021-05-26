@@ -323,8 +323,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////
 
 #define R3_SURFEL_MOVING_ATTRIBUTE       R3_SURFEL_OBJECT_USER_FLAG_0
-#define R3_SURFEL_TRANSPARENT_ATTRIBUTE  R3_SURFEL_OBJECT_USER_FLAG_1
-#define R3_SURFEL_GROUP_ATTRIBUTE        R3_SURFEL_OBJECT_USER_FLAG_2
+#define R3_SURFEL_GROUP_ATTRIBUTE        R3_SURFEL_OBJECT_USER_FLAG_1
 
 
 

@@ -24,6 +24,14 @@ static bool GLFWneeds_redraw = true;
 ////////////////////////////////////////////////////////////////////////
 
 static void
+GLFWError(int err, const char *str)
+{
+  printf("GLFW Error: %d %s\n", err, str);
+}
+
+
+
+static void
 GLFWPostRedisplay(void)
 {
   // Remember that needs redraw
@@ -298,6 +306,7 @@ UIInterface(void)
   glfwMakeContextCurrent(window);
 
   // Set callbacks
+  glfwSetErrorCallback(window, GLFWError);
   glfwSetFramebufferSizeCallback(window, GLFWResize);
   glfwSetScrollCallback(window, GLFWScroll);
   glfwSetCursorPosCallback(window, GLFWMotion);

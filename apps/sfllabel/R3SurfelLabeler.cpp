@@ -93,15 +93,12 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
   // Initialize attribute menu items
   attribute_menu_names.push_back("Attributes");
   attribute_menu_names.push_back("Group");
-  attribute_menu_names.push_back("Transparent");
   attribute_menu_names.push_back("Moving");
   attribute_menu_flags.push_back(R3_SURFEL_OBJECT_NO_ATTRIBUTES_FLAG);
   attribute_menu_flags.push_back(R3_SURFEL_GROUP_ATTRIBUTE);
-  attribute_menu_flags.push_back(R3_SURFEL_TRANSPARENT_ATTRIBUTE);
   attribute_menu_flags.push_back(R3_SURFEL_MOVING_ATTRIBUTE);
   attribute_menu_keystrokes.push_back(' ');
   attribute_menu_keystrokes.push_back('b');
-  attribute_menu_keystrokes.push_back('t');
   attribute_menu_keystrokes.push_back('v');
 
   // Initialize labels
@@ -827,12 +824,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       redraw = 1;
       break;
 
-    // case 'T':
-    // case 't':
-      // Save for attribute "Transparent"
-      // break;
-      
-    // case 'V':
     // case 'v':
       // Save for attribute "Moving"
       // break;
