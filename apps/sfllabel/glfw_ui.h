@@ -306,7 +306,7 @@ UIInterface(void)
   glfwMakeContextCurrent(window);
 
   // Set callbacks
-  glfwSetErrorCallback(window, GLFWError);
+  glfwSetErrorCallback(GLFWError);
   glfwSetFramebufferSizeCallback(window, GLFWResize);
   glfwSetScrollCallback(window, GLFWScroll);
   glfwSetCursorPosCallback(window, GLFWMotion);
