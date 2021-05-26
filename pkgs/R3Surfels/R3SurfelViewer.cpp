@@ -1528,6 +1528,14 @@ Redraw(void)
   glPointSize(1);
   glLineWidth(1);
 
+  // Draw everything (without culling to viewing extent)
+  DrawSelectedPoint();
+  DrawScanViewpoints();
+  DrawImageViewpoints();
+  DrawImagePlane();
+  DrawImageInset();
+  DrawAxes();
+
   // Set viewing extent
   DrawViewingExtent();
   EnableViewingExtent();
@@ -1546,14 +1554,6 @@ Redraw(void)
 
   // Reset viewing modes
   DisableViewingExtent();
-
-  // Draw everything else (without culling to viewing extent)
-  DrawSelectedPoint();
-  DrawScanViewpoints();
-  DrawImageViewpoints();
-  DrawImagePlane();
-  DrawImageInset();
-  DrawAxes();
 
   // Capture image
   if (screenshot_name) {
