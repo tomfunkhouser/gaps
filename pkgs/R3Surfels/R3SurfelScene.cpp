@@ -2283,7 +2283,7 @@ WriteAsciiStream(FILE *fp)
     fprintf(fp, " %u ", (unsigned int) image->Flags());
     fprintf(fp, " %d ", image->DistortionType());
     fprintf(fp, " %d ", (image->HasRollingShutter()) ? 1 : 0);
-    for (int j = 0; j < 2; j++) fprintf(fp, " 0");
+    for (int j = 0; j < 2; j++) fprintf(fp, "0 ");
 
     // Write extra image parameters
     if (image->DistortionType() != R3_SURFEL_NO_DISTORTION) {
