@@ -62,6 +62,12 @@ extern const R3CoordSystem R3xyz_coordinate_system;
 
 
 
+/* Public functions */
+
+extern R3CoordSystem R3CoordSystemSlerp(const R3CoordSystem& cs0, const R3CoordSystem& cs1, RNScalar t);
+
+
+
 /* Inline functions */
 
 inline const R3Point& R3CoordSystem::

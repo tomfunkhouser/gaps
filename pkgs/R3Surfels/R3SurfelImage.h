@@ -63,6 +63,8 @@ public:
   int ImageWidth(void) const;
   int ImageHeight(void) const;
   const R2Point& ImageCenter(void) const;
+  RNCoord XCenter(void) const;
+  RNCoord YCenter(void) const;
   RNLength XFocal(void) const;
   RNLength YFocal(void) const;
   RNAngle XFOV(void) const;
@@ -83,6 +85,19 @@ public:
   // Timestamp property functions
   RNScalar Timestamp(void) const;
 
+  // Distortion property functions
+  int DistortionType(void) const;
+  const RNScalar *RadialDistortion(void) const;
+  const RNScalar *TangentialDistortion(void) const;
+  RNScalar RadialDistortion(int i) const;
+  RNScalar TangentialDistortion(int i) const;
+
+  // Rolling shutter property functions
+  RNBoolean HasRollingShutter(void) const;
+  R3CoordSystem RollingShutterPoseAtTimestamp(RNScalar t) const;
+  R3CoordSystem RollingShutterPoseAtImagePosition(const R2Point& image_position) const;
+  RNScalar RollingShutterTimestampAtImagePosition(const R2Point& image_position) const;
+  
   // Name property functions
   const char *Name(void) const;
 
@@ -115,11 +130,15 @@ public:
   virtual void SetDepthChannel(const R2Grid& channel);
   virtual void SetColorChannels(const R2Image& image);
   virtual void RemoveChannel(int channel_index);
-  
+
   // Pose manipulation functions
   virtual void SetPose(const R3CoordSystem& pose);
   virtual void SetViewpoint(const R3Point& viewpoint);
   virtual void SetOrientation(const R3Vector& towards, const R3Vector& up);
+
+  // Camera intrinsics manipulation
+  virtual void SetImageDimensions(int width, int height);
+  virtual void SetImageCenter(const R2Point& center);
   virtual void SetFocalLengths(RNLength focal_length);
   virtual void SetXFocal(RNLength focal_length);
   virtual void SetYFocal(RNLength focal_length);
@@ -127,21 +146,29 @@ public:
   // Timestamp manipulation functions
   virtual void SetTimestamp(RNScalar timestamp);
 
+  // Distortion manipulation functions
+  virtual void SetDistortionType(int distortion_type);
+  virtual void SetRadialDistortion(const RNScalar k[3]);
+  virtual void SetTangentialDistortion(const RNScalar p[2]);
+
+  // Rolling shutter pose manipulation functions
+  virtual void SetRollingShutterPoses(const R3CoordSystem& pose0, const R3CoordSystem& pose1);
+  virtual void SetRollingShutterTimestamps(RNScalar timestamp0, RNScalar timestamp1);
+  
   // Name manipulation functions
   virtual void SetName(const char *name);
 
-  // Image metadata manipulation functions
-  virtual void SetImageDimensions(int width, int height);
-  virtual void SetImageCenter(const R2Point& center);
-
   // Set scan (if surfels captured with image)
   virtual void SetScan(R3SurfelScan *scan);
-  
+
   // User data manipulation functions
   virtual void SetFlags(RNFlags flags);
   virtual void SetData(void *data);
 
+  // Transform manipulation functions
+  virtual void Transform(const R3Affine& transformation);
 
+  
   /////////////////////////////////////////////
   //// COORDINATE TRANSFORMATION FUNCTIONS ////
   /////////////////////////////////////////////
@@ -151,8 +178,12 @@ public:
   R2Point TransformFromWorldToImage(const R3Point& world_position) const;
   R3Point TransformFromCameraToWorld(const R3Point& camera_position) const;
   R2Point TransformFromCameraToImage(const R3Point& camera_position) const;
-  R3Point TransformFromImageToWorld(const R2Point& image_position) const;
+  R3Point TransformFromImageToWorld(const R2Point& image_position, RNLength depth = -1) const;
   R3Point TransformFromImageToCamera(const R2Point& image_position, RNLength depth = -1) const;
+
+  // Distort pixel coordinates based on radial and tangential distortion parameters
+  R2Point DistortImagePosition(const R2Point& undistorted_image_position) const;
+  R2Point UndistortImagePosition(const R2Point& distorted_image_position) const;
 
   // Check if pixel coordinates are within image bounds
   RNBoolean ContainsImagePosition(const R2Point& image_position) const;
@@ -183,6 +214,10 @@ public:
   // For backward compatibility
   R2Point ImagePosition(const R3Point& world_position) const;
 
+  // Low level rolling shutter parameter access
+  const R3CoordSystem *RollingShutterPoses(void) const;
+  const RNScalar *RollingShutterTimestamps(void) const;
+  
 protected:
   // Internal data
   friend class R3SurfelScene;
@@ -196,6 +231,11 @@ protected:
   int image_width, image_height;
   R2Point image_center;
   RNLength xfocal, yfocal;
+  int distortion_type;
+  RNScalar radial_distortion[3];
+  RNScalar tangential_distortion[3];
+  R3CoordSystem rolling_shutter_poses[2];
+  RNScalar rolling_shutter_timestamps[2];
   char *name;
   RNFlags flags;
   void *data;
@@ -217,6 +257,27 @@ enum {
 };
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Distortion types
+////////////////////////////////////////////////////////////////////////
+
+enum {
+  R3_SURFEL_NO_DISTORTION,
+  R3_SURFEL_PERSPECTIVE_DISTORTION,
+  R3_SURFEL_FISHEYE_DISTORTION,
+  R3_SURFEL_NUM_DISTORTIONS
+};
+
+
+  
+////////////////////////////////////////////////////////////////////////
+// Flag definitions
+////////////////////////////////////////////////////////////////////////
+
+#define R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER   0x00000001
+
+  
   
 ////////////////////////////////////////////////////////////////////////
 // INLINE FUNCTION DEFINITIONS
@@ -460,6 +521,24 @@ ImageCenter(void) const
 
 
 
+inline RNCoord R3SurfelImage::
+XCenter(void) const
+{
+  // Return x coordinate of image center
+  return image_center.X();
+}
+
+
+
+inline RNCoord R3SurfelImage::
+YCenter(void) const
+{
+  // Return y coordinate of image center
+  return image_center.Y();
+}
+
+
+
 inline R3Matrix R3SurfelImage::
 Intrinsics(void) const
 {
@@ -553,6 +632,60 @@ Timestamp(void) const
 
 
 
+inline int R3SurfelImage::
+DistortionType(void) const
+{
+  // Return distortion type
+  return distortion_type;
+}
+
+
+
+inline const RNScalar *R3SurfelImage::
+RadialDistortion(void) const
+{
+  // Return radial distortion parameters
+  return radial_distortion;
+}
+
+
+
+inline const RNScalar *R3SurfelImage::
+TangentialDistortion(void) const
+{
+  // Return tangential distortion parameters
+  return tangential_distortion;
+}
+
+
+
+inline RNScalar R3SurfelImage::
+RadialDistortion(int i) const
+{
+  // Return radial distortion parameter
+  return radial_distortion[i];
+}
+
+
+
+inline RNScalar R3SurfelImage::
+TangentialDistortion(int i) const
+{
+  // Return tangential distortion parameter
+  return tangential_distortion[i];
+}
+
+
+
+inline RNBoolean R3SurfelImage::
+HasRollingShutter(void) const
+{
+  // Return whether image has rolling shutter
+  return flags[R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER];
+}
+
+
+
 inline const char *R3SurfelImage::
 Name(void) const
 {
@@ -606,6 +739,26 @@ Scan(void) const
 }
 
 
+
+inline const R3CoordSystem *R3SurfelImage::
+RollingShutterPoses(void) const
+{
+  // DO NOT USE -- unless you know what you are doing
+  // Return rolling shutter poses
+  return rolling_shutter_poses;
+}
+  
+  
+
+inline const RNScalar *R3SurfelImage::
+RollingShutterTimestamps(void) const
+{
+  // DO NOT USE -- unless you know what you are doing
+  // Return rolling shutter timestamps
+  return rolling_shutter_timestamps;
+}
+  
+  
 
 inline R2Point R3SurfelImage::
 ImagePosition(const R3Point& world_position) const

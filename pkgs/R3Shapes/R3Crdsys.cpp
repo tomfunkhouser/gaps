@@ -189,4 +189,33 @@ InverseTransform (const R3Transformation& transformation)
 
 
 
+R3CoordSystem
+R3CoordSystemSlerp(const R3CoordSystem& cs0, const R3CoordSystem& cs1, RNScalar t)
+{                            
+  // Compute interpolated origin
+  const R3Point& origin0 = cs0.Origin();
+  const R3Point& origin1 = cs1.Origin();
+  R3Point origin = (1-t)*origin0 + t*origin1;
+
+  // Slerp orientation
+  R3Quaternion q0(cs0.Matrix(), 0);
+  R3Quaternion q1(cs1.Matrix(), 0);
+  R3Quaternion q = R3QuaternionSlerp(q0, q1, t);
+
+  // Compute interpolated axes
+  R3Vector ax = q * R3posx_vector;
+  R3Vector ay = q * R3posy_vector;
+  ay.Normalize();
+  R3Vector az = ax % ay;
+  az.Normalize();
+  ax = ay % az;
+  ax.Normalize();
+  R3Triad triad(ax, ay, az);
+
+  // Return interpolated coordinate system
+  return R3CoordSystem(origin, triad);
+}
+
+
+  
 } // namespace gaps

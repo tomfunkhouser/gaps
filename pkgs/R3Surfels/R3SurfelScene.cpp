@@ -377,20 +377,16 @@ Transform(const R3Affine& transformation, RNBoolean update_surfels)
       node->Transform(t);
     }
 
-    // Transform all scan poses                                                                                                
+    // Transform all scans                                                                                                
     for (int i = 0; i < NScans(); i++) {
       R3SurfelScan *scan = Scan(i);
-      R3CoordSystem pose = scan->Pose();
-      pose.Transform(t);
-      scan->SetPose(pose);
+      scan->Transform(t);
     }
 
     // Transform all image poses                                                                                               
     for (int i = 0; i < NImages(); i++) {
       R3SurfelImage *image = Image(i);
-      R3CoordSystem pose = image->Pose();
-      pose.Transform(t);
-      image->SetPose(pose);
+      image->Transform(t);
     }
   }
   else {
@@ -1387,12 +1383,17 @@ InsertScene(const R3SurfelScene& scene2,
   for (int i = 0; i < scene2.NImages(); i++) {
     R3SurfelImage *image2 = scene2.Image(i);
     R3SurfelImage *image1 = new R3SurfelImage(image2->Name());
-    image1->SetPose(image2->Pose());
-    image1->SetTimestamp(image2->Timestamp());
+    const R3CoordSystem *rolling_shutter_poses = image2->RollingShutterPoses();
+    const RNScalar *rolling_shutter_timestamps = image2->RollingShutterTimestamps();
+    image1->SetRollingShutterPoses(rolling_shutter_poses[0], rolling_shutter_poses[1]);
+    image1->SetRollingShutterTimestamps(rolling_shutter_timestamps[0], rolling_shutter_timestamps[1]);
     image1->SetXFocal(image2->XFocal());
     image1->SetYFocal(image2->YFocal());
     image1->SetImageDimensions(image2->ImageWidth(), image2->ImageHeight());
     image1->SetImageCenter(image2->ImageCenter());
+    image1->SetDistortionType(image2->DistortionType());
+    image1->SetRadialDistortion(image2->RadialDistortion());
+    image1->SetTangentialDistortion(image2->TangentialDistortion());
     image1->SetFlags(image2->Flags());
     R3SurfelScan *scan2 = image2->Scan();
     R3SurfelScan *scan1 = (scan2) ? scans1.Kth(scan2->SceneIndex()) : NULL;
@@ -2003,13 +2004,14 @@ ReadAsciiStream(FILE *fp)
   for (int i = 0; i < nimages; i++) {
     char image_name[1024];
     unsigned int flags;
-    int scan_index, width, height;
-    double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
+    int scan_index, width, height, distortion_type, rolling_shutter;
+    double xfocal, yfocal, xcenter, ycenter, timestamp;
+    double px, py, pz, tx, ty, tz, ux, uy, uz;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "S") && strcmp(buffer, "I")) { RNFail("Error reading image %d in %s\n", i, filename); return 0; }
     ReadAsciiString(fp, image_name); 
-    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%lf%u", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &xfocal, &yfocal, &xcenter, &ycenter, &flags);
-    for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
+    fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%d%lf%lf%lf%lf%u%d%d", &px, &py, &pz, &tx, &ty, &tz, &ux, &uy, &uz, &timestamp, &scan_index, &width, &height, &xfocal, &yfocal, &xcenter, &ycenter, &flags, &distortion_type, &rolling_shutter);
+    for (int j = 0; j < 2; j++) fscanf(fp, "%s", buffer);
     if (xcenter == 0) xcenter = width/2.0;
     if (ycenter == 0) ycenter = height/2.0;
     R3Point viewpoint(px, py, pz);
@@ -2030,6 +2032,35 @@ ReadAsciiStream(FILE *fp)
     image->scene = this;
     image->scene_index = images.NEntries();
     images.Insert(image);
+
+    // Parse extra image parameters
+    if (distortion_type != R3_SURFEL_NO_DISTORTION) {
+      RNScalar radial_distortion[3] = { 0, 0, 0 };
+      RNScalar tangential_distortion[2] = { 0, 0 };
+      fscanf(fp, "%lf%lf%lf", &radial_distortion[0], &radial_distortion[1], &radial_distortion[2]);
+      fscanf(fp, "%lf%lf", &tangential_distortion[0], &tangential_distortion[1]);
+      image->SetDistortionType(distortion_type);
+      image->SetRadialDistortion(radial_distortion);
+      image->SetTangentialDistortion(tangential_distortion);
+    }
+    if (rolling_shutter) {
+      double px0, py0, pz0, tx0, ty0, tz0, ux0, uy0, uz0;
+      double px1, py1, pz1, tx1, ty1, tz1, ux1, uy1, uz1;
+      double timestamp0, timestamp1;
+      fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &px0, &py0, &pz0, &tx0, &ty0, &tz0, &ux0, &uy0, &uz0);
+      fscanf(fp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &px1, &py1, &pz1, &tx1, &ty1, &tz1, &ux1, &uy1, &uz1);
+      fscanf(fp, "%lf%lf", &timestamp0, &timestamp1);
+      R3Point viewpoint0(px0, py0, pz0);
+      R3Vector towards0(tx0, ty0, tz0);
+      R3Vector up0(ux0, uy0, uz0);
+      R3CoordSystem pose0(viewpoint0, R3Triad(towards0, up0));
+      R3Point viewpoint1(px1, py1, pz1);
+      R3Vector towards1(tx1, ty1, tz1);
+      R3Vector up1(ux1, uy1, uz1);
+      R3CoordSystem pose1(viewpoint1, R3Triad(towards1, up1));
+      image->SetRollingShutterPoses(pose0, pose1);
+      image->SetRollingShutterTimestamps(timestamp0, timestamp1);
+    }
   }
 
   // Read object properties
@@ -2250,7 +2281,36 @@ WriteAsciiStream(FILE *fp)
     fprintf(fp, " %g %g ", image->XFocal(), image->YFocal());
     fprintf(fp, " %g %g ", image->ImageCenter().X(), image->ImageCenter().Y());
     fprintf(fp, " %u ", (unsigned int) image->Flags());
-    for (int j = 0; j < 4; j++) fprintf(fp, " 0");
+    fprintf(fp, " %d ", image->DistortionType());
+    fprintf(fp, " %d ", (image->HasRollingShutter()) ? 1 : 0);
+    for (int j = 0; j < 2; j++) fprintf(fp, " 0");
+
+    // Write extra image parameters
+    if (image->DistortionType() != R3_SURFEL_NO_DISTORTION) {
+      const RNScalar *radial_distortion = image->RadialDistortion();
+      const RNScalar *tangential_distortion = image->TangentialDistortion();
+      fprintf(fp, "%g %g %g ", radial_distortion[0], radial_distortion[1], radial_distortion[2]);
+      fprintf(fp, "%g %g ", tangential_distortion[0], tangential_distortion[1]);
+    }
+    if (image->HasRollingShutter()) {
+      const R3CoordSystem *rs_poses = image->RollingShutterPoses();
+      const RNScalar *rs_timestamps = image->RollingShutterTimestamps();
+      R4Matrix camera_to_world0 = rs_poses[0].Matrix();
+      R4Matrix camera_to_world1 = rs_poses[1].Matrix();
+      R3Point viewpoint0 = camera_to_world0 * R3zero_point;
+      R3Point viewpoint1 = camera_to_world1 * R3zero_point;
+      R3Vector towards0 = camera_to_world0 * R3negz_vector;
+      R3Vector towards1 = camera_to_world1 * R3negz_vector;
+      R3Vector up0 = camera_to_world0 * R3posy_vector;
+      R3Vector up1 = camera_to_world1 * R3posy_vector;
+      fprintf(fp, " %g %g %g ", viewpoint0.X(), viewpoint0.Y(), viewpoint0.Z());
+      fprintf(fp, " %g %g %g ", towards0.X(), towards0.Y(), towards0.Z());
+      fprintf(fp, " %g %g %g ", up0.X(), up0.Y(), up0.Z());
+      fprintf(fp, " %g %g %g ", viewpoint1.X(), viewpoint1.Y(), viewpoint1.Z());
+      fprintf(fp, " %g %g %g ", towards1.X(), towards1.Y(), towards1.Z());
+      fprintf(fp, " %g %g %g ", up1.X(), up1.Y(), up1.Z());
+      fprintf(fp, " %.9f %.9f ", rs_timestamps[0], rs_timestamps[1]);
+    }
     fprintf(fp, "\n");
   }
 
@@ -2732,7 +2792,7 @@ ReadBinaryStream(FILE *fp)
   // Read images
   for (int i = 0; i < nimages; i++) {
     char image_name[1024];
-    int scan_index, width, height, flags;
+    int scan_index, width, height, flags, distortion_type, rolling_shutter;
     double px, py, pz, tx, ty, tz, ux, uy, uz, xfocal, yfocal, xcenter, ycenter, timestamp;
     ReadBinaryString(fp, image_name); 
     ReadBinaryDouble(fp, &px);
@@ -2753,7 +2813,9 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryDouble(fp, &xcenter);
     ReadBinaryDouble(fp, &ycenter);
     ReadBinaryInteger(fp, &flags);
-    for (int j = 0; j < 5; j++) ReadBinaryInteger(fp, &dummy);
+    ReadBinaryInteger(fp, &distortion_type);
+    ReadBinaryInteger(fp, &rolling_shutter);
+    for (int j = 0; j < 3; j++) ReadBinaryInteger(fp, &dummy);
     R3SurfelImage *image = new R3SurfelImage();
     if (strcmp(image_name, "None")) image->SetName(image_name);
     if (xcenter <= 0) xcenter = width/2.0;
@@ -2770,6 +2832,49 @@ ReadBinaryStream(FILE *fp)
     R3SurfelScan *scan = (scan_index >= 0) ? read_scans.Kth(scan_index) : NULL;
     image->SetScan(scan);
     InsertImage(image);
+
+    // Write extra image parameters
+    if (distortion_type != R3_SURFEL_NO_DISTORTION) {
+      RNScalar radial_distortion[3];
+      RNScalar tangential_distortion[2];
+      ReadBinaryDouble(fp, &radial_distortion[0]);
+      ReadBinaryDouble(fp, &radial_distortion[1]);
+      ReadBinaryDouble(fp, &radial_distortion[2]);
+      ReadBinaryDouble(fp, &tangential_distortion[0]);
+      ReadBinaryDouble(fp, &tangential_distortion[1]);
+      image->SetDistortionType(distortion_type);
+      image->SetRadialDistortion(radial_distortion);
+      image->SetTangentialDistortion(tangential_distortion);
+    }
+    if (rolling_shutter) {
+      R3Point viewpoint0, viewpoint1;
+      R3Vector towards0, towards1, up0, up1;
+      RNScalar timestamp0, timestamp1;
+      ReadBinaryDouble(fp, &viewpoint0[0]);
+      ReadBinaryDouble(fp, &viewpoint0[1]);
+      ReadBinaryDouble(fp, &viewpoint0[2]);
+      ReadBinaryDouble(fp, &towards0[0]);
+      ReadBinaryDouble(fp, &towards0[1]);
+      ReadBinaryDouble(fp, &towards0[2]);
+      ReadBinaryDouble(fp, &up0[0]);
+      ReadBinaryDouble(fp, &up0[1]);
+      ReadBinaryDouble(fp, &up0[2]);
+      ReadBinaryDouble(fp, &viewpoint1[0]);
+      ReadBinaryDouble(fp, &viewpoint1[1]);
+      ReadBinaryDouble(fp, &viewpoint1[2]);
+      ReadBinaryDouble(fp, &towards1[0]);
+      ReadBinaryDouble(fp, &towards1[1]);
+      ReadBinaryDouble(fp, &towards1[2]);
+      ReadBinaryDouble(fp, &up1[0]);
+      ReadBinaryDouble(fp, &up1[1]);
+      ReadBinaryDouble(fp, &up1[2]);
+      ReadBinaryDouble(fp, &timestamp0);
+      ReadBinaryDouble(fp, &timestamp1);
+      R3CoordSystem pose0(viewpoint0, R3Triad(towards0, up0));
+      R3CoordSystem pose1(viewpoint1, R3Triad(towards1, up1));
+      image->SetRollingShutterPoses(pose0, pose1);
+      image->SetRollingShutterTimestamps(timestamp0, timestamp1);
+    }
   }
 
   // Read object properties
@@ -3015,7 +3120,52 @@ WriteBinaryStream(FILE *fp)
     WriteBinaryDouble(fp, image->ImageCenter().X());
     WriteBinaryDouble(fp, image->ImageCenter().Y());
     WriteBinaryInteger(fp, image->Flags());
-    for (int j = 0; j < 5; j++) WriteBinaryInteger(fp, 0);
+    WriteBinaryInteger(fp, image->DistortionType());
+    WriteBinaryInteger(fp, (image->HasRollingShutter()) ? 1 : 0);
+    for (int j = 0; j < 3; j++) WriteBinaryInteger(fp, 0);
+
+    // Write extra image parameters
+    if (image->DistortionType() != R3_SURFEL_NO_DISTORTION) {
+      const RNScalar *radial_distortion = image->RadialDistortion();
+      const RNScalar *tangential_distortion = image->TangentialDistortion();
+      WriteBinaryDouble(fp, radial_distortion[0]);
+      WriteBinaryDouble(fp, radial_distortion[1]);
+      WriteBinaryDouble(fp, radial_distortion[2]);
+      WriteBinaryDouble(fp, tangential_distortion[0]);
+      WriteBinaryDouble(fp, tangential_distortion[1]);
+    }
+    if (image->HasRollingShutter()) {
+      const R3CoordSystem *rs_poses = image->RollingShutterPoses();
+      const RNScalar *rs_timestamps = image->RollingShutterTimestamps();
+      R4Matrix camera_to_world0 = rs_poses[0].Matrix();
+      R4Matrix camera_to_world1 = rs_poses[1].Matrix();
+      R3Point viewpoint0 = camera_to_world0 * R3zero_point;
+      R3Point viewpoint1 = camera_to_world1 * R3zero_point;
+      R3Vector towards0 = camera_to_world0 * R3negz_vector;
+      R3Vector towards1 = camera_to_world1 * R3negz_vector;
+      R3Vector up0 = camera_to_world0 * R3posy_vector;
+      R3Vector up1 = camera_to_world1 * R3posy_vector;
+      WriteBinaryDouble(fp, viewpoint0.X());
+      WriteBinaryDouble(fp, viewpoint0.Y());
+      WriteBinaryDouble(fp, viewpoint0.Z());
+      WriteBinaryDouble(fp, towards0.X());
+      WriteBinaryDouble(fp, towards0.Y());
+      WriteBinaryDouble(fp, towards0.Z());
+      WriteBinaryDouble(fp, up0.X());
+      WriteBinaryDouble(fp, up0.Y());
+      WriteBinaryDouble(fp, up0.Z());
+      WriteBinaryDouble(fp, viewpoint1.X());
+      WriteBinaryDouble(fp, viewpoint1.Y());
+      WriteBinaryDouble(fp, viewpoint1.Z());
+      WriteBinaryDouble(fp, towards1.X());
+      WriteBinaryDouble(fp, towards1.Y());
+      WriteBinaryDouble(fp, towards1.Z());
+      WriteBinaryDouble(fp, up1.X());
+      WriteBinaryDouble(fp, up1.Y());
+      WriteBinaryDouble(fp, up1.Z());
+      WriteBinaryDouble(fp, rs_timestamps[0]);
+      WriteBinaryDouble(fp, rs_timestamps[1]);
+    }
   }
 
   // Write object properties

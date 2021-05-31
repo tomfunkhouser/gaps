@@ -3395,10 +3395,11 @@ SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent)
   if (!scene) return 0;
   if (!object) return 0;
   if (!parent) return 0;
+  R3SurfelObject *old_parent = object->Parent();
+  if (old_parent == parent) return 1;
   
   // Update current command 
   if (current_command) {
-    R3SurfelObject *old_parent = object->Parent();
     current_command->part_parent_assignments.Insert(object);
     current_command->inserted_parent_assignments.Insert(parent);
     current_command->removed_parent_assignments.Insert(old_parent);

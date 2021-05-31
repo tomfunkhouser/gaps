@@ -608,7 +608,10 @@ PrintInfo(R3SurfelScene *scene)
     printf("Images:\n");
     for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
+      const RNScalar *radial_distortion = image->RadialDistortion();
+      const RNScalar *tangential_distortion = image->TangentialDistortion();
       printf("  Name = %s\n", (image->Name()) ? image->Name() : "None");
+      printf("  Scan = %d\n", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
       printf("  Viewpoint = %g %g %g\n", image->Viewpoint().X(), image->Viewpoint().Y(), image->Viewpoint().Z());
       printf("  Towards = %g %g %g\n", image->Towards().X(), image->Towards().Y(), image->Towards().Z());
       printf("  Up = %g %g %g\n", image->Up().X(), image->Up().Y(), image->Up().Z());
@@ -617,7 +620,29 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Image center = %g %g\n", image->ImageCenter().X(), image->ImageCenter().Y());
       printf("  Focal lengths = %g %g\n", image->XFocal(), image->YFocal());
       printf("  Timestamp = %.6f\n", image->Timestamp());
-      printf("  Scan = %d\n", (image->Scan()) ? image->Scan()->SceneIndex() : -1);
+      printf("  Distortion type = %d\n", image->DistortionType());
+      if (image->DistortionType() != R3_SURFEL_NO_DISTORTION) {
+        printf("  Radial distortion = %g %g %g\n", radial_distortion[0], radial_distortion[1], radial_distortion[2]);
+        printf("  Tangential distortion = %g %g\n", tangential_distortion[0], tangential_distortion[1]);
+      }
+      if (image->HasRollingShutter()) {
+        const RNScalar *rolling_shutter_timestamps = image->RollingShutterTimestamps();
+        const R3CoordSystem *rolling_shutter_poses = image->RollingShutterPoses();
+        R3Point viewpoint0 = rolling_shutter_poses[0].Matrix() * R3zero_point;
+        R3Point viewpoint1 = rolling_shutter_poses[1].Matrix() * R3zero_point;
+        R3Vector towards0 = rolling_shutter_poses[0].Matrix() * R3negz_vector;
+        R3Vector towards1 = rolling_shutter_poses[1].Matrix() * R3negz_vector;
+        R3Vector up0 = rolling_shutter_poses[0].Matrix() * R3posy_vector;
+        R3Vector up1 = rolling_shutter_poses[1].Matrix() * R3posy_vector;
+        printf("  Rolling shutter timestamps = %g %g\n",
+           rolling_shutter_timestamps[0], rolling_shutter_timestamps[1]);
+        printf("  Rolling shutter viewpoints= %g %g %g    %g %g %g\n",
+           viewpoint0.X(), viewpoint0.Y(), viewpoint0.Z(), viewpoint1.X(), viewpoint1.Y(), viewpoint1.Z());
+        printf("  Rolling shutter towards= %g %g %g    %g %g %g\n",
+           towards0.X(), towards0.Y(), towards0.Z(), towards1.X(), towards1.Y(), towards1.Z());
+        printf("  Rolling shutter ups= %g %g %g    %g %g %g\n",
+           up0.X(), up0.Y(), up0.Z(), up1.X(), up1.Y(), up1.Z());
+      }
       printf("\n");
     }
     printf("\n");

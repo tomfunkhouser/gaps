@@ -35,10 +35,23 @@ R3SurfelImage(const char *name)
     image_center(0,0),
     xfocal(0),
     yfocal(0),
+    distortion_type(R3_SURFEL_NO_DISTORTION),
     name((name) ? RNStrdup(name) : NULL),
     flags(0),
     data(NULL)
 {
+  // Intialize distortion parameters
+  radial_distortion[0] = 0;
+  radial_distortion[1] = 0;
+  radial_distortion[2] = 0;
+  tangential_distortion[0] = 0;
+  tangential_distortion[1] = 0;
+
+  // Initialize rolling shutter pose parameters
+  rolling_shutter_poses[0] = pose;
+  rolling_shutter_poses[1] = pose;
+  rolling_shutter_timestamps[0] = timestamp;
+  rolling_shutter_timestamps[1] = timestamp;
 }
 
 
@@ -56,10 +69,24 @@ R3SurfelImage(const R3SurfelImage& image)
     image_center(image.image_center),
     xfocal(image.xfocal),
     yfocal(image.yfocal),
+    distortion_type(R3_SURFEL_NO_DISTORTION),
     name((image.name) ? RNStrdup(image.name) : NULL),
     flags(0),
     data(NULL)
 {
+  // Intialize distortion parameters
+  radial_distortion[0] = image.radial_distortion[0];
+  radial_distortion[1] = image.radial_distortion[1];
+  radial_distortion[2] = image.radial_distortion[2];
+  tangential_distortion[0] = image.tangential_distortion[0];
+  tangential_distortion[1] = image.tangential_distortion[1];
+
+  // Initialize rolling shutter pose parameters
+  rolling_shutter_poses[0] = image.rolling_shutter_poses[0];
+  rolling_shutter_poses[1] = image.rolling_shutter_poses[1];
+  rolling_shutter_timestamps[0] = image.rolling_shutter_timestamps[0];
+  rolling_shutter_timestamps[1] = image.rolling_shutter_timestamps[1];
+
   // Copy all channels
   for (int i = 0; i < channels.NEntries(); i++) {
     R2Grid *channel = channels.Kth(i);
@@ -305,33 +332,6 @@ SetScan(R3SurfelScan *scan)
 
 
 void R3SurfelImage::
-SetPose(const R3CoordSystem& pose) 
-{
-  // Set pose
-  this->pose = pose;
-}
-
-
-
-void R3SurfelImage::
-SetViewpoint(const R3Point& viewpoint) 
-{
-  // Set viewpoint
-  this->pose.SetOrigin(viewpoint);
-}
-
-
-
-void R3SurfelImage::
-SetOrientation(const R3Vector& towards, const R3Vector& up) 
-{
-  // Set orientation
-  this->pose.SetAxes(R3Triad(towards, up));
-}
-
-
-
-void R3SurfelImage::
 SetFocalLengths(RNLength focal_length) 
 {
   // Set both focal lengths
@@ -360,28 +360,6 @@ SetYFocal(RNLength focal_length)
 
 
 void R3SurfelImage::
-SetTimestamp(RNScalar timestamp) 
-{
-  // Set timestamp
-  this->timestamp = timestamp;
-}
-
-
-
-void R3SurfelImage::
-SetName(const char *name)
-{
-  // Delete previous name
-  if (this->name) free(this->name);
-  this->name = (name) ? RNStrdup(name) : NULL;
-
-  // Mark scene as dirty
-  if (Scene()) Scene()->SetDirty();
-}
-
-
-
-void R3SurfelImage::
 SetImageDimensions(int width, int height) 
 {
   // Set resolution
@@ -396,6 +374,149 @@ SetImageCenter(const R2Point& center)
 {
   // Set image center
   this->image_center = center;
+}
+
+
+
+void R3SurfelImage::
+SetPose(const R3CoordSystem& pose) 
+{
+  // Set pose
+  this->pose = pose;
+
+  // Update rollling shutter poses
+  this->rolling_shutter_poses[0] = this->pose;
+  this->rolling_shutter_poses[1] = this->pose;
+  flags.Remove(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+}
+
+
+
+void R3SurfelImage::
+SetViewpoint(const R3Point& viewpoint) 
+{
+  // Set viewpoint
+  this->pose.SetOrigin(viewpoint);
+
+  // Update rollling shutter poses
+  this->rolling_shutter_poses[0] = this->pose;
+  this->rolling_shutter_poses[1] = this->pose;
+  flags.Remove(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+}
+
+
+
+void R3SurfelImage::
+SetOrientation(const R3Vector& towards, const R3Vector& up) 
+{
+  // Set orientation
+  this->pose.SetAxes(R3Triad(towards, up));
+
+  // Update rollling shutter poses
+  this->rolling_shutter_poses[0] = this->pose;
+  this->rolling_shutter_poses[1] = this->pose;
+  flags.Remove(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+}
+
+
+
+void R3SurfelImage::
+SetTimestamp(RNScalar timestamp) 
+{
+  // Set timestamp
+  this->timestamp = timestamp;
+
+  // Update rollling shutter timestamps
+  this->rolling_shutter_timestamps[0] = timestamp;
+  this->rolling_shutter_timestamps[1] = timestamp;
+  flags.Remove(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+}
+
+
+
+void R3SurfelImage::
+SetDistortionType(int distortion_type) 
+{
+  // Set distortion type
+  this->distortion_type = distortion_type;
+}
+
+
+
+void R3SurfelImage::
+SetRadialDistortion(const RNScalar k[3]) 
+{
+  // Set radial distortion parameters
+  this->radial_distortion[0] = k[0];
+  this->radial_distortion[1] = k[1];
+  this->radial_distortion[2] = k[2];
+}
+
+
+
+void R3SurfelImage::
+SetTangentialDistortion(const RNScalar p[2]) 
+{
+  // Set tangential distortion parameters
+  this->tangential_distortion[0] = p[0];
+  this->tangential_distortion[1] = p[1];
+}
+
+
+
+void R3SurfelImage::
+SetRollingShutterTimestamps(RNScalar timestamp0, RNScalar timestamp1) 
+{
+  // Check if timestamps are different
+  if (timestamp0 == timestamp1) {
+    SetTimestamp(timestamp0);
+  }
+  else {
+    // Set rollling shutter timestamps
+    this->rolling_shutter_timestamps[0] = timestamp0;
+    this->rolling_shutter_timestamps[1] = timestamp1;
+
+    // Update center timestamp
+    this->timestamp = 0.5 * (timestamp0 + timestamp1);
+
+    // Update flags
+    flags.Add(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+  }
+}
+
+
+
+void R3SurfelImage::
+SetRollingShutterPoses(const R3CoordSystem& pose0, const R3CoordSystem& pose1) 
+{
+  // Check if poses are different
+  if (pose0 == pose1) {
+    SetPose(pose0);
+  }
+  else {    
+    // Set rollling shutter poses
+    this->rolling_shutter_poses[0] = pose0;
+    this->rolling_shutter_poses[1] = pose1;
+
+    // Update center pose
+    this->pose = R3CoordSystemSlerp(pose0, pose1, 0.5);
+
+    // Update flags
+    flags.Add(R3_SURFEL_IMAGE_HAS_ROLLING_SHUTTER);
+  }
+}
+
+
+
+void R3SurfelImage::
+SetName(const char *name)
+{
+  // Delete previous name
+  if (this->name) free(this->name);
+  this->name = (name) ? RNStrdup(name) : NULL;
+
+  // Mark scene as dirty
+  if (Scene()) Scene()->SetDirty();
 }
 
 
@@ -419,14 +540,56 @@ SetData(void *data)
 
 
 ////////////////////////////////////////////////////////////////////////
+// TRANSFORMATION MANIPULATION FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelImage::
+Transform(const R3Affine& transformation)
+{
+  // Transform pose
+  pose.Transform(transformation);
+
+  // Transform rolling shutter poses
+  rolling_shutter_poses[0].Transform(transformation);
+  rolling_shutter_poses[1].Transform(transformation);
+}
+
+
+  
+////////////////////////////////////////////////////////////////////////
 // COORDINATE TRANSFORMATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 R3Point R3SurfelImage::
 TransformFromWorldToCamera(const R3Point& world_position) const
 {
-  // Transform 3D point from world into camera coordinate system
-  return Extrinsics() * world_position;
+  // Initialize result
+  R3Point camera_position = pose.InverseMatrix() * world_position;
+
+  // Check if has rolling shutter
+  if (HasRollingShutter()) {
+    // Search for x coordinate (there is a different camera pose for every column)
+    int column_index = ImageWidth() / 2;
+    int last_column_index = column_index;
+    for (int i = 0; i < ImageWidth()/2; i++) {
+      // Transform world point into column's camera coordinate system
+      R3CoordSystem cs = RollingShutterPoseAtImagePosition(R2Point(column_index, 0));
+      R3Point camera_p = cs.InverseMatrix() * world_position;
+      if (RNIsPositiveOrZero(camera_p.Z())) return camera_position;
+      camera_position = camera_p;
+      
+      // Get/check column index
+      R2Point distorted_position = TransformFromCameraToImage(camera_position);
+      column_index = (int) (distorted_position.X() + 0.5);
+      if (column_index < 0) column_index = 0;
+      if (column_index >= ImageWidth()-1) column_index = ImageWidth()-1;
+      if (column_index == last_column_index) break;
+      last_column_index = column_index;
+    }
+  }
+
+  // Return camera position
+  return camera_position;
 }
 
   
@@ -444,15 +607,6 @@ TransformFromWorldToImage(const R3Point& world_position) const
 
 
 
-R3Point R3SurfelImage::
-TransformFromCameraToWorld(const R3Point& camera_position) const
-{
-  // Transform 3D point from camera into world coordinate system
-  return CameraToWorld() * camera_position;
-}
-
-
-
 R2Point R3SurfelImage::
 TransformFromCameraToImage(const R3Point& camera_position) const
 {
@@ -460,17 +614,54 @@ TransformFromCameraToImage(const R3Point& camera_position) const
   const R2Point c = ImageCenter();
   RNCoord x = c.X() + xfocal * camera_position.X() / -camera_position.Z();
   RNCoord y = c.Y() + yfocal * camera_position.Y() / -camera_position.Z();
-  return R2Point(x, y);
+  R2Point undistorted_image_position(x, y);
+  
+  // Distort image position
+  return DistortImagePosition(undistorted_image_position);
 }
 
 
 
 R3Point R3SurfelImage::
-TransformFromImageToWorld(const R2Point& image_position) const
+TransformFromCameraToWorld(const R3Point& camera_position) const
 {
-  // Transform from pixels into world coordinate system
-  R3Point camera_position = TransformFromImageToCamera(image_position);
-  return TransformFromCameraToWorld(camera_position);
+  // Check if rolling shutter
+  if (HasRollingShutter()) {
+    // Get projected image position
+    R2Point image_position = TransformFromCameraToImage(camera_position);
+
+    // Get rolling shutter pose
+    R3CoordSystem rs_pose = RollingShutterPoseAtImagePosition(image_position);
+
+    // Transform 3D point from camera into world coordinate system
+    return rs_pose.Matrix() * camera_position;
+  }
+  else {
+    // Transform 3D point from camera into world coordinate system
+    return CameraToWorld() * camera_position;
+  }
+}
+
+
+
+R3Point R3SurfelImage::
+TransformFromImageToWorld(const R2Point& image_position, RNLength depth) const
+{
+  // Transform from image to camera coordinates
+  R3Point camera_position = TransformFromImageToCamera(image_position, depth);
+
+  // Transform from camera to world coordinates
+  if (HasRollingShutter()) {
+    // Get rolling shutter pose
+    R3CoordSystem rs_pose = RollingShutterPoseAtImagePosition(image_position);
+
+    // Return position in world coordinates
+    return rs_pose.Matrix() * camera_position;
+  }
+  else {
+    // Return position in world coordinates
+    return TransformFromCameraToWorld(camera_position);
+  }
 }
 
 
@@ -478,6 +669,13 @@ TransformFromImageToWorld(const R2Point& image_position) const
 R3Point R3SurfelImage::
 TransformFromImageToCamera(const R2Point& image_position, RNLength depth) const
 {
+  // Check camera parameters
+  if ((xfocal <= 0) || (yfocal <= 0)) return R3unknown_point;
+
+  // Undistort image position
+  R2Point undistorted_image_position = UndistortImagePosition(image_position);
+  if (undistorted_image_position == R2unknown_point) return R3unknown_point;
+
   // Get depth
   if (depth < 0) {
     if (channels.NEntries() <= R3_SURFEL_DEPTH_CHANNEL) return R3unknown_point;
@@ -487,13 +685,10 @@ TransformFromImageToCamera(const R2Point& image_position, RNLength depth) const
     depth = channels[R3_SURFEL_DEPTH_CHANNEL]->GridValue(ix, iy);
   }
 
-  // Get camera intrinsics
-  if ((xfocal <= 0) || (yfocal <= 0)) return R3unknown_point;
-  const R2Point c = ImageCenter();
-
   // Backproject from pixels into camera coordinate system
-  RNCoord x = (image_position.X() - c.X()) * depth / xfocal;
-  RNCoord y = (image_position.Y() - c.Y()) * depth / yfocal;
+  const R2Point c = ImageCenter();
+  RNCoord x = (undistorted_image_position.X() - c.X()) * depth / xfocal;
+  RNCoord y = (undistorted_image_position.Y() - c.Y()) * depth / yfocal;
   return R3Point(x, y, -depth);
 }
 
@@ -511,6 +706,168 @@ ContainsImagePosition(const R2Point& image_position) const
 }
 
   
+
+////////////////////////////////////////////////////////////////////////
+// DISTORTION FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R2Point R3SurfelImage::
+DistortImagePosition(const R2Point& undistorted_image_position) const
+{
+  // Check distortion parameters
+  if (distortion_type == R3_SURFEL_NO_DISTORTION)
+    return undistorted_image_position;
+
+  // Check distortion parameters
+  if ((radial_distortion[0] == 0) && (radial_distortion[1] == 0) && (radial_distortion[2] == 0) &&
+      (tangential_distortion[0] == 0) && (tangential_distortion[1] == 0))
+    return undistorted_image_position;
+
+  // Check focal lengths
+  if ((xfocal <= 0) || (yfocal <= 0))
+    return undistorted_image_position;
+  
+  // Check distortion type
+  if (distortion_type == R3_SURFEL_PERSPECTIVE_DISTORTION) {
+    // Convert to normalized coordinates
+    double ux = (undistorted_image_position.X() - XCenter()) / xfocal;
+    double uy = (undistorted_image_position.Y() - YCenter()) / yfocal;
+
+    // Get convenient variables
+    const RNScalar *k = radial_distortion;
+    const RNScalar *p = tangential_distortion;
+    double x2 = ux * ux;
+    double y2 = uy * uy;
+    double xy = ux * uy;
+    double r2 = x2 + y2;
+
+    // Distort position
+    double scale = 1 + k[0]*r2 + k[1]*r2*r2 + k[2]*r2*r2*r2;
+    double dx = scale * ux + 2 * p[0] * xy + p[1] * (r2 + 2 * x2);
+    double dy = scale * uy + p[0] * ( r2 + 2 * y2 ) + 2 * p[1] * xy;
+
+    // Convert back to image coordinates
+    double distorted_x = xfocal * dx + XCenter();
+    double distorted_y = yfocal * dy + YCenter();
+
+    // Return distorted position
+    return R2Point(distorted_x, distorted_y);
+  }
+  else if (distortion_type == R3_SURFEL_FISHEYE_DISTORTION) {
+    // Convert to normalized coordinates
+    double ux = (undistorted_image_position.X() - XCenter()) / xfocal;
+    double uy = (undistorted_image_position.Y() - YCenter()) / yfocal;
+
+    // Get convenient variables
+    const RNScalar *k = radial_distortion;
+    double x2 = ux * ux;
+    double y2 = uy * uy;
+    double r2 = x2 + y2;
+    double r = sqrt ( r2 );
+    if (RNIsZero(r)) return undistorted_image_position;
+
+    // Distort position
+    double theta = atan( r );
+    double theta2 = theta * theta;
+    double theta_tilde = theta * ( 1 + k[0] * theta2 + k[1] * theta2*theta2 ) / r;
+    double dx = theta_tilde * ux;
+    double dy = theta_tilde * uy;
+
+    // Convert back to image coordinates
+    double distorted_x = xfocal * dx + XCenter();
+    double distorted_y = yfocal * dy + YCenter();
+
+    // Return distorted position
+    return R2Point(distorted_x, distorted_y);
+  }
+
+  // Otherwise, apply no distortion
+  return undistorted_image_position;
+}
+
+
+
+R2Point R3SurfelImage::
+UndistortImagePosition(const R2Point& distorted_image_position) const
+{
+  // Check distortion type
+  if (distortion_type == R3_SURFEL_NO_DISTORTION)
+    return distorted_image_position;
+
+  // Check distortion parameters
+  if ((radial_distortion[0] == 0) && (radial_distortion[1] == 0) && (radial_distortion[2] == 0) &&
+      (tangential_distortion[0] == 0) && (tangential_distortion[1] == 0))
+    return distorted_image_position;
+
+  // Check focal lengths
+  if ((xfocal <= 0) || (yfocal <= 0))
+    return distorted_image_position;
+  
+  // Not implemented yet
+  RNWarning("R3SurfelImage::UndistortImagePosition not implemented");
+  return distorted_image_position;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// ROLLING SHUTTER POSES
+////////////////////////////////////////////////////////////////////////
+
+R3CoordSystem R3SurfelImage::
+RollingShutterPoseAtTimestamp(RNScalar t) const
+{
+  // Check rolling shutter parameters
+  if (!HasRollingShutter()) return pose;
+  double dt = rolling_shutter_timestamps[1] - rolling_shutter_timestamps[0];
+  if (RNIsZero(dt)) return rolling_shutter_poses[0];
+
+  // Get interpolation parameter
+  double u = (t - rolling_shutter_timestamps[0]) / dt;
+  if (u <= 0) return rolling_shutter_poses[0];
+  if (u >= 1) return rolling_shutter_poses[1];
+  
+  // Return slerped pose
+  return R3CoordSystemSlerp(rolling_shutter_poses[0], rolling_shutter_poses[1], u);
+}
+
+
+
+R3CoordSystem R3SurfelImage::
+RollingShutterPoseAtImagePosition(const R2Point& image_position) const
+{
+  // Check rolling shutter parameters
+  if (!HasRollingShutter()) return pose;
+  if (image_width <= 1) return rolling_shutter_poses[0];
+
+  // Get interpolation parameter
+  double u = (double) image_position.X() / (double) (image_width-1);
+  if (u <= 0) return rolling_shutter_poses[0];
+  if (u >= 1) return rolling_shutter_poses[1];
+
+  // Return slerped pose
+  return R3CoordSystemSlerp(rolling_shutter_poses[0], rolling_shutter_poses[1], u);
+}
+
+
+
+RNScalar R3SurfelImage::
+RollingShutterTimestampAtImagePosition(const R2Point& image_position) const
+{
+  // Check rolling shutter parameters
+  if (!HasRollingShutter()) return timestamp;
+  if (image_width <= 1) return rolling_shutter_timestamps[0];
+
+  // Get interpolation parameter
+  double u = (double) image_position.X() / (double) (image_width-1);
+  if (u <= 0) return rolling_shutter_timestamps[0];
+  if (u >= 1) return rolling_shutter_timestamps[1];
+
+  // Return interpolated timestamp
+  return (1-u)*rolling_shutter_timestamps[0] + u*rolling_shutter_timestamps[1];
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // DISPLAY FUNCTIONS

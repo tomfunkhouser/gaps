@@ -245,7 +245,7 @@ EndCommand(void)
         (current_command->type == R3_SURFEL_LABELER_SYNC_COMMAND) || 
         (current_command->timestamp >= last_checkpoint_time + checkpoint_interval)) {
       last_checkpoint_time = current_command->timestamp;
-      //PrintCheckpoint(logging_fp);
+      // PrintCheckpoint(logging_fp);
     }
   }
 
@@ -301,7 +301,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   for (int j = 0; j < command->inserted_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->inserted_label_assignments[j];
     if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
-    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->SceneIndex(), assignment->Confidence(), assignment->Originator());
+    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
   }
   fprintf(fp, "    ");
 
@@ -309,7 +309,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   for (int j = 0; j < command->removed_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->removed_label_assignments[j];
     if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
-    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->SceneIndex(), assignment->Confidence(), assignment->Originator());
+    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
   }
   fprintf(fp, "    ");
 
@@ -346,45 +346,43 @@ PrintCheckpoint(FILE *fp) const
   int ntotal = 0;
   int npredicted = 0;
   int nconfirmed = 0;
+  int nunlabeled = 0;
   for (int i = 0; i < scene->NObjects(); i++) {
     R3SurfelObject *object = scene->Object(i);
-    if (object->NParts() > 0) continue;
-    if (!object->GroundTruthLabel()) continue;
+    if (object->Parent() != scene->RootObject()) continue;
     if (object->HumanLabel()) nconfirmed++;
     else if (object->PredictedLabel()) npredicted++;
+    else nunlabeled++;
     ntotal++;
   }
 
   // Print status
-  fprintf(fp, "CHECKPOINT  %g  %d   %d %d %d    %g %g %g   %g %g %g    %g %g %g", 
-    CurrentTime(),
-    scene->NLabels(), ntotal, nconfirmed, npredicted,
-    CurrentLabelPrecision(), CurrentLabelRecall(), CurrentLabelFMeasure(),
-    HumanLabelPrecision(),  HumanLabelRecall(), HumanLabelFMeasure(),
-    PredictedLabelPrecision(),  PredictedLabelRecall(), PredictedLabelFMeasure());
-  fprintf(fp, "    ");
+  fprintf(fp, "CHECKPOINT  %g  %d   %d %d %d %d", 
+          CurrentTime(), scene->NLabels(),
+          ntotal, nconfirmed, npredicted, nunlabeled);
 
+#if 0
   // Print labels
+  fprintf(fp, "    ");
   for (int i = 0; i < scene->NLabels(); i++) {
     R3SurfelLabel *label = scene->Label(i);
-    fprintf(fp, " L %d %s", label->SceneIndex(), label->Name());
+    fprintf(fp, " ( L %d %s )", label->Identifier(), label->Name());
   }
-  fprintf(fp, "    ");
 
   // Print object assignments
+  fprintf(fp, "    ");
   for (int i = 0; i < scene->NObjects(); i++) {
     R3SurfelObject *object = scene->Object(i);
-    if (object->NParts() > 0) continue;
-    R3SurfelLabel *ground_truth_label = object->GroundTruthLabel();
-    R3SurfelLabel *human_label = object->HumanLabel();
-    R3SurfelLabelAssignment *predicted_assignment = object->PredictedLabelAssignment();
-    R3SurfelLabel *predicted_label = object->PredictedLabel();
-    fprintf(fp, " O %d %s %d %d %d %g", object->SceneIndex(), object->Name(), 
-      (ground_truth_label) ? ground_truth_label->SceneIndex() : -1, 
-      (human_label) ? human_label->SceneIndex() : -1, 
-      (predicted_label) ? predicted_label->SceneIndex() : -1, 
-      (predicted_assignment) ? predicted_assignment->Confidence() : -1);
+    if (object->Parent() != scene->RootObject()) continue;
+    R3SurfelLabelAssignment *current_assignment = object->CurrentLabelAssignment();
+    R3SurfelLabel *current_label = current_assignment->Label();
+    fprintf(fp, " ( O %d %s %d %d )", object->SceneIndex(), object->Name(), 
+      (current_label) ? current_label->Identifier() : -1, 
+      (current_assignment) ? current_assignment->Originator() : -1);
   }
+#endif
+
+  // End checkpoint
   fprintf(fp, "\n");
   fflush(fp);
 }

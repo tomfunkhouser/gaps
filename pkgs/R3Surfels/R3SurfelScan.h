@@ -117,7 +117,10 @@ public:
   virtual void SetFlags(RNFlags flags);
   virtual void SetData(void *data);
 
+  // Transform manipulation functions
+  virtual void Transform(const R3Affine& transformation);
 
+  
   //////////////////////////////////////////
   //// STRUCTURE MANIPULATION FUNCTIONS ////
   //////////////////////////////////////////
