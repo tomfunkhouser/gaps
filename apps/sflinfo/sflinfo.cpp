@@ -349,7 +349,7 @@ PrintInfo(R3SurfelScene *scene)
       if (!bbox.IsEmpty())
         printf("%s Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
       if (!timestamp_range.IsEmpty())
-        printf("%s Timestamp Range = %.6f %.6f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
+        printf("%s Timestamp Range = %.9f %.9f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("%s # Nodes = %d\n", prefix, object->NNodes());
       printf("%s # Parts = %d\n", prefix, object->NParts());
       printf("%s # Object Properties = %d\n", prefix, object->NObjectProperties());
@@ -464,7 +464,7 @@ PrintInfo(R3SurfelScene *scene)
     printf("  Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
     printf("  Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
     printf("  Axial lengths = ( %g %g %g )\n", bbox.XLength(), bbox.YLength(), bbox.ZLength());
-    printf("  Timestamp Range = %.6f %.6f\n", timestamp_range.Min(), timestamp_range.Max());
+    printf("  Timestamp Range = %.9f %.9f\n", timestamp_range.Min(), timestamp_range.Max());
     printf("\n");
   }
 
@@ -495,7 +495,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s    Average Radius = %g\n", prefix, node->AverageRadius());
       printf("%s    Centroid = ( %g %g %g )\n", prefix, centroid[0], centroid[1], centroid[2]);
       printf("%s    Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
-      printf("%s    Timestamp Range = %.6f %.6f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
+      printf("%s    Timestamp Range = %.9f %.9f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("\n");
     }
     printf("\n");
@@ -532,8 +532,8 @@ PrintInfo(R3SurfelScene *scene)
       printf("    Position Origin = ( %g %g %g )\n", position_origin[0], position_origin[1], position_origin[2]);
       printf("    Centroid = ( %g %g %g )\n", centroid[0], centroid[1], centroid[2]);
       printf("    Bounding box = ( %g %g %g ) ( %g %g %g )\n", bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
-      printf("    Timestamp Origin = %.6f\n", block->TimestampOrigin());
-      printf("    Timestamp Range = %.6f %.6f\n", timestamp_range.Min(), timestamp_range.Max());
+      printf("    Timestamp Origin = %.9f\n", block->TimestampOrigin());
+      printf("    Timestamp Range = %.9f %.9f\n", timestamp_range.Min(), timestamp_range.Max());
       printf("    Max surfel identifier = %u\n", block->MaxIdentifier());
       printf("\n");
     }
@@ -560,7 +560,7 @@ PrintInfo(R3SurfelScene *scene)
           printf("      Radius = %f %f\n", surfel->Radius(0), surfel->Radius(1));
           printf("      Depth = %.6f\n", surfel->Depth());
           printf("      Elevation = %.6f\n", surfel->Elevation());
-          printf("      Timestamp = %.6f\n", surfel->Timestamp());
+          printf("      Timestamp = %.9f\n", surfel->Timestamp());
           printf("      Identifier = %u\n", surfel->Identifier());
           printf("      Attribute = %u\n", surfel->Attribute());
           printf("      Flags = %d\n", surfel->Flags());
@@ -595,7 +595,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Viewpoint = %g %g %g\n", scan->Viewpoint().X(), scan->Viewpoint().Y(), scan->Viewpoint().Z());
       printf("  Towards = %g %g %g\n", scan->Towards().X(), scan->Towards().Y(), scan->Towards().Z());
       printf("  Up = %g %g %g\n", scan->Up().X(), scan->Up().Y(), scan->Up().Z());
-      printf("  Timestamp = %.6f\n", scan->Timestamp());
+      printf("  Timestamp = %.9f\n", scan->Timestamp());
       printf("  Node = %d\n", (scan->Node()) ? scan->Node()->TreeIndex() : -1);
       printf("  Image = %d\n", (scan->Image()) ? scan->Image()->SceneIndex() : -1);
       printf("\n");
@@ -619,7 +619,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("  Image dimensions = %d %d\n", image->ImageWidth(), image->ImageHeight());
       printf("  Image center = %g %g\n", image->ImageCenter().X(), image->ImageCenter().Y());
       printf("  Focal lengths = %g %g\n", image->XFocal(), image->YFocal());
-      printf("  Timestamp = %.6f\n", image->Timestamp());
+      printf("  Timestamp = %.9f\n", image->Timestamp());
       printf("  Distortion type = %d\n", image->DistortionType());
       if (image->DistortionType() != R3_SURFEL_NO_DISTORTION) {
         printf("  Radial distortion = %g %g %g\n", radial_distortion[0], radial_distortion[1], radial_distortion[2]);
@@ -634,7 +634,7 @@ PrintInfo(R3SurfelScene *scene)
         R3Vector towards1 = rolling_shutter_poses[1].Matrix() * R3negz_vector;
         R3Vector up0 = rolling_shutter_poses[0].Matrix() * R3posy_vector;
         R3Vector up1 = rolling_shutter_poses[1].Matrix() * R3posy_vector;
-        printf("  Rolling shutter timestamps = %g %g\n",
+        printf("  Rolling shutter timestamps = %.9f %.9f\n",
            rolling_shutter_timestamps[0], rolling_shutter_timestamps[1]);
         printf("  Rolling shutter viewpoints= %g %g %g    %g %g %g\n",
            viewpoint0.X(), viewpoint0.Y(), viewpoint0.Z(), viewpoint1.X(), viewpoint1.Y(), viewpoint1.Z());
