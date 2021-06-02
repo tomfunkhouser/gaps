@@ -25,7 +25,7 @@ struct MPCategory {
 
   // Manipulation stuff
   void InsertObject(MPObject *object);
-  void RemoveObject(MPObject *segment);
+  void RemoveObject(MPObject *object);
 
 public:
   struct MPHouse *house;
