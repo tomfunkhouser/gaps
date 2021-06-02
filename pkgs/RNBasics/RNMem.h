@@ -41,6 +41,7 @@ int RNCompare(const void *src1, const void *src2, int size);
 /* String copy function */
 
 char *RNStrdup(const char *str);
+char *RNStrncpy(char *dst, const char *src, int max_length);
 
 
   

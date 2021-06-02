@@ -152,6 +152,29 @@ char *RNStrdup(const char *str)
 
 
   
+char *RNStrncpy(char *dst, const char *src, int max_length)
+{
+  // Check arguments
+  if (!dst) return NULL;
+  if (!src) return NULL;
+  if (max_length < 0) return NULL;
+
+  // Copy characters
+  int count = 0;
+  char *dstp = dst;
+  const char *srcp = src;
+  while (count < max_length) {
+    if (count++ >= max_length) break;
+    if (!*srcp) { *dstp = '\0'; break; }
+    *dstp++ = *srcp++;
+  }
+
+  // Return destination address
+  return dst;
+}
+
+
+  
 long RNMaxMemoryUsage(void)
 {
 #   if (RN_OS == RN_WINDOWS)
