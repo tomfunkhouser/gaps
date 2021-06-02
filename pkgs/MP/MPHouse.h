@@ -83,11 +83,11 @@ public:
   
   // Geometric query stuff
   MPImage *FindClosestImage(const R3Point& query_position, const R3Vector& query_normal = R3zero_vector,
-    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
+    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visibility = FALSE) const;
   MPVertex *FindClosestVertex(const R3Point& query_position, const R3Vector& query_normal = R3zero_vector,
-    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
+    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visibility = FALSE) const;
   MPRegion *FindClosestRegion(const R3Point& query_position, const R3Vector& query_normal = R3zero_vector, 
-    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
+    RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visibility = FALSE) const;
 
 public:
   RNArray<MPImage *> images;
