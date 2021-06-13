@@ -192,7 +192,7 @@ public:
 
 
   ///////////////////////////////
-  //// MENU/WINDOW FUNCTIONS ////
+  //// MENU FUNCTIONS ////
   ///////////////////////////////
 
   // Command menu functions
@@ -211,6 +211,14 @@ public:
   void DrawLabelMenu(void) const;
   int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
   
+  
+  /////////////////////////////////////
+  //// LOW_LEVEL INPUT FUNCTIONS ////
+  /////////////////////////////////////
+
+  // Keyboard callback with extra variable for tab key state
+  int Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab);
+
   
   /////////////////////////////////////
   //// LOW_LEVEL DRAWING FUNCTIONS ////
@@ -322,8 +330,9 @@ protected:
 // ATTRIBUTE CONSTANTS
 ////////////////////////////////////////////////////////////////////////
 
-#define R3_SURFEL_MOVING_ATTRIBUTE       R3_SURFEL_OBJECT_USER_FLAG_0
-#define R3_SURFEL_GROUP_ATTRIBUTE        R3_SURFEL_OBJECT_USER_FLAG_1
+#define R3_SURFEL_MOVING_ATTRIBUTE  R3_SURFEL_OBJECT_USER_FLAG_0
+#define R3_SURFEL_GROUP_ATTRIBUTE   R3_SURFEL_OBJECT_USER_FLAG_1
+#define R3_SURFEL_ALL_ATTRIBUTES    (R3_SURFEL_MOVING_ATTRIBUTE | R3_SURFEL_GROUP_ATTRIBUTE)
 
 
 

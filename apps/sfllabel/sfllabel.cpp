@@ -68,6 +68,17 @@ OpenScene(const char *scene_filename, const char *database_filename)
     return NULL;
   }
 
+  // TEMPORARY: Adjust label colors
+  R3SurfelLabel *label = NULL;
+  label = scene->FindLabelByName("Tree");
+  if (label) label->SetColor(RNRgb(80/255.0, 255/255.0, 80/255.0));
+  label = scene->FindLabelByName("Person");
+  if (label) label->SetColor(RNRgb(255/255.0, 150/255.0, 50/255.0));
+  label = scene->FindLabelByName("GuardRail");
+  if (label) label->SetColor(RNRgb(80/255.0, 255/255.0, 180/255.0));
+  label = scene->FindLabelByName("Animal");
+  if (label) label->SetColor(RNRgb(240/255.0, 200/255.0, 240/255.0));
+
   // Print statistics
   if (print_verbose) {
     printf("Opened scene ...\n");

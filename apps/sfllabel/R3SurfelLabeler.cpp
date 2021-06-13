@@ -556,6 +556,15 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
 int R3SurfelLabeler::
 Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 {
+  // For compatibility with R3SurfelViewer
+  return Keyboard(x, y, key, shift, ctrl, alt, 0);
+}
+
+
+
+int R3SurfelLabeler::
+Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
+{
   // Do not redraw by default
   int redraw = 0;
   
@@ -855,6 +864,17 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       } break;
     }
   }
+  else if (tab) {
+    // Make only one label visible
+    if (scene) {
+      R3SurfelLabel *label = scene->FindLabelByAssignmentKeystroke(key);
+      if (label) {
+        SetLabelVisibility(-1, 0);
+        SetLabelVisibility(label->SceneIndex(), 1);
+        redraw = 1;
+      }
+    }
+  }
   else {
     // Send event to viewer
     redraw |= R3SurfelViewer::Keyboard(x, y, key, shift, ctrl, alt);
@@ -880,13 +900,15 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       redraw = 1;
       break; }
 
+#if 0
     case ' ':
       // Confirm predicted label
       if (NObjectSelections() > 0) ConfirmLabelsOnSelectedObjects();
       else if (!ConfirmLabelOnPickedObject(x, y)) SelectPickedObject(x, y);
       redraw = 1;
       break;
-
+#endif
+      
     default: 
       // Assign label by key
       if (scene) {
@@ -2099,11 +2121,12 @@ MergeSelectedObjects(void)
     return 0;
   }
 
-  // Get/check label
+  // Get/check label and attribute flags
   R3SurfelLabelAssignment *assignment = ObjectSelection(0)->CurrentLabelAssignment();
   R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
   int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
   RNScalar confidence = (assignment) ? assignment->Confidence() : 0;
+  RNFlags attribute_flags = ObjectSelection(0)->Flags() & R3_SURFEL_ALL_ATTRIBUTES;
   
   // Begin logging command
   BeginCommand(R3_SURFEL_LABELER_MERGE_SELECTION_COMMAND);
@@ -2115,11 +2138,14 @@ MergeSelectedObjects(void)
   R3SurfelObject *parent = CreateObject(grandparent, parent_name);
   if (!parent) { EndCommand(); return 0; }
 
-  // Create assignment to label
+  // Assign label to parent object
   if (label) {
     R3SurfelLabelAssignment *a = new R3SurfelLabelAssignment(parent, label, confidence, originator);
     scene->InsertLabelAssignment(a);
   }
+
+  // Assign attribute flags to parent object
+  parent->SetFlags(parent->Flags() | attribute_flags);
 
   // Compute feature vector
   RNScalar weight = 0;
@@ -2130,7 +2156,7 @@ MergeSelectedObjects(void)
     weight += object->Complexity();
   }
 
-  // Assign feature vector
+  // Assign feature vector to parent object
   if (weight > 0) vector /= weight;
   parent->SetFeatureVector(vector);
 
@@ -2256,8 +2282,6 @@ UnmergeSelectedObjects(void)
 
 
 
-#if 0
-
 int R3SurfelLabeler::
 SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
   RNArray<R3SurfelObject *> *resultA, RNArray<R3SurfelObject *> *resultB)
@@ -2267,144 +2291,14 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
   assert(strcmp(object->Name(), "Root"));
   assert(parent == scene->RootObject());
 
-  // Get label assignment info
+  // Get assignment and attribute info
   R3SurfelObject *ancestor = object;
   while (ancestor && ancestor->Parent() && (ancestor->Parent() != scene->RootObject())) ancestor = ancestor->Parent();
   R3SurfelLabelAssignment *assignment = ancestor->CurrentLabelAssignment();
   R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
   int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
   double confidence = (assignment) ? assignment->Confidence() : 0;
-
-  // Check if leaf object
-  if (object->NParts() == 0) {
-    // Check object
-    if (object->NNodes() == 0) return 0;
-
-    // Create constraint
-    R3SurfelMultiConstraint multi_constraint;
-    R3SurfelObjectConstraint object_constraint(object);
-    multi_constraint.InsertConstraint(&constraint);
-    multi_constraint.InsertConstraint(&object_constraint);
-
-    // Create array of nodes
-    RNArray<R3SurfelNode *> nodes;
-    for (int i = 0; i < object->NNodes(); i++) {
-      R3SurfelNode *node = object->Node(i);
-      nodes.Insert(node);
-    }
-
-    // Split all nodes
-    RNArray<R3SurfelNode *> nodesA, nodesB;
-    for (int i = 0; i < nodes.NEntries(); i++) {
-      R3SurfelNode *node = nodes.Kth(i);
-      SplitLeafNodes(node, constraint, &nodesA, &nodesB);
-    }
-
-    // Create objects
-    R3SurfelObject *objectA = NULL;
-    R3SurfelObject *objectB = NULL;
-    if (nodesB.NEntries() == 0) {
-      objectA = object;
-    }
-    else if (nodesA.NEntries() == 0) {
-      objectB = object;
-    }
-    else {
-      // Create new objects
-      objectA = new R3SurfelObject();
-      objectB = new R3SurfelObject();
-      if (!objectA || !objectB) return 0;
-      
-      // Remove nodes from object
-      while (object->NNodes() > 0) {
-        R3SurfelNode *node = object->Node(0);
-        object->RemoveNode(node);
-      }
-  
-      // Insert nodes into objectA
-      for (int j = 0; j < nodesA.NEntries(); j++) {
-        R3SurfelNode *nodeA = nodesA.Kth(j);
-        objectA->InsertNode(nodeA);
-      }
-  
-      // Insert nodes into objectB
-      for (int j = 0; j < nodesB.NEntries(); j++) {
-        R3SurfelNode *nodeB = nodesB.Kth(j);
-        objectB->InsertNode(nodeB);
-      }
-      
-      // Set names
-      const char *name = object->Name();
-      if (!name) name = "SPLIT";
-      char nameA[4096], nameB[4096];
-      sprintf(nameA, "%s_A", name);
-      sprintf(nameB, "%s_B", name);
-      objectA->SetName(nameA);
-      objectB->SetName(nameB);
-
-      // Set feature vectors ???
-      objectA->SetFeatureVector(object->FeatureVector());
-      objectB->SetFeatureVector(object->FeatureVector());
-
-      // Insert objects into scene
-      scene->InsertObject(objectA, object);
-      scene->InsertObject(objectB, object);
-    }
-    
-    // Set parents
-    if (objectA) SetObjectParent(objectA, parent);
-    if (objectB) SetObjectParent(objectB, parent);
-    
-    // Create assignments to label
-    if (objectA) {
-      R3SurfelLabelAssignment *assignmentA = new R3SurfelLabelAssignment(objectA, label, confidence, originator);
-      InsertLabelAssignment(assignmentA);
-    }
-    if (objectB) {
-      R3SurfelLabelAssignment *assignmentB = new R3SurfelLabelAssignment(objectB, label, confidence, originator);
-      InsertLabelAssignment(assignmentB);
-    }
-
-    // Insert object into result
-    if (resultA && objectA) resultA->Insert(objectA);
-    if (resultB && objectB) resultB->Insert(objectB);
-  }
-  else {
-    // Split leaves of parts
-    RNArray<R3SurfelObject *> parts;
-    for (int i = 0; i < object->NParts(); i++)
-      parts.Insert(object->Part(i));
-    for (int i = 0; i < parts.NEntries(); i++) {
-      R3SurfelObject *part = parts.Kth(i);
-      SplitObject(part, parent, constraint, resultA, resultB);
-    }
-  }
-  
-  // Invalidate VBO colors
-  InvalidateVBO();
-
-  // Return success
-  return 1;
-}
-
-#else
-
-int R3SurfelLabeler::
-SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
-  RNArray<R3SurfelObject *> *resultA, RNArray<R3SurfelObject *> *resultB)
-{
-  // Just checking
-  assert(object);
-  assert(strcmp(object->Name(), "Root"));
-  assert(parent == scene->RootObject());
-
-  // Get label assignment info
-  R3SurfelObject *ancestor = object;
-  while (ancestor && ancestor->Parent() && (ancestor->Parent() != scene->RootObject())) ancestor = ancestor->Parent();
-  R3SurfelLabelAssignment *assignment = ancestor->CurrentLabelAssignment();
-  R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
-  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
-  double confidence = (assignment) ? assignment->Confidence() : 0;
+  RNFlags attribute_flags = object->Flags() & R3_SURFEL_ALL_ATTRIBUTES;
 
   // Create constraint
   R3SurfelMultiConstraint multi_constraint;
@@ -2478,6 +2372,10 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
     objectA->SetFeatureVector(object->FeatureVector());
     objectB->SetFeatureVector(object->FeatureVector());
 
+    // Set attribute flags
+    objectA->SetFlags(objectA->Flags() | attribute_flags);
+    objectB->SetFlags(objectB->Flags() | attribute_flags);
+
     // Create assignments
     R3SurfelLabelAssignment *assignmentA = new R3SurfelLabelAssignment(objectA, label, confidence, originator);
     R3SurfelLabelAssignment *assignmentB = new R3SurfelLabelAssignment(objectB, label, confidence, originator);
@@ -2533,8 +2431,6 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
   // Return success
   return 1;
 }
-
-#endif
 
 
 
@@ -2701,6 +2597,9 @@ AssignAttributeToPickedObject(int x, int y,
   // Assign attributes
   AssignAttribute(object, attribute, value);
 
+  // Empty object selections
+  EmptyObjectSelections();
+
   // End logging command
   EndCommand();
 
@@ -2745,6 +2644,9 @@ AssignAttributeToSelectedObjects(RNFlags attribute,
     R3SurfelObject *object = ObjectSelection(i);
     AssignAttribute(object, attribute, value);
   }
+
+  // Empty object selections
+  EmptyObjectSelections();
 
   // End logging command
   EndCommand();
@@ -4126,8 +4028,6 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
 
     // Process command
     if (R2Contains(visibility_box, cursor)) {
-      BeginCommand(R3_SURFEL_LABELER_SET_LABEL_VISIBILITY_COMMAND, (ctrl) ? 1 : 0);
-
       if (ctrl) {
         // Toggle all except selected label
         SetLabelVisibility(-1, -1);
@@ -4137,8 +4037,6 @@ PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, 
         // Toggle selected label
         SetLabelVisibility(label->SceneIndex(), -1);
       }
-
-      EndCommand();
       return 1;
     }
     else if (R2Contains(name_box, cursor)) {

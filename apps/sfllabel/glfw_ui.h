@@ -121,7 +121,11 @@ int button, int action, int mods)
   int shift = (mods & GLFW_MOD_SHIFT);
   int ctrl = (mods & GLFW_MOD_CONTROL);
   int alt = (mods & GLFW_MOD_ALT);
+  // if (mods & GLFW_MOD_CAPS_LOCK) shift = !shift;
   
+  // Map space -> alt
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) alt = 1;
+
   // Get cursor position
   double xpos, ypos;
   int window_width, window_height;
@@ -183,6 +187,14 @@ GLFWKeyboard(GLFWwindow *window,
   int shift = (mods & GLFW_MOD_SHIFT);
   int ctrl = (mods & GLFW_MOD_CONTROL);
   int alt = (mods & GLFW_MOD_ALT);
+  // if (mods & GLFW_MOD_CAPS_LOCK) shift = !shift;
+  
+  // Map space -> alt
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) alt = 1;
+  if (key == GLFW_KEY_SPACE) return;
+  
+  // Get tab key status
+  int tab =(glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) ? 1 : 0;
   
   // Get cursor position
   double xpos, ypos;
@@ -274,7 +286,7 @@ GLFWKeyboard(GLFWwindow *window,
   }
 
   // Send keyboard event to labeler
-  if (labeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
+  if (labeler->Keyboard(x, y, translated_key, shift, ctrl, alt, tab)) {
     GLFWPostRedisplay();
   }
 }
