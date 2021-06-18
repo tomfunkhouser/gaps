@@ -274,7 +274,9 @@ PrintInfo(R3SurfelScene *scene)
   printf("  # Label Assignments = %d\n", scene->NLabelAssignments());
   printf("  # Nodes = %d\n", tree->NNodes());
   printf("  # Blocks = %d\n", database->NBlocks());
-  printf("  # Surfels = %lld\n", database->NSurfels());
+  printf("  # Surfels in database = %lld\n", database->NSurfels());
+  printf("  # Surfels in tree = %lld\n", tree->NSurfels(FALSE));
+  printf("  # Surfels in leaves = %lld\n", tree->NSurfels(TRUE));
   printf("\n\n");
   
   // Print comment info

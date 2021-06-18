@@ -43,7 +43,7 @@ public:
 
   // Statistics functions
   int NBlocks(void) const;
-  long long NSurfels(void) const;
+  long long NSurfels(RNBoolean leaves_only = FALSE) const;
 
   
   //////////////////////////
@@ -228,24 +228,19 @@ NBlocks(void) const
 
 
 inline long long R3SurfelTree::
-NSurfels(void) const
+NSurfels(RNBoolean leaves_only) const
 {
-#if 0
-  // Return number of surfels in database
-  if (!database) return 0;
-  return database->NSurfels();
-#else
   // Return number of surfels in tree
   long long n = 0;
   for (int i = 0; i < NNodes(); i++) {
     R3SurfelNode *node = Node(i);
+    if (leaves_only && (node->NParts() > 0)) continue;
     for (int j = 0; j < node->NBlocks(); j++) {
       R3SurfelBlock *block = node->Block(j);
       n += block->NSurfels();
     }
   }
   return n;
-#endif
 }
 
 
