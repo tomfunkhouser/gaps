@@ -745,7 +745,10 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
   // Start statistics
   RNTime start_time;
   start_time.Read();
-
+  int original_count = scene->NLabels();
+  int read_count = 0;
+  int create_count = 0;
+  
   // Open file
   FILE *fp = fopen(list_filename, "r");
   if (!fp) {
@@ -764,7 +767,6 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
   }
  
   // Read labels from file with list
-  int count = 0;
   double r, g, b;
   int identifier, visibility;
   char assignment_keystroke[64];
@@ -774,36 +776,44 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
     while (*bufferp && isspace(*bufferp)) bufferp++;
     if (*bufferp == '\0') continue;
     if (*bufferp == '#') continue;
-    if (sscanf(buffer, "%s%d%s%s%d%lf%lf%lf", label_name, &identifier, assignment_keystroke, parent_name, &visibility, &r, &g, &b) != (unsigned int) 8) {
-      RNFail("Invalid format for label %d in %s\n", count, list_filename);
+    if (sscanf(buffer, "%s%d%s%s%d%lf%lf%lf",
+      label_name, &identifier, assignment_keystroke,
+      parent_name, &visibility, &r, &g, &b) != (unsigned int) 8) {
+      RNFail("Invalid format for label %d in %s\n", read_count, list_filename);
       return 0;
     }
           
     // Check if label already exists
-    if (scene->FindLabelByName(label_name)) continue;
+    R3SurfelLabel *label = scene->FindLabelByName(label_name);
+    if (!label) {
+      // Create label
+      R3SurfelLabel *label = new R3SurfelLabel(label_name);
 
-    // Create label
-    R3SurfelLabel *label = new R3SurfelLabel(label_name);
+      // Find parent
+      R3SurfelLabel *parent = NULL;
+      if (!strcmp(parent_name, "Null")) parent = root;
+      else {
+        parent = scene->FindLabelByName(parent_name);
+        if (!parent) {
+          RNFail("Unable to find label's parent (%s) in label %d of %s\n", parent_name, read_count, list_filename);
+          return 0;
+        }
+      }
+    
+      // Insert label into scene
+      scene->InsertLabel(label, parent);
+
+      // Update stats
+      create_count++;
+    }
+
+    // Set label properties
     if (assignment_keystroke[0] != '-') label->SetAssignmentKeystroke(assignment_keystroke[0]);
     label->SetIdentifier(identifier);
     label->SetColor(RNRgb(r, g, b));
-    
-    // Find parent
-    R3SurfelLabel *parent = NULL;
-    if (!strcmp(parent_name, "Null")) parent = root;
-    else {
-      parent = scene->FindLabelByName(parent_name);
-      if (!parent) {
-        RNFail("Unable to find label's parent (%s) in label %d of %s\n", parent_name, count, list_filename);
-        return 0;
-      }
-    }
-    
-    // Insert into scene
-    scene->InsertLabel(label, parent);
-    
+
     // Update stats
-    count++;
+    read_count++;
   }
 
   // Close file
@@ -813,7 +823,10 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
   if (print_verbose) {
     printf("Loaded labels from %s ...\n", list_filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Labels = %d\n", count);
+    printf("  # Original Labels = %d\n", original_count);
+    printf("  # Final Labels = %d\n", scene->NLabels());
+    printf("  # Read Labels = %d\n", read_count);
+    printf("  # Created Labels = %d\n", create_count);
     fflush(stdout);
   }
 
