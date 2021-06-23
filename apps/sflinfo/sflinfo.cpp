@@ -24,6 +24,7 @@ static int print_scans = 0;
 static int print_images = 0;
 static int print_objects = 0;
 static int print_labels = 0;
+static int print_label_list = 0;
 static int print_object_properties = 0;
 static int print_label_properties = 0;
 static int print_object_relationships = 0;
@@ -318,6 +319,22 @@ PrintInfo(R3SurfelScene *scene)
       printf("\n");
     }
     printf("\n");
+  }
+
+  // Print label list
+  if (print_label_list) {
+    printf("Label list:\n");
+    for (int i = 0; i < scene->NLabels(); i++) {
+      R3SurfelLabel *label = scene->Label(i);
+      R3SurfelLabel *parent = label->Parent();
+      int key = label->AssignmentKeystroke();
+      printf("  %-20s  %3d  %c  %-20s  1  %.3f %.3f %.3f\n",
+        (label->Name()) ? label->Name() : "Null",
+        (label->Identifier() >= 0) ? label->Identifier() : 0,
+        ((key >= 32) && (key < 127)) ? key : '-',
+        (parent && parent->Name()) ? parent->Name() : "Null",
+        label->Color().R(), label->Color().G(), label->Color().B());
+    }
   }
 
   // Print object info
@@ -686,6 +703,7 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-features")) { print_features = 1; }
     else if (!strcmp(*argv, "-objects")) { print_objects = 1; }
     else if (!strcmp(*argv, "-labels")) { print_labels = 1; }
+    else if (!strcmp(*argv, "-label_list")) { print_label_list = 1; }
     else if (!strcmp(*argv, "-properties")) { print_object_properties = print_label_properties = 1; }
     else if (!strcmp(*argv, "-object_properties")) { print_object_properties = 1; }
     else if (!strcmp(*argv, "-label_properties")) { print_label_properties = 1; }
