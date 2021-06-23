@@ -39,7 +39,7 @@ RNFileSize(const char *filename)
     // Return size of file in bytes
     FILE *fp = fopen(filename, "r");
     if (!fp) return 0;
-    RNFileSeek(fp, RN_FILE_SEEK_END, 0);
+    RNFileSeek(fp, 0, RN_FILE_SEEK_END);
     unsigned long long file_size = RNFileTell(fp);
     fclose(fp);
     return file_size;
