@@ -787,8 +787,9 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
     R3SurfelLabel *label = scene->FindLabelByName(label_name);
     if (!label) {
       // Create label
-      R3SurfelLabel *label = new R3SurfelLabel(label_name);
-
+      label = new R3SurfelLabel(label_name);
+      if (!label) continue;
+      
       // Find parent
       R3SurfelLabel *parent = NULL;
       if (!strcmp(parent_name, "Null")) parent = root;
