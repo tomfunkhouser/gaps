@@ -461,13 +461,10 @@ ReadFile(const char *filename)
 
     // Insert block
     InsertBlock(block);
-
-    // Return success
-    return 1;
   }
 
-  // Should never get here
-  return 0;
+  // Return success
+  return 1;
 }
 
 
