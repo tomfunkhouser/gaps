@@ -745,6 +745,11 @@ InternalReadBlock(R3SurfelBlock *block, FILE *fp, int swap_endian)
   // Check number of surfels
   if (block->NSurfels() == 0) return 1;
 
+  // Check if ghosted from pending delete
+  if (block->flags[R3_SURFEL_BLOCK_DELETE_PENDING_FLAG]) return 1;
+  if (block->file_surfels_offset == 0) return 1;
+  if (block->file_surfels_count == 0) return 1;
+
   // Just checking
   assert(fp);
   assert(block->database == this);
@@ -1073,7 +1078,6 @@ PurgeDeletedBlocks(void)
   for (int i = 0; i < blocks.NEntries(); i++) {
     R3SurfelBlock *block = blocks.Kth(i);
     if (block->flags[R3_SURFEL_BLOCK_DELETE_PENDING_FLAG]) {
-      printf("%d %p\n", i, block->Node());
       blocks_to_delete.Insert(block);
     }
   }

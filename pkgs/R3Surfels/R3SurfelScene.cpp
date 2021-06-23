@@ -1529,7 +1529,7 @@ SyncFile(const char *output_scene_filename)
 int R3SurfelScene::
 CloseFile(const char *output_scene_filename)
 {
-#if 0
+#if 1
   // Clean up
   if (tree) {
     R3SurfelDatabase *database = tree->Database();
