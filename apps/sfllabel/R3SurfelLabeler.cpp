@@ -2289,7 +2289,6 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
   // Just checking
   assert(object);
   assert(strcmp(object->Name(), "Root"));
-  assert(parent == scene->RootObject());
 
   // Get assignment and attribute info
   R3SurfelObject *ancestor = object;
