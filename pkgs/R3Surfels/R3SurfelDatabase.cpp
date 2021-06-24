@@ -1087,8 +1087,8 @@ PurgeDeletedBlocks(void)
     delete block;
   }
 
-  // Return success
-  return 1;
+  // Return number of blocks deleted
+  return blocks_to_delete.NEntries();
 }
 
 

@@ -245,6 +245,9 @@ CreateMultiresolutionBlocks(R3SurfelNode *node, RNScalar multiresolution_factor,
   // Release block
   database->ReleaseBlock(block);
 
+  // Mark scene as dirty
+  if (scene) scene->SetDirty();
+
   // Return success
   return 1;
 }

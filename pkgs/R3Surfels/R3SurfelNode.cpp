@@ -520,6 +520,9 @@ Transform(const R3Affine& transformation)
 
   // Update object
   if (object) object->UpdateAfterTransform(this);
+
+  // Mark scene as dirty
+  if (Tree() && Tree()->Scene()) Tree()->Scene()->SetDirty();
 }
 
 

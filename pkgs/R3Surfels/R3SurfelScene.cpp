@@ -355,6 +355,9 @@ SetTransformation(const R3Affine& transformation, RNBoolean update_surfels)
 {
   // Set transformation (does not change surfels)
   this->transformation = transformation;
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
 }
 
 
@@ -396,6 +399,9 @@ Transform(const R3Affine& transformation, RNBoolean update_surfels)
     t.Transform(this->transformation);
     this->transformation = t;
   }
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
 }
 
 
@@ -1403,6 +1409,9 @@ InsertScene(const R3SurfelScene& scene2,
     // Copy image channels?
     // XXX
   }
+
+  // Mark scene as dirty
+  flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
 }
 
 
@@ -1534,7 +1543,9 @@ CloseFile(const char *output_scene_filename)
   if (tree) {
     R3SurfelDatabase *database = tree->Database();
     if (database) {
-      if (!database->PurgeDeletedBlocks()) return 0;
+      if (database->PurgeDeletedBlocks()) {
+        flags.Add(R3_SURFEL_SCENE_DIRTY_FLAG);
+      }
     }
   }
 #endif
