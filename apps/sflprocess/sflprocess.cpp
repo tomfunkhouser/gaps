@@ -1108,8 +1108,8 @@ Transform(R3SurfelScene *scene, const R3Affine& transformation)
     printf("Tranformed scene ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Matrix = %12.6f %12.6f %12.6f %12.6f\n", m[0][0], m[0][1], m[0][2], m[0][3]); 
-    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[1][0], m[1][1], m[1][2], m[3][3]); 
-    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[2][0], m[2][1], m[2][2], m[3][3]); 
+    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[1][0], m[1][1], m[1][2], m[1][3]); 
+    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[2][0], m[2][1], m[2][2], m[2][3]); 
     printf("           %12.6f %12.6f %12.6f %12.6f\n", m[3][0], m[3][1], m[3][2], m[3][3]); 
     fflush(stdout);
   }
