@@ -1088,8 +1088,37 @@ OverwriteSurfelCategoryIdentifiers(R3SurfelScene *scene, const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
-// ALIGNMENT FUNCTIONS
+// TRANSFORMATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
+
+static int
+Transform(R3SurfelScene *scene, const R3Affine& transformation)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Transform scene
+  // (actually change xyz of surfels, not just update scene transformation)
+  scene->Transform(transformation, TRUE);
+
+  // Print statistics
+  if (print_verbose) {
+    const R4Matrix& m = transformation.Matrix();
+    printf("Tranformed scene ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  Matrix = %12.6f %12.6f %12.6f %12.6f\n", m[0][0], m[0][1], m[0][2], m[0][3]); 
+    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[1][0], m[1][1], m[1][2], m[3][3]); 
+    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[2][0], m[2][1], m[2][2], m[3][3]); 
+    printf("           %12.6f %12.6f %12.6f %12.6f\n", m[3][0], m[3][1], m[3][2], m[3][3]); 
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
 
 static int
 TransformWithConfigurationFile(R3SurfelScene *scene, const char *filename, RNBoolean invert = FALSE)
@@ -2440,6 +2469,35 @@ int main(int argc, char **argv)
       argc--; argv++; cull_box[1][1] = atof(*argv); 
       argc--; argv++; cull_box[1][2] = atof(*argv); 
       if (!CullScene(scene, cull_box)) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-translate")) { 
+      R4Matrix matrix = R4identity_matrix;
+      argc--; argv++; matrix[0][3] = atof(*argv); 
+      argc--; argv++; matrix[1][3] = atof(*argv); 
+      argc--; argv++; matrix[2][3] = atof(*argv); 
+      if (!Transform(scene, R3Affine(matrix, 0))) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-transform")) { 
+      R4Matrix matrix = R4identity_matrix;
+      argc--; argv++; matrix[0][0] = atof(*argv); 
+      argc--; argv++; matrix[0][1] = atof(*argv); 
+      argc--; argv++; matrix[0][2] = atof(*argv); 
+      argc--; argv++; matrix[0][3] = atof(*argv); 
+      argc--; argv++; matrix[1][0] = atof(*argv); 
+      argc--; argv++; matrix[1][1] = atof(*argv); 
+      argc--; argv++; matrix[1][2] = atof(*argv); 
+      argc--; argv++; matrix[1][3] = atof(*argv); 
+      argc--; argv++; matrix[2][0] = atof(*argv); 
+      argc--; argv++; matrix[2][1] = atof(*argv); 
+      argc--; argv++; matrix[2][2] = atof(*argv); 
+      argc--; argv++; matrix[2][3] = atof(*argv); 
+      argc--; argv++; matrix[3][0] = atof(*argv); 
+      argc--; argv++; matrix[3][1] = atof(*argv); 
+      argc--; argv++; matrix[3][2] = atof(*argv); 
+      argc--; argv++; matrix[3][3] = atof(*argv); 
+      if (!Transform(scene, R3Affine(matrix, 0))) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-transform_with_configuration_file")) { 
