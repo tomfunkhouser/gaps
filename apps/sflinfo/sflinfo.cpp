@@ -312,6 +312,7 @@ PrintInfo(R3SurfelScene *scene)
       for (int i = 0; i < level; i++) strncat(prefix, " ", 16535);
       printf("%s Label %d\n", prefix, label->SceneIndex());
       printf("%s Name = %s\n", prefix, (label->Name()) ? label->Name() : "None");
+      printf("%s Identifier = %d\n", prefix, label->Identifier());
       printf("%s Assignment keystroke = %c\n", prefix, assignment_keystroke);
       printf("%s Part hierarchy level = %d\n", prefix, label->PartHierarchyLevel());
       printf("%s # Parts = %d\n", prefix, label->NParts());
