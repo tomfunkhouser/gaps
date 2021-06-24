@@ -16,8 +16,8 @@ using namespace gaps;
 // Program arguments
 ////////////////////////////////////////////////////////////////////////
 
-static char *input_scene_name = NULL;
-static char *input_database_name = NULL;
+static const char *input_scene_name = NULL;
+static const char *input_database_name = NULL;
 static int print_comments = 0;
 static int print_features = 0;
 static int print_scans = 0;
@@ -35,7 +35,8 @@ static int print_nodes = 0;
 static int print_database = 0;
 static int print_blocks = 0;
 static int print_surfels = 0;
-static char *accuracy_arff_name = NULL;
+static const char *query_name = NULL;
+static const char *accuracy_arff_name = NULL;
 
 
 
@@ -303,6 +304,7 @@ PrintInfo(R3SurfelScene *scene)
       R3SurfelLabel *label = stack.Tail();
       stack.RemoveTail();
       for (int i = 0; i < label->NParts(); i++) stack.Insert(label->Part(i));
+      if (query_name && (!label->Name() || strcmp(query_name, label->Name()))) continue;
       char prefix[16536];
       strncpy(prefix, " ", 16535);
       int level = label->PartHierarchyLevel();
@@ -328,6 +330,7 @@ PrintInfo(R3SurfelScene *scene)
       R3SurfelLabel *label = scene->Label(i);
       R3SurfelLabel *parent = label->Parent();
       int key = label->AssignmentKeystroke();
+      if (query_name && (!label->Name() || strcmp(query_name, label->Name()))) continue;
       printf("  %-20s  %3d  %c  %-20s  1  %.3f %.3f %.3f\n",
         (label->Name()) ? label->Name() : "Null",
         (label->Identifier() >= 0) ? label->Identifier() : 0,
@@ -349,6 +352,7 @@ PrintInfo(R3SurfelScene *scene)
       R3SurfelObject *object = stack.Tail();
       stack.RemoveTail();
       for (int i = 0; i < object->NParts(); i++) stack.Insert(object->Part(i));
+      if (query_name && (!object->Name() || strcmp(query_name, object->Name()))) continue;
       char prefix[16536];
       strncpy(prefix, " ", 16535);
       int level = object->PartHierarchyLevel();
@@ -497,6 +501,7 @@ PrintInfo(R3SurfelScene *scene)
       R3SurfelNode *node = stack.Tail();
       stack.RemoveTail();
       for (int i = 0; i < node->NParts(); i++) stack.Insert(node->Part(i));
+      if (query_name && (!node->Name() || strcmp(query_name, node->Name()))) continue;
       char prefix[16536];
       strncpy(prefix, " ", 16535);
       int level = node->TreeLevel();
@@ -596,6 +601,7 @@ PrintInfo(R3SurfelScene *scene)
     printf("Features:\n");
     for (int i = 0; i < scene->NFeatures(); i++) {
       R3SurfelFeature *feature = scene->Feature(i);
+      if (query_name && (!feature->Name() || strcmp(query_name, feature->Name()))) continue;
       printf("  Name = %s\n", (feature->Name()) ? feature->Name() : "None");
       printf("  Weight = %g\n", feature->Weight());
       printf("  Minimum = %g\n", feature->Minimum());
@@ -610,6 +616,7 @@ PrintInfo(R3SurfelScene *scene)
     printf("Scans:\n");
     for (int i = 0; i < scene->NScans(); i++) {
       R3SurfelScan *scan = scene->Scan(i);
+      if (query_name && (!scan->Name() || strcmp(query_name, scan->Name()))) continue;
       printf("  Name = %s\n", (scan->Name()) ? scan->Name() : "None");
       printf("  Viewpoint = %g %g %g\n", scan->Viewpoint().X(), scan->Viewpoint().Y(), scan->Viewpoint().Z());
       printf("  Towards = %g %g %g\n", scan->Towards().X(), scan->Towards().Y(), scan->Towards().Z());
@@ -627,6 +634,7 @@ PrintInfo(R3SurfelScene *scene)
     printf("Images:\n");
     for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
+      if (query_name && (!image->Name() || strcmp(query_name, image->Name()))) continue;
       const RNScalar *radial_distortion = image->RadialDistortion();
       const RNScalar *tangential_distortion = image->TangentialDistortion();
       printf("  Name = %s\n", (image->Name()) ? image->Name() : "None");
@@ -717,6 +725,7 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-surfels")) { print_surfels = 1; }
     else if (!strcmp(*argv, "-scans")) { print_scans = 1; }
     else if (!strcmp(*argv, "-images")) { print_images = 1; }
+    else if (!strcmp(*argv, "-query")) { argc--; argv++; query_name = *argv; }
     else if (!strcmp(*argv, "-accuracy")) { argc--; argv++; accuracy_arff_name = *argv; }
     else { RNFail("Invalid program argument: %s", *argv); exit(1); }
     argv++; argc--;
