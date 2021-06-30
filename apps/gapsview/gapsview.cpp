@@ -442,7 +442,7 @@ DrawGrid(R3Grid *grid, int model_index)
   // Draw grid isosurface edges
   if (show_grid_edges) {
     glDisable(GL_LIGHTING);
-    RNLoadRgb(0.0, 0.0, 0.0);
+    RNLoadRgb(1.0, 0.0, 0.0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     grid->DrawIsoSurface(grid_thresholds[model_index]);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -906,8 +906,11 @@ GLUTInit(int *argc, char **argv)
   glutInit(argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("OpenGL Viewer");
+  
+  // Initialize multisampling
+  glEnable(GL_MULTISAMPLE);
   
   // Initialize background color 
   glClearColor(200.0/255.0, 200.0/255.0, 200.0/255.0, 1.0);
