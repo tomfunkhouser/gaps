@@ -1451,7 +1451,7 @@ png_write_png(png_structp png_ptr, png_infop info_ptr,
    png_write_end(png_ptr, info_ptr);
 
    transforms = transforms + 0; /* Quiet compiler warnings */
-   params = params + 0;
+   params = (char*)params + 0;
 }
 #endif
 #endif /* PNG_WRITE_SUPPORTED */
