@@ -10,8 +10,11 @@ using namespace gaps;
 
 R3PointSet::
 R3PointSet(void)
-  : points(),
+  : positions(),
     normals(),
+    colors(),
+    category_identifiers(),
+    instance_identifiers(),
     values(),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
@@ -31,9 +34,9 @@ Centroid(void) const
 {
   // Return centroid of point set
   R3Point centroid = R3zero_point;
-  for (unsigned int i = 0; i < points.size(); i++) 
-    centroid += points[i];
-  if (points.size() > 0) centroid /= points.size();
+  for (unsigned int i = 0; i < positions.size(); i++) 
+    centroid += positions[i];
+  if (positions.size() > 0) centroid /= positions.size();
   return centroid;
 }
 
@@ -44,8 +47,8 @@ FindPointIndex(const R3Point& point, double tolerance) const
 {
   // Return first point within tolerance
   double squared_tolerance = tolerance * tolerance;
-  for (unsigned int i = 0; i < points.size(); i++) {
-    if (R3SquaredDistance(points[i], point) <= squared_tolerance) {
+  for (unsigned int i = 0; i < positions.size(); i++) {
+    if (R3SquaredDistance(positions[i], point) <= squared_tolerance) {
       return i;
     }
   }
@@ -60,21 +63,23 @@ void R3PointSet::
 RemovePoint(int index)
 {
   // Remove point at given index
-  points.erase(points.begin()+index);
-  normals.erase(normals.begin()+index);
-  values.erase(values.begin()+index);
+  if (index < (int) positions.size()) positions.erase(positions.begin()+index);
+  if (index < (int) normals.size()) normals.erase(normals.begin()+index);
+  if (index < (int) colors.size()) colors.erase(colors.begin()+index);
+  if (index < (int) category_identifiers.size()) category_identifiers.erase(category_identifiers.begin()+index);
+  if (index < (int) instance_identifiers.size()) instance_identifiers.erase(instance_identifiers.begin()+index);
+  if (index < (int) values.size()) values.erase(values.begin()+index);
 }
 
 
 
-void R3PointSet::
-InsertPoint(const R3Point& position, const R3Vector& normal, RNScalar value)
+int R3PointSet::
+InsertPoint(const R3Point& position)
 {
   // Insert point
-  points.push_back(position);
-  normals.push_back(normal);
-  values.push_back(value);
-  bbox.Union(position);
+  int index = NPoints();
+  SetPointPosition(index, position);
+  return index;
 }
 
 
@@ -83,7 +88,9 @@ void R3PointSet::
 SetPointPosition(int index, const R3Point& position)
 {
   // Set position for point with given index
-  points[index] = position;
+  while (index >= (int) positions.size())
+    positions.push_back(R3zero_point);
+  positions[index] = position;
   bbox.Union(position);
 }
 
@@ -93,7 +100,42 @@ void R3PointSet::
 SetPointNormal(int index, const R3Vector& normal)
 {
   // Set normal for point with given index
+  while (index >= (int) normals.size())
+    normals.push_back(R3zero_vector);
   normals[index] = normal;
+}
+
+
+
+void R3PointSet::
+SetPointColor(int index, const RNRgb& color)
+{
+  // Set color for point with given index
+  while (index >= (int) colors.size())
+    colors.push_back(RNblack_rgb);
+  colors[index] = color;
+}
+
+
+
+void R3PointSet::
+SetPointCategoryIdentifier(int index, int identifier)
+{
+  // Set category identifier for point with given index
+  while (index >= (int) category_identifiers.size())
+    category_identifiers.push_back(-1);
+  category_identifiers[index] = identifier;
+}
+
+
+
+void R3PointSet::
+SetPointInstanceIdentifier(int index, int identifier)
+{
+  // Set instance identifier for point with given index
+  while (index >= (int) instance_identifiers.size())
+    instance_identifiers.push_back(-1);
+  instance_identifiers[index] = identifier;
 }
 
 
@@ -102,6 +144,8 @@ void R3PointSet::
 SetPointValue(int index, RNScalar value)
 {
   // Set value for point with given index
+  while (index >= (int) values.size())
+    values.push_back(-1);
   values[index] = value;
 }
 
@@ -170,7 +214,8 @@ ReadASCIIFile(const char *filename)
     R3Point position(px,py,pz);
     R3Vector normal(nx,ny,nz);
     normal.Normalize();
-    InsertPoint(position, normal);
+    int index = InsertPoint(position);
+    SetPointNormal(index, normal);
   }
 
   // Close file
@@ -226,7 +271,8 @@ ReadBinaryFile(const char *filename)
     R3Point position(buf[0], buf[1], buf[2]);
     R3Vector normal(buf[3], buf[4], buf[5]);
     normal.Normalize();
-    InsertPoint(position, normal);
+    int index = InsertPoint(position);
+    SetPointNormal(index, normal);
   }
 
   // Close file
@@ -286,7 +332,8 @@ ReadSDFFile(const char *filename)
   float buf[4];
   while (fread(buf, sizeof(float), 4, fp) == (unsigned int) 4) {
     R3Point position(buf[0], buf[1], buf[2]);
-    InsertPoint(position, R3zero_vector, buf[3]);
+    int index = InsertPoint(position);
+    SetPointValue(index, buf[3]);
   }
 
   // Close file
@@ -344,9 +391,9 @@ ReadMeshFile(const char *filename)
   // Create point for each vertex
   for (int i = 0; i < mesh.NVertices(); i++) {
     R3MeshVertex *vertex = mesh.Vertex(i);
-    R3Point position = mesh.VertexPosition(vertex);
-    R3Vector normal = mesh.VertexNormal(vertex);
-    InsertPoint(position, normal);
+    int index = InsertPoint(mesh.VertexPosition(vertex));
+    SetPointNormal(index, mesh.VertexNormal(vertex));
+    SetPointColor(index, mesh.VertexColor(vertex));
   }
 
   // Return success
@@ -361,7 +408,7 @@ WriteMeshFile(const char *filename) const
   // Create mesh
   R3Mesh mesh;
   for (int i = 0; i < NPoints(); i++) {
-    mesh.CreateVertex(PointPosition(i), PointNormal(i));
+    mesh.CreateVertex(PointPosition(i), PointNormal(i), PointColor(i));
   }
 
   // Write mesh

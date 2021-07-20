@@ -18,7 +18,7 @@ CCSRCS=$(NAME).cpp R3PointSet.cpp
 # Libraries
 #
 
-PKG_LIBS=-lR3Graphics -lR3Shapes -lR2Shapes -lRNBasics -lfglut -ljpeg -lpng
+PKG_LIBS=-lGSV -lR3Graphics -lR3Shapes -lR2Shapes -lRNBasics -lfglut -ljpeg -lpng
 
 
 

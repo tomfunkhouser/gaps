@@ -46,6 +46,7 @@ public:
   int NSurveys(void) const;
   int NScans(void) const;
   int NScanlines(void) const;
+  int NPoints(void) const;
 
 
   ////////////////////////////
@@ -58,9 +59,6 @@ public:
   // Transformation properties (local to world)
   const R3Affine& Transformation(void) const;
 
-  // Statistics functions
-  int NPoints(void) const;
-  
   // Get user data 
   void *Data(void) const;
 
