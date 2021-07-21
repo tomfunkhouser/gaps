@@ -85,13 +85,24 @@ CreateGrid(R3Mesh *mesh)
     exit(-1);
   }
 
-  // Rasterize each triangle into grid
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    const R3Point& p0 = mesh->VertexPosition(mesh->VertexOnFace(face, 0));
-    const R3Point& p1 = mesh->VertexPosition(mesh->VertexOnFace(face, 1));
-    const R3Point& p2 = mesh->VertexPosition(mesh->VertexOnFace(face, 2));
-    grid->RasterizeWorldTriangle(p0, p1, p2, 1.0);
+  // Rasterize mesh
+  if (mesh->NFaces() == 0) {
+    // Rasterize each vertex into grid
+    for (int i = 0; i < mesh->NVertices(); i++) {
+      R3MeshVertex *vertex = mesh->Vertex(i);
+      const R3Point& p = mesh->VertexPosition(vertex);
+      grid->RasterizeWorldPoint(p, 1.0);
+    }
+  }
+  else {
+    // Rasterize each triangle into grid
+    for (int i = 0; i < mesh->NFaces(); i++) {
+      R3MeshFace *face = mesh->Face(i);
+      const R3Point& p0 = mesh->VertexPosition(mesh->VertexOnFace(face, 0));
+      const R3Point& p1 = mesh->VertexPosition(mesh->VertexOnFace(face, 1));
+      const R3Point& p2 = mesh->VertexPosition(mesh->VertexOnFace(face, 2));
+      grid->RasterizeWorldTriangle(p0, p1, p2, 1.0);
+    }
   }
 
   // Make binary (in case triangles overlap)
