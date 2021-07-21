@@ -105,9 +105,9 @@ static int show_edges = 0;
 static int show_points = 1;
 static int show_normals = 0;
 static int show_cameras = 1;
-static int show_rays = 0;
 static int show_image_insets = 0;
 static int show_image_billboards = 0;
+static int show_image_rays = 0;
 static int show_slices = 0;
 static int show_text_labels = 0;
 static int show_selected_position = 1;
@@ -1118,6 +1118,40 @@ DrawDotOnImageBillboard(ImageData *data, const R3Point& viewpoint,
 
 
 
+static void
+DrawImageRay(ImageData *data,
+  const R2Point& image_position)
+{               
+  // Check image position
+  R2Box b = data->ray_origin_images[0].GridBox();
+  if (!R2Contains(b, image_position)) return;
+
+  // Get ray parameter from images
+  RNScalar ox = data->ray_origin_images[0].GridValue(image_position);
+  RNScalar oy = data->ray_origin_images[1].GridValue(image_position);
+  RNScalar oz = data->ray_origin_images[2].GridValue(image_position);
+  RNScalar dx = data->ray_direction_images[0].GridValue(image_position);
+  RNScalar dy = data->ray_direction_images[1].GridValue(image_position);
+  RNScalar dz = data->ray_direction_images[2].GridValue(image_position);
+
+  // Create ray
+  R3Point ray_origin(ox, oy, oz);
+  R3Vector ray_direction(dx, dy, dz);
+  R3Ray ray(ray_origin, ray_direction);
+
+  // Find projection of selected position onto ray
+  RNScalar t = ray.T(selected_position);
+  if (t <= 0) return;
+  R3Point p = ray.Point(t);
+
+  // Draw ray
+  glDisable(GL_LIGHTING);
+  glColor3f(0, 1, 1);
+  R3Span(ray_origin, p).Draw();
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Data drawing functions
 ////////////////////////////////////////////////////////////////////////
@@ -1416,7 +1450,7 @@ DrawSFL(R3SurfelScene *scene,
   }
 
   // Draw images
-  if (show_image_insets || show_image_billboards || show_rays) {
+  if (show_image_insets || show_image_billboards || show_image_rays) {
     glDisable(GL_LIGHTING);
     glColor3d(1, 1, 1);
     int image_count = 0;
@@ -1436,26 +1470,6 @@ DrawSFL(R3SurfelScene *scene,
       if (image_position.X() >= image->ImageWidth()) continue;
       if (image_position.Y() >= image->ImageHeight()) continue;
 
-      // Draw ray
-      if (show_rays) {
-        glDisable(GL_LIGHTING);
-        glColor3f(0, 1, 1);
-        R2Box b = data->ray_origin_images[0].GridBox();
-        if (R2Contains(b, image_position)) {
-          RNScalar ox = data->ray_origin_images[0].GridValue(image_position);
-          RNScalar oy = data->ray_origin_images[1].GridValue(image_position);
-          RNScalar oz = data->ray_origin_images[2].GridValue(image_position);
-          RNScalar dx = data->ray_direction_images[0].GridValue(image_position);
-          RNScalar dy = data->ray_direction_images[1].GridValue(image_position);
-          RNScalar dz = data->ray_direction_images[2].GridValue(image_position);
-          R3Point ray_origin(ox, oy, oz);
-          R3Vector ray_direction(dx, dy, dz);
-          R3Ray ray(ray_origin, ray_direction);
-          RNScalar t = ray.T(selected_position);
-          if (t > 0) R3Span(ray_origin, ray.Point(t)).Draw();
-        }
-      }
-
       // Draw image inset
       if (show_image_insets) {
         double x = image_count * image_inset_scale * data->image_width;
@@ -1472,6 +1486,11 @@ DrawSFL(R3SurfelScene *scene,
           image->Towards(), image->Right(), image->Up(),
           image->XFOV(), image->YFOV(), image_billboard_depth,
           image_position, 0.025);
+      }
+
+      // Draw image ray
+      if (show_image_rays) {
+        DrawImageRay(data, image_position);
       }
 
       // Increment image counter
@@ -1586,7 +1605,7 @@ DrawGSV(GSVScene *scene,
   }
 
   // Draw images
-  if (show_image_insets || show_image_billboards) {
+  if (show_image_insets || show_image_billboards || show_image_rays) {
     glDisable(GL_LIGHTING);
     int image_count = 0;
     for (int ir = 0; ir < scene->NRuns(); ir++) {
@@ -1630,6 +1649,11 @@ DrawGSV(GSVScene *scene,
               DrawDotOnImageBillboard(data, viewpoint, towards, right, up,
                 0.5 * image->XFov(), 0.5 * image->YFov(), image_billboard_depth,
                 image_position, 0.025);
+            }
+
+            // Draw image ray
+            if (show_image_rays) {
+              DrawImageRay(data, image_position);
             }
 
             // Increment image counter
@@ -2170,6 +2194,11 @@ GLUTKeyboard(unsigned char key, int x, int y)
     case 'P':
     case 'p':
       show_points = !show_points;
+      break;
+
+    case 'R':
+    case 'r':
+      show_image_rays = !show_image_rays;
       break;
 
     case 'T':
