@@ -36,12 +36,38 @@ static R3Point initial_camera_origin = R3Point(0.0, 0.0, 0.0);
 static R3Vector initial_camera_towards = R3Vector(0.0, 0.0, -1.0);
 static R3Vector initial_camera_up = R3Vector(0.0, 1.0, 0.0);
 static RNBoolean initial_camera = FALSE;
-static RNScalar image_plane_distance = 1;
-static RNScalar depth_scale = 2000;
-static RNScalar depth_exponent = 0.5;
 
 // Info variables
 static int print_verbose = 0;
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////
+
+enum {
+  NULL_COLOR_SCHEME,
+  RGB_COLOR_SCHEME,
+  SHADING_COLOR_SCHEME,
+  CATEGORY_COLOR_SCHEME,
+  INSTANCE_COLOR_SCHEME,
+  PICK_COLOR_SCHEME,
+}; 
+  
+enum {
+  NULL_ELEMENT_TYPE,
+  POINTSET_POINT_ELEMENT_TYPE,
+  MESH_VERTEX_ELEMENT_TYPE,
+  MESH_EDGE_ELEMENT_TYPE,
+  MESH_FACE_ELEMENT_TYPE,
+  SCENE_NODE_ELEMENT_TYPE,
+  GRID_CELL_ELEMENT_TYPE,
+  SFL_POINT_ELEMENT_TYPE,
+  SFL_CAMERA_ELEMENT_TYPE,
+  GSV_POINT_ELEMENT_TYPE,
+  GSV_CAMERA_ELEMENT_TYPE,
+};
 
 
 
@@ -79,7 +105,9 @@ static int show_edges = 0;
 static int show_points = 1;
 static int show_normals = 0;
 static int show_cameras = 1;
-static int show_images = 0;
+static int show_rays = 0;
+static int show_image_insets = 0;
+static int show_image_billboards = 0;
 static int show_slices = 0;
 static int show_text_labels = 0;
 static int show_selected_position = 1;
@@ -88,12 +116,20 @@ static int show_bbox = 0;
 static int show_axes = 0;
 
 // Display variables - how to show them
-static int color_scheme = 0;
+static int color_scheme = RGB_COLOR_SCHEME;
 
 // Model selection
 static int nmodels = 0;
 static const int max_models = 64;
 static int selected_model_index = 0;
+
+// Image display variables
+static RNScalar image_inset_scale = 0.1;
+static RNScalar image_billboard_depth = 1;
+
+// Depth image scaling
+static RNScalar depth_scale = 2000;
+static RNScalar depth_exponent = 0.5;
 
 // Grid display variables
 static RNScalar grid_thresholds[max_models] = { 0 };
@@ -108,35 +144,6 @@ static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmouse_drag_distance_squared = 0;
 static int GLUTmodifiers = 0;
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Constants
-////////////////////////////////////////////////////////////////////////
-
-enum {
-  NULL_COLOR_SCHEME,
-  RGB_COLOR_SCHEME,
-  SHADING_COLOR_SCHEME,
-  CATEGORY_COLOR_SCHEME,
-  INSTANCE_COLOR_SCHEME,
-  PICK_COLOR_SCHEME,
-}; 
-  
-enum {
-  NULL_ELEMENT_TYPE,
-  POINTSET_POINT_ELEMENT_TYPE,
-  MESH_VERTEX_ELEMENT_TYPE,
-  MESH_EDGE_ELEMENT_TYPE,
-  MESH_FACE_ELEMENT_TYPE,
-  SCENE_NODE_ELEMENT_TYPE,
-  GRID_CELL_ELEMENT_TYPE,
-  SFL_POINT_ELEMENT_TYPE,
-  SFL_CAMERA_ELEMENT_TYPE,
-  GSV_POINT_ELEMENT_TYPE,
-  GSV_CAMERA_ELEMENT_TYPE,
-};
 
 
 
@@ -937,11 +944,11 @@ DrawAxes(void)
 
 
 static void
-DrawImage(ImageData *data,
+DrawImageInset(ImageData *data,
   double x, double y, double scale)
 {
-  // Check if drawing images
-  if (!show_images) return;
+  // Check if drawing image insets
+  if (!show_image_insets) return;
 
   // Get convenient variables
   double w = scale * data->image_width;
@@ -991,10 +998,13 @@ DrawImage(ImageData *data,
 
 
 static void
-DrawDotOnImage(ImageData *data,
+DrawDotOnImageInset(ImageData *data,
   double x, double y, double scale,
   const R2Point& image_position)
 {
+  // Check if drawing image insets
+  if (!show_image_insets) return;
+
   // Get convenient variables
   double w = scale * data->image_width;
   double h = scale * data->image_height;
@@ -1033,12 +1043,12 @@ DrawDotOnImage(ImageData *data,
 
 
 static void
-DrawImage(ImageData *data, const R3Point& viewpoint,
+DrawImageBillboard(ImageData *data, const R3Point& viewpoint,
   const R3Vector& towards, const R3Vector& right, const R3Vector& up,
-  RNAngle xfov, RNAngle yfov, RNLength image_plane_distance)
+  RNAngle xfov, RNAngle yfov, RNLength image_billboard_depth)
 {
-  // Check if drawing images
-  if (!show_images) return;
+  // Check if drawing image billboards
+  if (!show_image_billboards) return;
 
   // Load texture
   LoadTexture(data);
@@ -1049,9 +1059,9 @@ DrawImage(ImageData *data, const R3Point& viewpoint,
   glEnable(GL_TEXTURE_2D);
 
   // Draw textured polygon
-  R3Point origin = viewpoint + towards * image_plane_distance;
-  R3Vector dx = right * image_plane_distance * tan(xfov);
-  R3Vector dy = up * image_plane_distance * tan(yfov);
+  R3Point origin = viewpoint + towards * image_billboard_depth;
+  R3Vector dx = right * image_billboard_depth * tan(xfov);
+  R3Vector dy = up * image_billboard_depth * tan(yfov);
   R3Point ur = origin + dx + dy;
   R3Point lr = origin + dx - dy;
   R3Point ul = origin - dx + dy;
@@ -1075,11 +1085,14 @@ DrawImage(ImageData *data, const R3Point& viewpoint,
 
 
 static void
-DrawDotOnImage(ImageData *data, const R3Point& viewpoint,
+DrawDotOnImageBillboard(ImageData *data, const R3Point& viewpoint,
   const R3Vector& towards, const R3Vector& right, const R3Vector& up,
-  RNAngle xfov, RNAngle yfov, RNLength image_plane_distance,
+  RNAngle xfov, RNAngle yfov, RNLength image_billboard_depth,
   const R2Point& image_position, RNLength radius)
 {
+  // Check if drawing image billboards
+  if (!show_image_billboards) return;
+
   // Get convenient variables
   int w = data->image_width;
   int h = data->image_height;
@@ -1094,9 +1107,9 @@ DrawDotOnImage(ImageData *data, const R3Point& viewpoint,
   // Compute 3D position
   RNScalar dx = 2.0 * (image_position.X() - 0.5 * w) / w;
   RNScalar dy = 2.0 * (image_position.Y() - 0.5 * h) / h;
-  R3Point world_position = viewpoint + image_plane_distance * towards;
-  world_position += image_plane_distance * dx * right * tan(xfov);
-  world_position += image_plane_distance * dy * up * tan(yfov);
+  R3Point world_position = viewpoint + image_billboard_depth * towards;
+  world_position += image_billboard_depth * dx * right * tan(xfov);
+  world_position += image_billboard_depth * dy * up * tan(yfov);
 
   // Draw sphere
   glColor3d(1, 0, 0);
@@ -1266,9 +1279,9 @@ DrawGrid(R3Grid *grid,
   grid->GridToWorldTransformation().Push();
 
   // Draw grid isosurface faces
-  if (0 && show_surfaces) {
+  if (show_surfaces) {
     glEnable(GL_LIGHTING);
-    RNLoadRgb(0.8, 0.5, 0.2);
+    RNLoadRgb(0.8, 0.8, 0.8);
     grid->DrawIsoSurface(grid_thresholds[model_index]);
   }
 
@@ -1403,7 +1416,7 @@ DrawSFL(R3SurfelScene *scene,
   }
 
   // Draw images
-  if (show_images) {
+  if (show_image_insets || show_image_billboards || show_rays) {
     glDisable(GL_LIGHTING);
     glColor3d(1, 1, 1);
     int image_count = 0;
@@ -1423,20 +1436,43 @@ DrawSFL(R3SurfelScene *scene,
       if (image_position.X() >= image->ImageWidth()) continue;
       if (image_position.Y() >= image->ImageHeight()) continue;
 
+      // Draw ray
+      if (show_rays) {
+        glDisable(GL_LIGHTING);
+        glColor3f(0, 1, 1);
+        R2Box b = data->ray_origin_images[0].GridBox();
+        if (R2Contains(b, image_position)) {
+          RNScalar ox = data->ray_origin_images[0].GridValue(image_position);
+          RNScalar oy = data->ray_origin_images[1].GridValue(image_position);
+          RNScalar oz = data->ray_origin_images[2].GridValue(image_position);
+          RNScalar dx = data->ray_direction_images[0].GridValue(image_position);
+          RNScalar dy = data->ray_direction_images[1].GridValue(image_position);
+          RNScalar dz = data->ray_direction_images[2].GridValue(image_position);
+          R3Point ray_origin(ox, oy, oz);
+          R3Vector ray_direction(dx, dy, dz);
+          R3Ray ray(ray_origin, ray_direction);
+          RNScalar t = ray.T(selected_position);
+          if (t > 0) R3Span(ray_origin, ray.Point(t)).Draw();
+        }
+      }
+
       // Draw image inset
-      double scale = 0.1;
-      double x = image_count * scale * data->image_width;
-      DrawImage(data, x, 0, scale);
-      DrawDotOnImage(data, x, 0, scale, image_position);
+      if (show_image_insets) {
+        double x = image_count * image_inset_scale * data->image_width;
+        DrawImageInset(data, x, 0, image_inset_scale);
+        DrawDotOnImageInset(data, x, 0, image_inset_scale, image_position);
+      }
       
       // Draw image billboard
-      DrawImage(data, image->Viewpoint(),
-        image->Towards(), image->Right(), image->Up(),
-        image->XFOV(), image->YFOV(), image_plane_distance);
-      DrawDotOnImage(data, image->Viewpoint(),
-        image->Towards(), image->Right(), image->Up(),
-        image->XFOV(), image->YFOV(), image_plane_distance,
-        image_position, 0.025);
+      if (show_image_billboards) {
+        DrawImageBillboard(data, image->Viewpoint(),
+          image->Towards(), image->Right(), image->Up(),
+          image->XFOV(), image->YFOV(), image_billboard_depth);
+        DrawDotOnImageBillboard(data, image->Viewpoint(),
+          image->Towards(), image->Right(), image->Up(),
+          image->XFOV(), image->YFOV(), image_billboard_depth,
+          image_position, 0.025);
+      }
 
       // Increment image counter
       image_count++;
@@ -1550,7 +1586,7 @@ DrawGSV(GSVScene *scene,
   }
 
   // Draw images
-  if (show_images) {
+  if (show_image_insets || show_image_billboards) {
     glDisable(GL_LIGHTING);
     int image_count = 0;
     for (int ir = 0; ir < scene->NRuns(); ir++) {
@@ -1579,19 +1615,22 @@ DrawGSV(GSVScene *scene,
             R3Vector up = pose.Up();
 
             // Draw image inset
-            double scale = 0.1;
-            double x = image_count * scale * data->image_width;
-            DrawImage(data, x, 0, scale);
-            DrawDotOnImage(data, x, 0, scale, image_position);
+            if (show_image_insets) {
+              double x = image_count * image_inset_scale * data->image_width;
+              DrawImageInset(data, x, 0, image_inset_scale);
+              DrawDotOnImageInset(data, x, 0, image_inset_scale, image_position);
+            }
       
             // Draw image billboard
-            DrawImage(data, pose.Viewpoint(),
-              pose.Towards(), pose.Right(), pose.Up(),
-              0.5 * image->XFov(), 0.5 * image->YFov(),
-              image_plane_distance);
-            DrawDotOnImage(data, viewpoint, towards, right, up,
-              0.5 * image->XFov(), 0.5 * image->YFov(), image_plane_distance,
-              image_position, 0.025);
+            if (show_image_billboards) {
+              DrawImageBillboard(data, pose.Viewpoint(),
+                pose.Towards(), pose.Right(), pose.Up(),
+                0.5 * image->XFov(), 0.5 * image->YFov(),
+                image_billboard_depth);
+              DrawDotOnImageBillboard(data, viewpoint, towards, right, up,
+                0.5 * image->XFov(), 0.5 * image->YFov(), image_billboard_depth,
+                image_position, 0.025);
+            }
 
             // Increment image counter
             image_count++;
@@ -1914,13 +1953,13 @@ GLUTSpecial(int key, int x, int y)
   // Process keyboard button event 
   switch (key) {
   case GLUT_KEY_DOWN:
-    grid_thresholds[selected_model_index] -= 0.01 * grid_ranges[selected_model_index].Diameter();
+    grid_thresholds[selected_model_index] -= 0.025 * grid_ranges[selected_model_index].Diameter();
     if (grid_thresholds[selected_model_index] < grid_ranges[selected_model_index].Min() + 1E-20) 
       grid_thresholds[selected_model_index] = grid_ranges[selected_model_index].Min() + 1E-20;
     break;
 
   case GLUT_KEY_UP:
-    grid_thresholds[selected_model_index] += 0.01 * grid_ranges[selected_model_index].Diameter();
+    grid_thresholds[selected_model_index] += 0.025 * grid_ranges[selected_model_index].Diameter();
     if (grid_thresholds[selected_model_index] > grid_ranges[selected_model_index].Max() - 1E-20)
       grid_thresholds[selected_model_index] = grid_ranges[selected_model_index].Max() - 1E-20;
     break;
@@ -1999,14 +2038,19 @@ GLUTKeyboard(unsigned char key, int x, int y)
       color_scheme = RGB_COLOR_SCHEME;
       break;
 
-    case 'L':
-    case 'l':
-      color_scheme = CATEGORY_COLOR_SCHEME;
+    case 'E':
+    case 'e':
+      color_scheme = NULL_COLOR_SCHEME;
       break;
 
     case 'I':
     case 'i':
       color_scheme = INSTANCE_COLOR_SCHEME;
+      break;
+
+    case 'S':
+    case 's':
+      color_scheme = SHADING_COLOR_SCHEME;
       break;
 
     case 'X':
@@ -2065,6 +2109,16 @@ GLUTKeyboard(unsigned char key, int x, int y)
   else {
     // Control which data elements are drawn
     switch (key) {
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+      selected_model_index = key - '1';
+      if (selected_model_index > nmodels - 1) {
+        selected_model_index = nmodels - 1;
+      }
+      break;
+
     case 'A':
     case 'a':
       show_axes = !show_axes;
@@ -2090,9 +2144,17 @@ GLUTKeyboard(unsigned char key, int x, int y)
       show_surfaces = !show_surfaces;
       break;
 
+    case 'G':
+    case 'g':
+      show_slices = !show_slices;
+      break;
+
     case 'I':
+      show_image_billboards = !show_image_billboards;
+      break;
+
     case 'i':
-      show_images = !show_images;
+      show_image_insets = !show_image_insets;
       break;
 
     case 'L':
@@ -2113,11 +2175,6 @@ GLUTKeyboard(unsigned char key, int x, int y)
     case 'T':
     case 't':
       show_grid_threshold = !show_grid_threshold;
-      break;
-
-    case 'W':
-    case 'w':
-      show_slices = !show_slices;
       break;
 
     case ' ': {
