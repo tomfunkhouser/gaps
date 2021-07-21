@@ -1416,7 +1416,7 @@ DrawSFL(R3SurfelScene *scene,
       if (color_scheme == PICK_COLOR_SCHEME)
         LoadColorIndex(model_index, SFL_CAMERA_ELEMENT_TYPE, i);
 
-      // Compute 2D dot position
+      // Compute projection of selected 3D position
       R2Point image_position = image->TransformFromWorldToImage(selected_position);
       if (image_position.X() < 0) continue;
       if (image_position.Y() < 0) continue;
@@ -1564,7 +1564,7 @@ DrawGSV(GSVScene *scene,
             ImageData *data = (ImageData *) image->Data();
             if (!data) continue;
 
-            // Compute 2D image_position
+            // Compute projection of selected 3D position
             R2Point image_position = image->DistortedPosition(selected_position);
             if (image_position.X() < 0) continue;
             if (image_position.Y() < 0) continue;
@@ -1876,10 +1876,13 @@ GLUTMouse(int button, int state, int x, int y)
 
       // Select position
       if (!drag) {
+        int e;
         R3Point p;
-        if (Pick(x, y, &p)) {
-          selected_position = p;
+        if (Pick(x, y, &p, NULL, &e)) {
           world_origin = p;
+          if ((e != GSV_CAMERA_ELEMENT_TYPE) && (e != SFL_CAMERA_ELEMENT_TYPE)) {
+            selected_position = p;
+          }
         }
       }
     }
@@ -2219,7 +2222,7 @@ CreateViewer(void)
 
   // Setup camera view looking down the Z axis
   if (!initial_camera) initial_camera_origin = world_bbox.Centroid() - initial_camera_towards * (2.5 * r);;
-  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.1 * r, 100.0 * r);
+  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.01 * r, 100.0 * r);
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   R3Viewer *viewer = new R3Viewer(camera, viewport);
 
