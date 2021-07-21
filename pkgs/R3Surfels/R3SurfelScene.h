@@ -231,6 +231,10 @@ public:
   // Filename functions
   const char *Filename(void) const;
 
+  // Memory management functions
+  virtual void ReadBlocks(void);
+  virtual void ReleaseBlocks(void);
+
 protected:
   // Structure access stuff
   friend class R3SurfelTree;
@@ -550,8 +554,8 @@ Filename(void) const
   return filename;
 }
 
-  
-  
+
+
 inline void R3SurfelScene::
 SetDirty(void)
 {

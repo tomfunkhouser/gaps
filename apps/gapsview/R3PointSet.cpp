@@ -13,6 +13,7 @@ R3PointSet(void)
   : positions(),
     normals(),
     colors(),
+    timestamps(),
     category_identifiers(),
     instance_identifiers(),
     values(),
@@ -66,6 +67,7 @@ RemovePoint(int index)
   if (index < (int) positions.size()) positions.erase(positions.begin()+index);
   if (index < (int) normals.size()) normals.erase(normals.begin()+index);
   if (index < (int) colors.size()) colors.erase(colors.begin()+index);
+  if (index < (int) timestamps.size()) timestamps.erase(timestamps.begin()+index);
   if (index < (int) category_identifiers.size()) category_identifiers.erase(category_identifiers.begin()+index);
   if (index < (int) instance_identifiers.size()) instance_identifiers.erase(instance_identifiers.begin()+index);
   if (index < (int) values.size()) values.erase(values.begin()+index);
@@ -119,6 +121,17 @@ SetPointColor(int index, const RNRgb& color)
 
 
 void R3PointSet::
+SetPointTimestamp(int index, RNScalar timestamp)
+{
+  // Set timestamp for point with given index
+  while (index >= (int) timestamps.size())
+    timestamps.push_back(-1);
+  timestamps[index] = timestamp;
+}
+
+
+
+void R3PointSet::
 SetPointCategoryIdentifier(int index, int identifier)
 {
   // Set category identifier for point with given index
@@ -163,7 +176,7 @@ ReadFile(const char *filename)
 
   // Read file of appropriate type
   if (!strcmp(extension, ".xyzn")) return ReadASCIIFile(filename);
-  else if (!strcmp(extension, ".pts")) return ReadBinaryFile(filename);
+  else if (!strcmp(extension, ".pts")) return ReadPtsFile(filename);
   else if (!strcmp(extension, ".sdf")) return ReadSDFFile(filename);
   else return ReadMeshFile(filename);
 
@@ -185,7 +198,7 @@ WriteFile(const char *filename) const
 
   // Write file of appropriate type
   if (!strcmp(extension, ".xyzn")) return WriteASCIIFile(filename);
-  else if (!strcmp(extension, ".pts")) return WriteBinaryFile(filename);
+  else if (!strcmp(extension, ".pts")) return WritePtsFile(filename);
   else if (!strcmp(extension, ".sdf")) return WriteSDFFile(filename);
   else return WriteMeshFile(filename);
 
@@ -266,6 +279,86 @@ ReadBinaryFile(const char *filename)
   }
 
   // Read points
+  float buf[16];
+  while (fread(buf, sizeof(float), 16, fp) == (unsigned int) 16) {
+    R3Point position(buf[0], buf[1], buf[2]);
+    R3Vector normal(buf[3], buf[4], buf[5]);
+    RNRgb color(buf[6], buf[7], buf[8]);
+    double timestamp = buf[9];
+    int category_identifier = buf[10] + 0.5;
+    int instance_identifier = buf[11] + 0.5;
+    double value = buf[12];
+    normal.Normalize();
+    int index = InsertPoint(position);
+    SetPointNormal(index, normal);
+    SetPointColor(index, color);
+    SetPointTimestamp(index, timestamp);
+    SetPointCategoryIdentifier(index, category_identifier);
+    SetPointInstanceIdentifier(index, instance_identifier);
+    SetPointValue(index, value);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3PointSet::
+WriteBinaryFile(const char *filename) const
+{
+ // Open file
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Write points
+  float buf[16];
+  for (int i = 0; i < NPoints(); i++) {
+    const R3Point& p = PointPosition(i);
+    const R3Vector& n = PointNormal(i);
+    const RNRgb& c = PointColor(i);
+    buf[0] = p[0]; buf[1] = p[1]; buf[2] = p[2];
+    buf[3] = n[0]; buf[4] = n[1]; buf[5] = n[2];
+    buf[6] = c[0]; buf[7] = c[1]; buf[8] = c[2];
+    buf[9] = PointTimestamp(i);
+    buf[10] = PointCategoryIdentifier(i);
+    buf[11] = PointInstanceIdentifier(i);
+    buf[12] = PointValue(i);
+    buf[13] = buf[14] = buf[15] = 0;
+    if (fwrite(buf, sizeof(float), 16, fp) != (unsigned int) 16) {
+      RNFail("Unable to write point %d to %s\n", i, filename);
+      return 0;
+    }
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+int R3PointSet::
+ReadPtsFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Read points
   float buf[6];
   while (fread(buf, sizeof(float), 6, fp) == (unsigned int) 6) {
     R3Point position(buf[0], buf[1], buf[2]);
@@ -285,7 +378,7 @@ ReadBinaryFile(const char *filename)
 
 
 int R3PointSet::
-WriteBinaryFile(const char *filename) const
+WritePtsFile(const char *filename) const
 {
  // Open file
   FILE *fp = fopen(filename, "wb");

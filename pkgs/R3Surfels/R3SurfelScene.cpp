@@ -1417,6 +1417,32 @@ InsertScene(const R3SurfelScene& scene2,
 
 
 ///////////////////////////////////////////////////////////////////////
+// MEMORY MANAGEMENT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelScene::
+ReadBlocks(void)
+{
+  // Read blocks for entire tree
+  if (!tree) return;
+  if (!tree->RootNode()) return;
+  tree->RootNode()->ReadBlocks(TRUE);
+}
+
+  
+  
+void R3SurfelScene::
+ReleaseBlocks(void)
+{
+  // Read blocks for entire tree
+  if (!tree) return;
+  if (!tree->RootNode()) return;
+  tree->RootNode()->ReleaseBlocks(TRUE);
+}
+
+  
+  
+///////////////////////////////////////////////////////////////////////
 // DISPLAY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 

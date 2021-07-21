@@ -20,6 +20,7 @@ public:
   const R3Point& PointPosition(int index) const;
   const R3Vector& PointNormal(int index) const;
   const RNRgb& PointColor(int index) const;
+  RNScalar PointTimestamp(int index) const;
   int PointCategoryIdentifier(int index) const;
   int PointInstanceIdentifier(int index) const;
   RNScalar PointValue(int index) const;
@@ -37,6 +38,7 @@ public:
   void SetPointPosition(int index, const R3Point& position);
   void SetPointNormal(int index, const R3Vector& normal);
   void SetPointColor(int index, const RNRgb& color);
+  void SetPointTimestamp(int index, RNScalar timestamp);
   void SetPointCategoryIdentifier(int index, int category);
   void SetPointInstanceIdentifier(int index, int instance);
   void SetPointValue(int index, RNScalar value);
@@ -46,10 +48,12 @@ public:
   int ReadASCIIFile(const char *filename);
   int ReadBinaryFile(const char *filename);
   int ReadMeshFile(const char *filename);
+  int ReadPtsFile(const char *filename);
   int ReadSDFFile(const char *filename);
   int WriteFile(const char *filename) const;
   int WriteASCIIFile(const char *filename) const;
   int WriteBinaryFile(const char *filename) const;
+  int WritePtsFile(const char *filename) const;
   int WriteSDFFile(const char *filename) const;
   int WriteMeshFile(const char *filename) const;
 
@@ -57,6 +61,7 @@ private:
   std::vector<R3Point> positions;
   std::vector<R3Vector> normals;
   std::vector<RNRgb> colors;
+  std::vector<RNScalar> timestamps;
   std::vector<int> category_identifiers;
   std::vector<int> instance_identifiers;
   std::vector<RNScalar> values;
@@ -102,6 +107,16 @@ PointColor(int index) const
   // Return color of point with given index
   if (index >= (int) colors.size()) return RNblack_rgb;
   return colors[index];
+}
+
+
+
+inline RNScalar R3PointSet::
+PointTimestamp(int index) const
+{
+  // Return timestamp of point with given index
+  if (index >= (int) timestamps.size()) return -1;
+  return timestamps[index];
 }
 
 

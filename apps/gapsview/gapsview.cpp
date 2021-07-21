@@ -9,6 +9,7 @@
 namespace gaps {}
 using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
+#include "R3Surfels/R3Surfels.h"
 #include "GSV/GSV.h"
 #include "R3PointSet.h"
 #include "fglut/fglut.h"
@@ -24,6 +25,8 @@ static RNArray<const char *> pointset_filenames;
 static RNArray<const char *> mesh_filenames;
 static RNArray<const char *> scene_filenames;
 static RNArray<const char *> grid_filenames;
+static RNArray<const char *> ssa_filenames;
+static RNArray<const char *> ssb_filenames;
 static RNArray<const char *> gsv_filenames;
 static const char *image_directory = NULL;
 
@@ -51,6 +54,7 @@ static RNArray<R3Scene *> scenes;
 static RNArray<R3Mesh *> meshes;
 static RNArray<R3PointSet *> pointsets;
 static RNArray<R3Grid *> grids;
+static RNArray<R3SurfelScene *> sfls;
 static RNArray<GSVScene *> gsvs;
 
 // Viewer variables
@@ -66,6 +70,7 @@ static int show_scenes = 1;
 static int show_meshes = 1;
 static int show_pointsets = 1;
 static int show_grids = 1;
+static int show_sfls = 1;
 static int show_gsvs = 1;
 
 // Display variables - which elements to show
@@ -76,7 +81,6 @@ static int show_normals = 0;
 static int show_cameras = 1;
 static int show_images = 0;
 static int show_slices = 0;
-static int show_image_projections = 0;
 static int show_text_labels = 0;
 static int show_selected_position = 1;
 static int show_grid_threshold = 0;
@@ -98,8 +102,8 @@ static int grid_slice_coords[3] = { 0, 0, 0 };
 
 // GLUT state variables 
 static int GLUTwindow = 0;
-static int GLUTwindow_height = 1024;
-static int GLUTwindow_width = 1024;
+static int GLUTwindow_width = 800;
+static int GLUTwindow_height = 600;
 static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmouse_drag_distance_squared = 0;
@@ -128,6 +132,8 @@ enum {
   MESH_FACE_ELEMENT_TYPE,
   SCENE_NODE_ELEMENT_TYPE,
   GRID_CELL_ELEMENT_TYPE,
+  SFL_POINT_ELEMENT_TYPE,
+  SFL_CAMERA_ELEMENT_TYPE,
   GSV_POINT_ELEMENT_TYPE,
   GSV_CAMERA_ELEMENT_TYPE,
 };
@@ -135,24 +141,249 @@ enum {
 
 
 ////////////////////////////////////////////////////////////////////////
-// GSV image data
+// Image data type definition
 ////////////////////////////////////////////////////////////////////////
 
 struct ImageData {
-  ImageData(void) : texture_id(0) {};
+  ImageData(void) : image_width(0), image_height(0), texture_id(0) {};
   R2Image color_image;
   R2Grid depth_image;
   R2Grid category_image;
   R2Grid instance_image;
   R2Grid ray_origin_images[3];
   R2Grid ray_direction_images[3];
+  int image_width;
+  int image_height;
   GLuint texture_id;
 };
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// I/O functions
+// Image I/O functions
+////////////////////////////////////////////////////////////////////////
+
+static ImageData *
+ReadImageFiles(const char *image_name,
+  double depth_scale, double depth_exponent)
+{
+  // Check image directory
+  if (!image_directory) return NULL;
+  if (!image_name) return NULL;
+  
+  /// Get convenient variables
+  double ds = (depth_scale >= 0) ? 1.0 / depth_scale : 1.0;
+  double de = (depth_exponent != 0) ? 1.0 / depth_exponent : 1.0;
+  char filename[2048];
+  
+  // Allocate GSV image data structure
+  ImageData *data = new ImageData();
+  if (!data) {
+    fprintf(stderr, "Unable to allocate GSV image data\n");
+    return NULL;
+  }
+
+  // Read color image 
+  sprintf(filename, "%s/color_images/%s.png", image_directory, image_name);
+  if (RNFileExists(filename)) {
+    if (!data->color_image.ReadFile(filename)) { delete data; return NULL; }
+  }
+  else {
+    sprintf(filename, "%s/color_images/%s.jpg", image_directory, image_name);
+    if (RNFileExists(filename)) {
+      if (!data->color_image.ReadFile(filename)) { delete data; return NULL; }
+    }
+  }
+
+  // Read depth image
+  sprintf(filename, "%s/depth_images/%s.png", image_directory, image_name);
+  if (RNFileExists(filename)) {
+    if (!data->depth_image.ReadFile(filename)) { delete data; return NULL; }
+    data->depth_image.Multiply(ds);
+    data->depth_image.Pow(de);
+  }
+
+  // Read category image
+  sprintf(filename, "%s/category_images/%s.png", image_directory, image_name);
+  if (RNFileExists(filename)) {
+    if (!data->category_image.ReadFile(filename)) { delete data; return NULL; }
+  }
+
+  // Read instance image
+  sprintf(filename, "%s/instance_images/%s.png", image_directory, image_name);
+  if (RNFileExists(filename)) {
+    if (!data->instance_image.ReadFile(filename)) { delete data; return NULL; }
+  }
+
+  // Read ray_origin images
+  for (int i = 0; i < 3; i++) {
+    const char *channel_name = "";
+    if (i == 0) channel_name = "ox";
+    else if (i == 1) channel_name = "oy";
+    else if (i == 2) channel_name = "oz";
+    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image_name, channel_name);
+    if (RNFileExists(filename)) {
+      if (!data->ray_origin_images[i].ReadFile(filename)) { delete data; return NULL; }
+    }
+  }
+
+  // Read ray_origin images
+  for (int i = 0; i < 3; i++) {
+    const char *channel_name = "";
+    if (i == 0) channel_name = "ox";
+    else if (i == 1) channel_name = "oy";
+    else if (i == 2) channel_name = "oz";
+    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image_name, channel_name);
+    if (RNFileExists(filename)) {
+      if (!data->ray_direction_images[i].ReadFile(filename)) { delete data; return NULL; }
+    }
+  }
+
+  // Set image dimensions
+  data->image_width = data->color_image.Width();
+  data->image_height = data->color_image.Height();
+  
+  // Return data
+  return data;
+}
+
+
+
+static int
+ReadGSVImageFiles(GSVScene *scene,
+  double depth_scale, double depth_exponent)
+{
+  // Check image directory
+  if (!image_directory) return 1;
+
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int color_image_count = 0;
+  int depth_image_count = 0;
+  int category_image_count = 0;
+  int instance_image_count = 0;
+  int ray_image_count = 0;
+  
+  // Read data for all images
+  for (int ir = 0; ir < scene->NRuns(); ir++) {
+    GSVRun *run = scene->Run(ir);
+    for (int is = 0; is < run->NSegments(); is++) {
+      GSVSegment *segment = run->Segment(is);
+      for (int ip = 0; ip < segment->NPanoramas(); ip++) {
+        GSVPanorama *panorama = segment->Panorama(ip);
+        for (int ii = 0; ii < panorama->NImages(); ii++) {
+          GSVImage *image = panorama->Image(ii);
+          if (!image->Name()) continue;
+
+          // Read images
+          ImageData *data = ReadImageFiles(image->Name(), depth_scale, depth_exponent);
+          if (!data) {
+            RNFail("Unable to read images for %s\n", image->Name());
+            return 0;
+          }
+
+          // Associate data with image
+          image->SetData(data);
+
+          // Update statistics
+          if (data->color_image.Width() > 0) color_image_count++;
+          if (data->depth_image.NEntries() > 0) depth_image_count++;
+          if (data->category_image.NEntries() > 0) category_image_count++;
+          if (data->instance_image.NEntries() > 0) instance_image_count++;
+          if (data->ray_origin_images[0].NEntries() > 0) ray_image_count++;
+          if (data->ray_origin_images[1].NEntries() > 0) ray_image_count++;
+          if (data->ray_origin_images[2].NEntries() > 0) ray_image_count++;
+          if (data->ray_direction_images[0].NEntries() > 0) ray_image_count++;
+          if (data->ray_direction_images[1].NEntries() > 0) ray_image_count++;
+          if (data->ray_direction_images[2].NEntries() > 0) ray_image_count++;
+        }
+      }
+    }
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read GSV images from %s ...\n", image_directory);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Color Images = %d\n", color_image_count);
+    printf("  # Depth Images = %d\n", depth_image_count);
+    printf("  # Category Images = %d\n", category_image_count);
+    printf("  # Instance Images = %d\n", instance_image_count);
+    printf("  # Ray Images = %d\n", ray_image_count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadSFLImageFiles(R3SurfelScene *scene,
+  double depth_scale, double depth_exponent)
+{
+  // Check image directory
+  if (!image_directory) return 1;
+
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int color_image_count = 0;
+  int depth_image_count = 0;
+  int category_image_count = 0;
+  int instance_image_count = 0;
+  int ray_image_count = 0;
+
+  // Read all images
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    if (!image->Name()) continue;
+
+    // Read images
+    ImageData *data = ReadImageFiles(image->Name(), depth_scale, depth_exponent);
+    if (!data) {
+      RNFail("Unable to read images for %s\n", image->Name());
+      return 0;
+    }
+
+    // Associate data with image
+    image->SetData(data);
+
+    // Update statistics
+    if (data->color_image.Width() > 0) color_image_count++;
+    if (data->depth_image.NEntries() > 0) depth_image_count++;
+    if (data->category_image.NEntries() > 0) category_image_count++;
+    if (data->instance_image.NEntries() > 0) instance_image_count++;
+    if (data->ray_origin_images[0].NEntries() > 0) ray_image_count++;
+    if (data->ray_origin_images[1].NEntries() > 0) ray_image_count++;
+    if (data->ray_origin_images[2].NEntries() > 0) ray_image_count++;
+    if (data->ray_direction_images[0].NEntries() > 0) ray_image_count++;
+    if (data->ray_direction_images[1].NEntries() > 0) ray_image_count++;
+    if (data->ray_direction_images[2].NEntries() > 0) ray_image_count++;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read GSV images from %s ...\n", image_directory);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Color Images = %d\n", color_image_count);
+    printf("  # Depth Images = %d\n", depth_image_count);
+    printf("  # Category Images = %d\n", category_image_count);
+    printf("  # Instance Images = %d\n", instance_image_count);
+    printf("  # Ray Images = %d\n", ray_image_count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Scene I/O functions
 ////////////////////////////////////////////////////////////////////////
 
 static R3PointSet *
@@ -307,6 +538,60 @@ ReadGridFile(const char *filename)
 
 
 
+static R3SurfelScene *
+OpenSFLFiles(const char *scene_filename, const char *database_filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Allocate scene
+  R3SurfelScene *scene = new R3SurfelScene();
+  if (!scene) {
+    RNFail("Unable to allocate SFL scene\n");
+    return NULL;
+  }
+
+  // Open scene files
+  if (!scene->OpenFile(scene_filename, database_filename, "r", "r")) {
+    delete scene;
+    return NULL;
+  }
+
+  // Read all surfels into memory
+  scene->ReadBlocks();
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Opened sfl scene from %s ...\n", scene_filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Objects = %d\n", scene->NObjects());
+    printf("  # Labels = %d\n", scene->NLabels());
+    printf("  # Assignments = %d\n", scene->NLabelAssignments());
+    printf("  # Images = %d\n", scene->NImages());
+    printf("  # Nodes = %d\n", scene->Tree()->NNodes());
+    printf("  # Surfels = %lld\n", scene->Tree()->NSurfels());
+    fflush(stdout);
+  }
+
+  // Return scene
+  return scene;
+}
+
+
+
+static void
+CloseSFLFiles(R3SurfelScene *scene)
+{
+  // Release all surfels from memory
+  scene->ReleaseBlocks();
+  
+  // Close scene
+  scene->CloseFile();
+}
+
+
+
 static GSVScene *
 ReadGSVFile(const char *filename)
 {
@@ -351,161 +636,6 @@ ReadGSVFile(const char *filename)
 
 
 
-static int
-ReadGSVImageFiles(GSVImage *image,
-  double depth_scale, double depth_exponent)
-{
-  // Check image directory
-  if (!image_directory) return 1;
-  if (!image->Name()) return 0;
-  
-  /// Get convenient variables
-  double ds = (depth_scale >= 0) ? 1.0 / depth_scale : 1.0;
-  double de = (depth_exponent != 0) ? 1.0 / depth_exponent : 1.0;
-  char filename[2048];
-  
-  // Allocate GSV image data structure
-  ImageData *data = new ImageData();
-  if (!data) {
-    fprintf(stderr, "Unable to allocate GSV image data\n");
-    return 0;
-  }
-
-  // Read color image 
-  sprintf(filename, "%s/color_images/%s.png", image_directory, image->Name());
-  if (RNFileExists(filename)) {
-    if (!data->color_image.ReadFile(filename)) { delete data; return 0; }
-  }
-  else {
-    sprintf(filename, "%s/color_images/%s.jpg", image_directory, image->Name());
-    if (RNFileExists(filename)) {
-      if (!data->color_image.ReadFile(filename)) { delete data; return 0; }
-    }
-  }
-
-  // Read depth image
-  sprintf(filename, "%s/depth_images/%s.png", image_directory, image->Name());
-  if (RNFileExists(filename)) {
-    if (!data->depth_image.ReadFile(filename)) { delete data; return 0; }
-    data->depth_image.Multiply(ds);
-    data->depth_image.Pow(de);
-  }
-
-  // Read category image
-  sprintf(filename, "%s/category_images/%s.png", image_directory, image->Name());
-  if (RNFileExists(filename)) {
-    if (!data->category_image.ReadFile(filename)) { delete data; return 0; }
-  }
-
-  // Read instance image
-  sprintf(filename, "%s/instance_images/%s.png", image_directory, image->Name());
-  if (RNFileExists(filename)) {
-    if (!data->instance_image.ReadFile(filename)) { delete data; return 0; }
-  }
-
-  // Read ray_origin images
-  for (int i = 0; i < 3; i++) {
-    const char *channel_name = "";
-    if (i == 0) channel_name = "ox";
-    else if (i == 1) channel_name = "oy";
-    else if (i == 2) channel_name = "oz";
-    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image->Name(), channel_name);
-    if (RNFileExists(filename)) {
-      if (!data->ray_origin_images[i].ReadFile(filename)) { delete data; return 0; }
-    }
-  }
-
-  // Read ray_origin images
-  for (int i = 0; i < 3; i++) {
-    const char *channel_name = "";
-    if (i == 0) channel_name = "ox";
-    else if (i == 1) channel_name = "oy";
-    else if (i == 2) channel_name = "oz";
-    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image->Name(), channel_name);
-    if (RNFileExists(filename)) {
-      if (!data->ray_direction_images[i].ReadFile(filename)) { delete data; return 0; }
-    }
-  }
-
-  // Associate data with image
-  image->SetData(data);
-  
-  // Return success
-  return 1;
-}
-
-
-
-static int
-ReadGSVImageFiles(GSVScene *scene,
-  double depth_scale, double depth_exponent)
-{
-  // Start statistics
-  RNTime start_time;
-  start_time.Read();
-  int color_image_count = 0;
-  int depth_image_count = 0;
-  int category_image_count = 0;
-  int instance_image_count = 0;
-  int ray_image_count = 0;
-  
-  // Check image directory
-  if (!image_directory) return 1;
-
-  // Read data for all images
-  for (int ir = 0; ir < scene->NRuns(); ir++) {
-    GSVRun *run = scene->Run(ir);
-    for (int is = 0; is < run->NSegments(); is++) {
-      GSVSegment *segment = run->Segment(is);
-      for (int ip = 0; ip < segment->NPanoramas(); ip++) {
-        GSVPanorama *panorama = segment->Panorama(ip);
-        for (int ii = 0; ii < panorama->NImages(); ii++) {
-          GSVImage *image = panorama->Image(ii);
-          if (!image->Name()) continue;
-
-          // Read images
-          if (!ReadGSVImageFiles(image, depth_scale, depth_exponent)) {
-            RNFail("Unable to read images for %s\n", image->Name());
-            return 0;
-          }
-
-          // Update statistics
-          if (image->Data()) {
-            ImageData *data = (ImageData *) image->Data();
-            if (data->color_image.Width() > 0) color_image_count++;
-            if (data->depth_image.NEntries() > 0) depth_image_count++;
-            if (data->category_image.NEntries() > 0) category_image_count++;
-            if (data->instance_image.NEntries() > 0) instance_image_count++;
-            if (data->ray_origin_images[0].NEntries() > 0) ray_image_count++;
-            if (data->ray_origin_images[1].NEntries() > 0) ray_image_count++;
-            if (data->ray_origin_images[2].NEntries() > 0) ray_image_count++;
-            if (data->ray_direction_images[0].NEntries() > 0) ray_image_count++;
-            if (data->ray_direction_images[1].NEntries() > 0) ray_image_count++;
-            if (data->ray_direction_images[2].NEntries() > 0) ray_image_count++;
-          }
-        }
-      }
-    }
-  }
-
-  // Print statistics
-  if (print_verbose) {
-    printf("Read GSV images from %s ...\n", image_directory);
-    printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Color Images = %d\n", color_image_count);
-    printf("  # Depth Images = %d\n", depth_image_count);
-    printf("  # Category Images = %d\n", category_image_count);
-    printf("  # Instance Images = %d\n", instance_image_count);
-    printf("  # Ray Images = %d\n", ray_image_count);
-    fflush(stdout);
-  }
-
-  // Return success
-  return 1;
-}
-
-
-
 static int 
 ReadFiles(void)
 {
@@ -546,6 +676,20 @@ ReadFiles(void)
     }
   }
 
+  // Read sfl scenes
+  for (int i = 0; i < ssa_filenames.NEntries(); i++) {
+    if (i >= ssb_filenames.NEntries()) break;
+    const char *ssa_filename = ssa_filenames[i];
+    const char *ssb_filename = ssb_filenames[i];
+    R3SurfelScene *sfl = OpenSFLFiles(ssa_filename, ssb_filename);
+    if (!sfl) return 0;
+    sfls.Insert(sfl);
+    if (!ReadSFLImageFiles(sfl, depth_scale, depth_exponent)) {
+      delete sfl;
+      return 0;
+    }
+  }
+  
   // Read gsv scenes
   for (int i = 0; i < gsv_filenames.NEntries(); i++) {
     const char *filename = gsv_filenames[i];
@@ -565,7 +709,7 @@ ReadFiles(void)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Coloring functions
+// Coloring utilities
 ////////////////////////////////////////////////////////////////////////
 
 static void
@@ -673,6 +817,41 @@ LoadColorValue(double value)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Texturing utilities
+////////////////////////////////////////////////////////////////////////
+
+static void
+LoadTexture(ImageData *data)
+{
+  // Check if already loaded
+  if (data->texture_id > 0) return;
+
+  // Check color image
+  if (data->color_image.Width() <= 0) return;
+  if (data->color_image.Height() <= 0) return;
+  if (data->color_image.Depth() != 3) return;
+
+  // Allocate texture id
+  glGenTextures(1, &data->texture_id);
+  assert(data->texture_id > 0);
+
+  // Set texture parameters
+  glBindTexture(GL_TEXTURE_2D, data->texture_id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  // Set texture pixels
+  gluBuild2DMipmaps(GL_TEXTURE_2D, 3,
+    data->color_image.Width(), data->color_image.Height(),
+    GL_RGB, GL_UNSIGNED_BYTE, data->color_image.Pixels());
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Drawing utilities
 ////////////////////////////////////////////////////////////////////////
 
@@ -700,14 +879,14 @@ DrawText(const R2Point& p, const char *s)
 
 
 static void
-DrawSelection(void)
+DrawSelectedPosition(void)
 {
   // Check if should draw selected position
   if (!show_selected_position) return;
 
   // Draw sphere
   glEnable(GL_LIGHTING);
-  glColor3f(1, 1, 1);
+  glColor3f(1, 0, 0);
   R3Sphere(selected_position, 0.05).Draw();
 }
 
@@ -757,74 +936,171 @@ DrawAxes(void)
 
 
 
-static void 
-DrawGSVImage(GSVImage *image)
+static void
+DrawImage(ImageData *data,
+  double x, double y, double scale)
 {
-  // Get image data
-  ImageData *data = (ImageData *) image->Data();
-  if (!data) return;
+  // Check if drawing images
+  if (!show_images) return;
 
-  // Check color image
-  if (data->color_image.Width() <= 0) return;
-  if (data->color_image.Height() <= 0) return;
-  if (data->color_image.Depth() != 3) return;
+  // Get convenient variables
+  double w = scale * data->image_width;
+  double h = scale * data->image_height;
+  if ((w == 0) || (h == 0)) return;
 
   // Load texture
-  if (data->texture_id == 0) {
-    // Allocate texture id
-    glGenTextures(1, &data->texture_id);
-    assert(data->texture_id > 0);
+  LoadTexture(data);
+  if (data->texture_id == 0) return;
 
-    // Set texture parameters
-    glBindTexture(GL_TEXTURE_2D, data->texture_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  // Set viewing transformation
+  glMatrixMode(GL_PROJECTION);  
+  glPushMatrix();
+  glLoadIdentity();
+  glOrtho(0, GLUTwindow_width, 0, GLUTwindow_height, 0, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
 
-    // Set texture pixels
-    gluBuild2DMipmaps(GL_TEXTURE_2D, 3,
-      data->color_image.Width(), data->color_image.Height(),
-      GL_RGB, GL_UNSIGNED_BYTE, data->color_image.Pixels());
-  }
+  // Enable texture
+  glBindTexture(GL_TEXTURE_2D, data->texture_id);
+  glEnable(GL_TEXTURE_2D);
 
   // Draw textured polygon
-  if (data->texture_id > 0) {
-    // Enable texture
-    glBindTexture(GL_TEXTURE_2D, data->texture_id);
-    glEnable(GL_TEXTURE_2D);
+  glColor3d(1, 1, 1);
+  glBegin(GL_POLYGON);
+  glTexCoord2d(0, 0);
+  glVertex3d(x, y, -0.5);
+  glTexCoord2d(1, 0);
+  glVertex3d(x+w, y, -0.5);
+  glTexCoord2d(1, 1);
+  glVertex3d(x+w, y+h, -0.5);
+  glTexCoord2d(0, 1);
+  glVertex3d(x, y+h, -0.5);
+  glEnd();
 
-    // Draw textured polygon
-    GSVCamera *camera = image->Camera();
-    RNAngle xfov = 0.5 * camera->XFov();
-    RNAngle yfov = 0.5 * camera->YFov();
-    GSVPose pose = image->Pose();
-    R3Point viewpoint = pose.Viewpoint();
-    R3Vector towards = pose.Towards();
-    R3Vector up = pose.Up();
-    R3Vector right = pose.Right();
-    R3Point origin = viewpoint + towards * image_plane_distance;
-    R3Vector dx = right * image_plane_distance * tan(xfov);
-    R3Vector dy = up * image_plane_distance * tan(yfov);
-    R3Point ur = origin + dx + dy;
-    R3Point lr = origin + dx - dy;
-    R3Point ul = origin - dx + dy;
-    R3Point ll = origin - dx - dy;
-    glBegin(GL_POLYGON);
-    glTexCoord2d(0,0);
-    R3LoadPoint(ll);
-    glTexCoord2d(1,0);
-    R3LoadPoint(lr);
-    glTexCoord2d(1, 1);
-    R3LoadPoint(ur);
-    glTexCoord2d(0,1);
-    R3LoadPoint(ul);
-    glEnd();
-    
-    // Disable texture
-    glDisable(GL_TEXTURE_2D);
-  }
+  // Disable texture
+  glDisable(GL_TEXTURE_2D);
+
+  // Restore viewing transformation
+  glMatrixMode(GL_PROJECTION);  
+  glPopMatrix();
+  glMatrixMode(GL_MODELVIEW);  
+  glPopMatrix();
+}
+
+
+
+static void
+DrawDotOnImage(ImageData *data,
+  double x, double y, double scale,
+  const R2Point& image_position)
+{
+  // Get convenient variables
+  double w = scale * data->image_width;
+  double h = scale * data->image_height;
+  if ((w == 0) || (h == 0)) return;
+
+  // Set viewport
+  glViewport(x, y, w, h);
+
+  // Set viewing transformation
+  glMatrixMode(GL_PROJECTION);  
+  glPushMatrix();
+  glLoadIdentity();
+  glOrtho(0, data->image_width, 0, data->image_height, 0, 1);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  // Draw dot
+  glColor3d(1, 0, 0);
+  glPointSize(5);
+  glBegin(GL_POINTS);
+  glVertex3d(image_position.X(), image_position.Y(), -0.25);
+  glEnd();
+  glPointSize(1);
+
+  // Restore viewing transformation
+  glMatrixMode(GL_PROJECTION);  
+  glPopMatrix();
+  glMatrixMode(GL_MODELVIEW);  
+  glPopMatrix();
+
+  // Resore viewport
+  viewer->Viewport().Load();
+}
+
+
+
+static void
+DrawImage(ImageData *data, const R3Point& viewpoint,
+  const R3Vector& towards, const R3Vector& right, const R3Vector& up,
+  RNAngle xfov, RNAngle yfov, RNLength image_plane_distance)
+{
+  // Check if drawing images
+  if (!show_images) return;
+
+  // Load texture
+  LoadTexture(data);
+  if (data->texture_id == 0) return;
+
+  // Enable texture
+  glBindTexture(GL_TEXTURE_2D, data->texture_id);
+  glEnable(GL_TEXTURE_2D);
+
+  // Draw textured polygon
+  R3Point origin = viewpoint + towards * image_plane_distance;
+  R3Vector dx = right * image_plane_distance * tan(xfov);
+  R3Vector dy = up * image_plane_distance * tan(yfov);
+  R3Point ur = origin + dx + dy;
+  R3Point lr = origin + dx - dy;
+  R3Point ul = origin - dx + dy;
+  R3Point ll = origin - dx - dy;
+  glColor3d(1, 1, 1);
+  glBegin(GL_POLYGON);
+  glTexCoord2d(0,0);
+  R3LoadPoint(ll);
+  glTexCoord2d(1,0);
+  R3LoadPoint(lr);
+  glTexCoord2d(1, 1);
+  R3LoadPoint(ur);
+  glTexCoord2d(0,1);
+  R3LoadPoint(ul);
+  glEnd();
+  
+  // Disable texture
+  glDisable(GL_TEXTURE_2D);
+}
+
+
+
+static void
+DrawDotOnImage(ImageData *data, const R3Point& viewpoint,
+  const R3Vector& towards, const R3Vector& right, const R3Vector& up,
+  RNAngle xfov, RNAngle yfov, RNLength image_plane_distance,
+  const R2Point& image_position, RNLength radius)
+{
+  // Get convenient variables
+  int w = data->image_width;
+  int h = data->image_height;
+  if ((w == 0) || (h == 0)) return;
+  
+  // Check 2D image_position
+  if (image_position.X() < 0) return;
+  if (image_position.Y() < 0) return;
+  if (image_position.X() >= w) return;
+  if (image_position.Y() >= h) return;
+
+  // Compute 3D position
+  RNScalar dx = 2.0 * (image_position.X() - 0.5 * w) / w;
+  RNScalar dy = 2.0 * (image_position.Y() - 0.5 * h) / h;
+  R3Point world_position = viewpoint + image_plane_distance * towards;
+  world_position += image_plane_distance * dx * right * tan(xfov);
+  world_position += image_plane_distance * dy * up * tan(yfov);
+
+  // Draw sphere
+  glColor3d(1, 0, 0);
+  R3Sphere(world_position, radius).Draw();
 }
 
 
@@ -847,11 +1123,11 @@ DrawPointSet(R3PointSet *pointset,
     glBegin(GL_POINTS);
     for (int i = 0; i < pointset->NPoints(); i++) {
       const R3Point& position = pointset->PointPosition(i);
-      const R3Vector& normal = pointset->PointNormal(i);
       RNScalar value = pointset->PointValue(i);
-      if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, POINTSET_POINT_ELEMENT_TYPE, i);
-      else if (color_scheme == RGB_COLOR_SCHEME) glColor3d(-10*value, 0, 10*value);
-      else R3LoadNormal(normal);
+      if (color_scheme == PICK_COLOR_SCHEME)
+        LoadColorIndex(model_index, POINTSET_POINT_ELEMENT_TYPE, i);
+      else if (color_scheme == RGB_COLOR_SCHEME)
+        glColor3d(-10*value, 0, 10*value);
       R3LoadPoint(position);
     }
     glEnd();
@@ -891,13 +1167,18 @@ DrawMesh(R3Mesh *mesh,
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < mesh->NFaces(); i++) {
       R3MeshFace *face = mesh->Face(i);
-      if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, MESH_FACE_ELEMENT_TYPE, i);
-      else if (color_scheme == CATEGORY_COLOR_SCHEME) LoadColorIdentifier(1 + mesh->FaceCategory(face));
-      else if (color_scheme == INSTANCE_COLOR_SCHEME) LoadColorIdentifier(1 + mesh->FaceSegment(face)); 
-      if (color_scheme == SHADING_COLOR_SCHEME) R3LoadNormal(mesh->FaceNormal(face));
+      if (color_scheme == PICK_COLOR_SCHEME)
+        LoadColorIndex(model_index, MESH_FACE_ELEMENT_TYPE, i);
+      else if (color_scheme == CATEGORY_COLOR_SCHEME)
+        LoadColorIdentifier(1 + mesh->FaceCategory(face));
+      else if (color_scheme == INSTANCE_COLOR_SCHEME)
+        LoadColorIdentifier(1 + mesh->FaceSegment(face)); 
+      if (color_scheme == SHADING_COLOR_SCHEME)
+        R3LoadNormal(mesh->FaceNormal(face));
       for (int j = 0; j < 3; j++) {
         R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
-        if (color_scheme == RGB_COLOR_SCHEME) R3LoadRgb(mesh->VertexColor(vertex));
+        if (color_scheme == RGB_COLOR_SCHEME)
+          R3LoadRgb(mesh->VertexColor(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
     }
@@ -920,9 +1201,10 @@ DrawMesh(R3Mesh *mesh,
     glBegin(GL_POINTS);
     for (int i = 0; i < mesh->NVertices(); i++) {
       R3MeshVertex *vertex = mesh->Vertex(i);
-      if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, MESH_VERTEX_ELEMENT_TYPE, i);
-      else if (color_scheme == RGB_COLOR_SCHEME) R3LoadRgb(mesh->VertexColor(vertex));
-      else R3LoadNormal(mesh->VertexNormal(vertex));
+      if (color_scheme == PICK_COLOR_SCHEME)
+        LoadColorIndex(model_index, MESH_VERTEX_ELEMENT_TYPE, i);
+      else if (color_scheme == RGB_COLOR_SCHEME)
+        R3LoadRgb(mesh->VertexColor(vertex));
       R3LoadPoint(mesh->VertexPosition(vertex));
     }
     glEnd();
@@ -1039,6 +1321,132 @@ DrawGrid(R3Grid *grid,
 
 
 static void
+DrawSFL(R3SurfelScene *scene,
+  int model_index, int color_scheme)
+{
+  // Check if should draw sfl scene
+  if (!show_sfls) return;
+
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return;
+
+  // Draw points
+  if (show_points) {
+    glDisable(GL_LIGHTING);
+    glBegin(GL_POINTS);
+    int sfl_count = 0;
+    for (int i = 0; i < tree->NNodes(); i++) {
+      R3SurfelNode *node = tree->Node(i);
+      if (node->NParts() > 0) continue;
+      R3SurfelObject *object = node->Object(TRUE);
+      while (object && object->Parent() && (object->Parent() != scene->RootObject()))
+        object = object->Parent();
+      int instance_identifier = (object) ? object->SceneIndex()  : -1;
+      R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+      int category_identifier = (label) ? label->Identifier() : -1;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        for (int k = 0; k < block->NSurfels(); k++) {
+          if (color_scheme == PICK_COLOR_SCHEME)
+            LoadColorIndex(model_index, SFL_POINT_ELEMENT_TYPE, sfl_count);
+          else if (color_scheme == RGB_COLOR_SCHEME)
+            RNLoadRgb(block->SurfelColor(k));
+          else if (color_scheme == CATEGORY_COLOR_SCHEME)
+            LoadColorIdentifier(category_identifier);
+          else if (color_scheme == INSTANCE_COLOR_SCHEME)
+            LoadColorIdentifier(instance_identifier);
+          else LoadColorValue(block->SurfelElevation(k) / 2.0);
+          R3LoadPoint(block->SurfelPosition(k));
+          sfl_count++;
+        }
+      }
+    }
+    glEnd();
+  }
+
+  // Draw normals
+  if (show_normals && (color_scheme != PICK_COLOR_SCHEME)) {
+    glDisable(GL_LIGHTING);
+    glColor3d(0.0, 1.0, 0.0); 
+    glBegin(GL_LINES);
+    RNScalar d = 0.0025 * world_bbox.DiagonalRadius();
+    for (int i = 0; i < tree->NNodes(); i++) {
+      R3SurfelNode *node = tree->Node(i);
+      if (node->NParts() > 0) continue;
+      for (int j = 0; j < node->NBlocks(); j++) {
+        R3SurfelBlock *block = node->Block(j);
+        for (int k = 0; k < block->NSurfels(); k++) {
+          R3Point position = block->SurfelPosition(k);
+          R3Vector normal = block->SurfelNormal(k);
+          R3LoadPoint(position);
+          R3LoadPoint(position + d * normal);
+        }
+      }
+    }
+    glEnd();
+  }
+
+  // Draw cameras
+  if (show_cameras) {
+    glDisable(GL_LIGHTING);
+    glColor3d(0, 1, 0);
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      if (color_scheme == PICK_COLOR_SCHEME)
+        LoadColorIndex(model_index, SFL_CAMERA_ELEMENT_TYPE, i);
+      R3Sphere(image->Viewpoint(), 0.1).Draw();
+      R3Span(image->Viewpoint(), image->Viewpoint() + image->Towards()).Draw();
+      R3Span(image->Viewpoint(), image->Viewpoint() + 0.5 * image->Up()).Draw();
+      R3Span(image->Viewpoint(), image->Viewpoint() + 0.25 * image->Right()).Draw();
+    }
+  }
+
+  // Draw images
+  if (show_images) {
+    glDisable(GL_LIGHTING);
+    glColor3d(1, 1, 1);
+    int image_count = 0;
+    for (int i = 0; i < scene->NImages(); i++) {
+      R3SurfelImage *image = scene->Image(i);
+      ImageData *data = (ImageData *) image->Data();
+      if (!data) continue;
+
+      // Set color
+      if (color_scheme == PICK_COLOR_SCHEME)
+        LoadColorIndex(model_index, SFL_CAMERA_ELEMENT_TYPE, i);
+
+      // Compute 2D dot position
+      R2Point image_position = image->TransformFromWorldToImage(selected_position);
+      if (image_position.X() < 0) continue;
+      if (image_position.Y() < 0) continue;
+      if (image_position.X() >= image->ImageWidth()) continue;
+      if (image_position.Y() >= image->ImageHeight()) continue;
+
+      // Draw image inset
+      double scale = 0.1;
+      double x = image_count * scale * data->image_width;
+      DrawImage(data, x, 0, scale);
+      DrawDotOnImage(data, x, 0, scale, image_position);
+      
+      // Draw image billboard
+      DrawImage(data, image->Viewpoint(),
+        image->Towards(), image->Right(), image->Up(),
+        image->XFOV(), image->YFOV(), image_plane_distance);
+      DrawDotOnImage(data, image->Viewpoint(),
+        image->Towards(), image->Right(), image->Up(),
+        image->XFOV(), image->YFOV(), image_plane_distance,
+        image_position, 0.025);
+
+      // Increment image counter
+      image_count++;
+    }
+  }
+}
+
+
+
+static void
 DrawGSV(GSVScene *scene,
   int model_index, int color_scheme)
 {
@@ -1062,11 +1470,16 @@ DrawGSV(GSVScene *scene,
               GSVScanline *scanline = scan->Scanline(ie);
               for (int ik = 0; ik < scanline->NPoints(); ik++) {
                 const GSVPoint& point = scanline->Point(ik);
-                if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, GSV_POINT_ELEMENT_TYPE, point_count);
-                else if (color_scheme == RGB_COLOR_SCHEME) RNLoadRgb(point.Color());
-                else if (color_scheme == CATEGORY_COLOR_SCHEME) LoadColorIdentifier(point.CategoryIdentifier());
-                else if (color_scheme == INSTANCE_COLOR_SCHEME) LoadColorIdentifier(point.ClusterIdentifier());
-                else LoadColorValue((point.Elevation() > 0) ? 0.5 * sqrt(point.Elevation()) : 0);
+                if (color_scheme == PICK_COLOR_SCHEME)
+                  LoadColorIndex(model_index, GSV_POINT_ELEMENT_TYPE, point_count);
+                else if (color_scheme == RGB_COLOR_SCHEME)
+                  RNLoadRgb(point.Color());
+                else if (color_scheme == CATEGORY_COLOR_SCHEME)
+                  LoadColorIdentifier(point.CategoryIdentifier());
+                else if (color_scheme == INSTANCE_COLOR_SCHEME)
+                  LoadColorIdentifier(point.ClusterIdentifier());
+                else
+                  LoadColorValue(point.Elevation() / 2.0);
                 R3LoadPoint(point.Position());
                 point_count++;
               }
@@ -1123,7 +1536,8 @@ DrawGSV(GSVScene *scene,
           for (int ii = 0; ii < panorama->NImages(); ii++) {
             GSVImage *image = panorama->Image(ii);
             GSVPose pose = image->Pose();
-            if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, GSV_CAMERA_ELEMENT_TYPE, image_count);
+            if (color_scheme == PICK_COLOR_SCHEME)
+              LoadColorIndex(model_index, GSV_CAMERA_ELEMENT_TYPE, image_count);
             R3Sphere(pose.Viewpoint(), 0.1).Draw();
             R3Span(pose.Viewpoint(), pose.Viewpoint() + pose.Towards()).Draw();
             R3Span(pose.Viewpoint(), pose.Viewpoint() + 0.5 * pose.Up()).Draw();
@@ -1147,50 +1561,37 @@ DrawGSV(GSVScene *scene,
           GSVPanorama *panorama = segment->Panorama(ip);
           for (int ii = 0; ii < panorama->NImages(); ii++) {
             GSVImage *image = panorama->Image(ii);
-            if (color_scheme == PICK_COLOR_SCHEME) LoadColorIndex(model_index, GSV_CAMERA_ELEMENT_TYPE, image_count);
-            else glColor3d(1, 1, 1);
-            DrawGSVImage(image);
-            image_count++;
-          }
-        }
-      }
-    }
-  }
+            ImageData *data = (ImageData *) image->Data();
+            if (!data) continue;
 
-  // Show image projections
-  if (show_image_projections && (color_scheme != PICK_COLOR_SCHEME)) {
-    glDisable(GL_LIGHTING);
-    glColor3f(1, 0, 0);
-    for (int ir = 0; ir < scene->NRuns(); ir++) {
-      GSVRun *run = scene->Run(ir);
-      for (int is = 0; is < run->NSegments(); is++) {
-        GSVSegment *segment = run->Segment(is);
-        for (int ip = 0; ip < segment->NPanoramas(); ip++) {
-          GSVPanorama *panorama = segment->Panorama(ip);
-          for (int ii = 0; ii < panorama->NImages(); ii++) {
-            GSVImage *image = panorama->Image(ii);
+            // Compute 2D image_position
+            R2Point image_position = image->DistortedPosition(selected_position);
+            if (image_position == R2unknown_point) continue;
 
-            // Compute 2D projection
-            R2Point projection = image->DistortedPosition(selected_position);
-            if (projection == R2unknown_point) continue;
-
-            double width = image->Width();
-            double height = image->Height();
-            if ((projection.X() < 0) || (projection.X() >= width)) continue;
-            if ((projection.Y() < 0) || (projection.Y() >= height)) continue;
-
-            // Compute 3D position
+            // Get pose info
             GSVPose pose = image->Pose();
             R3Point viewpoint = pose.Viewpoint();
             R3Vector towards = pose.Towards();
             R3Vector right = pose.Right();
             R3Vector up = pose.Up();
-            RNScalar dx = 2.0 * (projection.X() - 0.5 * width) / width;
-            RNScalar dy = 2.0 * (projection.Y() - 0.5 * height) / height;
-            R3Point world_position = viewpoint + image_plane_distance * towards;
-            world_position += image_plane_distance * dx * right * tan(0.5 * image->XFov());
-            world_position += image_plane_distance * dy * up * tan(0.5 * image->YFov());
-            R3Sphere(world_position, 0.05).Draw();
+
+            // Draw image inset
+            double scale = 0.1;
+            double x = image_count * scale * data->image_width;
+            DrawImage(data, x, 0, scale);
+            DrawDotOnImage(data, x, 0, scale, image_position);
+      
+            // Draw image billboard
+            DrawImage(data, pose.Viewpoint(),
+              pose.Towards(), pose.Right(), pose.Up(),
+              0.5 * image->XFov(), 0.5 * image->YFov(),
+              image_plane_distance);
+            DrawDotOnImage(data, viewpoint, towards, right, up,
+              0.5 * image->XFov(), 0.5 * image->YFov(), image_plane_distance,
+              image_position, 0.025);
+
+            // Increment image counter
+            image_count++;
           }
         }
       }
@@ -1207,6 +1608,7 @@ DrawData(int color_scheme)
   for (int m = 0; m < pointsets.NEntries(); m++) {
     if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
     R3PointSet *pointset = pointsets[m];
+    if (!pointset) continue;
     DrawPointSet(pointset, m, color_scheme);
   }
   
@@ -1214,6 +1616,7 @@ DrawData(int color_scheme)
   for (int m = 0; m < scenes.NEntries(); m++) {
     if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
     R3Scene *scene = scenes[m];
+    if (!scene) continue;
     DrawScene(scene, m, color_scheme);
   }
   
@@ -1221,6 +1624,7 @@ DrawData(int color_scheme)
   for (int m = 0; m < meshes.NEntries(); m++) {
     if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
     R3Mesh *mesh = meshes[m];
+    if (!mesh) continue;
     DrawMesh(mesh, m, color_scheme);
   }
   
@@ -1228,13 +1632,23 @@ DrawData(int color_scheme)
   for (int m = 0; m < grids.NEntries(); m++) {
     if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
     R3Grid *grid = grids[m];
+    if (!grid) continue;
     DrawGrid(grid, m, color_scheme);
   }
   
+  // Draw SFL scenes
+  for (int m = 0; m < sfls.NEntries(); m++) {
+    if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
+    R3SurfelScene *sfl = sfls[m];
+    if (!sfl) continue;
+    DrawSFL(sfl, m, color_scheme);
+  }
+
   // Draw GSV scenes
   for (int m = 0; m < gsvs.NEntries(); m++) {
     if ((selected_model_index >= 0) && (m != selected_model_index)) continue;
     GSVScene *gsv = gsvs[m];
+    if (!gsv) continue;
     DrawGSV(gsv, m, color_scheme);
   }
 }
@@ -1335,6 +1749,11 @@ Pick(double x, double y, R3Point *hit_position = NULL,
 static void
 GLUTStop(void)
 {
+  // Close sfl scenes
+  for (int i = 0; i < sfls.NEntries(); i++) {
+    if (sfls[i]) CloseSFLFiles(sfls[i]);
+  }
+  
   // Destroy window 
   glutDestroyWindow(GLUTwindow);
 
@@ -1362,7 +1781,7 @@ GLUTRedraw(void)
 
   // Draw everything
   DrawData(color_scheme);
-  DrawSelection();
+  DrawSelectedPosition();
   DrawBBox();
   DrawAxes();
 
@@ -1549,12 +1968,16 @@ GLUTKeyboard(unsigned char key, int x, int y)
       show_meshes = !show_meshes;
       break;
 
+    case 15: // ctrl-O
+      show_scenes = !show_scenes;
+      break;
+
     case 16: // ctrl-P
       show_pointsets = !show_pointsets;
       break;
 
     case 19: // ctrl-S
-      show_scenes = !show_scenes;
+      show_sfls = !show_sfls;
       break;
 
     default:
@@ -1691,11 +2114,6 @@ GLUTKeyboard(unsigned char key, int x, int y)
       show_slices = !show_slices;
       break;
 
-    case 'V':
-    case 'v':
-      show_image_projections = !show_image_projections;
-      break;
-
     case ' ': {
       // Print camera
       const R3Camera& camera = viewer->Camera();
@@ -1738,7 +2156,7 @@ GLUTInit(int *argc, char **argv)
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
-  GLUTwindow = glutCreateWindow("OpenGL Viewer");
+  GLUTwindow = glutCreateWindow("GAPS Viewer");
   
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
@@ -1798,7 +2216,7 @@ CreateViewer(void)
 
   // Setup camera view looking down the Z axis
   if (!initial_camera) initial_camera_origin = world_bbox.Centroid() - initial_camera_towards * (2.5 * r);;
-  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.1 * r, 1000.0 * r);
+  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.1 * r, 100.0 * r);
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   R3Viewer *viewer = new R3Viewer(camera, viewport);
 
@@ -1829,6 +2247,7 @@ void GLUTMainLoop(void)
   for (int i = 0; i < meshes.NEntries(); i++) world_bbox.Union(meshes[i]->BBox());
   for (int i = 0; i < pointsets.NEntries(); i++) world_bbox.Union(pointsets[i]->BBox());
   for (int i = 0; i < grids.NEntries(); i++) world_bbox.Union(grids[i]->WorldBox());
+  for (int i = 0; i < sfls.NEntries(); i++) world_bbox.Union(sfls[i]->BBox());
   for (int i = 0; i < gsvs.NEntries(); i++) world_bbox.Union(gsvs[i]->BBox());
 
   // Set world origin
@@ -1872,6 +2291,10 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-grid")) {
         argc--; argv++; grid_filenames.Insert(*argv);
+      }
+      else if (!strcmp(*argv, "-sfl")) {
+        argc--; argv++; ssa_filenames.Insert(*argv);
+        argc--; argv++; ssb_filenames.Insert(*argv);
       }
       else if (!strcmp(*argv, "-gsv")) {
         argc--; argv++; gsv_filenames.Insert(*argv);
@@ -1923,6 +2346,10 @@ ParseArgs(int argc, char **argv)
         pointset_filenames.Insert(*argv);
       else if (ext && (!strcmp(ext, ".grd"))) 
         grid_filenames.Insert(*argv);
+      else if (ext && (!strcmp(ext, ".ssa") || !strcmp(ext, ".ssx"))) 
+        ssa_filenames.Insert(*argv);
+      else if (ext && (!strcmp(ext, ".ssb")))
+        ssb_filenames.Insert(*argv);
       else if (ext && (!strcmp(ext, ".gsv"))) 
         gsv_filenames.Insert(*argv);
       else { 
@@ -1939,11 +2366,12 @@ ParseArgs(int argc, char **argv)
   if (mesh_filenames.NEntries() > nmodels) nmodels = mesh_filenames.NEntries();
   if (scene_filenames.NEntries() > nmodels) nmodels = scene_filenames.NEntries();
   if (grid_filenames.NEntries() > nmodels) nmodels = grid_filenames.NEntries();
+  if (ssa_filenames.NEntries() > nmodels) nmodels = ssa_filenames.NEntries();
   if (gsv_filenames.NEntries() > nmodels) nmodels = gsv_filenames.NEntries();
 
   // Check inputs
   if (nmodels == 0) {
-    RNFail("Usage: gapsview <scenes> <meshes> <pointsets> <grids> <gsvs> [options]\n");
+    RNFail("Usage: gapsview <scenes> <meshes> <pointsets> <grids> <sfls> <gsvs> [options]\n");
     return 0;
   }
 
