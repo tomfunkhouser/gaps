@@ -1566,7 +1566,10 @@ DrawGSV(GSVScene *scene,
 
             // Compute 2D image_position
             R2Point image_position = image->DistortedPosition(selected_position);
-            if (image_position == R2unknown_point) continue;
+            if (image_position.X() < 0) continue;
+            if (image_position.Y() < 0) continue;
+            if (image_position.X() >= image->Width()) continue;
+            if (image_position.Y() >= image->Height()) continue;
 
             // Get pose info
             GSVPose pose = image->Pose();
