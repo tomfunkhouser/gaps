@@ -228,19 +228,19 @@ ReadImageFiles(const char *image_name,
     if (i == 0) channel_name = "ox";
     else if (i == 1) channel_name = "oy";
     else if (i == 2) channel_name = "oz";
-    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image_name, channel_name);
+    sprintf(filename, "%s/ray_images/%s_%s.pfm", image_directory, image_name, channel_name);
     if (RNFileExists(filename)) {
       if (!data->ray_origin_images[i].ReadFile(filename)) { delete data; return NULL; }
     }
   }
 
-  // Read ray_origin images
+  // Read ray_direction images
   for (int i = 0; i < 3; i++) {
     const char *channel_name = "";
-    if (i == 0) channel_name = "ox";
-    else if (i == 1) channel_name = "oy";
-    else if (i == 2) channel_name = "oz";
-    sprintf(filename, "%s/ray_origin_images/%s_%s.pfm", image_directory, image_name, channel_name);
+    if (i == 0) channel_name = "dx";
+    else if (i == 1) channel_name = "dy";
+    else if (i == 2) channel_name = "dz";
+    sprintf(filename, "%s/ray_images/%s_%s.pfm", image_directory, image_name, channel_name);
     if (RNFileExists(filename)) {
       if (!data->ray_direction_images[i].ReadFile(filename)) { delete data; return NULL; }
     }
