@@ -19,8 +19,9 @@ using namespace gaps;
 static char *input_scene_name = NULL;
 static char *input_database_name = NULL;
 static char *output_directory_name = NULL;
-static int write_base_grids = 0;
+static int write_geometry_grids = 0;
 static int write_color_grids = 0;
+static int write_semantic_grids = 0;
 static int print_verbose = 0;
 static int print_debug = 0;
 
@@ -28,6 +29,7 @@ static double pixel_spacing = 0.5;
 static int max_resolution = 32768;
 static double min_elevation = -FLT_MAX;
 static double max_elevation = FLT_MAX;
+static double max_depth = FLT_MAX;
 
 
 
@@ -159,17 +161,17 @@ WriteImage(const R2Grid& red, const R2Grid& green, const R2Grid& blue,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Base image functions
+// Geometry image functions
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
+WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
   if (print_verbose) {
-    printf("Creating base images ...\n");
+    printf("Creating geometry images ...\n");
     fflush(stdout);
   }
     
@@ -186,15 +188,12 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
   R2Grid zmin_grid(density_grid);
   R2Grid zmax_grid(density_grid);
   R2Grid zmean_grid(density_grid);
-  R2Grid elevation_grid(density_grid);
-  R2Grid radius_grid(density_grid);
   R2Grid nx_grid(density_grid);
   R2Grid ny_grid(density_grid);
   R2Grid nz_grid(density_grid);
   R2Grid horizontal_grid(density_grid);
   zmin_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
   zmax_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
-  elevation_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
 
   // Fill grids
   for (int i = 0; i < tree->NNodes(); i++) {
@@ -211,6 +210,15 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
       for (int j = 0; j < block->NSurfels(); j++) {
         const R3Surfel *surfel = block->Surfel(j);
 
+        // Get/check depth
+        float depth = surfel->Depth();
+        if (depth > max_depth) continue;
+        
+        // Get/check elevation
+        float elevation = surfel->Elevation();
+        if (elevation < min_elevation) continue;
+        if (elevation > max_elevation) continue;
+
         // Get world coordinates
         double px = origin.X() + surfel->X();
         double py = origin.Y() + surfel->Y();
@@ -220,14 +228,6 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
         float nx = surfel->NX();
         float ny = surfel->NY();
         float nz = surfel->NZ();
-
-        // Get elevation
-        float elevation = surfel->Elevation();
-        if (elevation < min_elevation) continue;
-        if (elevation > max_elevation) continue;
-
-        // Get radius
-        float radius = surfel->Radius();
 
         // Get grid coordinates
         R2Point grid_position = density_grid.GridPosition(R2Point(px, py));
@@ -248,19 +248,12 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
           zmax_grid.SetGridValue(ix, iy, pz);
         }
 
-        // Update elevation grid
-        RNScalar e = elevation_grid.GridValue(ix, iy);
-        if ((e == R2_GRID_UNKNOWN_VALUE) || (elevation > e)) {
-          elevation_grid.SetGridValue(ix, iy, elevation);
-        }
-
         // Update other grids
         density_grid.RasterizeGridPoint(grid_position, 1);
         zmean_grid.RasterizeGridPoint(grid_position, pz);
         nx_grid.RasterizeGridPoint(grid_position, nx);
         ny_grid.RasterizeGridPoint(grid_position, ny);
         nz_grid.RasterizeGridPoint(grid_position, nz);
-        radius_grid.RasterizeGridPoint(grid_position, radius);
         horizontal_grid.RasterizeGridPoint(grid_position, fabs(nz));
       }
 
@@ -274,7 +267,6 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
   nx_grid.Divide(density_grid);
   ny_grid.Divide(density_grid);
   nz_grid.Divide(density_grid);
-  radius_grid.Divide(density_grid);
   horizontal_grid.Divide(density_grid);
 
   // Write grids
@@ -285,8 +277,6 @@ WriteBaseGrids(R3SurfelScene *scene, const char *directory_name)
   if (!WriteGrid(nx_grid, directory_name, "Base", "NX")) return 0;
   if (!WriteGrid(ny_grid, directory_name, "Base", "NY")) return 0;
   if (!WriteGrid(nz_grid, directory_name, "Base", "NZ")) return 0;
-  if (!WriteGrid(elevation_grid, directory_name, "Base", "Elevation")) return 0;
-  if (!WriteGrid(radius_grid, directory_name, "Base", "Radius")) return 0;
   if (!WriteGrid(horizontal_grid, directory_name, "Base", "Horizontal")) return 0;
 
   // Print statistics
@@ -327,11 +317,11 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
   // Create grids
   const R3Box& scene_bbox = scene->BBox();
   R2Box bbox(scene_bbox[0][0], scene_bbox[0][1], scene_bbox[1][0], scene_bbox[1][1]);
-  R2Grid zmax_grid(bbox, pixel_spacing, 5, max_resolution);
-  R2Grid red_grid(zmax_grid);
-  R2Grid green_grid(zmax_grid);
-  R2Grid blue_grid(zmax_grid);
-  zmax_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
+  R2Grid elevation_grid(bbox, pixel_spacing, 5, max_resolution);
+  R2Grid red_grid(elevation_grid);
+  R2Grid green_grid(elevation_grid);
+  R2Grid blue_grid(elevation_grid);
+  elevation_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
 
   // Fill grids
   for (int i = 0; i < tree->NNodes(); i++) {
@@ -348,25 +338,34 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
       for (int j = 0; j < block->NSurfels(); j++) {
         const R3Surfel *surfel = block->Surfel(j);
 
-        // Get surfel color
-        RNRgb rgb = surfel->Rgb();
+        // Get/check depth
+        float depth = surfel->Depth();
+        if (depth > max_depth) continue;
+        
+        // Get/check elevation
+        float elevation = surfel->Elevation();
+        if (elevation < min_elevation) continue;
+        if (elevation > max_elevation) continue;
 
         // Get world coordinates
         double px = origin.X() + surfel->X();
         double py = origin.Y() + surfel->Y();
-        double pz = origin.Z() + surfel->Z();
+
+        // Get surfel color
+        RNRgb rgb = surfel->Rgb();
 
         // Get grid coordinates
-        R2Point grid_position = zmax_grid.GridPosition(R2Point(px, py));
+        R2Point grid_position = elevation_grid.GridPosition(R2Point(px, py));
         int ix = (int) (grid_position.X() + 0.5);
         int iy = (int) (grid_position.Y() + 0.5);
-        if ((ix < 0) || (ix >= zmax_grid.XResolution())) continue;
-        if ((iy < 0) || (iy >= zmax_grid.YResolution())) continue;
+        if ((ix < 0) || (ix >= elevation_grid.XResolution())) continue;
+        if ((iy < 0) || (iy >= elevation_grid.YResolution())) continue;
 
-        // Update zmax grid (and rgb)
-        RNScalar zmax = zmax_grid.GridValue(ix, iy);
-        if ((zmax == R2_GRID_UNKNOWN_VALUE) || (pz > zmax)) {
-          zmax_grid.SetGridValue(ix, iy, pz);
+        // Update elevation grid (and rgb)
+        RNScalar e = fabs(elevation);
+        RNScalar e_old = elevation_grid.GridValue(ix, iy);
+        if ((e_old == R2_GRID_UNKNOWN_VALUE) || (e < e_old)) {
+          elevation_grid.SetGridValue(ix, iy, e);
           red_grid.SetGridValue(ix, iy, rgb.R());
           green_grid.SetGridValue(ix, iy, rgb.G());
           blue_grid.SetGridValue(ix, iy, rgb.B());
@@ -387,8 +386,117 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
   // Print statistics
   if (print_verbose) {
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  Resolution = %d %d\n", zmax_grid.XResolution(), zmax_grid.YResolution());
-    printf("  Spacing = %g\n", zmax_grid.WorldToGridScaleFactor());
+    printf("  Resolution = %d %d\n", elevation_grid.XResolution(), elevation_grid.YResolution());
+    printf("  Spacing = %g\n", elevation_grid.WorldToGridScaleFactor());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Semantic image functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Creating semantic images ...\n");
+    fflush(stdout);
+  }
+
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Create grids
+  const R3Box& scene_bbox = scene->BBox();
+  R2Box bbox(scene_bbox[0][0], scene_bbox[0][1], scene_bbox[1][0], scene_bbox[1][1]);
+  R2Grid elevation_grid(bbox, pixel_spacing, 5, max_resolution);
+  R2Grid category_grid(elevation_grid);
+  R2Grid instance_grid(elevation_grid);
+  elevation_grid.Clear(R2_GRID_UNKNOWN_VALUE);  
+
+  // Fill grids
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+
+    // Get object
+    R3SurfelObject *object = node->Object(TRUE);
+    while (object && object->Parent() && (object->Parent() != scene->RootObject()))
+      object = object->Parent();
+    if (!object) continue;
+
+    // Get label
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (!label) continue;
+
+    // Rasterize surfels
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      const R3Point& origin = block->PositionOrigin();
+
+      // Read block
+      database->ReadBlock(block);
+
+      // Process surfels
+      for (int j = 0; j < block->NSurfels(); j++) {
+        const R3Surfel *surfel = block->Surfel(j);
+
+        // Get/check depth
+        float depth = surfel->Depth();
+        if (depth > max_depth) continue;
+        
+        // Get/check elevation
+        float elevation = surfel->Elevation();
+        if (elevation < min_elevation) continue;
+        if (elevation > max_elevation) continue;
+
+        // Get world coordinates
+        double px = origin.X() + surfel->X();
+        double py = origin.Y() + surfel->Y();
+
+        // Get grid coordinates
+        R2Point grid_position = elevation_grid.GridPosition(R2Point(px, py));
+        int ix = (int) (grid_position.X() + 0.5);
+        int iy = (int) (grid_position.Y() + 0.5);
+        if ((ix < 0) || (ix >= elevation_grid.XResolution())) continue;
+        if ((iy < 0) || (iy >= elevation_grid.YResolution())) continue;
+
+        // Update elevation grid (and rgb)
+        RNScalar e = fabs(elevation);
+        RNScalar e_old = elevation_grid.GridValue(ix, iy);
+        if ((e_old == R2_GRID_UNKNOWN_VALUE) || (e < e_old)) {
+          elevation_grid.SetGridValue(ix, iy, e);
+          category_grid.SetGridValue(ix, iy, label->Identifier());
+          instance_grid.SetGridValue(ix, iy, object->SceneIndex());
+        }
+      }
+
+      // Release block
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Write grids
+  if (!WriteGrid(category_grid, directory_name, "Semantic", "Category")) return 0;
+  if (!WriteGrid(instance_grid, directory_name, "Semantic", "Instance")) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  Resolution = %d %d\n", elevation_grid.XResolution(), elevation_grid.YResolution());
+    printf("  Spacing = %g\n", elevation_grid.WorldToGridScaleFactor());
     fflush(stdout);
   }
 
@@ -411,8 +519,9 @@ WriteGrids(R3SurfelScene *scene, const char *directory_name)
   system(buffer);
 
   // Write grids
-  if (write_base_grids && !WriteBaseGrids(scene, directory_name)) return 0;
+  if (write_geometry_grids && !WriteGeometryGrids(scene, directory_name)) return 0;
   if (write_color_grids && !WriteColorGrids(scene, directory_name)) return 0;
+  if (write_semantic_grids && !WriteSemanticGrids(scene, directory_name)) return 0;
 
   // Return success
   return 1;
@@ -436,8 +545,9 @@ ParseArgs(int argc, char **argv)
     if ((*argv)[0] == '-') {
       if (!strcmp(*argv, "-v")) print_verbose = 1;
       else if (!strcmp(*argv, "-debug")) print_debug = 1;
-      else if (!strcmp(*argv, "-base")) { write_base_grids = 1; default_grids = 0; }
+      else if (!strcmp(*argv, "-geometry")) { write_geometry_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-color")) { write_color_grids = 1; default_grids = 0; }
+      else if (!strcmp(*argv, "-semantic")) { write_semantic_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-pixel_spacing")) { argc--; argv++; pixel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
@@ -460,8 +570,9 @@ ParseArgs(int argc, char **argv)
 
   // Set grid selection if nothing else specified
   if (default_grids) {
-    write_base_grids = 1;
+    write_geometry_grids = 1;
     write_color_grids = 1;
+    write_semantic_grids = 1;
   }
 
   // Return OK status 
