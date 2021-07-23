@@ -1128,10 +1128,12 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
   if (!show_image_depths) return;
 
   // Check image data
-  if (data->image_width == 0) return;
-  if (data->image_height == 0) return;
-  if (data->depth_image.XResolution() != data->image_width) return;
-  if (data->depth_image.YResolution() != data->image_height) return;
+  int w = data->image_width;
+  int h = data->image_height;
+  if (w == 0) return;
+  if (h == 0) return;
+  if (data->depth_image.XResolution() != w) return;
+  if (data->depth_image.YResolution() != h) return;
   
   // Load texture
   LoadTexture(data);
@@ -1144,21 +1146,21 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
   glColor3d(1, 1, 1);
 
   // Check if have ray images
-  if ((data->ray_origin_images[0].XResolution() == data->image_width) &&
-      (data->ray_origin_images[1].XResolution() == data->image_width) &&
-      (data->ray_origin_images[2].XResolution() == data->image_width) && 
-      (data->ray_origin_images[0].YResolution() == data->image_height) &&
-      (data->ray_origin_images[1].YResolution() == data->image_height) &&
-      (data->ray_origin_images[2].YResolution() == data->image_height) && 
-      (data->ray_direction_images[0].XResolution() == data->image_width) &&
-      (data->ray_direction_images[1].XResolution() == data->image_width) &&
-      (data->ray_direction_images[2].XResolution() == data->image_width) && 
-      (data->ray_direction_images[0].YResolution() == data->image_height) &&
-      (data->ray_direction_images[1].YResolution() == data->image_height) &&
-      (data->ray_direction_images[2].YResolution() == data->image_height)) {
+  if ((data->ray_origin_images[0].XResolution() == w) &&
+      (data->ray_origin_images[1].XResolution() == w) &&
+      (data->ray_origin_images[2].XResolution() == w) && 
+      (data->ray_origin_images[0].YResolution() == h) &&
+      (data->ray_origin_images[1].YResolution() == h) &&
+      (data->ray_origin_images[2].YResolution() == h) && 
+      (data->ray_direction_images[0].XResolution() == w) &&
+      (data->ray_direction_images[1].XResolution() == w) &&
+      (data->ray_direction_images[2].XResolution() == w) && 
+      (data->ray_direction_images[0].YResolution() == h) &&
+      (data->ray_direction_images[1].YResolution() == h) &&
+      (data->ray_direction_images[2].YResolution() == h)) {
     glBegin(GL_POINTS);
-    for (int ix = 0; ix < data->image_width; ix++) {
-      for (int iy = 0; iy < data->image_height; iy++) {
+    for (int ix = 0; ix < w; ix++) {
+      for (int iy = 0; iy < h; iy++) {
         // Get/check depth
         double depth = data->depth_image.GridValue(ix, iy);
         if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
@@ -1181,8 +1183,8 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
         R3Point p = origin + t * direction;
 
         // Get texture coordinates
-        double u = (double) ix / (double) data->image_width;
-        double v = (double) iy / (double) data->image_height;
+        double u = (double) ix / (double) w;
+        double v = (double) iy / (double) h;
 
         // Draw point
         R3LoadTextureCoords(u, v);
@@ -1200,12 +1202,12 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
 
     // Backproject pixels from the view plane rectangle
     glBegin(GL_POINTS);
-    for (int ix = 0; ix < data->image_width; ix++) {
-      for (int iy = 0; iy < data->image_height; iy++) {
+    for (int ix = 0; ix < w; ix++) {
+      for (int iy = 0; iy < h; iy++) {
         double depth = data->depth_image.GridValue(ix, iy);
         if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
-        double u = (double) ix / (double) data->image_width;
-        double v = (double) iy / (double) data->image_height;
+        double u = (double) ix / (double) w;
+        double v = (double) iy / (double) h;
         R3Point pA = lower_left + u*dx + v*dy;
         R3Vector vA = pA - viewpoint;
         double dA = vA.Dot(towards);
