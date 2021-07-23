@@ -2072,6 +2072,11 @@ GLUTKeyboard(unsigned char key, int x, int y)
       color_scheme = INSTANCE_COLOR_SCHEME;
       break;
 
+    case 'L':
+    case 'l':
+      color_scheme = CATEGORY_COLOR_SCHEME;
+      break;
+
     case 'S':
     case 's':
       color_scheme = SHADING_COLOR_SCHEME;
