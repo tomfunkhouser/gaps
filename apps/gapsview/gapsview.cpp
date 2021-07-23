@@ -107,6 +107,7 @@ static int show_normals = 0;
 static int show_cameras = 1;
 static int show_image_insets = 0;
 static int show_image_billboards = 0;
+static int show_image_depths = 0;
 static int show_image_rays = 0;
 static int show_slices = 0;
 static int show_text_labels = 0;
@@ -1119,6 +1120,62 @@ DrawDotOnImageBillboard(ImageData *data, const R3Point& viewpoint,
 
 
 static void
+DrawImageDepths(ImageData *data, const R3Point& viewpoint,
+  const R3Vector& towards, const R3Vector& right, const R3Vector& up,
+  RNAngle xfov, RNAngle yfov, RNLength image_billboard_depth)
+{
+  // Check if drawing image depths
+  if (!show_image_depths) return;
+
+  // Check image data
+  if (data->image_width == 0) return;
+  if (data->image_height == 0) return;
+  if (data->depth_image.XResolution() != data->image_width) return;
+  if (data->depth_image.YResolution() != data->image_height) return;
+  
+  // Load texture
+  LoadTexture(data);
+  if (data->texture_id == 0) return;
+
+  // Enable texture
+  glBindTexture(GL_TEXTURE_2D, data->texture_id);
+  glEnable(GL_TEXTURE_2D);
+
+  // Compute view plane rectangle in world coordinates
+  R3Vector dx = 2.0 * right * image_billboard_depth * tan(xfov);
+  R3Vector dy = 2.0 * up * image_billboard_depth * tan(yfov);
+  R3Point origin = viewpoint + towards * image_billboard_depth;
+  R3Point lower_left = origin - 0.5*dx - 0.5*dy;
+
+  // Sample positions on the view plane rectangle
+  // Note that this does not account for rolling shutter or radial distortion
+  glDisable(GL_LIGHTING);
+  glColor3d(1, 1, 1);
+  glBegin(GL_POINTS);
+  for (int ix = 0; ix < data->image_width; ix++) {
+    for (int iy = 0; iy < data->image_height; iy++) {
+      double depth = data->depth_image.GridValue(ix, iy);
+      if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
+      double u = (double) ix / (double) data->image_width;
+      double v = (double) iy / (double) data->image_height;
+      R3Point pA = lower_left + u*dx + v*dy;
+      R3Vector vA = pA - viewpoint;
+      double dA = vA.Dot(towards);
+      if (dA <= 0) continue;
+      R3Point p = viewpoint + vA * depth / dA;
+      R3LoadTextureCoords(u, v);
+      R3LoadPoint(p);
+    }
+  }
+  glEnd();
+  
+  // Disable texture
+  glDisable(GL_TEXTURE_2D);
+}
+
+
+
+static void
 DrawImageRay(ImageData *data,
   const R2Point& image_position)
 {               
@@ -1342,9 +1399,9 @@ DrawGrid(R3Grid *grid,
     char buffer[64];
     glDisable(GL_LIGHTING);
     RNLoadRgb(0.0, 0.0, 1.0);
-    for (int i = 0; i < grid->XResolution(); i++) {
-      for (int j = 0; j < grid->YResolution(); j++) {
-        for (int k = 0; k < grid->ZResolution(); k++) {
+    for (int i = 0; i < grid->XResolution(); i += 10) {
+      for (int j = 0; j < grid->YResolution(); j += 10) {
+        for (int k = 0; k < grid->ZResolution(); k += 10) {
           RNScalar value = grid->GridValue(i, j, k);
           if (value >= grid_thresholds[model_index]) continue;
           sprintf(buffer, "%.2g", value);
@@ -1450,7 +1507,7 @@ DrawSFL(R3SurfelScene *scene,
   }
 
   // Draw images
-  if (show_image_insets || show_image_billboards || show_image_rays) {
+  if (show_image_insets || show_image_billboards || show_image_depths || show_image_rays) {
     glDisable(GL_LIGHTING);
     glColor3d(1, 1, 1);
     int image_count = 0;
@@ -1486,6 +1543,13 @@ DrawSFL(R3SurfelScene *scene,
           image->Towards(), image->Right(), image->Up(),
           image->XFOV(), image->YFOV(), image_billboard_depth,
           image_position, 0.025);
+      }
+
+      // Draw image depths
+      if (show_image_depths) {
+        DrawImageDepths(data, image->Viewpoint(),
+          image->Towards(), image->Right(), image->Up(),
+          image->XFOV(), image->YFOV(), image_billboard_depth);
       }
 
       // Draw image ray
@@ -1605,7 +1669,7 @@ DrawGSV(GSVScene *scene,
   }
 
   // Draw images
-  if (show_image_insets || show_image_billboards || show_image_rays) {
+  if (show_image_insets || show_image_billboards || show_image_depths || show_image_rays) {
     glDisable(GL_LIGHTING);
     int image_count = 0;
     for (int ir = 0; ir < scene->NRuns(); ir++) {
@@ -1649,6 +1713,14 @@ DrawGSV(GSVScene *scene,
               DrawDotOnImageBillboard(data, viewpoint, towards, right, up,
                 0.5 * image->XFov(), 0.5 * image->YFov(), image_billboard_depth,
                 image_position, 0.025);
+            }
+
+            // Draw image depths
+            if (show_image_depths) {
+              DrawImageDepths(data, pose.Viewpoint(),
+                pose.Towards(), pose.Right(), pose.Up(),
+                0.5 * image->XFov(), 0.5 * image->YFov(),
+                image_billboard_depth);
             }
 
             // Draw image ray
@@ -2163,6 +2235,11 @@ GLUTKeyboard(unsigned char key, int x, int y)
       show_cameras = !show_cameras;
       break;
 
+    case 'D':
+    case 'd':
+      show_image_depths = !show_image_depths;
+      break;
+      
     case 'E':
     case 'e':
       show_edges = !show_edges;

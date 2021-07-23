@@ -1,12 +1,21 @@
 // Source file for 3D point set class
 
 
-namespace gaps {};
-using namespace gaps;
+
+// Include files
+
 #include "R3Shapes/R3Shapes.h"
 #include "R3PointSet.h"
 
 
+
+// Namespace
+
+namespace gaps {
+
+
+
+// Member functions
 
 R3PointSet::
 R3PointSet(void)
@@ -33,11 +42,14 @@ R3PointSet::
 R3Point R3PointSet::
 Centroid(void) const
 {
+  // Check if no points
+  if (positions.size() == 0) return R3zero_point;
+
   // Return centroid of point set
   R3Point centroid = R3zero_point;
   for (unsigned int i = 0; i < positions.size(); i++) 
     centroid += positions[i];
-  if (positions.size() > 0) centroid /= positions.size();
+  centroid /= positions.size();
   return centroid;
 }
 
@@ -175,9 +187,12 @@ ReadFile(const char *filename)
   }
 
   // Read file of appropriate type
-  if (!strcmp(extension, ".xyzn")) return ReadASCIIFile(filename);
-  else if (!strcmp(extension, ".pts")) return ReadPtsFile(filename);
+  if (!strcmp(extension, ".xyz")) return ReadXYZFile(filename);
+  else if (!strcmp(extension, ".xyzn")) return ReadXYZNFile(filename);
+  else if (!strcmp(extension, ".pset")) return ReadBinaryFile(filename);
+  else if (!strcmp(extension, ".pts")) return ReadPTSFile(filename);
   else if (!strcmp(extension, ".sdf")) return ReadSDFFile(filename);
+  else if (!strcmp(extension, ".vts")) return ReadVTSFile(filename);
   else return ReadMeshFile(filename);
 
   // Should not get here
@@ -197,8 +212,10 @@ WriteFile(const char *filename) const
   }
 
   // Write file of appropriate type
-  if (!strcmp(extension, ".xyzn")) return WriteASCIIFile(filename);
-  else if (!strcmp(extension, ".pts")) return WritePtsFile(filename);
+  if (!strcmp(extension, ".xyz")) return WriteXYZFile(filename);
+  else if (!strcmp(extension, ".xyzn")) return WriteXYZNFile(filename);
+  else if (!strcmp(extension, ".pset")) return WriteBinaryFile(filename);
+  else if (!strcmp(extension, ".pts")) return WritePTSFile(filename);
   else if (!strcmp(extension, ".sdf")) return WriteSDFFile(filename);
   else return WriteMeshFile(filename);
 
@@ -212,7 +229,60 @@ WriteFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3PointSet::
-ReadASCIIFile(const char *filename)
+ReadXYZFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Read points
+  double px, py, pz;
+  while (fscanf(fp, "%lf%lf%lf", &px, &py, &pz) == (unsigned int) 3) {
+    R3Point position(px,py,pz);
+    InsertPoint(position);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3PointSet::
+WriteXYZFile(const char *filename) const
+{
+ // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Write points
+  for (int i = 0; i < NPoints(); i++) {
+    const R3Point& p = PointPosition(i);
+    fprintf(fp, "%g %g %g\n", p[0], p[1], p[2]);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+int R3PointSet::
+ReadXYZNFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "r");
@@ -241,7 +311,7 @@ ReadASCIIFile(const char *filename)
 
 
 int R3PointSet::
-WriteASCIIFile(const char *filename) const
+WriteXYZNFile(const char *filename) const
 {
  // Open file
   FILE *fp = fopen(filename, "w");
@@ -349,7 +419,7 @@ WriteBinaryFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3PointSet::
-ReadPtsFile(const char *filename)
+ReadPTSFile(const char *filename)
 {
   // Open file
   FILE *fp = fopen(filename, "rb");
@@ -378,7 +448,7 @@ ReadPtsFile(const char *filename)
 
 
 int R3PointSet::
-WritePtsFile(const char *filename) const
+WritePTSFile(const char *filename) const
 {
  // Open file
   FILE *fp = fopen(filename, "wb");
@@ -472,6 +542,35 @@ WriteSDFFile(const char *filename) const
 ////////////////////////////////////////////////////////////////////////
 
 int R3PointSet::
+ReadVTSFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    RNFail("Unable to open %s\n", filename);
+    return 0;
+  }
+
+  // Read points
+  int vertex_index;
+  double px, py, pz;
+  while (fscanf(fp, "%d%lf%lf%lf", &vertex_index, &px, &py, &pz) == (unsigned int) 4) {
+    R3Point position(px,py,pz);
+    InsertPoint(position);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+int R3PointSet::
 ReadMeshFile(const char *filename)
 {
   // Read mesh file
@@ -507,3 +606,8 @@ WriteMeshFile(const char *filename) const
   // Write mesh
   return mesh.WriteFile(filename);
 }
+
+
+
+
+}; // end namespace

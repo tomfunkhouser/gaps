@@ -1,9 +1,18 @@
 // Include file for 3D point set
+#ifndef __R3__POINTSET__H__
+#define __R3__POINTSET__H__
+
 
 
 // Include files
 
 #include <vector>
+
+
+
+// Begin namespace
+
+namespace gaps {
 
 
 
@@ -45,15 +54,18 @@ public:
 
   // Input/output
   int ReadFile(const char *filename);
-  int ReadASCIIFile(const char *filename);
+  int ReadXYZFile(const char *filename);
+  int ReadXYZNFile(const char *filename);
   int ReadBinaryFile(const char *filename);
   int ReadMeshFile(const char *filename);
-  int ReadPtsFile(const char *filename);
+  int ReadPTSFile(const char *filename);
   int ReadSDFFile(const char *filename);
+  int ReadVTSFile(const char *filename);
   int WriteFile(const char *filename) const;
-  int WriteASCIIFile(const char *filename) const;
+  int WriteXYZFile(const char *filename) const;
+  int WriteXYZNFile(const char *filename) const;
   int WriteBinaryFile(const char *filename) const;
-  int WritePtsFile(const char *filename) const;
+  int WritePTSFile(const char *filename) const;
   int WriteSDFFile(const char *filename) const;
   int WriteMeshFile(const char *filename) const;
 
@@ -85,6 +97,7 @@ inline const R3Point& R3PointSet::
 PointPosition(int index) const
 {
   // Return position of point with given index
+  assert(index >= 0);
   if (index >= (int) positions.size()) return R3zero_point;
   return positions[index];
 }
@@ -95,6 +108,7 @@ inline const R3Vector& R3PointSet::
 PointNormal(int index) const
 {
   // Return normal of point with given index
+  assert(index >= 0);
   if (index >= (int) normals.size()) return R3zero_vector;
   return normals[index];
 }
@@ -105,6 +119,7 @@ inline const RNRgb& R3PointSet::
 PointColor(int index) const
 {
   // Return color of point with given index
+  assert(index >= 0);
   if (index >= (int) colors.size()) return RNblack_rgb;
   return colors[index];
 }
@@ -115,6 +130,7 @@ inline RNScalar R3PointSet::
 PointTimestamp(int index) const
 {
   // Return timestamp of point with given index
+  assert(index >= 0);
   if (index >= (int) timestamps.size()) return -1;
   return timestamps[index];
 }
@@ -125,6 +141,7 @@ inline int R3PointSet::
 PointCategoryIdentifier(int index) const
 {
   // Return category_identifier of point with given index
+  assert(index >= 0);
   if (index >= (int) category_identifiers.size()) return -1;
   return category_identifiers[index];
 }
@@ -135,6 +152,7 @@ inline int R3PointSet::
 PointInstanceIdentifier(int index) const
 {
   // Return instance_identifier of point with given index
+  assert(index >= 0);
   if (index >= (int) instance_identifiers.size()) return -1;
   return instance_identifiers[index];
 }
@@ -145,6 +163,7 @@ inline RNScalar R3PointSet::
 PointValue(int index) const
 {
   // Return value of point with given index
+  assert(index >= 0);
   if (index >= (int) values.size()) return -1;
   return values[index];
 }
@@ -159,3 +178,10 @@ BBox(void) const
 }
 
 
+
+// End namespace
+}
+
+
+// End include guard
+#endif
