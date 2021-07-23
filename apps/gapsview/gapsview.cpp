@@ -1140,34 +1140,83 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
   // Enable texture
   glBindTexture(GL_TEXTURE_2D, data->texture_id);
   glEnable(GL_TEXTURE_2D);
-
-  // Compute view plane rectangle in world coordinates
-  R3Vector dx = 2.0 * right * image_billboard_depth * tan(xfov);
-  R3Vector dy = 2.0 * up * image_billboard_depth * tan(yfov);
-  R3Point origin = viewpoint + towards * image_billboard_depth;
-  R3Point lower_left = origin - 0.5*dx - 0.5*dy;
-
-  // Sample positions on the view plane rectangle
-  // Note that this does not account for rolling shutter or radial distortion
   glDisable(GL_LIGHTING);
   glColor3d(1, 1, 1);
-  glBegin(GL_POINTS);
-  for (int ix = 0; ix < data->image_width; ix++) {
-    for (int iy = 0; iy < data->image_height; iy++) {
-      double depth = data->depth_image.GridValue(ix, iy);
-      if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
-      double u = (double) ix / (double) data->image_width;
-      double v = (double) iy / (double) data->image_height;
-      R3Point pA = lower_left + u*dx + v*dy;
-      R3Vector vA = pA - viewpoint;
-      double dA = vA.Dot(towards);
-      if (dA <= 0) continue;
-      R3Point p = viewpoint + vA * depth / dA;
-      R3LoadTextureCoords(u, v);
-      R3LoadPoint(p);
+
+  // Check if have ray images
+  if ((data->ray_origin_images[0].XResolution() == data->image_width) &&
+      (data->ray_origin_images[1].XResolution() == data->image_width) &&
+      (data->ray_origin_images[2].XResolution() == data->image_width) && 
+      (data->ray_origin_images[0].YResolution() == data->image_height) &&
+      (data->ray_origin_images[1].YResolution() == data->image_height) &&
+      (data->ray_origin_images[2].YResolution() == data->image_height) && 
+      (data->ray_direction_images[0].XResolution() == data->image_width) &&
+      (data->ray_direction_images[1].XResolution() == data->image_width) &&
+      (data->ray_direction_images[2].XResolution() == data->image_width) && 
+      (data->ray_direction_images[0].YResolution() == data->image_height) &&
+      (data->ray_direction_images[1].YResolution() == data->image_height) &&
+      (data->ray_direction_images[2].YResolution() == data->image_height)) {
+    glBegin(GL_POINTS);
+    for (int ix = 0; ix < data->image_width; ix++) {
+      for (int iy = 0; iy < data->image_height; iy++) {
+        // Get/check depth
+        double depth = data->depth_image.GridValue(ix, iy);
+        if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
+
+        // Get/check ray direction
+        double dx = data->ray_direction_images[0].GridValue(ix, iy);    
+        double dy = data->ray_direction_images[1].GridValue(ix, iy);    
+        double dz = data->ray_direction_images[2].GridValue(ix, iy);
+        R3Vector direction(dx, dy, dz);
+        if (direction.IsZero()) continue;
+
+        // Get ray origin
+        double ox = data->ray_origin_images[0].GridValue(ix, iy);    
+        double oy = data->ray_origin_images[1].GridValue(ix, iy);    
+        double oz = data->ray_origin_images[2].GridValue(ix, iy);    
+        R3Point origin(ox, oy, oz);
+
+        // Get point position
+        RNScalar t = depth * direction.Dot(towards);
+        R3Point p = origin + t * direction;
+
+        // Get texture coordinates
+        double u = (double) ix / (double) data->image_width;
+        double v = (double) iy / (double) data->image_height;
+
+        // Draw point
+        R3LoadTextureCoords(u, v);
+        R3LoadPoint(p);
+      }
     }
+    glEnd();
   }
-  glEnd();
+  else {
+    // Compute view plane rectangle in world coordinates
+    R3Vector dx = 2.0 * right * image_billboard_depth * tan(xfov);
+    R3Vector dy = 2.0 * up * image_billboard_depth * tan(yfov);
+    R3Point origin = viewpoint + towards * image_billboard_depth;
+    R3Point lower_left = origin - 0.5*dx - 0.5*dy;
+
+    // Backproject pixels from the view plane rectangle
+    glBegin(GL_POINTS);
+    for (int ix = 0; ix < data->image_width; ix++) {
+      for (int iy = 0; iy < data->image_height; iy++) {
+        double depth = data->depth_image.GridValue(ix, iy);
+        if ((depth <= 0) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
+        double u = (double) ix / (double) data->image_width;
+        double v = (double) iy / (double) data->image_height;
+        R3Point pA = lower_left + u*dx + v*dy;
+        R3Vector vA = pA - viewpoint;
+        double dA = vA.Dot(towards);
+        if (dA <= 0) continue;
+        R3Point p = viewpoint + vA * depth / dA;
+        R3LoadTextureCoords(u, v);
+        R3LoadPoint(p);
+      }
+    }
+    glEnd();
+  }
   
   // Disable texture
   glDisable(GL_TEXTURE_2D);
