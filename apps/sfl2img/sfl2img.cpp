@@ -286,7 +286,7 @@ WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
   if (print_verbose) {
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Resolution = %d %d\n", density_grid.XResolution(), density_grid.YResolution());
-    printf("  Spacing = %g\n", density_grid.WorldToGridScaleFactor());
+    printf("  Spacing = %g\n", density_grid.GridToWorldScaleFactor());
     fflush(stdout);
   }
 
@@ -389,7 +389,7 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
   if (print_verbose) {
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Resolution = %d %d\n", depth_grid.XResolution(), depth_grid.YResolution());
-    printf("  Spacing = %g\n", depth_grid.WorldToGridScaleFactor());
+    printf("  Spacing = %g\n", depth_grid.GridToWorldScaleFactor());
     fflush(stdout);
   }
 
@@ -497,7 +497,7 @@ WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
   if (print_verbose) {
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Resolution = %d %d\n", depth_grid.XResolution(), depth_grid.YResolution());
-    printf("  Spacing = %g\n", depth_grid.WorldToGridScaleFactor());
+    printf("  Spacing = %g\n", depth_grid.GridToWorldScaleFactor());
     fflush(stdout);
   }
 
@@ -591,7 +591,7 @@ WriteGroundGrids(R3SurfelScene *scene, const char *directory_name)
   if (print_verbose) {
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  Resolution = %d %d\n", density_grid.XResolution(), density_grid.YResolution());
-    printf("  Spacing = %g\n", density_grid.WorldToGridScaleFactor());
+    printf("  Spacing = %g\n", density_grid.GridToWorldScaleFactor());
     fflush(stdout);
   }
 
