@@ -550,6 +550,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-semantic")) { write_semantic_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-pixel_spacing")) { argc--; argv++; pixel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
+      else if (!strcmp(*argv, "-min_elevation")) { argc--; argv++; min_elevation = atof(*argv); }
+      else if (!strcmp(*argv, "-max_elevation")) { argc--; argv++; max_elevation = atof(*argv); }
+      else if (!strcmp(*argv, "-max_depth")) { argc--; argv++; max_depth = atof(*argv); }
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
