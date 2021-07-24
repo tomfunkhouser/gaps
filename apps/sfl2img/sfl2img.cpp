@@ -25,7 +25,7 @@ static int write_semantic_grids = 0;
 static int print_verbose = 0;
 static int print_debug = 0;
 
-static double pixel_spacing = 0.5; 
+static double pixel_spacing = 0.1; 
 static int max_resolution = 32768;
 static double min_elevation = -FLT_MAX;
 static double max_elevation = FLT_MAX;
