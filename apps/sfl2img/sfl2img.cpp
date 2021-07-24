@@ -270,14 +270,14 @@ WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
   horizontal_grid.Divide(density_grid);
 
   // Write grids
-  if (!WriteGrid(density_grid, directory_name, "Base", "Density")) return 0;
-  if (!WriteGrid(zmin_grid, directory_name, "Base", "ZMin")) return 0;
-  if (!WriteGrid(zmax_grid, directory_name, "Base", "ZMax")) return 0;
-  if (!WriteGrid(zmean_grid, directory_name, "Base", "ZMean")) return 0;
-  if (!WriteGrid(nx_grid, directory_name, "Base", "NX")) return 0;
-  if (!WriteGrid(ny_grid, directory_name, "Base", "NY")) return 0;
-  if (!WriteGrid(nz_grid, directory_name, "Base", "NZ")) return 0;
-  if (!WriteGrid(horizontal_grid, directory_name, "Base", "Horizontal")) return 0;
+  if (!WriteGrid(density_grid, directory_name, "Geometry", "Density")) return 0;
+  if (!WriteGrid(zmin_grid, directory_name, "Geometry", "ZMin")) return 0;
+  if (!WriteGrid(zmax_grid, directory_name, "Geometry", "ZMax")) return 0;
+  if (!WriteGrid(zmean_grid, directory_name, "Geometry", "ZMean")) return 0;
+  if (!WriteGrid(nx_grid, directory_name, "Geometry", "NX")) return 0;
+  if (!WriteGrid(ny_grid, directory_name, "Geometry", "NY")) return 0;
+  if (!WriteGrid(nz_grid, directory_name, "Geometry", "NZ")) return 0;
+  if (!WriteGrid(horizontal_grid, directory_name, "Geometry", "Horizontal")) return 0;
 
   // Print statistics
   if (print_verbose) {
