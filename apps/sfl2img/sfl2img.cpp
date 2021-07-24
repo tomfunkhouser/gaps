@@ -21,6 +21,7 @@ static char *input_database_name = NULL;
 static char *output_directory_name = NULL;
 static int write_geometry_grids = 0;
 static int write_color_grids = 0;
+static int write_ground_grids = 0;
 static int write_semantic_grids = 0;
 static int print_verbose = 0;
 static int print_debug = 0;
@@ -221,7 +222,7 @@ WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
 
         // Get weight
         double weight = 1;
-        if (depth > 1) weight *= 1.0 / depth;
+        if (depth > 1) weight *= 1.0 / (depth * depth);
 
         // Get world coordinates
         double px = origin.X() + surfel->X();
@@ -507,6 +508,100 @@ WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Ground image functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+WriteGroundGrids(R3SurfelScene *scene, const char *directory_name)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  if (print_verbose) {
+    printf("Creating ground images ...\n");
+    fflush(stdout);
+  }
+
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Create grids
+  const R3Box& scene_bbox = scene->BBox();
+  R2Box bbox(scene_bbox[0][0], scene_bbox[0][1], scene_bbox[1][0], scene_bbox[1][1]);
+  R2Grid density_grid(bbox, pixel_spacing, 5, max_resolution);
+  R2Grid ground_z_grid(density_grid);
+
+  // Fill grids
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      const R3Point& origin = block->PositionOrigin();
+
+      // Read block
+      database->ReadBlock(block);
+
+      // Process surfels
+      for (int j = 0; j < block->NSurfels(); j++) {
+        const R3Surfel *surfel = block->Surfel(j);
+
+        // Get/check depth
+        float depth = surfel->Depth();
+        if (depth > max_depth) continue;
+        
+        // Get/check elevation
+        float elevation = surfel->Elevation();
+        if (elevation < min_elevation) continue;
+        if (elevation > max_elevation) continue;
+
+        // Get world coordinates
+        double px = origin.X() + surfel->X();
+        double py = origin.Y() + surfel->Y();
+        double pz = origin.Z() + surfel->Z();
+
+        // Get ground z
+        double ground_z = pz - elevation;
+
+        // Compute weight
+        RNScalar weight = 1;
+        if (depth > 1) weight = 1.0 / (depth * depth);
+
+        // Update grids
+        R2Point grid_position = density_grid.GridPosition(R2Point(px, py));
+        density_grid.RasterizeGridPoint(grid_position, weight);
+        ground_z_grid.RasterizeGridPoint(grid_position, weight * ground_z);
+      }
+
+      // Release block
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Divide to get weighted average
+  ground_z_grid.Divide(density_grid);
+
+  // Write grids
+  if (!WriteGrid(ground_z_grid, directory_name, "Ground", "Z")) return 0;
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  Resolution = %d %d\n", density_grid.XResolution(), density_grid.YResolution());
+    printf("  Spacing = %g\n", density_grid.WorldToGridScaleFactor());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // GRID WRITING
 ////////////////////////////////////////////////////////////////////////
 
@@ -522,6 +617,7 @@ WriteGrids(R3SurfelScene *scene, const char *directory_name)
   if (write_geometry_grids && !WriteGeometryGrids(scene, directory_name)) return 0;
   if (write_color_grids && !WriteColorGrids(scene, directory_name)) return 0;
   if (write_semantic_grids && !WriteSemanticGrids(scene, directory_name)) return 0;
+  if (write_ground_grids && !WriteGroundGrids(scene, directory_name)) return 0;
 
   // Return success
   return 1;
@@ -548,6 +644,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-geometry")) { write_geometry_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-color")) { write_color_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-semantic")) { write_semantic_grids = 1; default_grids = 0; }
+      else if (!strcmp(*argv, "-ground")) { write_ground_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-pixel_spacing")) { argc--; argv++; pixel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
       else if (!strcmp(*argv, "-min_elevation")) { argc--; argv++; min_elevation = atof(*argv); }
@@ -576,6 +673,7 @@ ParseArgs(int argc, char **argv)
     write_geometry_grids = 1;
     write_color_grids = 1;
     write_semantic_grids = 1;
+    write_ground_grids = 1;
   }
 
   // Return OK status 
