@@ -546,6 +546,7 @@ LoadPoints(RNFlags flags) const
   if (NPoints() == 0) return;
   assert(points);
 
+  // Draw points with different color schemes
   if (flags & GSV_DRAW_POINTS_WITH_VIEWPOINT_DISTANCE_COLOR) {
     // Get viewpoint
     R3Point v = Pose().Viewpoint();
@@ -580,6 +581,13 @@ LoadPoints(RNFlags flags) const
     // Load points
     for (int i = 0; i < NPoints(); i++) {
       LoadColor(0.5 * sqrt(PointElevation(i)));
+      R3LoadPoint(PointPosition(i));
+    }
+  }
+  else if (flags & GSV_DRAW_POINTS_WITH_REFLECTIVITY_COLOR) {
+    // Load points
+    for (int i = 0; i < NPoints(); i++) {
+      LoadColor(sqrt(PointReflectivity(i)/255.0));
       R3LoadPoint(PointPosition(i));
     }
   }
