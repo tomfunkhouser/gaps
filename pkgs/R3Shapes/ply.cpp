@@ -2283,7 +2283,7 @@ void get_binary_item(
   switch (type) {
     case PLY_CHAR:
       *int_val = *((char *) ptr);
-      *uint_val = *int_val;
+      *uint_val = (*int_val >= 0) ? *int_val : 0;
       *double_val = *int_val;
       break;
     case PLY_UCHAR:
@@ -2293,7 +2293,7 @@ void get_binary_item(
       break;
     case PLY_SHORT:
       *int_val = *((short int *) ptr);
-      *uint_val = *int_val;
+      *uint_val = (*int_val >= 0) ? *int_val : 0;
       *double_val = *int_val;
       break;
     case PLY_USHORT:
@@ -2303,7 +2303,7 @@ void get_binary_item(
       break;
     case PLY_INT:
       *int_val = *((int *) ptr);
-      *uint_val = *int_val;
+      *uint_val = (*int_val >= 0) ? *int_val : 0;
       *double_val = *int_val;
       break;
     case PLY_UINT:
@@ -2314,12 +2314,12 @@ void get_binary_item(
     case PLY_FLOAT:
       *double_val = *((float *) ptr);
       *int_val = (int) *double_val;
-      *uint_val = (unsigned int) *double_val;
+      *uint_val = (*double_val >= 0) ? (unsigned int) *double_val : 0;
       break;
     case PLY_DOUBLE:
       *double_val = *((double *) ptr);
       *int_val = (int) *double_val;
-      *uint_val = (unsigned int) *double_val;
+      *uint_val = (*double_val >= 0) ? (unsigned int) *double_val : 0;
       break;
     default:
       fprintf (stderr, "get_binary_item: bad type = %d\n", type);
@@ -2357,7 +2357,7 @@ void get_ascii_item(
     case PLY_USHORT:
     case PLY_INT:
       *int_val = atoi (word);
-      *uint_val = (unsigned int) *int_val;
+      *uint_val = (*int_val >= 0) ? (unsigned int) *int_val : 0;
       *double_val = (double) *int_val;
       break;
 
@@ -2371,7 +2371,7 @@ void get_ascii_item(
     case PLY_DOUBLE:
       *double_val = atof (word);
       *int_val = (int) *double_val;
-      *uint_val = (unsigned int) *double_val;
+      *uint_val = (*double_val >= 0) ? (unsigned int) *double_val : 0;
       break;
 
     default:
