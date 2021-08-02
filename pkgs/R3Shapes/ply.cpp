@@ -2209,7 +2209,7 @@ void get_stored_item(
       break;
     case PLY_SHORT:
       *int_val = *((short int *) ptr);
-      *uint_val = *int_val;
+      *uint_val = (*int_val >= 0) ? *int_val : 0;
       *double_val = *int_val;
       break;
     case PLY_USHORT:
@@ -2219,7 +2219,7 @@ void get_stored_item(
       break;
     case PLY_INT:
       *int_val = *((int *) ptr);
-      *uint_val = *int_val;
+      *uint_val = (*int_val >= 0) ? *int_val : 0;
       *double_val = *int_val;
       break;
     case PLY_UINT:
@@ -2230,12 +2230,12 @@ void get_stored_item(
     case PLY_FLOAT:
       *double_val = *((float *) ptr);
       *int_val = (int) *double_val;
-      *uint_val = (unsigned int) *double_val;
+      *uint_val = (*double_val >= 0) ? (unsigned int) *double_val : 0;
       break;
     case PLY_DOUBLE:
       *double_val = *((double *) ptr);
       *int_val = (int) *double_val;
-      *uint_val = (unsigned int) *double_val;
+      *uint_val = (*double_val >= 0) ? (unsigned int) *double_val : 0;
       break;
     default:
       fprintf (stderr, "get_stored_item: bad type = %d\n", type);
