@@ -11,6 +11,7 @@ ARCH=$(shell uname -m)
 LIB_DIR=../lib/$(ARCH)
 LIB=$(LIB_DIR)/libgaps.a
 PKG_LIBS= \
+  $(LIB_DIR)/libGSV.a \
   $(LIB_DIR)/libRGBD.a \
   $(LIB_DIR)/libR3Surfels.a \
   $(LIB_DIR)/libR3Graphics.a \
@@ -58,6 +59,7 @@ target:
 	cd R3Graphics; $(MAKE) $(TARGET)
 	cd R3Surfels; $(MAKE) $(TARGET)
 	cd RGBD; $(MAKE) $(TARGET)
+	cd GSV; $(MAKE) $(TARGET)
 	cd fglut; $(MAKE) $(TARGET)
 	cd jpeg; $(MAKE) $(TARGET)
 	cd png; $(MAKE) $(TARGET)
