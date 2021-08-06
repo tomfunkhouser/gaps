@@ -1187,6 +1187,32 @@ ReadImageDirectory(R3SurfelScene *scene, const char *image_directory,
       depth_image.Pow(de);
       image->SetDepthChannel(depth_image);
     }
+
+    // Get category image name
+    sprintf(filename, "%s/category_images/%s.png", image_directory, image->Name());
+    if (!RNFileExists(filename)) {
+      sprintf(filename, "%s/category_channel/%s.png", image_directory, image->Name());
+    }
+
+    // Read category image
+    if (RNFileExists(filename)) {
+      R2Grid category_image;
+      if (!category_image.ReadFile(filename)) return 0;
+      image->SetCategoryChannel(category_image);
+    }
+
+    // Get instance image name
+    sprintf(filename, "%s/instance_images/%s.png", image_directory, image->Name());
+    if (!RNFileExists(filename)) {
+      sprintf(filename, "%s/instance_channel/%s.png", image_directory, image->Name());
+    }
+
+    // Read instance image
+    if (RNFileExists(filename)) {
+      R2Grid instance_image;
+      if (!instance_image.ReadFile(filename)) return 0;
+      image->SetInstanceChannel(instance_image);
+    }
   }
 
   // Return success
@@ -1241,6 +1267,34 @@ ReadPixelDatabase(R3SurfelScene *scene, const char *filename, int max_images)
 
     // Set depth channel
     if (depth_image_found) image->SetDepthChannel(depth_image);
+
+    // Get category image
+    R2Grid category_image;
+    RNBoolean category_image_found = TRUE;
+    sprintf(imagekey, "category_images/%s.png", image->Name());
+    if (!database.FindGrid(imagekey, &category_image)) {
+      sprintf(imagekey, "category_channel/%s.png", image->Name());
+      if (!database.FindGrid(imagekey, &category_image)) {
+        category_image_found = FALSE;
+      }
+    }
+
+    // Set category channel
+    if (category_image_found) image->SetCategoryChannel(category_image);
+
+    // Get instance image
+    R2Grid instance_image;
+    RNBoolean instance_image_found = TRUE;
+    sprintf(imagekey, "instance_images/%s.png", image->Name());
+    if (!database.FindGrid(imagekey, &instance_image)) {
+      sprintf(imagekey, "instance_channel/%s.png", image->Name());
+      if (!database.FindGrid(imagekey, &instance_image)) {
+        instance_image_found = FALSE;
+      }
+    }
+
+    // Set instance channel
+    if (instance_image_found) image->SetInstanceChannel(instance_image);
   }
 
   // Close pixel database

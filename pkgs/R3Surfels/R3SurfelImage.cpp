@@ -264,6 +264,24 @@ SetDepthChannel(const R2Grid& channel)
 
 
 void R3SurfelImage::
+SetCategoryChannel(const R2Grid& channel)
+{
+  // Set category channel
+  SetChannel(R3_SURFEL_CATEGORY_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
+SetInstanceChannel(const R2Grid& channel)
+{
+  // Set instance channel
+  SetChannel(R3_SURFEL_INSTANCE_CHANNEL, channel);
+}
+
+
+
+void R3SurfelImage::
 SetColorChannels(const R2Image& color_image)
 {
   // Initialize channels

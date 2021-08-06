@@ -40,6 +40,8 @@ public:
   RNScalar PixelGreen(int ix, int iy) const;
   RNScalar PixelBlue(int ix, int iy) const;
   RNScalar PixelDepth(int ix, int iy) const;
+  int PixelCategory(int ix, int iy) const;
+  int PixelInstance(int ix, int iy) const;
   RNScalar PixelChannelValue(int ix, int iy, int channel_index) const;
 
   // Point property access functions
@@ -57,6 +59,8 @@ public:
   const R2Grid *GreenChannel(void) const;
   const R2Grid *BlueChannel(void) const;
   const R2Grid *DepthChannel(void) const;
+  const R2Grid *CategoryChannel(void) const;
+  const R2Grid *InstanceChannel(void) const;
   R2Image ColorChannels(void) const;
   
   // Camera intrinsics functions
@@ -128,6 +132,8 @@ public:
   virtual void SetGreenChannel(const R2Grid& channel);
   virtual void SetBlueChannel(const R2Grid& channel);
   virtual void SetDepthChannel(const R2Grid& channel);
+  virtual void SetCategoryChannel(const R2Grid& channel);
+  virtual void SetInstanceChannel(const R2Grid& channel);
   virtual void SetColorChannels(const R2Image& image);
   virtual void RemoveChannel(int channel_index);
 
@@ -252,6 +258,8 @@ enum {
   R3_SURFEL_GREEN_CHANNEL,
   R3_SURFEL_BLUE_CHANNEL,
   R3_SURFEL_DEPTH_CHANNEL,
+  R3_SURFEL_CATEGORY_CHANNEL,
+  R3_SURFEL_INSTANCE_CHANNEL,
   R3_SURFEL_USER_CHANNEL,
   R3_SURFEL_NUM_CHANNELS
 };
@@ -339,6 +347,24 @@ DepthChannel(void) const
 
 
 
+inline const R2Grid *R3SurfelImage::
+CategoryChannel(void) const
+{
+  // Return the category channel (may be NULL)
+  return Channel(R3_SURFEL_CATEGORY_CHANNEL);
+}
+
+
+
+inline const R2Grid *R3SurfelImage::
+InstanceChannel(void) const
+{
+  // Return the instance channel (may be NULL)
+  return Channel(R3_SURFEL_INSTANCE_CHANNEL);
+}
+
+
+
 inline RNScalar R3SurfelImage::
 PixelRed(int ix, int iy) const
 {
@@ -388,6 +414,30 @@ PixelDepth(int ix, int iy) const
   const R2Grid *depth_channel = DepthChannel();
   if (!depth_channel) return -1;
   return depth_channel->GridValue(ix, iy);
+}
+
+
+
+inline int R3SurfelImage::
+PixelCategory(int ix, int iy) const
+{
+  // Return the category of the pixel
+  const R2Grid *category_channel = CategoryChannel();
+  if (!category_channel) return -1;
+  int category = category_channel->GridValue(ix, iy) + 0.5;
+  return category;
+}
+
+
+
+inline int R3SurfelImage::
+PixelInstance(int ix, int iy) const
+{
+  // Return the instance of the pixel
+  const R2Grid *instance_channel = InstanceChannel();
+  if (!instance_channel) return -1;
+  int instance = instance_channel->GridValue(ix, iy) + 0.5;
+  return instance;
 }
 
 
