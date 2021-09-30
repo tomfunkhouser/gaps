@@ -22,7 +22,7 @@ namespace gaps {
 // Public variables
 ////////////////////////////////////////////////////////////////////////
 
-GSVPose GSVnull_pose(R3null_point, R3null_quaternion);
+GSVPose GSVnull_pose(R3Point(0,0,0), R3Quaternion(0,0,0,0));
 
 
 
