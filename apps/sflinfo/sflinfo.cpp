@@ -482,27 +482,24 @@ PrintInfo(R3SurfelScene *scene)
   // Print label assignment counts
   if (print_label_assignment_counts) {
     printf("Label Assignment Counts:\n");
-    for (int i = 0; i < scene->NLabels(); i++) {
-      R3SurfelLabel *label = scene->Label(i);
-      if (!label->Name()) continue;
-      if (!label->Parent()) continue;
-      if (!strcmp(label->Name(), "Root")) continue;
-      int nsurfels = 0;
-      int nassignments = 0;
+    printf("  ASSIGNMENT_COUNTS ");
+    static const int max_identifier = 255;
+    for (int identifier = 0; identifier <= max_identifier; identifier++) {
+      R3SurfelLabel *label = scene->FindLabelByIdentifier(identifier);
+      if (!label) continue;
+      if (label == scene->RootLabel()) continue;
+      int top_level_assignments = 0;
       for (int j = 0; j < label->NLabelAssignments(); j++) {
         R3SurfelLabelAssignment *assignment = label->LabelAssignment(j);
         R3SurfelObject *object = assignment->Object();
         if (!object) continue;
         if (!object->Parent()) continue;
         if (object->Parent() != scene->RootObject()) continue;
-        R3SurfelPointSet *pointset = object->PointSet(TRUE);
-        nsurfels += pointset->NPoints();
-        delete pointset;
-        nassignments++;
+        top_level_assignments++;
       }
-      printf("  %s %d %d\n", label->Name(), nassignments, nsurfels);
-      printf("\n");
+      printf(" %d", top_level_assignments);
     }
+    printf("\n");
   }
 
   // Print tree info
