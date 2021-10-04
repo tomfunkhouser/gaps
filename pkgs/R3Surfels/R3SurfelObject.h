@@ -111,7 +111,7 @@ public:
 
   // Point access functions
   R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE) const;
-
+  
 
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
@@ -186,6 +186,9 @@ public:
   void UpdateAfterInsertBlock(R3SurfelNode *node, R3SurfelBlock *block);
   void UpdateBeforeRemoveBlock(R3SurfelNode *node, R3SurfelBlock *block);
   void UpdateAfterTransform(R3SurfelNode *node);
+
+  // Pointset manipulation functions
+  void InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level = FALSE) const;
 
 protected:
   // Object update functions

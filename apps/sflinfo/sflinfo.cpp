@@ -30,6 +30,7 @@ static int print_label_properties = 0;
 static int print_object_relationships = 0;
 static int print_label_relationships = 0;
 static int print_label_assignments = 0;
+static int print_label_assignment_counts = 0;
 static int print_tree = 0;
 static int print_nodes = 0;
 static int print_database = 0;
@@ -478,6 +479,32 @@ PrintInfo(R3SurfelScene *scene)
     printf("\n");
   }
 
+  // Print label assignment counts
+  if (print_label_assignment_counts) {
+    printf("Label Assignment Counts:\n");
+    for (int i = 0; i < scene->NLabels(); i++) {
+      R3SurfelLabel *label = scene->Label(i);
+      if (!label->Name()) continue;
+      if (!label->Parent()) continue;
+      if (!strcmp(label->Name(), "Root")) continue;
+      int nsurfels = 0;
+      int nassignments = 0;
+      for (int j = 0; j < label->NLabelAssignments(); j++) {
+        R3SurfelLabelAssignment *assignment = label->LabelAssignment(j);
+        R3SurfelObject *object = assignment->Object();
+        if (!object) continue;
+        if (!object->Parent()) continue;
+        if (object->Parent() != scene->RootObject()) continue;
+        R3SurfelPointSet *pointset = object->PointSet(TRUE);
+        nsurfels += pointset->NPoints();
+        delete pointset;
+        nassignments++;
+      }
+      printf("  %s %d %d\n", label->Name(), nassignments, nsurfels);
+      printf("\n");
+    }
+  }
+
   // Print tree info
   if (print_tree) {
     const R3Box& bbox = tree->BBox();
@@ -719,6 +746,7 @@ ParseArgs(int argc, char **argv)
     else if (!strcmp(*argv, "-object_relationships")) { print_object_relationships = 1; }
     else if (!strcmp(*argv, "-label_relationships")) { print_label_relationships = 1; }
     else if (!strcmp(*argv, "-assignments")) { print_label_assignments = 1; }
+    else if (!strcmp(*argv, "-assignment_counts")) { print_label_assignment_counts = 1; }
     else if (!strcmp(*argv, "-tree")) { print_tree = 1; }
     else if (!strcmp(*argv, "-nodes")) { print_nodes = 1; }
     else if (!strcmp(*argv, "-database")) { print_database = 1; }

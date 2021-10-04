@@ -68,6 +68,9 @@ public:
   int NLabelAssignments(void) const;
   R3SurfelLabelAssignment *LabelAssignment(int k) const;
 
+  // Pointset access functions
+  R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE) const;
+  
 
   ////////////////////////////////
   //// MANIPULATION FUNCTIONS ////
@@ -112,6 +115,9 @@ protected:
   // Assignment update functions
   void UpdateAfterInsertLabelAssignment(R3SurfelLabelAssignment *assignment);
   void UpdateBeforeRemoveLabelAssignment(R3SurfelLabelAssignment *assignment);
+
+  // Pointset manipulation functions
+  void InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level = FALSE) const;
 
 protected:
   // Internal instance data

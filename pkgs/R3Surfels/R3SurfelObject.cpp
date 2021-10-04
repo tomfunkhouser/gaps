@@ -265,44 +265,33 @@ PointSet(RNBoolean leaf_level) const
     return NULL;
   }
 
+  // Insert points into pointset
+  InsertIntoPointSet(pointset, leaf_level);
+
+  // Return pointset
+  return pointset;
+}
+
+
+
+void R3SurfelObject::
+InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level) const
+{
   // Insert points
-  if (leaf_level) {
-    // Insert points from all blocks of all leaf nodes
-    for (int i = 0; i < NNodes(); i++) {
-      R3SurfelNode *node = Node(i);
-      RNArray<R3SurfelNode *> stack;
-      stack.Insert(node);
-      while (!stack.IsEmpty()) {
-        node = stack.Tail();
-        stack.RemoveTail();
-        if (node->NParts() > 0) {
-          for (int j = 0; j < node->NParts(); j++) {
-            R3SurfelNode *part = node->Part(j);
-            stack.Insert(part);
-          }
-        }
-        else {
-          for (int j = 0; j < node->NBlocks(); j++) {
-            R3SurfelBlock *block = node->Block(j);
-            pointset->InsertPoints(block);
-          }
-        }
-      }
+  if (leaf_level && (NParts() > 0)) {
+    // Insert points from leaf level of all parts of object
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelObject *part = Part(i);
+      part->InsertIntoPointSet(pointset, leaf_level);     
     }
   }
   else {
-    // Insert points from all nodes at highest level
+    // Insert points from all nodes
     for (int i = 0; i < NNodes(); i++) {
       R3SurfelNode *node = Node(i);
-      for (int j = 0; j < node->NBlocks(); j++) {
-        R3SurfelBlock *block = node->Block(j);
-        pointset->InsertPoints(block);
-      }
+      node->InsertIntoPointSet(pointset, leaf_level);
     }
   }
-  
-  // Return pointset
-  return pointset;
 }
 
 

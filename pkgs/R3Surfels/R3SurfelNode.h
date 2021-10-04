@@ -153,6 +153,9 @@ public:
   // Update functions
   void UpdateProperties(void);
 
+  // Pointset manipulation functions
+  void InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level = FALSE) const;
+
 protected:
   // Object update functions
   void UpdateAfterInsert(R3SurfelObject *object);

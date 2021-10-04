@@ -157,6 +157,57 @@ PartHierarchyLevel(void) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// POINT ACCESS FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelPointSet *R3SurfelLabel::
+PointSet(RNBoolean leaf_level) const
+{
+  // Allocate point set
+  R3SurfelPointSet *pointset = new R3SurfelPointSet();
+  if (!pointset) {
+    RNFail("Unable to allocate point set\n");
+    return NULL;
+  }
+
+  // Insert points into pointset
+  InsertIntoPointSet(pointset, leaf_level);
+
+  // Return pointset
+  return pointset;
+}
+
+
+
+void R3SurfelLabel::
+InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level) const
+{
+  // Check scene
+  if (!Scene()) return;
+
+  // Insert points
+  if (leaf_level && (NParts() > 0)) {
+    // Insert points from leaf level of all parts of label
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelLabel *part = Part(i);
+      part->InsertIntoPointSet(pointset, leaf_level);     
+    }
+  }
+  else {
+    // Insert points from all objects
+    for (int i = 0; i < NLabelAssignments(); i++) {
+      R3SurfelLabelAssignment *assignment = LabelAssignment(i);
+      R3SurfelObject *object = assignment->Object();
+      if (!object) continue;
+      if (object->Parent() != scene->RootObject()) continue;
+      object->InsertIntoPointSet(pointset, leaf_level);
+    }
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
