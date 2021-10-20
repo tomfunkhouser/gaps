@@ -178,6 +178,9 @@ public:
   ////////////////////////////////////////////////////////////////////////
 
 public:
+  // Expensive to compute property functions
+  R3OrientedBox OrientedBBox(void) const;
+  
   // Update functions
   void UpdateProperties(void);
   void UpdateFeatureVector(void);
