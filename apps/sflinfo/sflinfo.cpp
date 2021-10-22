@@ -382,6 +382,7 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s # Assignments = %d\n", prefix, object->NLabelAssignments());
       printf("%s Predicted Label = %s\n", prefix, (predicted_label) ? predicted_label->Name() : "None");
       printf("%s Ground Truth Label = %s\n", prefix, (ground_truth_label) ? ground_truth_label->Name() : "None");
+      printf("%s Flags = %u\n", prefix, (unsigned int) object->Flags());
       // printf("%s Feature Vector = ", prefix);
       // for (int i = 0; i < vector.NValues(); i++) printf("%12.6f ", vector.Value(i));
       // printf("\n");
