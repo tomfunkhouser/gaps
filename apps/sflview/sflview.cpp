@@ -287,7 +287,9 @@ DrawModel(void)
     glColor3d(1, 1, 1);
     for (int i = 0; i < model->NNodes(); i++) {
       R3SceneNode *node = model->Node(i);
-      if (node->NChildren() == 0) continue;
+      if (node->Name() == NULL) continue;
+      if (node->NChildren() != 0) continue;
+      if (node->BBox().IsEmpty()) continue;
       R3Point p = node->Centroid() + 1.5 * node->BBox().ZRadius() * R3posz_vector;
       DrawText(p, node->Name());
     }
