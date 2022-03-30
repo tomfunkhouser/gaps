@@ -3454,7 +3454,7 @@ ReadObbFile(const char *filename, R3SceneNode *parent_node)
     }
 
     // Check cmd
-    if (!strcmp(cmd, "OBB")) {
+    if (strcmp(cmd, "OBB")) {
       RNFail("Unrecognized command at line %d in %s\n", line_number, filename);
       return 0;
     }
