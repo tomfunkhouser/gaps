@@ -916,6 +916,9 @@ ReadFile(const char *filename, R3SceneNode *parent_node)
   else if (!strncmp(extension, ".rct", 4)) {
     if (!ReadRectangleFile(filename, parent_node)) return 0;
   }
+  else if (!strncmp(extension, ".obb", 4)) {
+    if (!ReadObbFile(filename, parent_node)) return 0;
+  }
   else if (!strncmp(extension, ".json", 5)) {
     if (!ReadSUNCGFile(filename, parent_node)) return 0;
   }
@@ -3396,6 +3399,91 @@ ReadRectangleFile(const char *filename, R3SceneNode *parent_node)
     char node_name[1024];
     sprintf(node_name, "A%d_S%03d", assignment_index++, (int) (1000*score));
     node->SetName(node_name);
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////
+// OBB FILE I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3Scene::
+ReadObbFile(const char *filename, R3SceneNode *parent_node)
+{
+  // Get/check parent node
+  if (!parent_node) parent_node = root;
+
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "r"))) {
+    RNFail("Unable to open file %s", filename);
+    return 0;
+  }
+
+  // Read file
+  char buffer[4096];
+  int line_number = 0;
+  while (fgets(buffer, 4096, fp)) {
+    // Check line
+    line_number++;
+    char *bufferp = buffer;
+    while (*bufferp && isspace(*bufferp)) bufferp++;
+    if (!bufferp) continue;
+    if (*bufferp == '#') continue;
+
+    // Parse line
+    char name[1024];
+    int category, instance;
+    double center[3], axis0[3], axis1[3], radii[3], score;
+    if (sscanf(bufferp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%lf%s", 
+      &center[0], &center[1], &center[2],
+      &axis0[0], &axis0[1], &axis0[2],
+      &axis1[0], &axis1[1], &axis1[2],
+      &radii[0], &radii[1], &radii[2],
+      &category, &instance, &score, name) != (unsigned int) 16) {
+      RNFail("Error parsing line %d of %s\n", line_number, filename);
+      return 0;
+    }
+
+    // Create node
+    R3SceneNode *node = new R3SceneNode(this);
+    parent_node->InsertChild(node);
+
+    // Set node name
+    char node_name[2048];
+    sprintf(node_name, "%s_%03d", name, (int) (1000*score));
+    node->SetName(node_name);
+
+    // Create color based on category
+    double r = (1 + (category % 7)) / 7.0;
+    double g = 1.0 - (1 + (category % 17)) / 17.0;
+    double b = (1 + (category % 31)) / 31.0;
+    R3Brdf *brdf = new R3Brdf(RNRgb(r, g, b));
+    InsertBrdf(brdf);
+    R3Material *material = new R3Material(brdf);
+    InsertMaterial(material);
+
+    // Create element
+    R3SceneElement *element = new R3SceneElement();
+    element->SetMaterial(material);
+    node->InsertElement(element);
+
+    // Create shape 
+    R3OrientedBox *obb = new R3OrientedBox(R3Point(center),
+      R3Vector(axis0), R3Vector(axis1),
+      radii[0], radii[1], radii[2]);
+    R3Sphere *nose = new R3Sphere(
+      R3Point(center) + radii[0] * R3Vector(axis0), 0.02 * radii[0]);
+    element->InsertShape(obb);
+    element->InsertShape(nose);
   }
 
   // Close file
