@@ -3440,16 +3440,22 @@ ReadObbFile(const char *filename, R3SceneNode *parent_node)
     if (*bufferp == '#') continue;
 
     // Parse line
-    char name[1024];
+    char cmd[1024], name[1024];
     int category, instance;
     double center[3], axis0[3], axis1[3], radii[3], score;
-    if (sscanf(bufferp, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%lf%s", 
+    if (sscanf(bufferp, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%lf%s", cmd,
       &center[0], &center[1], &center[2],
       &axis0[0], &axis0[1], &axis0[2],
       &axis1[0], &axis1[1], &axis1[2],
       &radii[0], &radii[1], &radii[2],
-      &category, &instance, &score, name) != (unsigned int) 16) {
+      &category, &instance, &score, name) != (unsigned int) 17) {
       RNFail("Error parsing line %d of %s\n", line_number, filename);
+      return 0;
+    }
+
+    // Check cmd
+    if (!strcmp(cmd, "OBB")) {
+      RNFail("Unrecognized command at line %d in %s\n", line_number, filename);
       return 0;
     }
 
