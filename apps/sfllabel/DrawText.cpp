@@ -1,0 +1,50 @@
+/* Source file for text drawing utitity functions */
+
+
+////////////////////////////////////////////////////////////////////////
+// Text drawing utility functions
+////////////////////////////////////////////////////////////////////////
+
+#include "R3Shapes/R3Shapes.h"
+#include "DrawText.h"
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+  
+
+
+////////////////////////////////////////////////////////////////////////
+// Text drawing utility functions
+////////////////////////////////////////////////////////////////////////
+
+void 
+DrawText(const R2Point& p, const char *s, void *font)
+{
+  // Draw text string s and position p
+  glRasterPos2d(p[0], p[1]);
+  while (*s) glutBitmapCharacter(font, *(s++));
+}
+  
+
+
+#if 0
+
+void 
+DrawText(const R3Point& p, const char *s, void *font)
+{
+  // Draw text string s and position p
+  glRasterPos3d(p[0], p[1], p[2]);
+  while (*s) glutBitmapCharacter(font, *(s++));
+}
+  
+#endif
+
+
+
+
+}; // end namespace

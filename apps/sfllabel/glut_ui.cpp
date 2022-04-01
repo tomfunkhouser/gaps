@@ -1,5 +1,5 @@
-#ifndef __GLUT__UI__H__
-#define __GLUT__UI__H__
+/* Source file for GLUT UI */
+#ifndef USE_GLFW
 
 
 
@@ -7,7 +7,13 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+#include "R3Graphics/R3Graphics.h"
+#include "R3Surfels/R3Surfels.h"
+#include "R3SurfelClassifier.h"
+#include "R3SurfelSegmenter.h"
+#include "R3SurfelLabeler.h"
 #include "fglut/fglut.h"
+#include "io.h"
 #include "ui.h"
 
 
@@ -42,6 +48,7 @@ void GLUTStop(void)
   if (GLUTlabeler) GLUTlabeler->Terminate();
 
   // Close scene
+  R3SurfelScene *scene = GLUTlabeler->Scene();
   if (scene) CloseScene(scene);
 
   // Exit
