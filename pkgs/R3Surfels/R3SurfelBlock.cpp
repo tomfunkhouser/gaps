@@ -1302,7 +1302,7 @@ Draw(RNFlags flags, int subsampling_factor) const
         glBegin(GL_POINTS);
         for (int i = 0; i < NSurfels(); i++) {
           const R3Surfel& surfel = surfels[i];
-          glVertex3fv(surfel.PositionPtr());
+          R3LoadPoint(surfel.PositionPtr());
         }
         glEnd();
 #     endif
@@ -1324,7 +1324,7 @@ Draw(RNFlags flags, int subsampling_factor) const
           for (int i = 0; i < NSurfels(); i++) {
             const R3Surfel& surfel = surfels[i];
             glColor3ubv(surfel.ColorPtr());
-            glVertex3fv(surfel.PositionPtr());
+            R3LoadPoint(surfel.PositionPtr());
           }
           glEnd();
 #       endif
@@ -1352,7 +1352,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
         glColor3ubv(surfel.ColorPtr());
-        glVertex3fv(surfel.PositionPtr());
+        R3LoadPoint(surfel.PositionPtr());
       }
       glEnd();
     }
@@ -1361,7 +1361,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       glBegin(GL_POINTS);
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
-        glVertex3fv(surfel.PositionPtr());
+        R3LoadPoint(surfel.PositionPtr());
       }
       glEnd();
     }
@@ -1447,7 +1447,7 @@ Draw(RNFlags flags, int subsampling_factor) const
         p[j] += sin(angle) * r2 * tangent2;
       }
       for (int j = 0; j < nsides; j++) {
-        glVertex3fv(surfel.PositionPtr());
+        R3LoadPoint(surfel.PositionPtr());
         R3LoadPoint(p[j]);
         R3LoadPoint(p[(j+1)%nsides]);
       }
@@ -1462,7 +1462,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       if (c) glColor3ubv(surfel.ColorPtr());
       if (id) LoadUnsignedInt(surfel.Identifier());
       else if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
-      glVertex3fv(surfel.PositionPtr());
+      R3LoadPoint(surfel.PositionPtr());
     }
     glEnd();
   }

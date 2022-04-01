@@ -250,10 +250,10 @@ Outline(RNScalar sample_spacing) const
   if (sample_spacing == 0) return;
   
   // Draw spline
-  glBegin(GL_LINE_STRIP);
+  R3BeginLine();
   for (RNScalar u = StartParameter(); u <= EndParameter(); u += sample_spacing) 
     R3LoadPoint(PointPosition(u));
-  glEnd();
+  R3EndLine();
 }
 
 

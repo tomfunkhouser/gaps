@@ -3398,13 +3398,13 @@ DrawRubberBox(RNBoolean front_buffer, RNBoolean xor_op) const
   glLoadIdentity();
 
   // Draw box
-  glBegin(GL_LINE_LOOP);
-  glColor3f(1.0, 1.0, 1.0);
-  glVertex2f(rubber_box_corners[0][0], rubber_box_corners[0][1]);
-  glVertex2f(rubber_box_corners[0][0], rubber_box_corners[1][1]);
-  glVertex2f(rubber_box_corners[1][0], rubber_box_corners[1][1]);
-  glVertex2f(rubber_box_corners[1][0], rubber_box_corners[0][1]);
-  glEnd();
+  R2BeginLine();
+  RNLoadRgb(1.0, 1.0, 1.0);
+  R2LoadPoint(rubber_box_corners[0][0], rubber_box_corners[0][1]);
+  R2LoadPoint(rubber_box_corners[0][0], rubber_box_corners[1][1]);
+  R2LoadPoint(rubber_box_corners[1][0], rubber_box_corners[1][1]);
+  R2LoadPoint(rubber_box_corners[1][0], rubber_box_corners[0][1]);
+  R2EndLine();
 
   // Reset projection matrix
   glMatrixMode(GL_PROJECTION);
@@ -3469,7 +3469,7 @@ DrawRubberPolygon(RNBoolean front_buffer, RNBoolean xor_op) const
   glBegin(primitive);
   glColor3f(1.0, 1.0, 1.0);
   for (int i = 0; i < num_rubber_polygon_points; i++) {
-    glVertex2f(rubber_polygon_points[i][0], rubber_polygon_points[i][1]);
+    R2LoadPoint(rubber_polygon_points[i][0], rubber_polygon_points[i][1]);
   }
   glEnd();
 
@@ -3528,12 +3528,12 @@ DrawRubberLine(RNBoolean front_buffer, RNBoolean xor_op) const
   glLoadIdentity();
 
   // Draw line
-  glBegin(GL_LINES);
-  glColor3f(1.0, 1.0, 1.0);
-  glVertex2f(rubber_line_points[0][0], rubber_line_points[0][1]);
-  glVertex2f(rubber_line_points[1][0], rubber_line_points[1][1]);
-  glEnd();
-
+  R2BeginLine();
+  RNLoadRgb(1.0, 1.0, 1.0);
+  R2LoadPoint(rubber_line_points[0][0], rubber_line_points[0][1]);
+  R2LoadPoint(rubber_line_points[1][0], rubber_line_points[1][1]);
+  R2EndLine();
+  
   // Reset projection matrix
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();

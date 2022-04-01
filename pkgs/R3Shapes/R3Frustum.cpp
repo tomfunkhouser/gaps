@@ -338,7 +338,7 @@ void R3Frustum::
 Outline(const R3DrawFlags draw_flags) const
 {
   // Draw wireframe
-  glBegin(GL_LINE_STRIP);
+  R3BeginLine();
   R3LoadPoint(Corner(0,0,0));
   R3LoadPoint(Corner(1,0,0));
   R3LoadPoint(Corner(1,1,0));
@@ -356,7 +356,7 @@ Outline(const R3DrawFlags draw_flags) const
   R3LoadPoint(Corner(1,1,0));
   R3LoadPoint(Corner(0,1,0));
   R3LoadPoint(Corner(0,1,1));
-  glEnd();
+  R3EndLine();
 }
 
 

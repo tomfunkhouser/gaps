@@ -680,7 +680,7 @@ DrawResidentAncestor(RNFlags draw_flags) const
       double y = bbox.YMin() + bbox.YLength() * (j+0.5)/K;
       for (int k = 0; k < K; k++) {
         double z = bbox.ZMin() + bbox.ZLength() * (k+0.5)/K;
-        glVertex3d(x, y, z);
+        R3LoadPoint(x, y, z);
       }
     }
   }

@@ -34,7 +34,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
   if (n < 2) return 0;
 
   // Compute distance longer than any line on screen
-  float max_distance = width;
+  double max_distance = width;
 
   // Set identity transformation
   glDisable(GL_LIGHTING);
@@ -94,7 +94,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
 
     // Draw right side of cone at p1
     glColor3ub(0, 255, 0);
-    glBegin(GL_POLYGON);
+    R3BeginPolygon();
     double da = (a2 - a1);
     double desired_step = (RN_PI / 60.0);
     int nsteps = da / desired_step;
@@ -106,17 +106,17 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
       double dy1 = sin(angle1);
       double dx2 = cos(angle2);
       double dy2 = sin(angle2);
-      glVertex3f(p1->X(), p1->Y(), 0.0);
-      glVertex3d(p1->X() + max_distance * dx1, p1->Y() + max_distance * dy1, -max_distance);
-      glVertex3d(p1->X() + max_distance * dx2, p1->Y() + max_distance * dy2, -max_distance);
+      R3LoadPoint(p1->X(), p1->Y(), 0.0);
+      R3LoadPoint(p1->X() + max_distance * dx1, p1->Y() + max_distance * dy1, -max_distance);
+      R3LoadPoint(p1->X() + max_distance * dx2, p1->Y() + max_distance * dy2, -max_distance);
       dx1 = dx2;
       dy1 = dy2;
     }
-    glEnd();
+    R3EndPolygon();
 
     // Draw left side of cone at p1
     glColor3ub(255, 0, 0);
-    glBegin(GL_POLYGON);
+    R3BeginPolygon();
     da = RN_TWO_PI - (a2 - a1);
     nsteps = da / desired_step;
     step = da / nsteps;
@@ -127,33 +127,33 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
       double dy1 = sin(angle1);
       double dx2 = cos(angle2);
       double dy2 = sin(angle2);
-      glVertex3f(p1->X(), p1->Y(), 0.0);
-      glVertex3d(p1->X() + max_distance * dx1, p1->Y() + max_distance * dy1, -max_distance);
-      glVertex3d(p1->X() + max_distance * dx2, p1->Y() + max_distance * dy2, -max_distance);
+      R3LoadPoint(p1->X(), p1->Y(), 0.0);
+      R3LoadPoint(p1->X() + max_distance * dx1, p1->Y() + max_distance * dy1, -max_distance);
+      R3LoadPoint(p1->X() + max_distance * dx2, p1->Y() + max_distance * dy2, -max_distance);
       dx1 = dx2;
       dy1 = dy2;
     }
-    glEnd();
+    R3EndPolygon();
 
     // Draw wedge 
     if (closed || (i < n-1)) {
       // Draw right side of wedge
       glColor3ub(0, 255, 0);
-      glBegin(GL_POLYGON);
-      glVertex3f(p1->X(), p1->Y(), 0.0);
-      glVertex3f(p1->X() - max_distance * n2.X(), p1->Y() - max_distance * n2.Y(), -max_distance);
-      glVertex3f(p2->X() - max_distance * n2.X(), p2->Y() - max_distance * n2.Y(), -max_distance);
-      glVertex3f(p2->X(), p2->Y(), 0.0);
-      glEnd();
+      R3BeginPolygon();
+      R3LoadPoint(p1->X(), p1->Y(), 0.0);
+      R3LoadPoint(p1->X() - max_distance * n2.X(), p1->Y() - max_distance * n2.Y(), -max_distance);
+      R3LoadPoint(p2->X() - max_distance * n2.X(), p2->Y() - max_distance * n2.Y(), -max_distance);
+      R3LoadPoint(p2->X(), p2->Y(), 0.0);
+      R3EndPolygon();
 
       // Draw left side of wedge
       glColor3ub(255, 0, 0);
-      glBegin(GL_POLYGON);
-      glVertex3f(p1->X(), p1->Y(), 0.0);
-      glVertex3f(p2->X(), p2->Y(), 0.0);
-      glVertex3f(p2->X() + max_distance * n2.X(), p2->Y() + max_distance * n2.Y(), -max_distance);
-      glVertex3f(p1->X() + max_distance * n2.X(), p1->Y() + max_distance * n2.Y(), -max_distance);
-      glEnd();
+      R3BeginPolygon();
+      R3LoadPoint(p1->X(), p1->Y(), 0.0);
+      R3LoadPoint(p2->X(), p2->Y(), 0.0);
+      R3LoadPoint(p2->X() + max_distance * n2.X(), p2->Y() + max_distance * n2.Y(), -max_distance);
+      R3LoadPoint(p1->X() + max_distance * n2.X(), p1->Y() + max_distance * n2.Y(), -max_distance);
+      R3EndPolygon();
     }
   }
 

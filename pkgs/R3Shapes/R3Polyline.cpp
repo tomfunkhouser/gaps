@@ -540,10 +540,10 @@ void R3Polyline::
 Outline(const R3DrawFlags flags) const
 {
   // Draw polyline
-  glBegin(GL_LINE_STRIP);
+  R3BeginLine();
   for (int i = 0; i < nvertices; i++) 
     R3LoadPoint(VertexPosition(i));
-  glEnd();
+  R3EndLine();
 }
 
 

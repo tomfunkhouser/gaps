@@ -947,7 +947,7 @@ DrawSurfels(int color_scheme) const
           float g = 0.5F + 0.5F * surfel->NY();
           float b = 0.5F + 0.5F * surfel->NZ();
           glColor3f(r, g, b);
-          glVertex3fv(surfel->PositionPtr());
+          R3LoadPoint(surfel->PositionPtr());
         }
         glEnd();
         glPopMatrix();
@@ -990,7 +990,7 @@ DrawSurfels(int color_scheme) const
             double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
             LoadColor(confidence);
           }
-          glVertex3fv(surfel->PositionPtr());
+          R3LoadPoint(surfel->PositionPtr());
         }
         glEnd();
         glPopMatrix();

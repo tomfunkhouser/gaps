@@ -5208,18 +5208,18 @@ DrawIsoSurface(RNScalar isolevel) const
 
   // Draw isosurface
   R3Point *pointsp = isosurface_points;
+  glBegin(GL_TRIANGLES);
   for (int i = 0; i < isosurface_npoints; i += 3) {
     R3Point p0 = *(pointsp++);
     R3Point p1 = *(pointsp++);
     R3Point p2 = *(pointsp++);
     R3Plane plane(p0, p1, p2);
-    glBegin(GL_POLYGON);
     R3LoadNormal(plane.Normal());
     R3LoadPoint(p0);
     R3LoadPoint(p1);
     R3LoadPoint(p2);
-    glEnd();
   }
+  glEnd();
 }
 
 
