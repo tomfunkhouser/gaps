@@ -374,5 +374,9 @@ UIInterface(R3SurfelLabeler *labeler)
 
 
 
+}; // end namespace
+
+
+
 #endif
 
