@@ -3,7 +3,7 @@
 #
 
 NAME=sfllabel
-CCSRCS=sfllabel.cpp R3SurfelLabeler.cpp R3SurfelClassifier.cpp R3SurfelSegmenter.cpp split.cpp
+CCSRCS=sfllabel.cpp R3SurfelLabeler.cpp R3SurfelLabelerCommand.cpp R3SurfelClassifier.cpp R3SurfelSegmenter.cpp DrawText.cpp split.cpp io.cpp glfw_ui.cpp glut_ui.cpp
 
 
 

@@ -6,8 +6,6 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
-namespace gaps {}
-using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "R3SurfelClassifier.h"
@@ -17,6 +15,14 @@ using namespace gaps;
 #include "DrawText.h"
 #include "split.h"
 
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+  
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -4427,6 +4433,221 @@ ObjectifyWorkingSet(void)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Command functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelLabeler::
+BeginCommand(int type, double operand)
+{
+  // Check current command
+  assert(!current_command);
+
+  // Start current command
+  current_command = new R3SurfelLabelerCommand(this, type, operand);
+}
+
+
+
+void R3SurfelLabeler::
+EndCommand(void)
+{
+  // Check current command
+  assert(current_command);
+
+  // Insert command into undo stack, if it can be undone
+  switch (current_command->type) {
+  case R3_SURFEL_LABELER_ZOOM_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_NONE_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_PICKED_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_OVERLAPPING_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_UNLABELED_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND:
+  case R3_SURFEL_LABELER_SELECT_ALL_COMMAND:
+  case R3_SURFEL_LABELER_LABEL_PICKED_COMMAND:
+  case R3_SURFEL_LABELER_LABEL_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_RELABEL_PICKED_COMMAND:
+  case R3_SURFEL_LABELER_RELABEL_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_CONFIRM_PICKED_COMMAND:  
+  case R3_SURFEL_LABELER_CONFIRM_SELECTION_COMMAND:  
+  case R3_SURFEL_LABELER_CONFIRM_ALL_COMMAND:  
+  case R3_SURFEL_LABELER_REFUTE_PICKED_COMMAND:  
+  case R3_SURFEL_LABELER_REFUTE_SELECTION_COMMAND:  
+  case R3_SURFEL_LABELER_REFUTE_ALL_COMMAND: 
+  case R3_SURFEL_LABELER_MERGE_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_UNMERGE_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_SPLIT_SELECTION_COMMAND:
+  case R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND:
+    // Delete commands that were undone
+    for (int i = undo_index+1; i < undo_stack.NEntries(); i++) 
+      delete undo_stack.Kth(i);
+    undo_stack.Truncate(undo_index+1);
+
+    // Insert command into undo stack
+    undo_stack.Insert(current_command);
+    undo_index = undo_stack.NEntries() - 1;
+    break;
+  }
+
+  // Write command to log
+  if (logging_fp) {
+    PrintCommand(current_command, logging_fp);
+  }
+
+  // Write checkpoint to log
+  if (logging_fp) {
+    const RNScalar checkpoint_interval = 3600;
+    static RNScalar last_checkpoint_time = -FLT_MAX;
+    if ((current_command->type == R3_SURFEL_LABELER_INITIALIZE_COMMAND) || 
+        (current_command->type == R3_SURFEL_LABELER_TERMINATE_COMMAND) || 
+        (current_command->type == R3_SURFEL_LABELER_SYNC_COMMAND) || 
+        (current_command->timestamp >= last_checkpoint_time + checkpoint_interval)) {
+      last_checkpoint_time = current_command->timestamp;
+      // PrintCheckpoint(logging_fp);
+    }
+  }
+
+  // End current command
+  current_command = NULL;
+}
+
+
+
+void R3SurfelLabeler::
+PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
+{
+  // Just checking
+  if (!command) return;
+  if (!fp) fp = stdout;
+
+  // Print 
+  const R3Point& eye = command->camera.Origin();
+  const R3Vector& towards = command->camera.Towards();
+  const R3Vector& up = command->camera.Up();
+
+  // Count label assignments inserted by human
+  int ninserted_label_assignments = 0;
+  for (int j = 0; j < command->inserted_label_assignments.NEntries(); j++) {
+    R3SurfelLabelAssignment *assignment = command->inserted_label_assignments[j];
+    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    ninserted_label_assignments++;
+  }
+
+  // Count label assignments removed by human
+  int nremoved_label_assignments = 0;
+  for (int j = 0; j < command->removed_label_assignments.NEntries(); j++) {
+    R3SurfelLabelAssignment *assignment = command->removed_label_assignments[j];
+    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    nremoved_label_assignments++;
+  }
+
+  fprintf(fp, "CMD %d %g %g    ", command->type, command->operand, command->timestamp);
+  fprintf(fp, "%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f ", eye[0], eye[1], eye[2], towards[0], towards[1], towards[2], up[0], up[1], up[2]);
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%d", command->inserted_object_selections.NEntries());
+  for (int j = 0; j < command->inserted_object_selections.NEntries(); j++) 
+    fprintf(fp, " %d", command->inserted_object_selections[j]->SceneIndex());
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%d", command->removed_object_selections.NEntries());
+  for (int j = 0; j < command->removed_object_selections.NEntries(); j++) 
+    fprintf(fp, " %d", command->removed_object_selections[j]->SceneIndex());
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%d", ninserted_label_assignments);
+  for (int j = 0; j < command->inserted_label_assignments.NEntries(); j++) {
+    R3SurfelLabelAssignment *assignment = command->inserted_label_assignments[j];
+    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
+  }
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%d", nremoved_label_assignments);
+  for (int j = 0; j < command->removed_label_assignments.NEntries(); j++) {
+    R3SurfelLabelAssignment *assignment = command->removed_label_assignments[j];
+    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
+  }
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%d", command->part_parent_assignments.NEntries());
+  for (int j = 0; j < command->part_parent_assignments.NEntries(); j++) {
+    R3SurfelObject *part = command->part_parent_assignments[j];
+    R3SurfelObject *removed_parent = command->removed_parent_assignments[j];
+    R3SurfelObject *inserted_parent = command->inserted_parent_assignments[j];
+    fprintf(fp, " ( %d %d %d )", part->SceneIndex(), removed_parent->SceneIndex(), inserted_parent->SceneIndex());
+  }
+  fprintf(fp, "    ");
+
+  fprintf(fp, "%lu", command->attribute_assignments.size());
+  for (unsigned int j = 0; j < command->attribute_assignments.size(); j++) {
+    R3SurfelAttributeAssignment& assignment = command->attribute_assignments[j];
+    fprintf(fp, " ( %d %u %d %d )", assignment.object->SceneIndex(), (unsigned int) assignment.attribute,
+      assignment.previous_value, assignment.new_value);
+  }
+  fprintf(fp, "    ");
+
+  fprintf(fp, "\n");
+  fflush(fp);
+}
+
+
+
+void R3SurfelLabeler::
+PrintCheckpoint(FILE *fp) const
+{
+  // Just checking
+  if (!fp) fp = stdout;
+
+  // Count assignments
+  int ntotal = 0;
+  int npredicted = 0;
+  int nconfirmed = 0;
+  int nunlabeled = 0;
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    if (object->HumanLabel()) nconfirmed++;
+    else if (object->PredictedLabel()) npredicted++;
+    else nunlabeled++;
+    ntotal++;
+  }
+
+  // Print status
+  fprintf(fp, "CHECKPOINT  %g  %d   %d %d %d %d", 
+          CurrentTime(), scene->NLabels(),
+          ntotal, nconfirmed, npredicted, nunlabeled);
+
+#if 0
+  // Print labels
+  fprintf(fp, "    ");
+  for (int i = 0; i < scene->NLabels(); i++) {
+    R3SurfelLabel *label = scene->Label(i);
+    fprintf(fp, " ( L %d %s )", label->Identifier(), label->Name());
+  }
+
+  // Print object assignments
+  fprintf(fp, "    ");
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    R3SurfelLabelAssignment *current_assignment = object->CurrentLabelAssignment();
+    R3SurfelLabel *current_label = current_assignment->Label();
+    fprintf(fp, " ( O %d %s %d %d )", object->SceneIndex(), object->Name(), 
+      (current_label) ? current_label->Identifier() : -1, 
+      (current_assignment) ? current_assignment->Originator() : -1);
+  }
+#endif
+
+  // End checkpoint
+  fprintf(fp, "\n");
+  fflush(fp);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Debugging functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -4459,3 +4680,4 @@ IsValid(void) const
 
 
 
+}; // end namespace

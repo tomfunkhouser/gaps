@@ -1,13 +1,29 @@
-#ifndef __GLFW__UI__H__
-#define __GLFW__UI__H__
+/* Source file for GLUT UI */
+#ifdef USE_GLFW
 
 
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
+#include "R3Graphics/R3Graphics.h"
+#include "R3Surfels/R3Surfels.h"
+#include "R3SurfelClassifier.h"
+#include "R3SurfelSegmenter.h"
+#include "R3SurfelLabeler.h"
 #include <GLFW/glfw3.h>
+#include "io.h"
+#include "ui.h"
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+  
 
 
 
@@ -15,6 +31,7 @@
 // Global variables
 ////////////////////////////////////////////////////////////////////////
 
+static R3SurfelLabeler *GLFWlabeler = NULL;
 static bool GLFWneeds_redraw = true;
 
 
@@ -47,7 +64,7 @@ GLFWRedraw(GLFWwindow *window)
   if (!GLFWneeds_redraw) return;
   
   // Redraw with labeler 
-  if (labeler->Redraw()) {
+  if (GLFWlabeler->Redraw()) {
     GLFWPostRedisplay();
   }
 
@@ -72,7 +89,7 @@ GLFWResize(GLFWwindow *window,
   int width, int height)
 {
   // Resize labeler
-  if (labeler->Resize(width, height)) {
+  if (GLFWlabeler->Resize(width, height)) {
     GLFWPostRedisplay();
   }
 }
@@ -96,7 +113,7 @@ GLFWMotion(GLFWwindow *window,
   y = framebuffer_height - y;
   
   // Send mouse motion to labeler
-  if (labeler->MouseMotion(x, y)) {
+  if (GLFWlabeler->MouseMotion(x, y)) {
     GLFWPostRedisplay();
   }
 }
@@ -141,7 +158,7 @@ int button, int action, int mods)
 
   // Call callback
   // Send mouse event to labeler
-  if (labeler->MouseButton(x, y, button, state, shift, ctrl, alt)) {
+  if (GLFWlabeler->MouseButton(x, y, button, state, shift, ctrl, alt)) {
     GLFWPostRedisplay();
   }
 }
@@ -169,7 +186,7 @@ GLFWScroll(GLFWwindow *window,
   y = framebuffer_height - y;
   
   // Set event to labeler
-  if (labeler->MouseButton(x, y, button, 1, 0, 0, 0)) {
+  if (GLFWlabeler->MouseButton(x, y, button, 1, 0, 0, 0)) {
     GLFWPostRedisplay();
   }
 }
@@ -286,7 +303,7 @@ GLFWKeyboard(GLFWwindow *window,
   }
 
   // Send keyboard event to labeler
-  if (labeler->Keyboard(x, y, translated_key, shift, ctrl, alt, tab)) {
+  if (GLFWlabeler->Keyboard(x, y, translated_key, shift, ctrl, alt, tab)) {
     GLFWPostRedisplay();
   }
 }
@@ -298,8 +315,11 @@ GLFWKeyboard(GLFWwindow *window,
 ////////////////////////////////////////////////////////////////////////
 
 static void
-UIInterface(void)
+UIInterface(R3SurfelLabeler *labeler)
 {
+  // Remember labeler so that can access from global callback functions
+  GLFWlabeler = labeler;
+  
   // Initialize the library
   if (!glfwInit()) {
     printf("Unable to initialize GLFW\n");

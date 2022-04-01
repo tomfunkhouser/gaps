@@ -233,8 +233,8 @@ EstimatedOrientedBBox(void) const
     for (int iy = 0; iy < nysteps; iy++) {
       for (int iz = 0; iz < nzsteps; iz++) {
         R3Triad axes = R3xyz_triad;
-        axes.Rotate(RN_Z, ix*0.5*RN_PI/nxsteps);
-        axes.Rotate(RN_Z, iy*0.5*RN_PI/nysteps);
+        axes.Rotate(RN_X, ix*0.5*RN_PI/nxsteps);
+        axes.Rotate(RN_Y, iy*0.5*RN_PI/nysteps);
         axes.Rotate(RN_Z, iz*0.5*RN_PI/nzsteps);
     
         // Compute ranges

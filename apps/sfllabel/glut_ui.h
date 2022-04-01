@@ -8,7 +8,16 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "fglut/fglut.h"
+#include "ui.h"
 
+
+
+////////////////////////////////////////////////////////////////////////
+// Namespace
+////////////////////////////////////////////////////////////////////////
+
+namespace gaps {
+  
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -19,6 +28,7 @@ static int GLUTwindow = 0;
 static int GLUTwindow_width = 1024;
 static int GLUTwindow_height = 768;
 static int GLUTmodifiers = 0;
+static R3SurfelLabeler *GLUTlabeler = NULL;
 
 
 
@@ -29,7 +39,7 @@ static int GLUTmodifiers = 0;
 void GLUTStop(void)
 {
   // Terminate labeler
-  if (labeler) labeler->Terminate();
+  if (GLUTlabeler) GLUTlabeler->Terminate();
 
   // Close scene
   if (scene) CloseScene(scene);
@@ -42,8 +52,8 @@ void GLUTStop(void)
 
 void GLUTRedraw(void)
 {
-  // Redraw with labeler 
-  if (labeler->Redraw()) {
+  // Redraw with GLUTlabeler 
+  if (GLUTlabeler->Redraw()) {
     glutPostRedisplay();
   }
 
@@ -65,8 +75,8 @@ void GLUTResize(int w, int h)
   GLUTwindow_width = w;
   GLUTwindow_height = h;
 
-  // Resize labeler
-  if (labeler->Resize(w, h)) {
+  // Resize GLUTlabeler
+  if (GLUTlabeler->Resize(w, h)) {
     glutPostRedisplay();
   }
 }
@@ -78,8 +88,8 @@ void GLUTMouseMotion(int x, int y)
   // Invert y coordinate
   y = GLUTwindow_height - y;
   
-  // Send mouse motion to labeler
-  if (labeler->MouseMotion(x, y)) {
+  // Send mouse motion to GLUTlabeler
+  if (GLUTlabeler->MouseMotion(x, y)) {
     glutPostRedisplay();
   }
 }
@@ -106,8 +116,8 @@ void GLUTMouseButton(int button, int state, int x, int y)
   int ctrl = ( GLUTmodifiers & GLUT_ACTIVE_CTRL);
   int alt = ( GLUTmodifiers & GLUT_ACTIVE_ALT);
 
-  // Send mouse event to labeler
-  if (labeler->MouseButton(x, y, b, s, shift, ctrl, alt)) {
+  // Send mouse event to GLUTlabeler
+  if (GLUTlabeler->MouseButton(x, y, b, s, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
 }
@@ -151,8 +161,8 @@ void GLUTSpecial(int key, int x, int y)
     case GLUT_KEY_F12: translated_key = R3_SURFEL_VIEWER_F12_KEY; break;
   }
 
-  // Send keyboard event to labeler
-  if (labeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
+  // Send keyboard event to GLUTlabeler
+  if (GLUTlabeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
 }
@@ -178,8 +188,8 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     ctrl = GLUT_ACTIVE_CTRL;
   }
 
-  // Send keyboard event to labeler
-  if (labeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
+  // Send keyboard event to GLUTlabeler
+  if (GLUTlabeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
     glutPostRedisplay();
   }
 }
@@ -190,8 +200,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 // Top-level UI function
 ////////////////////////////////////////////////////////////////////////
 
-void UIInterface(void)
+void UIInterface(R3SurfelLabeler *labeler)
 {
+  // Remember labeler so can access from global callback functions
+  GLUTlabeler = labeler;
+  
   // Open window
   int argc = 1;
   char *argv[1];
@@ -222,6 +235,10 @@ void UIInterface(void)
   // Run main loop -- never returns
   glutMainLoop();
 }
+
+
+
+}; // end namespace
 
 
 
