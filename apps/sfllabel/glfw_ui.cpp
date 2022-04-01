@@ -314,7 +314,7 @@ GLFWKeyboard(GLFWwindow *window,
 // Top-level UI function
 ////////////////////////////////////////////////////////////////////////
 
-static void
+void
 UIInterface(R3SurfelLabeler *labeler)
 {
   // Remember labeler so that can access from global callback functions
