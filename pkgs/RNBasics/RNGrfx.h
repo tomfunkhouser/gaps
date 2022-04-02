@@ -44,6 +44,9 @@
 #           include <GL/glew.h>
 #           include <GL/gl.h>
 #           include <GL/glu.h>
+#           if defined(USE_MESA) && !defined(GLAPI)
+#               define GLAPI extern
+#           endif
 #       endif
 #       define __RN_OPENGL__
 #   endif
