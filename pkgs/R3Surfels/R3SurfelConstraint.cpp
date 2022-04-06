@@ -1053,6 +1053,28 @@ Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// ELEVATION CONSTRAINT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelElevationConstraint::
+R3SurfelElevationConstraint(const RNInterval& interval)
+  : interval(interval)
+{
+}
+
+
+
+int R3SurfelElevationConstraint::
+Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
+{
+  // Return whether elevation value is set
+  if (interval.Contains(surfel->Elevation())) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+      
+////////////////////////////////////////////////////////////////////////
 // SOURCE CONSTRAINT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
