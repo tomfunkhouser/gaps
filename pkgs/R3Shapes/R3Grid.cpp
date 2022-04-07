@@ -86,13 +86,20 @@ R3Grid::
 R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution, int min_border)
 {
   // Check for empty bounding box
-  if (bbox.IsEmpty() || (bbox.Volume() == 0) || (RNIsZero(spacing))) { *this = R3Grid(); return; }
+  if (bbox.IsEmpty() || (RNIsZero(spacing))) { *this = R3Grid(); return; }
 
   // Compute inflated bbox (with room for border)
   R3Box inflated_bbox = bbox;
   if (min_border > 0) {
     inflated_bbox[0] -= spacing * min_border * R3ones_vector;
     inflated_bbox[1] += spacing * min_border * R3ones_vector;
+  }
+
+  // Compute inflated box (if would otherwise have zero volume)
+  for (int i = 0; i < 3; i++) {
+    if (inflated_bbox[0][i] == inflated_bbox[1][i]) continue;
+    inflated_bbox[0][i] -= RN_EPSILON;
+    inflated_bbox[1][i] += RN_EPSILON;
   }
   
   // Enforce max resolution
