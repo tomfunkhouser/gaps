@@ -535,7 +535,7 @@ InsertPoints(const R3SurfelPointSet *set, const R3SurfelConstraint& constraint)
   // Insert surfels
   for (int i = 0; i < set->NPoints(); i++) {
     const R3SurfelPoint *point = set->Point(i);
-    if (!constraint.Check(point->Position())) continue;
+    if (!constraint.Check(point->Block(), point->Surfel())) continue;
     bbox.Union(point->Position());
     timestamp_range.Union(point->Timestamp());
     points[npoints] = *point;
