@@ -97,9 +97,10 @@ R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resoluti
 
   // Compute inflated box (if would otherwise have zero volume)
   for (int i = 0; i < 3; i++) {
-    if (inflated_bbox[0][i] == inflated_bbox[1][i]) continue;
-    inflated_bbox[0][i] -= RN_EPSILON;
-    inflated_bbox[1][i] += RN_EPSILON;
+    if (inflated_bbox[0][i] == inflated_bbox[1][i]) {
+      inflated_bbox[0][i] -= RN_EPSILON;
+      inflated_bbox[1][i] += RN_EPSILON;
+    }
   }
   
   // Enforce max resolution
