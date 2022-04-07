@@ -86,7 +86,7 @@ R3Grid::
 R3Grid(const R3Box& bbox, RNLength spacing, int min_resolution, int max_resolution, int min_border)
 {
   // Check for empty bounding box
-  if (bbox.IsEmpty() || (RNIsZero(spacing))) { *this = R3Grid(); return; }
+  if (bbox.IsEmpty() || (bbox.Volume() == 0) || (RNIsZero(spacing))) { *this = R3Grid(); return; }
 
   // Compute inflated bbox (with room for border)
   R3Box inflated_bbox = bbox;
