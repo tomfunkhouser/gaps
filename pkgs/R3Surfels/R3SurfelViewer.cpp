@@ -1925,6 +1925,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       }
       break;
       
+    case '{':
+    case '}': {
+      // Set billboard depth
+      RNScalar factor = (key == '{') ? 0.8 : 1.2;
+      SetImagePlaneDepth(factor * ImagePlaneDepth());
+      break; }
+
     case '<':
     case '>': {
       // Select next/prev image
