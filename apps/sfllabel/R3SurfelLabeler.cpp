@@ -698,6 +698,14 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       }
       break;
 
+    case '{':
+    case '}': {
+      // Copied from R3SurfelViewer
+      RNScalar factor = (key == '{') ? 0.8 : 1.2;
+      SetImagePlaneDepth(factor * ImagePlaneDepth());
+      redraw = 1;
+      break; }
+
 #if 0      
     case '<': 
     case '>': {
@@ -818,6 +826,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       // Assign new label (copy label from closest other object)
       // if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
       // else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
+      SelectSuggestedObject();
+      redraw = 1;
       break;
       
     case 'P':
@@ -882,15 +892,72 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     }
   }
   else {
-    // Send event to viewer
-    redraw |= R3SurfelViewer::Keyboard(x, y, key, shift, ctrl, alt);
-
     // Process other keyboard events
     switch (key) {
+    case R3_SURFEL_VIEWER_F1_KEY:
+    case R3_SURFEL_VIEWER_F2_KEY:
+    case R3_SURFEL_VIEWER_F3_KEY:
+    case R3_SURFEL_VIEWER_F4_KEY: {
+      // Copied from R3SurfelViewer
+      int scale = key - R3_SURFEL_VIEWER_F1_KEY + 1;
+      ZoomCamera(0.05 + 0.25*scale*scale);
+      redraw = 1;
+      break; }
+
+    case R3_SURFEL_VIEWER_F7_KEY:
+      // Copied from R3SurfelViewer
+      if (selected_image) SelectImage(selected_image, TRUE, TRUE);
+      redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_F8_KEY:
+      // Copied from R3SurfelViewer
+      ResetCamera();
+      redraw = 1;
+      break;
+      
     case R3_SURFEL_VIEWER_F11_KEY: 
       // R3SurfelGraphCut(scene);
       redraw = 1;
       break; 
+
+    case R3_SURFEL_VIEWER_DOWN_KEY:
+      // Copied from R3SurfelViewer
+      SetImageInsetSize(0.8 * ImageInsetSize());
+      redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_UP_KEY:
+      // Copied from R3SurfelViewer
+      SetImageInsetSize(1.25 * ImageInsetSize());
+      redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_LEFT_KEY:
+      break;
+
+    case R3_SURFEL_VIEWER_RIGHT_KEY:
+      SelectSuggestedObject();
+      redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
+      // Copied from R3SurfelViewer
+      if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
+      if (shift) viewing_extent[RN_LO][RN_Z] += 0.01 * scene->BBox().ZLength();
+      else viewing_extent[RN_HI][RN_Z] += 0.01 * scene->BBox().ZLength();
+      if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
+      redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_PAGE_DOWN_KEY: 
+      // Copied from R3SurfelViewer
+      if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
+      if (shift) viewing_extent[RN_LO][RN_Z] -= 0.01 * scene->BBox().ZLength();
+      else viewing_extent[RN_HI][RN_Z] -= 0.01 * scene->BBox().ZLength();
+      if (R3Contains(viewing_extent, scene->BBox())) viewing_extent = R3null_box;
+      redraw = 1;
+      break;
 
     case 27: { // ESC
       SelectPickedObject(-1, -1, 0, 0);
@@ -1621,7 +1688,7 @@ SelectAllObjects(RNBoolean unlabeled_only)
 
 
 int R3SurfelLabeler::
-SelectSuggestedObject(void) 
+SelectSuggestedObject(RNBoolean unlabeled_only) 
 {
   // Check scene
   if (!scene) return 0;
@@ -1630,43 +1697,42 @@ SelectSuggestedObject(void)
   SetMessage(NULL);
 
   // Pick object
-  R3SurfelObject *object = NULL;
+  R3SurfelObject *best_object = NULL;
   RNScalar least_time = FLT_MAX;
   RNScalar least_confidence = FLT_MAX;
   for (int i = 0; i < scene->NObjects(); i++) {
-    R3SurfelObject *o = scene->Object(i);
-    if (o->NParts() > 0) continue;
-    if (!o->Name()) continue;
-    if (o->HumanLabel()) continue;
-    if (selection_objects.FindEntry(object)) continue;
-    R3SurfelLabelAssignment *assignment = o->CurrentLabelAssignment();
+    R3SurfelObject *object = scene->Object(i);
+    if (!object->Name()) continue;
+    if (object->Parent() != scene->RootObject()) continue;
+    if (unlabeled_only && object->HumanLabel()) continue;
+    if (!ObjectVisibility(object)) continue;
+    R3SurfelLabelAssignment *assignment = object->CurrentLabelAssignment();
     RNScalar confidence = (assignment) ? assignment->Confidence() : 0;
     RNScalar select_time = -1;
-    if (object_selection_times.size() > (unsigned int) o->SceneIndex()) {
-      select_time = object_selection_times[o->SceneIndex()] + 0.25 * RNRandomScalar();
+    if (object_selection_times.size() > (unsigned int) object->SceneIndex()) {
+      select_time = object_selection_times[object->SceneIndex()] + 0.25 * RNRandomScalar();
     }
     if (confidence < least_confidence) {
       least_confidence = confidence;
       least_time = select_time;
-      object = o;
+      best_object = object;
     }
     else if ((confidence == least_confidence) && (select_time > 0)) {
       if (select_time < least_time) {
         least_confidence = confidence;
         least_time = select_time;
-        object = o;
+        best_object = object;
       }
     }
   }
 
   // Set message
-  if (object) {
-    const char *object_name = object->Name();
+  if (best_object) {
+    const char *object_name = best_object->Name();
     if (!object_name) return 0;
-    const char *object_namep = strchr(object_name, '_');
-    if (object_namep) object_namep++;
-    else object_namep = object_name;
-    SetMessage("Selected suggested object %s", object_namep);
+    R3SurfelLabel *label = best_object->CurrentLabel();
+    const char *label_name = (label) ? label->Name() : "NoLabel";
+    SetMessage("Selected object %s / %s", object_name, label_name);
   }
 
   // Begin logging command 
@@ -1675,23 +1741,37 @@ SelectSuggestedObject(void)
   // Empty object selections
   EmptyObjectSelections();
 
-  // Insert object into selected objects
-  if (object) {
+  // Insert best object into selected objects
+  if (best_object) {
     // Select object
-    InsertObjectSelection(object);
+    InsertObjectSelection(best_object);
+
+    // Select image
+    R3Point centroid = best_object->Centroid();
+    R3SurfelImage *image = scene->FindImageByBestView(centroid, R3posz_vector);
+    SelectImage(image, FALSE, FALSE);
 
     // Set center point
-    SetCenterPoint(object->Centroid());
+    SetCenterPoint(centroid);
 
-    // Set the camera viewpoint
-    R3Box bbox = object->BBox();
-    RNLength r = bbox.DiagonalRadius();
-    R3Vector towards(0, 0.25 * RN_PI, -0.25 * RN_PI); towards.Normalize();
-    R3Vector right = towards % R3posz_vector; right.Normalize();
-    R3Vector up = right % towards; up.Normalize();
-    R3Point eye = bbox.Centroid() - towards * (16 * r);
-    R3Camera camera(eye, towards, up, 0.4, 0.4, 0.01 * r, 10000.0 * r);
-    viewer.SetCamera(camera);
+    // Set viewer's camera viewpoint
+    if (image) {
+      R3Camera camera = viewer.Camera();
+      camera.SetOrigin(image->Viewpoint());
+      camera.Reorient(image->Towards(), image->Up());
+      viewer.SetCamera(camera);
+    }
+    else {
+      R3Camera camera = viewer.Camera();
+      R3Vector towards(0, 0.25 * RN_PI, -0.25 * RN_PI); towards.Normalize();
+      R3Vector right = towards % R3posz_vector; right.Normalize();
+      R3Vector up = right % towards; up.Normalize();
+      camera.Reorient(towards, up);
+      R3Box bbox = best_object->BBox();
+      R3Point eye = centroid - towards * (16 * bbox.DiagonalRadius());
+      camera.SetOrigin(eye);
+      viewer.SetCamera(camera);
+    }
   }
 
   // End logging command
