@@ -1759,20 +1759,18 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
 
     // Set viewer's camera viewpoint
     R3Camera camera = viewer.Camera();
-    R3Vector towards(0, 0.25 * RN_PI, -0.25 * RN_PI);
+    R3Box bbox = best_object->BBox();
+    RNScalar radius = bbox.DiagonalRadius();
+    if (radius < 0.1) radius = 0.1;
+    R3Vector towards = (image)? image->Towards(): R3Vector(0, 0.25 * RN_PI, 0);
+    towards[2] = -0.25 * RN_PI; // looking down a bit
     towards.Normalize();
     R3Vector right = towards % R3posz_vector;
     right.Normalize();
     R3Vector up = right % towards;
     up.Normalize();
-    if (image) towards = image->Towards();
-    if (image) up = image->Up();
-    R3Box bbox = best_object->BBox();
-    RNScalar radius = bbox.DiagonalRadius();
-    if (radius < 0.1) radius = 0.1;
-    R3Point eye = centroid - towards * (16 * radius);
     camera.Reorient(towards, up);
-    camera.SetOrigin(eye);
+    camera.SetOrigin(centroid - towards * (16 * radius));
     viewer.SetCamera(camera);
   }
 
