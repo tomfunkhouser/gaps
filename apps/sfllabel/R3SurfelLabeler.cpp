@@ -1751,6 +1751,9 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
     R3SurfelImage *image = scene->FindImageByBestView(centroid, R3posz_vector);
     SelectImage(image, FALSE, FALSE);
 
+    // Select point
+    SelectPoint(best_object);
+
     // Set center point
     SetCenterPoint(centroid);
 
@@ -1766,6 +1769,7 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
     if (image) up = image->Up();
     R3Box bbox = best_object->BBox();
     RNScalar radius = bbox.DiagonalRadius();
+    if (radius < 0.1) radius = 0.1;
     R3Point eye = centroid - towards * (16 * radius);
     camera.Reorient(towards, up);
     camera.SetOrigin(eye);

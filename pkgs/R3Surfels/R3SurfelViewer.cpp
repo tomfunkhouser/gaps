@@ -2133,6 +2133,42 @@ ZoomCamera(RNScalar scale)
 
 
 void R3SurfelViewer::
+SelectPoint(R3SurfelObject *object)
+{
+  // Create pointset
+  R3SurfelPointSet *pointset = object->PointSet(TRUE);
+  if (!pointset) {
+    SelectPoint(NULL, -1);
+    return;
+  }
+
+  // Get object centroid
+  R3Point centroid = object->Centroid();
+
+  // Find point nearest object centroid
+  RNLength best_dd = FLT_MAX;
+  R3SurfelPoint *best_point = NULL;
+  for (int i = 0; i < pointset->NPoints(); i++) {
+    R3SurfelPoint *point = pointset->Point(i);
+    RNLength dd = R3SquaredDistance(centroid, point->Position());
+    if (dd < best_dd) {
+      best_point = point;
+      best_dd = dd;
+    }
+  }
+
+  // Select point 
+  R3SurfelBlock *block = (best_point) ? best_point->Block() : NULL;
+  int surfel_index = (best_point) ? best_point->BlockIndex() : -1;
+  SelectPoint(block, surfel_index);
+
+  // Delete pointset
+  delete pointset;
+}
+
+
+
+void R3SurfelViewer::
 SelectPoint(R3SurfelBlock *block, int surfel_index)
 {
   // Remember previously selected point

@@ -183,6 +183,7 @@ public:
   void SetCenterPointColor(const RNRgb& color);
 
   // Selection manipulation
+  void SelectPoint(R3SurfelObject *object);
   void SelectPoint(R3SurfelBlock *block, int surfel_index);
   void SelectImage(R3SurfelImage *image,
     RNBoolean update_working_set = TRUE,
