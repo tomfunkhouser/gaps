@@ -1755,23 +1755,21 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
     SetCenterPoint(centroid);
 
     // Set viewer's camera viewpoint
-    if (image) {
-      R3Camera camera = viewer.Camera();
-      camera.SetOrigin(image->Viewpoint());
-      camera.Reorient(image->Towards(), image->Up());
-      viewer.SetCamera(camera);
-    }
-    else {
-      R3Camera camera = viewer.Camera();
-      R3Vector towards(0, 0.25 * RN_PI, -0.25 * RN_PI); towards.Normalize();
-      R3Vector right = towards % R3posz_vector; right.Normalize();
-      R3Vector up = right % towards; up.Normalize();
-      camera.Reorient(towards, up);
-      R3Box bbox = best_object->BBox();
-      R3Point eye = centroid - towards * (16 * bbox.DiagonalRadius());
-      camera.SetOrigin(eye);
-      viewer.SetCamera(camera);
-    }
+    R3Camera camera = viewer.Camera();
+    R3Vector towards(0, 0.25 * RN_PI, -0.25 * RN_PI);
+    towards.Normalize();
+    R3Vector right = towards % R3posz_vector;
+    right.Normalize();
+    R3Vector up = right % towards;
+    up.Normalize();
+    if (image) towards = image->Towards();
+    if (image) up = image->Up();
+    R3Box bbox = best_object->BBox();
+    RNScalar radius = bbox.DiagonalRadius();
+    R3Point eye = centroid - towards * (16 * radius);
+    camera.Reorient(towards, up);
+    camera.SetOrigin(eye);
+    viewer.SetCamera(camera);
   }
 
   // End logging command
