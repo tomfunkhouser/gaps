@@ -1134,12 +1134,10 @@ SelectPickedObject(int x, int y, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
 
   // Set message
   if (object) {
-    const char *object_name = object->Name();
-    if (!object_name) return 0;
     R3SurfelLabel *label = object->CurrentLabel();
     const char *label_name = (label) ? label->Name() : "NoLabel";
-    if (ctrl) SetMessage("Unselected object %s / %s", object_name, label_name);
-    else SetMessage("Selected object %s / %s", object_name, label_name);
+    if (ctrl) SetMessage("Unselected 1 object / %s", label_name);
+    else SetMessage("Selected 1 object / %s", label_name);
   }
 
   // Begin logging command 
@@ -1728,11 +1726,9 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
 
   // Set message
   if (best_object) {
-    const char *object_name = best_object->Name();
-    if (!object_name) return 0;
     R3SurfelLabel *label = best_object->CurrentLabel();
     const char *label_name = (label) ? label->Name() : "NoLabel";
-    SetMessage("Selected object %s / %s", object_name, label_name);
+    SetMessage("Selected 1 object / %s", label_name);
   }
 
   // Begin logging command 
