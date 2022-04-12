@@ -1136,8 +1136,8 @@ SelectPickedObject(int x, int y, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
   if (object) {
     R3SurfelLabel *label = object->CurrentLabel();
     const char *label_name = (label) ? label->Name() : "NoLabel";
-    if (ctrl) SetMessage("Unselected 1 object with click / %s", label_name);
-    else SetMessage("Selected 1 object with click / %s", label_name);
+    if (ctrl) SetMessage("Unselected 1 object / %s", label_name);
+    else SetMessage("Selected 1 object / %s", label_name);
   }
 
   // Begin logging command 
@@ -1211,8 +1211,8 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
   }
 
   // Set message
-  if (ctrl) SetMessage("Unselected %d objects with box", picked_objects.NEntries());
-  else SetMessage("Selected %d objects with box", picked_objects.NEntries());
+  if (ctrl) SetMessage("Unselected %d objects", picked_objects.NEntries());
+  else SetMessage("Selected %d objects", picked_objects.NEntries());
 
   // Begin logging command 
   BeginCommand(R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND);
@@ -1299,8 +1299,8 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
   }
 
   // Set message
-  if (ctrl) SetMessage("Unselected %d objects with lasso", picked_objects.NEntries());
-  else SetMessage("Selected %d objects with lasso", picked_objects.NEntries());
+  if (ctrl) SetMessage("Unselected %d objects", picked_objects.NEntries());
+  else SetMessage("Selected %d objects", picked_objects.NEntries());
 
   // Begin logging command 
   BeginCommand(R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND);
@@ -1474,8 +1474,8 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
   delete [] object_marks;
 
   // Set message
-  if (ctrl) SetMessage("Unselected %d objects with lasso", picked_objects.NEntries());
-  else SetMessage("Selected %d objects with lasso", picked_objects.NEntries());
+  if (ctrl) SetMessage("Unselected %d objects", picked_objects.NEntries());
+  else SetMessage("Selected %d objects", picked_objects.NEntries());
 
   // Begin logging command 
   BeginCommand(R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND);
@@ -1627,7 +1627,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
   }
 
   // Set message
-  SetMessage("Selected %d more overlapping objects", picked_objects.NEntries());
+  SetMessage("Selected %d more objects", picked_objects.NEntries());
 
   // Check picked objects
   if (picked_objects.IsEmpty()) return 0;
@@ -1728,7 +1728,7 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
   if (best_object) {
     R3SurfelLabel *label = best_object->CurrentLabel();
     const char *label_name = (label) ? label->Name() : "NoLabel";
-    SetMessage("Selected 1 object automatically / %s", label_name);
+    SetMessage("Selected 1 object / %s", label_name);
   }
 
   // Begin logging command 
