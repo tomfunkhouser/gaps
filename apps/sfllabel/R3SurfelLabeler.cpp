@@ -934,6 +934,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       break;
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
+      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
+      redraw = 1;
       break;
 
     case R3_SURFEL_VIEWER_RIGHT_KEY:
@@ -2740,6 +2742,41 @@ AssignAttributeToSelectedObjects(RNFlags attribute,
 }
 
 
+
+int R3SurfelLabeler::
+UndoCommandOfType(int command_type)
+{
+  // Check scene
+  if (!scene) return 0;
+  assert(IsValid());
+
+
+  // Reset message
+  SetMessage(NULL);
+
+  // Check undo stack
+  if (undo_index < 0) {
+    // SetMessage("Nothing to undo");
+    return 0;
+  }
+
+  // Check command type
+  if ((command_type < 0) || (command_type >= R3_SURFEL_LABELER_NUM_COMMANDS)) {
+    // SetMessage("Can't undo unrecognized command type: %d", command_type);
+    return 0;
+  }
+
+  // Check command at top of undo stack
+  R3SurfelLabelerCommand *command = undo_stack.Kth(undo_index);
+  if (command->type != command_type) {
+    // SetMessage("Last command is not of type: %s", command_names[command_type]);
+    return 0;
+  }
+
+  // Undo last command
+  return Undo();
+}
+  
 
 int R3SurfelLabeler::
 Undo(void)

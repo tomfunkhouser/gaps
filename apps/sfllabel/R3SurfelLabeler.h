@@ -207,6 +207,9 @@ public:
 
   // Selection utility functions
   int RasterizeObjectMask(unsigned int *object_mask);
+
+  // Undo command used for cycling through objects
+  int UndoCommandOfType(int command_type);
   
   // Debug functions
   int IsValid(void) const;

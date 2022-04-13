@@ -36,8 +36,8 @@ static int GLUTmodifiers = 0;
 static R3Viewer *viewer = NULL;
 static R3Grid *grid = NULL;
 static R3Point initial_camera_origin = R3Point(0.0, 0.0, 0.0);
-static R3Vector initial_camera_towards = R3Vector(0.0, 0.0, -1.0);
-static R3Vector initial_camera_up = R3Vector(0.0, 1.0, 0.0);
+static R3Vector initial_camera_towards = R3Vector(-0.5, -0.75, -1.0);
+static R3Vector initial_camera_up = R3Vector(0.0, 0.0, 1.0);
 static RNBoolean initial_camera = FALSE;
 
 
