@@ -43,7 +43,6 @@ static RNBoolean initial_camera = FALSE;
 
 static int show_model = 1;
 static int show_model_names = 0;
-static int show_image_affinities = 0;
 
 
 // Glut variables
@@ -298,57 +297,6 @@ DrawModel(void)
 
 
 
-static void
-DrawImageAffinities(void)
-{
-  // Check if should draw
-  if (!show_image_affinities) return;
-
-  // Get selected point
-  R3SurfelPoint *selected_point = viewer->SelectedPoint();
-  if (!selected_point) return;
-  R3Point point_position = selected_point->Position();
-
-  // Draw line between selected center point and
-  // viewpoint of each image in which it is visible
-  glDisable(GL_LIGHTING);
-  glBegin(GL_LINES);
-  for (int i = 0; i < scene->NImages(); i++) {
-    R3SurfelImage *image = scene->Image(i);
-
-    // Compute depth 
-    R3Point image_viewpoint = image->Viewpoint();
-    R3Vector image_towards = image->Towards();
-    R3Vector vector = point_position - image_viewpoint;
-    RNScalar point_depth = image_towards.Dot(vector);
-    if (RNIsNegativeOrZero(point_depth)) continue;
-      
-    // Project to image coordinates
-    R2Point image_position = image->TransformFromWorldToImage(point_position);
-    if (!image->ContainsImagePosition(image_position)) continue;
-
-    // Check depth
-    const R2Grid *depth_channel = image->DepthChannel();
-    if (depth_channel) {
-      RNScalar max_depth_difference_fraction = 0.1;
-      RNScalar image_depth = image->PixelDepth(image_position.X(), image_position.Y());
-      if (RNIsNegativeOrZero(image_depth)) continue;
-      if (fabs(image_depth - point_depth) / point_depth > max_depth_difference_fraction) continue;
-    }
-    
-    // Set color and alpha based on affinity
-    // RNScalar affinity = 0.5 + ((point_depth > 2) ? 1.0 / point_depth : 0.5);
-    // glColor3d(affinity, 0, affinity);
-    glColor3d(1, 0, 1);
-    
-    // Draw line
-    R3LoadPoint(point_position);
-    R3LoadPoint(image_viewpoint);
-  }
-  glEnd();
-}
-
-
 ////////////////////////////////////////////////////////////////////////
 // GLUT callback functions
 ////////////////////////////////////////////////////////////////////////
@@ -379,7 +327,6 @@ void GLUTRedraw(void)
 
   // Draw stuff
   DrawModel();
-  DrawImageAffinities();
 
   // Swap buffers 
   glutSwapBuffers();
@@ -519,12 +466,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   }
   else if (!ctrl) {
     switch (translated_key) {
-    case 'A':
-    case 'a':
-      show_image_affinities = !show_image_affinities;
-      glutPostRedisplay();
-      break;
-
     case 27: // ESC
       exit(0);
       break;
