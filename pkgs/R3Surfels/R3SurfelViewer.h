@@ -126,79 +126,73 @@ public:
   RNScalar FrameTime(void) const;
   RNScalar CurrentTime(void) const;
 
-  // Image loading properties
-  const char *ImageDirectory(void) const;
-  
   
   /////////////////////////////////////////
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
 
   // Viewing property manipulation
-  void ResetCamera(void);
-  void SetCamera(const R3Camera& camera);
-  void ZoomCamera(RNScalar scale = 10);
-  void SetViewport(const R2Viewport& viewport);
-  void SetViewingExtent(const R3Box& box);
-  void SetElevationRange(const RNInterval& range);
-  void SetCenterPoint(const R3Point& point);
-  void SetImageInsetSize(RNScalar fraction);
-  void SetImagePlaneDepth(RNLength depth);
-  void SetSurfelSize(RNScalar npixels);
+  virtual void ResetCamera(void);
+  virtual void SetCamera(const R3Camera& camera);
+  virtual void ZoomCamera(RNScalar scale = 10);
+  virtual void SetViewport(const R2Viewport& viewport);
+  virtual void SetViewingExtent(const R3Box& box);
+  virtual void SetElevationRange(const RNInterval& range);
+  virtual void SetCenterPoint(const R3Point& point);
+  virtual void SetImageInsetSize(RNScalar fraction);
+  virtual void SetImagePlaneDepth(RNLength depth);
+  virtual void SetSurfelSize(RNScalar npixels);
 
   // Visibility manipulation (0=off, 1=on, -1=toggle)
-  void SetSurfelVisibility(int visibility);
-  void SetNormalVisibility(int visibility);
-  void SetBackfacingVisibility(int visibility);
-  void SetAerialVisibility(int visibility);
-  void SetTerrestrialVisibility(int visibility);
-  void SetHumanLabeledObjectVisibility(int visibility);
-  void SetObjectPropertyVisibility(int visibility);
-  void SetObjectRelationshipVisibility(int visibility);
-  void SetObjectBBoxVisibility(int visibility);
-  void SetNodeBBoxVisibility(int visibility);
-  void SetBlockBBoxVisibility(int visibility);
-  void SetScanViewpointVisibility(int visibility);
-  void SetImageViewpointVisibility(int visibility);
-  void SetImagePlaneVisibility(int visibility);
-  void SetImageInsetVisibility(int visibility);
-  void SetImagePointsVisibility(int visibility);
-  void SetCenterPointVisibility(int visibility);
-  void SetViewingExtentVisibility(int visibility);
-  void SetAxesVisibility(int visibility);
-  void SetLabelVisibility(R3SurfelLabel *label, int visibility);
-  void SetLabelVisibility(int label_index, int visibility);
-  void SetAttributeVisibility(RNFlags attribute, int visibility);
+  virtual void SetSurfelVisibility(int visibility);
+  virtual void SetNormalVisibility(int visibility);
+  virtual void SetBackfacingVisibility(int visibility);
+  virtual void SetAerialVisibility(int visibility);
+  virtual void SetTerrestrialVisibility(int visibility);
+  virtual void SetHumanLabeledObjectVisibility(int visibility);
+  virtual void SetObjectPropertyVisibility(int visibility);
+  virtual void SetObjectRelationshipVisibility(int visibility);
+  virtual void SetObjectBBoxVisibility(int visibility);
+  virtual void SetNodeBBoxVisibility(int visibility);
+  virtual void SetBlockBBoxVisibility(int visibility);
+  virtual void SetScanViewpointVisibility(int visibility);
+  virtual void SetImageViewpointVisibility(int visibility);
+  virtual void SetImagePlaneVisibility(int visibility);
+  virtual void SetImageInsetVisibility(int visibility);
+  virtual void SetImagePointsVisibility(int visibility);
+  virtual void SetCenterPointVisibility(int visibility);
+  virtual void SetViewingExtentVisibility(int visibility);
+  virtual void SetAxesVisibility(int visibility);
+  virtual void SetLabelVisibility(R3SurfelLabel *label, int visibility);
+  virtual void SetLabelVisibility(int label_index, int visibility);
+  virtual void SetAttributeVisibility(RNFlags attribute, int visibility);
   
   // Color manipulation
-  void SetSurfelColorScheme(int scheme);
-  void SetNormalColor(const RNRgb& color);
-  void SetBackgroundColor(const RNRgb& color);
-  void SetObjectPropertyColor(const RNRgb& color);
-  void SetObjectBBoxColor(const RNRgb& color);
-  void SetNodeBBoxColor(const RNRgb& color);
-  void SetBlockBBoxColor(const RNRgb& color);
-  void SetScanViewpointColor(const RNRgb& color);
-  void SetImageViewpointColor(const RNRgb& color);
-  void SetCenterPointColor(const RNRgb& color);
+  virtual void SetSurfelColorScheme(int scheme);
+  virtual void SetNormalColor(const RNRgb& color);
+  virtual void SetBackgroundColor(const RNRgb& color);
+  virtual void SetObjectPropertyColor(const RNRgb& color);
+  virtual void SetObjectBBoxColor(const RNRgb& color);
+  virtual void SetNodeBBoxColor(const RNRgb& color);
+  virtual void SetBlockBBoxColor(const RNRgb& color);
+  virtual void SetScanViewpointColor(const RNRgb& color);
+  virtual void SetImageViewpointColor(const RNRgb& color);
+  virtual void SetCenterPointColor(const RNRgb& color);
 
   // Selection manipulation
-  void SelectPoint(R3SurfelObject *object);
-  void SelectPoint(R3SurfelBlock *block, int surfel_index);
-  void SelectImage(R3SurfelImage *image,
+  virtual void SelectPoint(R3SurfelObject *object);
+  virtual void SelectPoint(R3SurfelBlock *block, int surfel_index);
+  virtual void SelectImage(R3SurfelImage *image,
     RNBoolean update_working_set = TRUE,
     RNBoolean jump_to_viewpoint = FALSE);
 
   // Display parameters
-  void SetTargetResolution(RNScalar resolution);
-  void SetFocusRadius(RNScalar radius);
-  void SetSubsamplingFactor(int subsampling_factor);
-
-  // Image loading
-  void SetImageDirectory(const char *directory_name);
+  virtual void SetTargetResolution(RNScalar resolution);
+  virtual void SetFocusRadius(RNScalar radius);
+  virtual void SetSubsamplingFactor(int subsampling_factor);
 
   // Image input/output
-  int WriteImage(const char *filename);
+  virtual int WriteImage(const char *filename);
 
 
   /////////////////////////////////////////
@@ -206,8 +200,10 @@ public:
   /////////////////////////////////////////
 
   // Pick utility functions
-  R3SurfelImage *PickImage(int x, int y, R3Point *picked_position = NULL);
-  R3SurfelNode *PickNode(int x, int y, R3Point *picked_position = NULL,
+  virtual R3SurfelImage *PickImage(int x, int y,
+    R3Point *picked_position = NULL);
+  virtual R3SurfelNode *PickNode(int x, int y,
+    R3Point *picked_position = NULL,
     R3SurfelBlock **picked_block = NULL, int *picked_surfel_index = NULL,
     RNBoolean exclude_nonobjects = FALSE);
 
@@ -217,51 +213,51 @@ public:
   /////////////////////////////////////////
 
   // Color creation
-  void CreateColor(unsigned char *color, int k) const;
-  void CreateColor(unsigned char *color, double value) const;
-  void CreateColor(unsigned char *color, int color_scheme,
+  virtual void CreateColor(unsigned char *color, int k) const;
+  virtual void CreateColor(unsigned char *color, double value) const;
+  virtual void CreateColor(unsigned char *color, int color_scheme,
     const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
     R3SurfelObject *object, R3SurfelLabel *label) const;
 
   // Color loading
-  void LoadColor(int k) const;
-  void LoadColor(double value) const;
-  void LoadColor(int color_scheme,
+  virtual void LoadColor(int k) const;
+  virtual void LoadColor(double value) const;
+  virtual void LoadColor(int color_scheme,
     const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
     R3SurfelObject *object, R3SurfelLabel *label) const;
 
   // Viewing extent
-  void EnableViewingExtent(void) const;
-  void DisableViewingExtent(void) const;
-  void DrawViewingExtent(void) const;
+  virtual void EnableViewingExtent(void) const;
+  virtual void DisableViewingExtent(void) const;
+  virtual void DrawViewingExtent(void) const;
 
   // Update
-  void UpdateViewingFrustum(void);
-  void UpdateGroundZGrid(void);
-  void UpdateSelectedImageColorPixels(void);
-  void UpdateSelectedImageTexture(void);
-  void AdaptWorkingSet(void);
+  virtual void UpdateViewingFrustum(void);
+  virtual void UpdateGroundZGrid(void);
+  virtual void UpdateSelectedImageColorPixels(void);
+  virtual void UpdateSelectedImageTexture(void);
+  virtual void AdaptWorkingSet(void);
  
   // Drawing 
-  void DrawSurfels(int color_scheme = 0) const;
-  void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
-  void DrawNormals(void) const;
-  void DrawObjectProperties(void) const;
-  void DrawObjectRelationships(void) const;
-  void DrawObjectBBoxes(void) const;
-  void DrawNodeBBoxes(void) const;
-  void DrawBlockBBoxes(void) const;
-  void DrawCenterPoint(void) const;
-  void DrawSelectedPoint(void) const;
-  void DrawScanViewpoints(void) const;
-  void DrawImageViewpoints(void) const;
-  void DrawImageInset(void) const;
-  void DrawImagePlane(void) const;
-  void DrawImagePoints(void) const;
-  void DrawAxes(void) const;
+  virtual void DrawSurfels(int color_scheme = 0) const;
+  virtual void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
+  virtual void DrawNormals(void) const;
+  virtual void DrawObjectProperties(void) const;
+  virtual void DrawObjectRelationships(void) const;
+  virtual void DrawObjectBBoxes(void) const;
+  virtual void DrawNodeBBoxes(void) const;
+  virtual void DrawBlockBBoxes(void) const;
+  virtual void DrawCenterPoint(void) const;
+  virtual void DrawSelectedPoint(void) const;
+  virtual void DrawScanViewpoints(void) const;
+  virtual void DrawImageViewpoints(void) const;
+  virtual void DrawImageInset(void) const;
+  virtual void DrawImagePlane(void) const;
+  virtual void DrawImagePoints(void) const;
+  virtual void DrawAxes(void) const;
 
   // Image capture
-  void CaptureImage(const char *filename) const;
+  virtual void CaptureImage(const char *filename) const;
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -269,10 +265,8 @@ public:
 ////////////////////////////////////////////////////////////////////////
 
   // Object editing 
-  int SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint, 
+  virtual int SplitLeafNodes(R3SurfelNode *source_node, const R3SurfelConstraint& constraint, 
     RNArray<R3SurfelNode *> *nodesA = NULL, RNArray<R3SurfelNode *> *nodesB = NULL);
-  int SplitObject(R3SurfelObject *object, const R3SurfelConstraint& constraint,
-    R3SurfelObject **objectA = NULL, R3SurfelObject **objectB = NULL);
 
   // Working set management
   virtual void EmptyWorkingSet(void);
@@ -283,27 +277,27 @@ public:
   virtual void RemoveFromWorkingSet(R3SurfelNode *node, RNBoolean full_resolution = FALSE);
 
   // Memory management functions
-  void ReadCoarsestBlocks(RNScalar max_complexity);
-  void ReleaseCoarsestBlocks(RNScalar max_complexity);
+  virtual void ReadCoarsestBlocks(RNScalar max_complexity);
+  virtual void ReleaseCoarsestBlocks(RNScalar max_complexity);
 
 protected:
   // Scene manipulation functions
-  void SetScene(R3SurfelScene *scene);
+  virtual void SetScene(R3SurfelScene *scene);
 
   // Viewing utility functions
-  void RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy);
+  virtual void RotateWorld(RNScalar factor, const R3Point& origin, int, int, int dx, int dy);
 
   // Draw functions
-  void DrawObject(R3SurfelObject *object, RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+  virtual void DrawObject(R3SurfelObject *object, RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
 
   // VBO management functions
-  void DrawVBO(int color_scheme) const;
-  void InvalidateVBO(void);
-  void UpdateVBO(void);
+  virtual void DrawVBO(int color_scheme) const;
+  virtual void InvalidateVBO(void);
+  virtual void UpdateVBO(void);
 
   // Shader management functions
-  void CompileShaders(void);
-  void DeleteShaders(void);
+  virtual void CompileShaders(void);
+  virtual void DeleteShaders(void);
 
 protected:
   // Tree properties

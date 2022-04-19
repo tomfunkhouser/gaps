@@ -2571,6 +2571,86 @@ FitSupportPlane(R3SurfelScene *scene,
 // Planar grid creation
 ////////////////////////////////////////////////////////////////////////
 
+R3OrientedBox 
+EstimateOrientedBBox(R3SurfelPointSet *pointset)
+{
+  // Check pointset
+  if (pointset->NPoints() == 0) return R3null_oriented_box;
+    
+  // Get centroid 
+  R3Point centroid = pointset->Centroid();
+
+  // Search for best axes
+  R3Box best_range = R3null_box;
+  R3Triad best_axes = R3xyz_triad;
+  int nxsteps = 1;
+  int nysteps = 1;
+  int nzsteps = 16;
+  for (int ix = 0; ix < nxsteps; ix++) {
+    for (int iy = 0; iy < nysteps; iy++) {
+      for (int iz = 0; iz < nzsteps; iz++) {
+        R3Triad axes = R3xyz_triad;
+        axes.Rotate(RN_X, ix*0.5*RN_PI/nxsteps);
+        axes.Rotate(RN_Y, iy*0.5*RN_PI/nysteps);
+        axes.Rotate(RN_Z, iz*0.5*RN_PI/nzsteps);
+    
+        // Compute ranges
+        R3Box range = R3null_box;
+        for (int i = 0; i < pointset->NPoints(); i++) {
+          R3SurfelPoint *point = pointset->Point(i);
+          R3Vector v = point->Position() - centroid;
+          RNLength r0 = v.Dot(axes[0]);
+          RNLength r1 = v.Dot(axes[1]);
+          RNLength r2 = v.Dot(axes[2]);
+          range.Union(R3Point(r0, r1, r2));
+        }
+
+        // Check if range is best
+        if (best_range.IsEmpty() || (range.Volume() < best_range.Volume())) {
+          best_range = range;
+          best_axes = axes;
+        }
+      }
+    }
+  }
+      
+  // Compute center
+  if (best_range.IsEmpty()) best_range = R3zero_box;
+  R3Point c = best_range.Centroid();
+  R3Point center = centroid + best_axes[0]*c[0] + best_axes[1]*c[1] + best_axes[2]*c[2];
+
+  // Return oriented box
+  return R3OrientedBox(center, best_axes[0], best_axes[1], best_range.XRadius(), best_range.YRadius(), best_range.ZRadius());
+}
+  
+
+
+R3OrientedBox 
+EstimateOrientedBBox(R3SurfelObject *object)
+{
+  // Check object
+  if (!object) return R3null_oriented_box;
+  
+  // Get pointset
+  R3SurfelPointSet *pointset = object->PointSet(TRUE);
+  if (!pointset) return R3null_oriented_box;
+
+  // Compute oriented box
+  R3OrientedBox obb = EstimateOrientedBBox(pointset);
+
+  // Delete pointset
+  delete pointset;
+           
+  // Return oriented box
+  return obb;
+}
+  
+
+
+////////////////////////////////////////////////////////////////////////
+// Planar grid creation
+////////////////////////////////////////////////////////////////////////
+
 struct SurfelPlanarGridData {
   RNArray<R3SurfelPoint *> points;
   R3Plane plane;

@@ -35,7 +35,7 @@ public:
   //////////////////////////////////////////
 
   // Constructor/destructor functions
-  R3SurfelLabeler(R3SurfelScene *scene, const char *loging_filename = NULL);
+  R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename = NULL);
   virtual ~R3SurfelLabeler(void);
 
 
@@ -44,15 +44,15 @@ public:
   //////////////////////
 
   // Begin/end events
-  void Initialize(void);
-  void Terminate(void);
+  virtual void Initialize(void);
+  virtual void Terminate(void);
 
   // User input events
-  int Redraw(void);
-  int Resize(int width, int height);
-  int MouseMotion(int x, int y);
-  int MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point = 1);
-  int Keyboard(int x, int y, int key, int shift, int ctrl, int alt);
+  virtual int Redraw(void);
+  virtual int Resize(int width, int height);
+  virtual int MouseMotion(int x, int y);
+  virtual int MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, int update_center_point = 1);
+  virtual int Keyboard(int x, int y, int key, int shift, int ctrl, int alt);
 
 
   //////////////////
@@ -60,48 +60,48 @@ public:
   //////////////////
 
   // Save scene 
-  int Sync(void);
+  virtual int Sync(void);
 
   // Snapshot scene (save copy)
-  int Snapshot(void);
+  virtual int Snapshot(void);
 
   // Camera control
-  int ZoomCamera(RNScalar scale = 0);
+  virtual void ZoomCamera(RNScalar scale = 0);
 
   // Object selection 
-  int SelectPickedObject(int x, int y, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
-  int SelectEnclosedObjects(const R2Box& box, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  int SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  int SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
-  int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
-  int SelectSuggestedObject(RNBoolean unlabeled_only = FALSE);
+  virtual int SelectPickedObject(int x, int y, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
+  virtual int SelectEnclosedObjects(const R2Box& box, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
+  virtual int SelectSuggestedObject(RNBoolean unlabeled_only = FALSE);
 
   // Create label assignments 
-  int AssignLabelToObject(R3SurfelObject *object, R3SurfelLabel *label, RNScalar confidence, int originator, int command);
-  int AssignLabelToPickedObject(R3SurfelLabel *label, int x, int y);
-  int AssignLabelToSelectedObjects(R3SurfelLabel *label);
-  int AssignNewLabelToPickedObject(int x, int y);
-  int AssignNewLabelToSelectedObjects(void);
+  virtual int AssignLabelToObject(R3SurfelObject *object, R3SurfelLabel *label, RNScalar confidence, int originator, int command);
+  virtual int AssignLabelToPickedObject(R3SurfelLabel *label, int x, int y);
+  virtual int AssignLabelToSelectedObjects(R3SurfelLabel *label);
+  virtual int AssignNewLabelToPickedObject(int x, int y);
+  virtual int AssignNewLabelToSelectedObjects(void);
 
   // Confirm label assignments
-  int ConfirmLabelOnPickedObject(int x, int y);
-  int ConfirmLabelsOnSelectedObjects(void);
-  int ConfirmLabelsOnAllObjects(void);
+  virtual int ConfirmLabelOnPickedObject(int x, int y);
+  virtual int ConfirmLabelsOnSelectedObjects(void);
+  virtual int ConfirmLabelsOnAllObjects(void);
 
   // Object hierarchy adjustments
-  int MergeSelectedObjects(void);
-  int UnmergeSelectedObjects(void);
-  int SplitSelectedObjects(void);
+  virtual int MergeSelectedObjects(void);
+  virtual int UnmergeSelectedObjects(void);
+  virtual int SplitSelectedObjects(void);
 
   // Object attribute adjustments
-  int AssignAttributeToPickedObject(int x, int y, RNFlags attribute, const char *attribute_name, int value);
-  int AssignAttributeToSelectedObjects(RNFlags attribute, const char *attribute_name, int value);
+  virtual int AssignAttributeToPickedObject(int x, int y, RNFlags attribute, const char *attribute_name, int value);
+  virtual int AssignAttributeToSelectedObjects(RNFlags attribute, const char *attribute_name, int value);
   
   // Other commands
-  int Undo(void);
-  int Redo(void);
-  int Reset(void);
+  virtual int Undo(void);
+  virtual int Redo(void);
+  virtual int Reset(void);
 
   
   ////////////////////////
@@ -141,27 +141,17 @@ public:
   ///////////////////////////////
 
   // Subwindow/menu manipulation (visibility: 0=off, 1=on, -1=toggle)
-  void SetMessage(const char *fmt, ...);
-  void SetSelectionVisibility(int visibility);
-  void SetMessageVisibility(int visibility);
-  void SetStatusVisibility(int visibility);
-  void SetCommandMenuVisibility(int visibility);
-  void SetLabelMenuVisibility(int visibility);
-  void SetAttributeMenuVisibility(int visibility);
+  virtual void SetMessage(const char *fmt, ...);
+  virtual void SetSelectionVisibility(int visibility);
+  virtual void SetMessageVisibility(int visibility);
+  virtual void SetStatusVisibility(int visibility);
+  virtual void SetCommandMenuVisibility(int visibility);
+  virtual void SetLabelMenuVisibility(int visibility);
+  virtual void SetAttributeMenuVisibility(int visibility);
 
   // Snapshot manipulation
-  void SetSnapshotDirectory(const char *directory_name);
+  virtual void SetSnapshotDirectory(const char *directory_name);
 
-  
-  ////////////////////////
-  //// LOGGING
-  ////////////////////////
-
-  // Logging functions
-  int StartLogging(const char *filename) const;
-  int EndLogging(void) const;
-  int IsLogging(void) const;
-  int ReadLog(const char *filename);
   
 public:
 
@@ -170,49 +160,49 @@ public:
   //////////////////////////////////////////
 
   // Logging functions
-  void BeginCommand(int type, double operand = 0);
-  void EndCommand(void);
-  void PrintCommand(class R3SurfelLabelerCommand *command, FILE *fp = NULL) const;
-  void PrintCheckpoint(FILE *fp = NULL) const;
+  virtual void BeginCommand(int type, double operand = 0);
+  virtual void EndCommand(void);
+  virtual void PrintCommand(class R3SurfelLabelerCommand *command, FILE *fp = NULL) const;
+  virtual void PrintCheckpoint(FILE *fp = NULL) const;
 
   // Object selection functions
   int NObjectSelections(void) const;
   R3SurfelObject *ObjectSelection(int k) const;
   R3Box ObjectSelectionBBox(void) const;
-  void InsertObjectSelection(R3SurfelObject *object);
-  void RemoveObjectSelection(R3SurfelObject *object);
-  int EmptyObjectSelections(void);
+  virtual void InsertObjectSelection(R3SurfelObject *object);
+  virtual void RemoveObjectSelection(R3SurfelObject *object);
+  virtual int EmptyObjectSelections(void);
 
   // Label assignment functions
-  int InsertLabelAssignment(R3SurfelLabelAssignment *assignment);
-  int RemoveLabelAssignment(R3SurfelLabelAssignment *assignment);
-  int EmptyLabelAssignments(void);
+  virtual int InsertLabelAssignment(R3SurfelLabelAssignment *assignment);
+  virtual int RemoveLabelAssignment(R3SurfelLabelAssignment *assignment);
+  virtual int EmptyLabelAssignments(void);
 
   // Object hierarchy functions
-  R3SurfelLabel *CreateLabel(R3SurfelLabel *parent = NULL, const char *name = NULL);
-  R3SurfelObject *CreateObject(R3SurfelObject *parent = NULL, const char *name = NULL);
-  int SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent);
-  int SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
+  virtual R3SurfelLabel *CreateLabel(R3SurfelLabel *parent = NULL, const char *name = NULL);
+  virtual R3SurfelObject *CreateObject(R3SurfelObject *parent = NULL, const char *name = NULL);
+  virtual int SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent);
+  virtual int SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstraint& constraint,
     RNArray<R3SurfelObject *> *resultA = NULL, RNArray<R3SurfelObject *> *resultB = NULL);
 
   // Attribute assignment functions
-  int AssignAttribute(R3SurfelObject *object, RNFlags attribute, RNBoolean value);
+  virtual int AssignAttribute(R3SurfelObject *object, RNFlags attribute, RNBoolean value);
   
   // Pointset functions
   R3SurfelPointSet *ObjectSelectionPointSet(void) const;
 
   // Draw functions
-  void DrawObjectSelections(void) const;
-  void DrawObjectLabels(void) const;
+  virtual void DrawObjectSelections(void) const;
+  virtual void DrawObjectLabels(void) const;
 
   // Selection utility functions
-  int RasterizeObjectMask(unsigned int *object_mask);
+  virtual int RasterizeObjectMask(unsigned int *object_mask);
 
   // Undo command used for cycling through objects
-  int UndoCommandOfType(int command_type);
+  virtual int UndoCommandOfType(int command_type);
   
   // Debug functions
-  int IsValid(void) const;
+  virtual int IsValid(void) const;
 
 
   ///////////////////////////////
@@ -220,20 +210,20 @@ public:
   ///////////////////////////////
 
   // Command menu functions
-  void DrawCommandMenu(void) const;
-  int PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+  virtual void DrawCommandMenu(void) const;
+  virtual int PickCommandMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
 
   // Attribute menu functions
-  R2Box AttributeMenuBBox(void) const;
-  void UpdateAttributeMenu(void);
-  void DrawAttributeMenu(void) const;
-  int PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+  virtual R2Box AttributeMenuBBox(void) const;
+  virtual void UpdateAttributeMenu(void);
+  virtual void DrawAttributeMenu(void) const;
+  virtual int PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
 
   // Label menu functions
-  R2Box LabelMenuBBox(void) const;
-  void UpdateLabelMenu(void);
-  void DrawLabelMenu(void) const;
-  int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
+  virtual R2Box LabelMenuBBox(void) const;
+  virtual void UpdateLabelMenu(void);
+  virtual void DrawLabelMenu(void) const;
+  virtual int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
   
   
   /////////////////////////////////////
@@ -241,7 +231,7 @@ public:
   /////////////////////////////////////
 
   // Keyboard callback with extra variable for tab key state
-  int Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab);
+  virtual int Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab);
 
   
   /////////////////////////////////////
@@ -249,15 +239,15 @@ public:
   /////////////////////////////////////
 
   // Message window functions
-  void DrawMessage(void) const;
+  virtual void DrawMessage(void) const;
 
   // Status window functions
-  void DrawStatus(void) const;
+  virtual void DrawStatus(void) const;
 
   // Lasso drawing functions
-  void DrawRubberBox(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
-  void DrawRubberPolygon(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
-  void DrawRubberLine(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
+  virtual void DrawRubberBox(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
+  virtual void DrawRubberPolygon(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
+  virtual void DrawRubberLine(RNBoolean front_buffer = TRUE, RNBoolean xor_op = TRUE) const;
 
 
   /////////////////////////////////////

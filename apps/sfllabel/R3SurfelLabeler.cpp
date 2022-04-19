@@ -1093,7 +1093,7 @@ Snapshot(void)
 
 
 
-int R3SurfelLabeler::
+void R3SurfelLabeler::
 ZoomCamera(RNScalar scale)
 {
   // Set message
@@ -1107,9 +1107,6 @@ ZoomCamera(RNScalar scale)
 
   // End logging command
   EndCommand();
-
-  // Return success
-  return 1;
 }
 
 
