@@ -2353,6 +2353,31 @@ CreateObjectSet(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
+// Scene queries
+////////////////////////////////////////////////////////////////////////
+
+static R3Point
+ClosestImageViewpoint(R3SurfelScene *scene, const R3Point& position)
+{
+  // Search for closest image viewpoint
+  RNScalar best_dd = FLT_MAX;
+  R3Point best_viewpoint(0, 0, 0);
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    RNScalar dd = R3SquaredDistance(image->Viewpoint(), position);
+    if (dd < best_dd) {
+      best_viewpoint = image->Viewpoint();
+      best_dd = dd;
+    }
+  }
+
+  // Return closest image viewpoint
+  return best_viewpoint;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Plane estimation
 ////////////////////////////////////////////////////////////////////////
 
@@ -2568,7 +2593,7 @@ FitSupportPlane(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Planar grid creation
+// Oriented box creation
 ////////////////////////////////////////////////////////////////////////
 
 R3OrientedBox 
@@ -2619,8 +2644,18 @@ EstimateOrientedBBox(R3SurfelPointSet *pointset)
   R3Point c = best_range.Centroid();
   R3Point center = centroid + best_axes[0]*c[0] + best_axes[1]*c[1] + best_axes[2]*c[2];
 
+  // Create oriented box
+  R3OrientedBox obb(center, best_axes[0], best_axes[1],
+    best_range.XRadius(), best_range.YRadius(), best_range.ZRadius());
+
+  // Check if should rotate around Z by 90 degrees to make axis0 the longer axis
+  if (obb.Radius(0) < obb.Radius(1)) {
+    obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+      obb.Radius(1), obb.Radius(0), obb.Radius(2));
+  }
+
   // Return oriented box
-  return R3OrientedBox(center, best_axes[0], best_axes[1], best_range.XRadius(), best_range.YRadius(), best_range.ZRadius());
+  return obb;
 }
   
 
@@ -2641,6 +2676,21 @@ EstimateOrientedBBox(R3SurfelObject *object)
   // Delete pointset
   delete pointset;
            
+  // Check if should rotate around Z by 180 degrees
+  // to make positive side of X axis point towards closest image viewpoint
+  R3SurfelScene *scene = object->Scene();
+  if (scene && (scene->NImages() > 0)) {
+    R3Point sensor_position = ClosestImageViewpoint(scene, obb.Centroid());
+    R3Vector sensor_direction = sensor_position - obb.Centroid();
+    RNScalar dot0 = sensor_direction.Dot(obb.Axis(0));
+    RNScalar dot1 = sensor_direction.Dot(obb.Axis(1));
+    if (((fabs(dot0) > fabs(dot1)) && (dot0 < 0)) ||
+        ((fabs(dot1) > fabs(dot0)) && (dot1 < 0))) {
+      obb.Reset(obb.Center(), -(obb.Axis(0)), -(obb.Axis(1)),
+        obb.Radius(0), obb.Radius(1), obb.Radius(2));
+    }
+  }
+
   // Return oriented box
   return obb;
 }
