@@ -2677,7 +2677,7 @@ EstimateOrientedBBox(R3SurfelObject *object)
   delete pointset;
            
   // Check if should rotate around Z by 180 degrees
-  // to make positive side of X axis point towards closest image viewpoint
+  // to make positive side point towards closest image viewpoint
   R3SurfelScene *scene = object->Scene();
   if (scene && (scene->NImages() > 0)) {
     R3Point sensor_position = ClosestImageViewpoint(scene, obb.Centroid());
