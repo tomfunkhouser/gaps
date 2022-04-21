@@ -204,7 +204,7 @@ inline void R2LoadPoint(int x, double y) { R2LoadPoint((double) x, y); }
 inline void R2LoadPoint(float x, int y) { R2LoadPoint(x, (float) y); }
 inline void R2LoadPoint(float x, double y) { R2LoadPoint((double) x, y); }
 inline void R2LoadPoint(double x, int y) { R2LoadPoint(x, (double) y); }
-inline void R2LoadPoint(double x, float y) { R2LoadPoint(x, (float) y); }
+inline void R2LoadPoint(double x, float y) { R2LoadPoint(x, (double) y); }
 
 inline void R3LoadPoint(int x, int y, float z) { R3LoadPoint((float) x, (float) y, z); }
 inline void R3LoadPoint(int x, int y, double z) { R3LoadPoint((double) x, (double) y, z); }
@@ -268,7 +268,7 @@ inline void R3LoadTextureCoords(int x, double y) { R3LoadTextureCoords((double) 
 inline void R3LoadTextureCoords(float x, int y) { R3LoadTextureCoords(x, (float) y); }
 inline void R3LoadTextureCoords(float x, double y) { R3LoadTextureCoords((double) x, y); }
 inline void R3LoadTextureCoords(double x, int y) { R3LoadTextureCoords(x, (double) y); }
-inline void R3LoadTextureCoords(double x, float y) { R3LoadTextureCoords(x, (float) y); }
+inline void R3LoadTextureCoords(double x, float y) { R3LoadTextureCoords(x, (double) y); }
 
 
 inline void RNLoadRgb(int r, int g, int b) { RNLoadRgb((float) r, (float) g, (float) b); }
