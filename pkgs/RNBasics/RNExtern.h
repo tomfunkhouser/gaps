@@ -20,6 +20,7 @@
 /* Standard library include files */
 
 #include <string>
+#include <vector>
 #include <map>
 
 

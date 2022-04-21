@@ -126,11 +126,11 @@ Draw(RNFlags flags) const
   case R3_SURFEL_OBJECT_OVERLAP_RELATIONSHIP: 
     // Draw line between objects
     if (objects.NEntries() == 2) {
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 1, 0);
-      glBegin(GL_LINES);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 1, 0);
+      RNGrfxBegin(RN_GRFX_LINES);
       R3LoadPoint(objects[0]->Centroid());
       R3LoadPoint(objects[1]->Centroid());
-      glEnd();
+      RNGrfxEnd();
       break;
     }
   }

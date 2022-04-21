@@ -700,12 +700,12 @@ DrawCamera(int color_scheme, RNLength radius) const
   else if (color_scheme != RGBD_NO_COLOR_SCHEME) LoadColor(RGBD_INDEX_COLOR_SCHEME);
 
   // Draw camera
-  glBegin(GL_LINES);
+  RNGrfxBegin(RN_GRFX_LINES);
   R3LoadPoint(viewpoint);
   R3LoadPoint(viewpoint + radius * towards);
   R3LoadPoint(viewpoint);
   R3LoadPoint(viewpoint + 0.5*radius * up);
-  glEnd();
+  RNGrfxEnd();
 }
 
 
@@ -738,7 +738,7 @@ DrawImage(int color_scheme, RNLength depth) const
 
   // Set color
   glDisable(GL_LIGHTING);
-  glColor3d(1.0, 1.0, 1.0);
+  RNLoadRgb(1.0, 1.0, 1.0);
 
   // Check depth
   if (depth > 0) {
@@ -752,29 +752,29 @@ DrawImage(int color_scheme, RNLength depth) const
     R3Vector dy = (depth * 0.5*height / intrinsics[1][1]) * up;
     c -= dx*(intrinsics[0][2] - 0.5*width)/width;
     c -= dy*(intrinsics[1][2] - 0.5*height)/height;
-    glBegin(GL_QUADS);
-    R3LoadTextureCoords(0.0, 0.0);
+    RNGrfxBegin(RN_GRFX_QUADS);
+    R3LoadTextureCoords(0, 0);
     R3LoadPoint(c - dx - dy);
-    R3LoadTextureCoords(1.0, 0.0);
+    R3LoadTextureCoords(1, 0);
     R3LoadPoint(c + dx - dy);
-    R3LoadTextureCoords(1.0, 1.0);
+    R3LoadTextureCoords(1, 1);
     R3LoadPoint(c + dx + dy);
-    R3LoadTextureCoords(0.0, 1.0);
+    R3LoadTextureCoords(0, 1);
     R3LoadPoint(c - dx + dy);
-    glEnd();
+    RNGrfxEnd();
   }
   else {
     // Draw textured polygon on screen plane (in pixels)
-    glBegin(GL_QUADS);
-    R3LoadTextureCoords(0.0, 0.0);
-    R3LoadPoint(0.0, 0.0, 0.0);
-    R3LoadTextureCoords(1.0, 0.0);
-    R3LoadPoint(width-1, 0.0, 0.0);
-    R3LoadTextureCoords(1.0, 1.0);
-    R3LoadPoint(width-1, height-1, 0.0);
-    R3LoadTextureCoords(0.0, 1.0);
-    R3LoadPoint(0.0, height-1, 0.0);
-    glEnd();
+    RNGrfxBegin(RN_GRFX_QUADS);
+    R3LoadTextureCoords(0, 0);
+    R3LoadPoint(0, 0, 0);
+    R3LoadTextureCoords(1, 0);
+    R3LoadPoint(width-1, 0, 0);
+    R3LoadTextureCoords(1, 1);
+    R3LoadPoint(width-1, height-1, 0);
+    R3LoadTextureCoords(0, 1);
+    R3LoadPoint(0, height-1, 0);
+    RNGrfxEnd();
   }
   
   // Unselect opengl texture
@@ -805,7 +805,7 @@ DrawPoints(int color_scheme, int skip) const
 
   // Draw points
   if (color_scheme != RGBD_RENDER_COLOR_SCHEME) {
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     R3Point world_position;
     for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
       for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
@@ -815,10 +815,10 @@ DrawPoints(int color_scheme, int skip) const
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else {
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     R3Point world_position, p1, p2;
     for (int ix = 0; ix < NPixels(RN_X); ix += skip) {
       for (int iy = 0; iy < NPixels(RN_Y); iy += skip) {
@@ -830,7 +830,7 @@ DrawPoints(int color_scheme, int skip) const
         R3LoadPoint(world_position);
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Reset point size
@@ -881,7 +881,7 @@ DrawSurfels(int color_scheme, int skip) const
   LoadColor(color_scheme);
 
   // Draw little quads
-  glBegin(GL_QUADS);
+  RNGrfxBegin(RN_GRFX_QUADS);
   R3Point world_position;
   for (int ix = 0; ix < NPixels(RN_X)-1; ix += skip) {
     for (int iy = 0; iy < NPixels(RN_Y)-1; iy += skip) {
@@ -896,7 +896,7 @@ DrawSurfels(int color_scheme, int skip) const
       R3LoadPoint(world_position - r*view_right + r*view_up);
     }
   }
-  glEnd();
+  RNGrfxEnd();
   
   // Disable lighting and material
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
@@ -932,7 +932,7 @@ DrawQuads(int color_scheme, int skip) const
   LoadColor(color_scheme);
 
   // Draw quads
-  glBegin(GL_TRIANGLES);
+  RNGrfxBegin(RN_GRFX_TRIANGLES);
   for (int ix = 0; ix < NPixels(RN_X)-skip; ix += skip) {
     for (int iy = 0; iy < NPixels(RN_Y)-skip; iy += skip) {
       R3Point p1, p2, p3, p4;
@@ -968,7 +968,7 @@ DrawQuads(int color_scheme, int skip) const
       }
     }
   }
-  glEnd();
+  RNGrfxEnd();
 
   // Disable lighting and material
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
@@ -992,19 +992,19 @@ LoadColor(int color_scheme) const
     unsigned char r = 0;
     unsigned char g = (k >> 8) & 0xFF;
     unsigned char b = k & 0xFF;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
   }
   else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
     // Load white
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
   }
   else if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
     // Load white
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
   }
   else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) {
     // Load highlight color
-    glColor3d(1.0, 1.0, 0.0);
+    RNLoadRgb(1.0, 1.0, 0.0);
   }
 }
 

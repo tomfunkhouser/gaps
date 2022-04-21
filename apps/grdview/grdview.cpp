@@ -100,7 +100,7 @@ void GLUTRedraw(void)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     RNScalar mean = grid->Mean();
     RNScalar scale = (RNIsZero(mean)) ? 1.0 : 0.25 / grid->Mean();
     for (int i = 0; i < grid->XResolution(); i++) {
@@ -109,15 +109,15 @@ void GLUTRedraw(void)
           RNScalar value = grid->GridValue(i, j, k);
           if (value <= grid_threshold) continue;
           RNScalar intensity = 1 - scale * value;
-          glColor4f(intensity, intensity, intensity, 0.5*(1-intensity));
+          RNLoadRgba(intensity, intensity, intensity, 0.5*(1-intensity));
           double x = i + 1.0 - (7*i%5)/6.0 - (7*j%5)/6.0 - (7*k%5)/6.0;
           double y = j + 1.0 - (7*i%5)/6.0 - (7*j%5)/6.0 - (7*k%5)/6.0;
           double z = k + 1.0 - (7*i%5)/6.0 - (7*j%5)/6.0 - (7*k%5)/6.0;
-          glVertex3d(x, y, z);
+          R3LoadPoint(x, y, z);
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ZERO);
@@ -163,7 +163,7 @@ void GLUTRedraw(void)
   // Draw grid bounding box
   if (show_box) {
     glDisable(GL_LIGHTING);
-    glColor3f(0, 0, 0);
+    RNLoadRgb(0, 0, 0);
     R3Box(0, 0, 0, grid->XResolution()-1, grid->YResolution()-1, grid->ZResolution()-1).Outline();
 #if 0
     if (show_slices[0]) R3Box(grid_slice_coords[0], 0, 0, grid_slice_coords[0], grid->YResolution()-1, grid->ZResolution()-1).Outline();
@@ -176,17 +176,17 @@ void GLUTRedraw(void)
   if (show_axes) {
     glDisable(GL_LIGHTING);
     glLineWidth(3);
-    glColor3f(1, 0, 0);
+    RNLoadRgb(1, 0, 0);
     R3BeginLine();
     R3LoadPoint(grid->XResolution()/2.0, grid->YResolution()/2.0, grid->ZResolution()/2.0);
     R3LoadPoint(grid->XResolution()/1.0, grid->YResolution()/2.0, grid->ZResolution()/2.0);
     R3EndLine();
-    glColor3f(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     R3BeginLine();
     R3LoadPoint(grid->XResolution()/2.0, grid->YResolution()/2.0, grid->ZResolution()/2.0);
     R3LoadPoint(grid->XResolution()/2.0, grid->YResolution()/1.0, grid->ZResolution()/2.0);
     R3EndLine();
-    glColor3f(0, 0, 1);
+    RNLoadRgb(0, 0, 1);
     R3BeginLine();
     R3LoadPoint(grid->XResolution()/2.0, grid->YResolution()/2.0, grid->ZResolution()/2.0);
     R3LoadPoint(grid->XResolution()/2.0, grid->YResolution()/2.0, grid->ZResolution()/1.0);
@@ -208,17 +208,17 @@ void GLUTRedraw(void)
     }
     glDisable(GL_LIGHTING);
     glLineWidth(3);
-    glColor3f(1, 0, 0);
+    RNLoadRgb(1, 0, 0);
     R3BeginLine();
     R3LoadPoint(*center - axes[0]);
     R3LoadPoint(*center + axes[0]);
     R3EndLine();
-    glColor3f(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     R3BeginLine();
     R3LoadPoint(*center - axes[1]);
     R3LoadPoint(*center + axes[1]);
     R3EndLine();
-    glColor3f(0, 0, 1);
+    RNLoadRgb(0, 0, 1);
     R3BeginLine();
     R3LoadPoint(*center - axes[2]);
     R3LoadPoint(*center + axes[2]);

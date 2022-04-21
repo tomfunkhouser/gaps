@@ -657,8 +657,8 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   if (vertex_image_overlaps) {
     if (configuration.NSurfaces() > 0) {
       glLineWidth(3);
-      glColor3d(1, 0, 0);
-      glBegin(GL_LINES);
+      RNLoadRgb(1, 0, 0);
+      RNGrfxBegin(RN_GRFX_LINES);
       RGBDSurface *surface = configuration.Surface(0);
       R3Mesh *mesh = surface->mesh;
       for (int i = 0; i < mesh->NVertices(); i++) {
@@ -672,7 +672,7 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
         }
         if (vertex_image_overlaps[i].NEntries() > 0) break;
       }
-      glEnd();
+      RNGrfxEnd();
       glLineWidth(1);
     }
   }
@@ -681,14 +681,14 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   if (image_vertex_overlaps && (selected_image_index >= 0)) {
     if (configuration.NSurfaces() > 0) {
       glPointSize(3);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       RGBDSurface *surface = configuration.Surface(0);
       R3Mesh *mesh = surface->mesh;
       for (int j = 0; j < image_vertex_overlaps[selected_image_index].NEntries(); j++) {
         R3MeshVertex *vertex = image_vertex_overlaps[selected_image_index][j];
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
       glPointSize(1);
     }
   }
@@ -716,17 +716,17 @@ DrawAxes(void)
   RNScalar d = 1;
   glLineWidth(3);
   R3BeginLine();
-  glColor3f(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   R3LoadPoint(R3zero_point + 0.5 * d * R3negx_vector);
   R3LoadPoint(R3zero_point + d * R3posx_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 1, 0);
+  RNLoadRgb(0, 1, 0);
   R3LoadPoint(R3zero_point + 0.5 * d * R3negy_vector);
   R3LoadPoint(R3zero_point + d * R3posy_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 0, 1);
+  RNLoadRgb(0, 0, 1);
   R3LoadPoint(R3zero_point + 0.5 * d * R3negz_vector);
   R3LoadPoint(R3zero_point + d * R3posz_vector);
   R3EndLine();
@@ -759,13 +759,13 @@ DrawRubberBox(void)
   glLoadIdentity();
 
   // Draw box
-  glBegin(GL_LINE_LOOP);
-  glColor3f(1.0, 1.0, 1.0);
-  glVertex2f(rubber_box_corners[0][0], rubber_box_corners[0][1]);
-  glVertex2f(rubber_box_corners[0][0], rubber_box_corners[1][1]);
-  glVertex2f(rubber_box_corners[1][0], rubber_box_corners[1][1]);
-  glVertex2f(rubber_box_corners[1][0], rubber_box_corners[0][1]);
-  glEnd();
+  RNGrfxBegin(RN_GRFX_LINE_LOOP);
+  RNLoadRgb(1.0, 1.0, 1.0);
+  R2LoadPoint(rubber_box_corners[0][0], rubber_box_corners[0][1]);
+  R2LoadPoint(rubber_box_corners[0][0], rubber_box_corners[1][1]);
+  R2LoadPoint(rubber_box_corners[1][0], rubber_box_corners[1][1]);
+  R2LoadPoint(rubber_box_corners[1][0], rubber_box_corners[0][1]);
+  RNGrfxEnd();
 
   // Reset projection matrix
   glMatrixMode(GL_PROJECTION);

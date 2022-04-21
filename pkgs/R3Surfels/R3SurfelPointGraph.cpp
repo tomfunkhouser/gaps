@@ -156,7 +156,7 @@ Draw(RNFlags flags) const
   set.Draw(flags);
 
   // Draw lines between neighbors
-  glBegin(GL_LINES);
+  RNGrfxBegin(RN_GRFX_LINES);
   for (int i = 0; i < NPoints(); i++) {
     R3SurfelPoint *point0 = Point(i);
     for (int j = 0; j < NNeighbors(i); j++) {
@@ -165,7 +165,7 @@ Draw(RNFlags flags) const
       R3LoadPoint(point1->Position());
     }
   }
-  glEnd();
+  RNGrfxEnd();
 }
 
 

@@ -218,7 +218,7 @@ void GLUTRedraw(void)
       glDisable(GL_LIGHTING);
       glEnable(GL_POLYGON_OFFSET_FILL);
       glPolygonOffset(2, 1);
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         for (int j = 0; j < 3; j++) {
@@ -227,7 +227,7 @@ void GLUTRedraw(void)
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
       glDisable(GL_POLYGON_OFFSET_FILL);
     }
     else {
@@ -239,7 +239,7 @@ void GLUTRedraw(void)
       glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
       glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         R3LoadNormal(mesh->FaceNormal(face));
@@ -248,7 +248,7 @@ void GLUTRedraw(void)
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 
@@ -256,13 +256,13 @@ void GLUTRedraw(void)
   if (show_vertices) {
     if (show_values) {
       glDisable(GL_LIGHTING);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         RNLoadRgb(NormalizedColor(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else {
       glEnable(GL_LIGHTING);
@@ -273,13 +273,13 @@ void GLUTRedraw(void)
       glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
       // glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
       glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 
@@ -301,9 +301,9 @@ void GLUTRedraw(void)
   // Draw isocontours
   if (show_isocontours) {
     glDisable(GL_LIGHTING);
-    glColor3d(1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     glLineWidth(1);
-    glBegin(GL_LINES);
+    RNGrfxBegin(RN_GRFX_LINES);
     for (int isostep = 1; isostep < nisosteps; isostep++) {
       double isolevel = (double) isostep / (double) nisosteps;
       for (int i = 0; i < mesh->NFaces(); i++) {
@@ -339,7 +339,7 @@ void GLUTRedraw(void)
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
     glLineWidth(1);
   }
 
@@ -398,7 +398,7 @@ void GLUTRedraw(void)
   // Draw statistics
   if (show_statistics) {
     glDisable(GL_LIGHTING);
-    glColor3f(0, 0, 0);
+    RNLoadRgb(0, 0, 0);
     double y = GLUTwindow_height - 20;
     GLUTDrawText(R2Point(10, y), current_property->Name()); y-= 20;
     GLUTDrawText(R2Point(10, y), "Mean", current_property->Mean()); y-= 20;

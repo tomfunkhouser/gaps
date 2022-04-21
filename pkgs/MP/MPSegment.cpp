@@ -88,7 +88,7 @@ DrawMesh(RNFlags draw_flags) const
   if (draw_flags & MP_DRAW_FACES) {
     if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
     else glEnable(GL_LIGHTING);
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < faces.NEntries(); i++) {
       R3MeshFace *face = faces.Kth(i);
       R3LoadNormal(mesh->FaceNormal(face));
@@ -98,14 +98,14 @@ DrawMesh(RNFlags draw_flags) const
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw edges
   if (draw_flags & MP_DRAW_EDGES) {
     glDisable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < faces.NEntries(); i++) {
       R3MeshFace *face = faces.Kth(i);
       for (int j = 0; j < 3; j++) {
@@ -114,7 +114,7 @@ DrawMesh(RNFlags draw_flags) const
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
     }
-    glEnd();
+    RNGrfxEnd();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
@@ -122,7 +122,7 @@ DrawMesh(RNFlags draw_flags) const
   if (draw_flags & MP_DRAW_VERTICES) {
     R3mesh_mark++;
     glDisable(GL_LIGHTING);
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < faces.NEntries(); i++) {
       R3MeshFace *face = faces.Kth(i);
       for (int j = 0; j < 3; j++) {
@@ -133,7 +133,7 @@ DrawMesh(RNFlags draw_flags) const
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 

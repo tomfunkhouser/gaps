@@ -911,7 +911,7 @@ Draw(RNFlags flags) const
 {
 #if 1
   // Draw towards and up
-  glBegin(GL_LINES);
+  RNGrfxBegin(RN_GRFX_LINES);
   const R3Point& viewpoint = Viewpoint();
   const R3Vector towards = Towards();
   const R3Vector up = Up();
@@ -919,7 +919,7 @@ Draw(RNFlags flags) const
   R3LoadPoint(viewpoint + towards);
   R3LoadPoint(viewpoint);
   R3LoadPoint(viewpoint + 0.5 * up);
-  glEnd();
+  RNGrfxEnd();
 #else
   // Draw camera
   RNScalar scale = 1.0;

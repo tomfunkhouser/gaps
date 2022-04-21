@@ -22,16 +22,7 @@
 #   endif
 #endif
 
-#if (RN_3D_GRFX == RN_IRISGL)
-#   ifndef __RN_IRISGL__
-#       include <gl/gl.h>
-#       define __RN_IRISGL__
-#   endif
-#   ifndef __RN_SPHEREGL__
-#       include <gl/sphere.h>
-#       define __RN_SPHEREGL__
-#   endif
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_2D_GRFX == RN_OPENGL) || (RN_3D_GRFX == RN_OPENGL)
 #   ifndef __RN_OPENGL__
 #       if (RN_OS == RN_MAC) 
 #           include <OpenGL/gl.h>
@@ -50,15 +41,22 @@
 #       endif
 #       define __RN_OPENGL__
 #   endif
-#elif (RN_3D_GRFX == RN_3DR)
-#   ifndef __RN_3DR__
-#       include "3dr.h"
-#       include "3dg.h"
-        extern R3dHandle_t R3dr_rc;
-        extern G3dHandle_t R3dr_gc;
-#       define __RN_3DR__
-#   endif
 #endif
+
+
+
+/* Drawing modes */
+
+#define RN_GRFX_POINTS         GL_POINTS
+#define RN_GRFX_LINES          GL_LINES
+#define RN_GRFX_LINE_STRIP     GL_LINE_STRIP
+#define RN_GRFX_LINE_LOOP      GL_LINE_LOOP
+#define RN_GRFX_TRIANGLES      GL_TRIANGLES
+#define RN_GRFX_TRIANGLE_STRIP GL_TRIANGLE_STRIP
+#define RN_GRFX_TRIANGLE_FAN   GL_TRIANGLE_FAN
+#define RN_GRFX_QUADS          GL_QUADS
+#define RN_GRFX_QUAD_STRIP     GL_QUAD_STRIP
+#define RN_GRFX_POLYGON        GL_POLYGON        
 
 
 
@@ -67,6 +65,7 @@
 #ifndef GL_CLAMP_TO_EDGE
 #define GL_CLAMP_TO_EDGE 0x812F
 #endif
+
 
 
 /* Begin namespace */
@@ -96,7 +95,10 @@ void R2ViewportToWindow(int vx, int vy, double *wx, double *wy);
 
 
 
-/* 2D Polygon/Line drawing functions */
+/* "Immediate mode" drawing begin/end functions */
+
+void RNGrfxBegin(int mode);
+void RNGrfxEnd(void);
 
 void R2BeginPolygon(void);
 void R2EndPolygon(void);
@@ -105,28 +107,6 @@ void R2EndLine(void);
 void R2BeginLoop(void);
 void R2EndLoop(void);
 
-void R2LoadPoint(float x, float y);
-void R2LoadPoint(double x, double y);
-void R2LoadPoint(const float point[2]);
-void R2LoadPoint(const double point[2]);
-
-
-
-/* 2D image drawing functions */
-
-void R2DrawImage(int x, int y, int width, int height, int depth, void *data);
-
-
-
-/* 2D primitive drawing functions */
-
-void R2DrawText(float x, float y, const char *str);
-void R2DrawText(double x, double y, const char *str);
-
-
-
-/* 3D Polygon/Line drawing functions */
-
 void R3BeginPolygon(void);
 void R3EndPolygon(void);
 void R3BeginLine(void);
@@ -134,8 +114,21 @@ void R3EndLine(void);
 void R3BeginLoop(void);
 void R3EndLoop(void);
 
+
+
+/* "Immediate mode" data loading functions (called between RNGrfxBegin and RNGrfxEnd) */
+  
+void R2LoadPoint(int x, int y);
+void R2LoadPoint(float x, float y);
+void R2LoadPoint(double x, double y);
+void R2LoadPoint(const int point[2]);
+void R2LoadPoint(const float point[2]);
+void R2LoadPoint(const double point[2]);
+
+void R3LoadPoint(int x, int y, int z);
 void R3LoadPoint(float x, float y, float z);
-void R3LoadPoint(double x, double y, float z);
+void R3LoadPoint(double x, double y, double z);
+void R3LoadPoint(const int point[3]);
 void R3LoadPoint(const float point[3]);
 void R3LoadPoint(const double point[3]);
 
@@ -144,28 +137,43 @@ void R3LoadNormal(double x, double y, float z);
 void R3LoadNormal(const float normal[3]);
 void R3LoadNormal(const double normal[3]);
 
+void R3LoadTextureCoords(int x, int y);
 void R3LoadTextureCoords(float x, float y);
 void R3LoadTextureCoords(double x, double y);
+void R3LoadTextureCoords(const int texcoords[2]);
 void R3LoadTextureCoords(const float texcoords[2]);
 void R3LoadTextureCoords(const double texcoords[2]);
-void R3LoadTextureCoords(float x, float y, float z);
-void R3LoadTextureCoords(double x, double y, double z);
+
+void RNLoadRgb(unsigned char r, unsigned char g, unsigned char b);
+void RNLoadRgb(float r, float g, float b);
+void RNLoadRgb(double r, double g, double b);
+void RNLoadRgb(const unsigned char rgb[3]);
+void RNLoadRgb(const float rgb[3]);
+void RNLoadRgb(const double rgb[3]);
+
+void RNLoadRgba(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+void RNLoadRgba(float r, float g, float b, float a);
+void RNLoadRgba(double r, double g, double b, double a);
+void RNLoadRgba(unsigned char rgba[4]);
+void RNLoadRgba(const float rgba[4]);
+void RNLoadRgba(const double rgba[4]);
 
 
+/* Text drawing functions */
 
-/* 3D primitive drawing functions */
+void R2DrawText(int x, int y, const char *str);
+void R2DrawText(float x, float y, const char *str);
+void R2DrawText(double x, double y, const char *str);
 
+void R3DrawText(int x, int y, int z, const char *str);
 void R3DrawText(float x, float y, float z, const char *str);
 void R3DrawText(double x, double y, double z, const char *str);
 
 
 
-/* Color drawing functions */
+/* Image drawing functions */
 
-void RNLoadRgb(float r, float g, float b);
-void RNLoadRgb(double r, double g, double b);
-void RNLoadRgb(const float rgb[3]);
-void RNLoadRgb(const double rgb[3]);
+void R2DrawImage(int x, int y, int width, int height, int depth, void *data);
 
 
 
@@ -183,9 +191,143 @@ void RNGrfxError(const char *message);
 
 
 
-/* Inline functions */
+/* Inline function implementations */
 
 #include "RNGrfx.hh"
+
+
+
+/* To disambiguate type resolution in overloaded functions */
+  
+inline void R2LoadPoint(int x, float y) { R2LoadPoint((float) x, y); }
+inline void R2LoadPoint(int x, double y) { R2LoadPoint((double) x, y); }
+inline void R2LoadPoint(float x, int y) { R2LoadPoint(x, (float) y); }
+inline void R2LoadPoint(float x, double y) { R2LoadPoint((double) x, y); }
+inline void R2LoadPoint(double x, int y) { R2LoadPoint(x, (double) y); }
+inline void R2LoadPoint(double x, float y) { R2LoadPoint(x, (float) y); }
+
+inline void R3LoadPoint(int x, int y, float z) { R3LoadPoint((float) x, (float) y, z); }
+inline void R3LoadPoint(int x, int y, double z) { R3LoadPoint((double) x, (double) y, z); }
+inline void R3LoadPoint(int x, float y, int z) { R3LoadPoint((float) x, y, (float) z); }
+inline void R3LoadPoint(int x, float y, float z) { R3LoadPoint((float) x, y, z); }
+inline void R3LoadPoint(int x, float y, double z) { R3LoadPoint((double) x, (double) y, z); }
+inline void R3LoadPoint(int x, double y, int z) { R3LoadPoint((double) x, y, (double) z); }
+inline void R3LoadPoint(int x, double y, float z) { R3LoadPoint((double) x, y, (double) z); }
+inline void R3LoadPoint(int x, double y, double z) { R3LoadPoint((double) x, y, z); }
+
+inline void R3LoadPoint(float x, int y, int z) { R3LoadPoint(x, (float) y, (float) z); }
+inline void R3LoadPoint(float x, int y, float z) { R3LoadPoint(x, (float) y, z); }
+inline void R3LoadPoint(float x, int y, double z) { R3LoadPoint((double) x, (double) y, z); }
+inline void R3LoadPoint(float x, float y, int z) { R3LoadPoint(x, y, (float) z); }
+inline void R3LoadPoint(float x, float y, double z) { R3LoadPoint((double) x, (double) y, z); }
+inline void R3LoadPoint(float x, double y, int z) { R3LoadPoint((double) x, y, (double) z); }
+inline void R3LoadPoint(float x, double y, float z) { R3LoadPoint((double) x, y, (double) z); }
+inline void R3LoadPoint(float x, double y, double z) { R3LoadPoint((double) x, y, z); }
+
+inline void R3LoadPoint(double x, int y, int z) { R3LoadPoint(x, (double) y, (double) z); }
+inline void R3LoadPoint(double x, int y, float z) { R3LoadPoint(x, (double) y, (double) z); }
+inline void R3LoadPoint(double x, int y, double z) { R3LoadPoint(x, (double) y, z); }
+inline void R3LoadPoint(double x, float y, int z) { R3LoadPoint(x, (double) y, (double) z); }
+inline void R3LoadPoint(double x, float y, float z) { R3LoadPoint(x, (double) y, (double) z); }
+inline void R3LoadPoint(double x, float y, double z) { R3LoadPoint(x, (double) y, z); }
+inline void R3LoadPoint(double x, double y, int z) { R3LoadPoint(x, y, (double) z); }
+inline void R3LoadPoint(double x, double y, float z) { R3LoadPoint(x, y, (double) z); }
+
+
+inline void R3LoadNormal(int x, int y, int z) { R3LoadNormal((double) x, (double) y, (double) z); }
+inline void R3LoadNormal(int x, int y, float z) { R3LoadNormal((float) x, (float) y, z); }
+inline void R3LoadNormal(int x, int y, double z) { R3LoadNormal((double) x, (double) y, z); }
+inline void R3LoadNormal(int x, float y, int z) { R3LoadNormal((float) x, y, (float) z); }
+inline void R3LoadNormal(int x, float y, float z) { R3LoadNormal((float) x, y, z); }
+inline void R3LoadNormal(int x, float y, double z) { R3LoadNormal((double) x, (double) y, z); }
+inline void R3LoadNormal(int x, double y, int z) { R3LoadNormal((double) x, y, (double) z); }
+inline void R3LoadNormal(int x, double y, float z) { R3LoadNormal((double) x, y, (double) z); }
+inline void R3LoadNormal(int x, double y, double z) { R3LoadNormal((double) x, y, z); }
+
+inline void R3LoadNormal(float x, int y, int z) { R3LoadNormal(x, (float) y, (float) z); }
+inline void R3LoadNormal(float x, int y, float z) { R3LoadNormal(x, (float) y, z); }
+inline void R3LoadNormal(float x, int y, double z) { R3LoadNormal((double) x, (double) y, z); }
+inline void R3LoadNormal(float x, float y, int z) { R3LoadNormal(x, y, (float) z); }
+inline void R3LoadNormal(float x, float y, double z) { R3LoadNormal((double) x, (double) y, z); }
+inline void R3LoadNormal(float x, double y, int z) { R3LoadNormal((double) x, y, (double) z); }
+inline void R3LoadNormal(float x, double y, float z) { R3LoadNormal((double) x, y, (double) z); }
+inline void R3LoadNormal(float x, double y, double z) { R3LoadNormal((double) x, y, z); }
+
+inline void R3LoadNormal(double x, int y, int z) { R3LoadNormal(x, (double) y, (double) z); }
+inline void R3LoadNormal(double x, int y, float z) { R3LoadNormal(x, (double) y, (double) z); }
+inline void R3LoadNormal(double x, int y, double z) { R3LoadNormal(x, (double) y, z); }
+inline void R3LoadNormal(double x, float y, int z) { R3LoadNormal(x, (double) y, (double) z); }
+inline void R3LoadNormal(double x, float y, float z) { R3LoadNormal(x, (double) y, (double) z); }
+inline void R3LoadNormal(double x, float y, double z) { R3LoadNormal(x, (double) y, z); }
+inline void R3LoadNormal(double x, double y, int z) { R3LoadNormal(x, y, (double) z); }
+inline void R3LoadNormal(double x, double y, float z) { R3LoadNormal(x, y, (double) z); }
+
+
+inline void R3LoadTextureCoords(int x, float y) { R3LoadTextureCoords((float) x, y); }
+inline void R3LoadTextureCoords(int x, double y) { R3LoadTextureCoords((double) x, y); }
+inline void R3LoadTextureCoords(float x, int y) { R3LoadTextureCoords(x, (float) y); }
+inline void R3LoadTextureCoords(float x, double y) { R3LoadTextureCoords((double) x, y); }
+inline void R3LoadTextureCoords(double x, int y) { R3LoadTextureCoords(x, (double) y); }
+inline void R3LoadTextureCoords(double x, float y) { R3LoadTextureCoords(x, (float) y); }
+
+
+inline void RNLoadRgb(int r, int g, int b) { RNLoadRgb((float) r, (float) g, (float) b); }
+inline void RNLoadRgb(int r, int g, float b) { RNLoadRgb((float) r, (float) g, b); }
+inline void RNLoadRgb(int r, int g, double b) { RNLoadRgb((double) r, (double) g, b); }
+inline void RNLoadRgb(int r, float g, int b) { RNLoadRgb((float) r, g, (float) b); }
+inline void RNLoadRgb(int r, float g, float b) { RNLoadRgb((float) r, g, b); }
+inline void RNLoadRgb(int r, float g, double b) { RNLoadRgb((double) r, (double) g, b); }
+inline void RNLoadRgb(int r, double g, int b) { RNLoadRgb((double) r, g, (double) b); }
+inline void RNLoadRgb(int r, double g, float b) { RNLoadRgb((double) r, g, (double) b); }
+inline void RNLoadRgb(int r, double g, double b) { RNLoadRgb((double) r, g, b); }
+
+inline void RNLoadRgb(float r, int g, int b) { RNLoadRgb(r, (float) g, (float) b); }
+inline void RNLoadRgb(float r, int g, float b) { RNLoadRgb(r, (float) g, b); }
+inline void RNLoadRgb(float r, int g, double b) { RNLoadRgb((double) r, (double) g, b); }
+inline void RNLoadRgb(float r, float g, int b) { RNLoadRgb(r, g, (float) b); }
+inline void RNLoadRgb(float r, float g, double b) { RNLoadRgb((double) r, (double) g, b); }
+inline void RNLoadRgb(float r, double g, int b) { RNLoadRgb((double) r, g, (double) b); }
+inline void RNLoadRgb(float r, double g, float b) { RNLoadRgb((double) r, g, (double) b); }
+inline void RNLoadRgb(float r, double g, double b) { RNLoadRgb((double) r, g, b); }
+
+inline void RNLoadRgb(double r, int g, int b) { RNLoadRgb(r, (double) g, (double) b); }
+inline void RNLoadRgb(double r, int g, float b) { RNLoadRgb(r, (double) g, (double) b); }
+inline void RNLoadRgb(double r, int g, double b) { RNLoadRgb(r, (double) g, b); }
+inline void RNLoadRgb(double r, float g, int b) { RNLoadRgb(r, (double) g, (double) b); }
+inline void RNLoadRgb(double r, float g, float b) { RNLoadRgb(r, (double) g, (double) b); }
+inline void RNLoadRgb(double r, float g, double b) { RNLoadRgb(r, (double) g, b); }
+inline void RNLoadRgb(double r, double g, int b) { RNLoadRgb(r, g, (double) b); }
+inline void RNLoadRgb(double r, double g, float b) { RNLoadRgb(r, g, (double) b); }
+
+
+inline void RNLoadRgba(int r, int g, int b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(int r, int g, float b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(int r, int g, double b, double a) { RNLoadRgba((double) r, (double) g, b, a); }
+inline void RNLoadRgba(int r, float g, int b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(int r, float g, float b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(int r, float g, double b, double a) { RNLoadRgba((double) r, (double) g, b, a); }
+inline void RNLoadRgba(int r, double g, int b, double a) { RNLoadRgba((double) r, g, (double) b, a); }
+inline void RNLoadRgba(int r, double g, float b, double a) { RNLoadRgba((double) r, g, (double) b, a); }
+inline void RNLoadRgba(int r, double g, double b, double a) { RNLoadRgba((double) r, g, b, a); }
+
+inline void RNLoadRgba(float r, int g, int b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(float r, int g, float b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(float r, int g, double b, double a) { RNLoadRgba((double) r, (double) g, b, a); }
+inline void RNLoadRgba(float r, float g, int b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(float r, float g, float b, double a) { RNLoadRgba((double) r, (double) g, (double) b, a); }
+inline void RNLoadRgba(float r, float g, double b, double a) { RNLoadRgba((double) r, (double) g, b, a); }
+inline void RNLoadRgba(float r, double g, int b, double a) { RNLoadRgba((double) r, g, (double) b, a); }
+inline void RNLoadRgba(float r, double g, float b, double a) { RNLoadRgba((double) r, g, (double) b, a); }
+inline void RNLoadRgba(float r, double g, double b, double a) { RNLoadRgba((double) r, g, b, a); }
+
+inline void RNLoadRgba(double r, int g, int b, double a) { RNLoadRgba(r, (double) g, (double) b, a); }
+inline void RNLoadRgba(double r, int g, float b, double a) { RNLoadRgba(r, (double) g, (double) b, a); }
+inline void RNLoadRgba(double r, int g, double b, double a) { RNLoadRgba(r, (double) g, b, a); }
+inline void RNLoadRgba(double r, float g, int b, double a) { RNLoadRgba(r, (double) g, (double) b, a); }
+inline void RNLoadRgba(double r, float g, float b, double a) { RNLoadRgba(r, (double) g, (double) b, a); }
+inline void RNLoadRgba(double r, float g, double b, double a) { RNLoadRgba(r, (double) g, b, a); }
+inline void RNLoadRgba(double r, double g, int b, double a) { RNLoadRgba(r, g, (double) b, a); }
+inline void RNLoadRgba(double r, double g, float b, double a) { RNLoadRgba(r, g, (double) b, a); }
 
 
 

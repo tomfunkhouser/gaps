@@ -89,7 +89,7 @@ Draw(RNFlags draw_flags) const
     LoadColor(house_index + 1);
   else if (draw_flags & MP_COLOR_FOR_PICK)
     LoadIndex(house_index, MP_LEVEL_TAG);
-  else glColor3d(0.1, 0.5, 0.9);
+  else RNLoadRgb(0.1, 0.5, 0.9);
 
   // Draw this
   if (draw_flags[MP_SHOW_LEVELS] && draw_flags[MP_DRAW_DEPICTIONS])

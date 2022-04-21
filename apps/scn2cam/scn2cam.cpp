@@ -630,7 +630,7 @@ DrawNodeWithOpenGL(R3Scene *scene, R3SceneNode *node, R3SceneNode *selected_node
     color[0] = (node_index >> 16) & 0xFF;
     color[1] = (node_index >>  8) & 0xFF;
     color[2] = (node_index      ) & 0xFF;
-    glColor3ubv(color);
+    RNLoadRgb(color);
   }
   
   // Draw elements

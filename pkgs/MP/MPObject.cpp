@@ -123,7 +123,7 @@ DrawLabel(RNFlags draw_flags) const
   if (!category) return;
   if (!category->mpcat40_name) return;
   glDisable(GL_LIGHTING);
-  glColor3d(1,1,1);
+  RNLoadRgb(1,1,1);
   DrawText(position + 0.25 * R3posz_vector, category->mpcat40_name);
 }
 

@@ -54,7 +54,7 @@ LoadIndex(int index, int tag)
   color[1] = (k >>  8) & 0xFF;
   color[2] = (k      ) & 0xFF;
   color[3] = tag;
-  glColor4ubv(color);
+  RNLoadRgba(color);
 }
 
 
@@ -92,7 +92,7 @@ LoadColor(int k)
   };
 
   // Load color
-  if (k == -1) glColor3d(0.8, 0.8, 0.8);
+  if (k == -1) RNLoadRgb(0.8, 0.8, 0.8);
   else if (k == 0) RNLoadRgb(colors[0]);
   else RNLoadRgb(colors[1 + (k % (ncolors-1))]);
 }

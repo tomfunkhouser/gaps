@@ -1298,15 +1298,15 @@ Draw(RNFlags flags, int subsampling_factor) const
         glDrawArrays(GL_POINTS, 0, NSurfels());
         glDisableClientState(GL_VERTEX_ARRAY);
 #     else
-        // Draw without color using glBegin and glEnd
-        glBegin(GL_POINTS);
+        // Draw without color using RNGrfxBegin and RNGrfxEnd
+        RNGrfxBegin(RN_GRFX_POINTS);
         for (int i = 0; i < NSurfels(); i++) {
           const R3Surfel& surfel = surfels[i];
           R3LoadPoint(surfel.PositionPtr());
         }
-        glEnd();
+        RNGrfxEnd();
 #     endif
-      glEndList();
+      RNGrfxEndList();
       if (glGetError() == GL_NO_ERROR) {
         glNewList(id+1, GL_COMPILE);
 #       if 0
@@ -1319,16 +1319,16 @@ Draw(RNFlags flags, int subsampling_factor) const
           glDisableClientState(GL_VERTEX_ARRAY);
           glDisableClientState(GL_COLOR_ARRAY);
 #       else
-          // Draw with color using glBegin and glEnd
-          glBegin(GL_POINTS);
+          // Draw with color using RNGrfxBegin and RNGrfxEnd
+          RNGrfxBegin(RN_GRFX_POINTS);
           for (int i = 0; i < NSurfels(); i++) {
             const R3Surfel& surfel = surfels[i];
-            glColor3ubv(surfel.ColorPtr());
+            RNLoadRgb(surfel.ColorPtr());
             R3LoadPoint(surfel.PositionPtr());
           }
-          glEnd();
+          RNGrfxEnd();
 #       endif
-        glEndList();
+        RNGrfxEndList();
         if (glGetError() == GL_NO_ERROR) {
           block->opengl_id = id;
         }
@@ -1348,22 +1348,22 @@ Draw(RNFlags flags, int subsampling_factor) const
     // Draw surfels the slow way
     if (c) {
       // Draw surfels (with color)
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
-        glColor3ubv(surfel.ColorPtr());
+        RNLoadRgb(surfel.ColorPtr());
         R3LoadPoint(surfel.PositionPtr());
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else {
       // Draw surfels without color
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < NSurfels(); i++) {
         const R3Surfel& surfel = surfels[i];
         R3LoadPoint(surfel.PositionPtr());
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 #elif (R3_SURFEL_BLOCK_DRAW_METHOD == R3_SURFEL_BLOCK_DRAW_WITH_VBO)
@@ -1422,11 +1422,11 @@ Draw(RNFlags flags, int subsampling_factor) const
   int n = flags[R3_SURFEL_NORMAL_DRAW_FLAG];
   int id = flags[R3_SURFEL_IDENTIFIER_DRAW_FLAG];
 
-  // Draw surfels using glBegin ... glEnd
+  // Draw surfels using RNGrfxBegin ... RNGrfxEnd
   if (flags[R3_SURFEL_DISC_DRAW_FLAG] && HasNormals() && HasTangents()) {
     // Draw discs
     const int nsides = 6;
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < NSurfels(); i += subsampling_factor) {
       const R3Surfel& surfel = surfels[i];
       R3Vector normal(surfel.NX(), surfel.NY(), surfel.NZ());
@@ -1436,7 +1436,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       double r2 = surfel.Radius(1);
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
-      if (c) glColor3ubv(surfel.ColorPtr());
+      if (c) RNLoadRgb(surfel.ColorPtr());
       if (id) LoadUnsignedInt(surfel.Identifier());
       else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
@@ -1452,19 +1452,19 @@ Draw(RNFlags flags, int subsampling_factor) const
         R3LoadPoint(p[(j+1)%nsides]);
       }
     }
-    glEnd();        
+    RNGrfxEnd();        
   }
   else {
     // Draw points
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < NSurfels(); i += subsampling_factor) {
       const R3Surfel& surfel = surfels[i];
-      if (c) glColor3ubv(surfel.ColorPtr());
+      if (c) RNLoadRgb(surfel.ColorPtr());
       if (id) LoadUnsignedInt(surfel.Identifier());
-      else if (n) glNormal3f(surfel.NX(), surfel.NY(), surfel.NZ());
+      else if (n) R3LoadNormal(surfel.NX(), surfel.NY(), surfel.NZ());
       R3LoadPoint(surfel.PositionPtr());
     }
-    glEnd();
+    RNGrfxEnd();
   }
 #endif
   

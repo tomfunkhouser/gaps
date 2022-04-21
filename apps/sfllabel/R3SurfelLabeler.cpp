@@ -165,7 +165,7 @@ DrawObjectSelections(void) const
   // glDisable(GL_DEPTH_TEST);
   // glEnable(GL_POLYGON_OFFSET_FILL);
   // glPolygonOffset(-2, -1);
-  glColor3d(1.0, 1.0, 0.0);
+  RNLoadRgb(1.0, 1.0, 0.0);
   glDepthRange(0, 0.9999);
 
   // Increase point size
@@ -1363,7 +1363,7 @@ RasterizeObjectMask(unsigned int *object_mask)
   // Draw with VBO
   DrawVBO(R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX);
 #else
-  // Draw with glBegin ... glEnd
+  // Draw with RNGrfxBegin ... RNGrfxEnd
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
     if (!NodeVisibility(node)) continue;
@@ -1371,7 +1371,7 @@ RasterizeObjectMask(unsigned int *object_mask)
     // Set color
     unsigned char rgba[4] = { 0, 0, 0, 0xFE };
     CreateColor(rgba, R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX, NULL, NULL, node, NULL, NULL);
-    glColor4ubv(rgba);
+    RNLoadRgba(rgba);
 
     // Draw node
     node->Draw(shape_draw_flags);
@@ -3573,15 +3573,15 @@ DrawRubberPolygon(RNBoolean front_buffer, RNBoolean xor_op) const
   glLoadIdentity();
 
   // Draw polygon
-  GLenum primitive = GL_LINE_LOOP;
-  if (num_rubber_polygon_points < 3) primitive = GL_LINE_STRIP;
-  if (split_polygon_active) primitive = GL_LINE_STRIP;
-  glBegin(primitive);
-  glColor3f(1.0, 1.0, 1.0);
+  GLenum primitive = RN_GRFX_LINE_LOOP;
+  if (num_rubber_polygon_points < 3) primitive = RN_GRFX_LINE_STRIP;
+  if (split_polygon_active) primitive = RN_GRFX_LINE_STRIP;
+  RNGrfxBegin(primitive);
+  RNLoadRgb(1.0, 1.0, 1.0);
   for (int i = 0; i < num_rubber_polygon_points; i++) {
     R2LoadPoint(rubber_polygon_points[i][0], rubber_polygon_points[i][1]);
   }
-  glEnd();
+  RNGrfxEnd();
 
   // Reset projection matrix
   glMatrixMode(GL_PROJECTION);
@@ -3749,7 +3749,7 @@ DrawStatus(void) const
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
-  glColor3f(1,1,1);
+  RNLoadRgb(1,1,1);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
@@ -3797,7 +3797,7 @@ DrawCommandMenu(void) const
 
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
-  glColor3f(1,1,1);
+  RNLoadRgb(1,1,1);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
@@ -3813,9 +3813,9 @@ DrawCommandMenu(void) const
   // Draw "Suggest an Object" command
   if (1) {
     R2Box box(x-4, y-4, x + 164, y + 26);
-    glColor4d(0, 0.2, 0, 1);
+    RNLoadRgb(0.0, 0.2, 0.0);
     box.Draw();
-    glColor4d(1, 1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     box.Outline();
     DrawText(R2Point(x, y), "Suggest an Object", GLUT_BITMAP_HELVETICA_18); 
     y -= 32;
@@ -3824,9 +3824,9 @@ DrawCommandMenu(void) const
   // Draw "Predict All" command
   if (0) {
     R2Box box(x-4, y-4, x + 164, y + 26);
-    glColor4d(0, 0.2, 0, 1);
+    RNLoadRgb(0.0, 0.2, 0.0);
     box.Draw();
-    glColor4d(1, 1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     box.Outline();
     DrawText(R2Point(x, y), "Predict All", GLUT_BITMAP_HELVETICA_18); 
     y -= 32;
@@ -3834,7 +3834,7 @@ DrawCommandMenu(void) const
 
   // Draw box around commands
   y += 32;
-  glColor4d(1, 1, 1 , 1);
+  RNLoadRgb(1, 1 , 1);
   R2Box(x - 4 - 8, y - 4 - 8, x + 164 + 8, height - 42 + 26 + 8).Outline();
 
   // Reset OpenGL modes
@@ -3992,7 +3992,7 @@ DrawLabelMenu(void) const
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
-  glColor3f(0,0,0);
+  RNLoadRgb(0,0,0);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
@@ -4012,7 +4012,7 @@ DrawLabelMenu(void) const
   }
 
   // Clear area behind menu
-  glColor4d(0, 0, 0, 1);
+  RNLoadRgb(0, 0, 0);
   menu_bbox.Draw();
 
   // Draw "All" visibility box and "Labels" header
@@ -4021,10 +4021,10 @@ DrawLabelMenu(void) const
   R2Box name_box(x + label_menu_item_height, y + small_gap, x + label_menu_item_width - small_gap, y + label_menu_item_height - small_gap);
   R2Point visibility_origin(visibility_box[0][0] + small_gap, visibility_box[0][1] + small_gap);
   R2Point name_origin(name_box[0][0]+small_gap, name_box[0][1]+small_gap);
-  if (all_visible) glColor4d(1, 1, 1, 0.5);
-  else glColor4d(0, 0, 0, 0.5);
+  if (all_visible) RNLoadRgba(1.0, 1.0, 1.0, 0.5);
+  else RNLoadRgba(0.0, 0.0, 0.0, 0.5);
   visibility_box.Draw();
-  glColor4d(1, 1, 1, 1);
+  RNLoadRgb(1, 1, 1);
   visibility_box.Outline();
   DrawText(visibility_origin, "v", label_menu_font); 
   DrawText(name_origin, "Labels", label_menu_font); 
@@ -4051,18 +4051,18 @@ DrawLabelMenu(void) const
     // }
 
     // Draw visibility box
-    if (LabelVisibility(label)) glColor4d(1, 1, 1, 0.5);
-    else glColor4d(0, 0, 0, 0.5);
+    if (LabelVisibility(label)) RNLoadRgba(1.0, 1.0, 1.0, 0.5);
+    else RNLoadRgba(0.0, 0.0, 0.0, 0.5);
     visibility_box.Draw();
-    glColor4d(color[0], color[1], color[2], 1);
+    RNLoadRgb(color[0], color[1], color[2]);
     visibility_box.Outline();
-    glColor4d(color[0] + 0.5, color[1] + 0.5, color[2] + 0.5, 1);
+    RNLoadRgb(color[0] + 0.5, color[1] + 0.5, color[2] + 0.5);
     DrawText(visibility_origin, "v", label_menu_font); 
 
     // Draw label box
-    glColor3d(0.0, 0.0, 0.0);
+    RNLoadRgb(0.0, 0.0, 0.0);
     name_box.Draw();
-    glColor3d(color[0], color[1], color[2]);
+    RNLoadRgb(color[0], color[1], color[2]);
     name_box.Outline();
 
     // Draw label name 
@@ -4087,7 +4087,7 @@ DrawLabelMenu(void) const
   }
 
   // Draw box around menu
-  glColor4d(1, 0, 0, 1);
+  RNLoadRgb(1, 0, 0);
   menu_bbox.Outline();
 
   // Reset OpenGL modes
@@ -4232,7 +4232,7 @@ DrawAttributeMenu(void) const
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
-  glColor3f(0,0,0);
+  RNLoadRgb(0,0,0);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
@@ -4246,7 +4246,7 @@ DrawAttributeMenu(void) const
   glEnable(GL_BLEND);
 
   // Clear area behind menu
-  glColor4d(0, 0, 0, 1);
+  RNLoadRgb(0, 0, 0);
   menu_bbox.Draw();
 
   // Set some colors
@@ -4272,12 +4272,12 @@ DrawAttributeMenu(void) const
     RNBoolean vis = FALSE;
     if (attribute_visibility_flags != 0)
       vis = attribute_visibility_flags.Intersects(attribute_flags);
-    if (vis) glColor4d(1, 1, 1, 0.5);
-    else glColor4d(0, 0, 0, 0.5);
+    if (vis) RNLoadRgba(1.0, 1.0, 1.0, 0.5);
+    else RNLoadRgba(0.0, 0.0, 0.0, 0.5);
     visibility_box.Draw();
-    glColor4d(0.5, 0.5, 0.5, 1);
+    RNLoadRgb(0.5, 0.5, 0.5);
     visibility_box.Outline();
-    glColor4d(1, 1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     DrawText(visibility_origin, "v", attribute_menu_font); 
 
     // Determine if attribute is "on"
@@ -4285,7 +4285,7 @@ DrawAttributeMenu(void) const
     RNRgb color = (on) ? on_color : off_color;
     
     // Draw name box
-    glColor3d(0.0, 0.0, 0.0);
+    RNLoadRgb(0.0, 0.0, 0.0);
     name_box.Draw();
     if (isalpha(attribute_keystroke)) {
       RNLoadRgb(color);
@@ -4300,7 +4300,7 @@ DrawAttributeMenu(void) const
       DrawText(name_origin, buffer, attribute_menu_font); 
     }
     else {
-      glColor3d(1, 1, 1);
+      RNLoadRgb(1, 1, 1);
       sprintf(buffer, "%s", attribute_name);
       DrawText(name_origin, buffer, attribute_menu_font); 
     }
@@ -4311,7 +4311,7 @@ DrawAttributeMenu(void) const
   }
 
   // Draw box around menu
-  glColor4d(1, 0, 0, 1);
+  RNLoadRgb(1, 0, 0);
   menu_bbox.Outline();
 
   // Reset OpenGL modes

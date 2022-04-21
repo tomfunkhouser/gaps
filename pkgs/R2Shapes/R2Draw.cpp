@@ -18,10 +18,7 @@ void R3Matrix::
 Load(void) const
 {
     // Load matrix onto stack replacing top of stack
-#if ((RN_3D_GRFX == RN_IRISGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    // R3Matrix matrix(Transpose());
-    // loadmatrix((Matrix) matrix.m);
-#elif (RN_3D_GRFX == RN_OPENGL) 
+#if (RN_3D_GRFX == RN_OPENGL) 
     double t[4][4];
     t[0][0] = m[0][0]; t[0][1] = m[1][0]; t[0][2] = 0.0;     t[0][3] = 0.0;
     t[1][0] = m[0][1]; t[1][1] = m[1][1]; t[1][2] = 0.0;     t[1][3] = 0.0;
@@ -39,10 +36,7 @@ void R3Matrix::
 Draw(void) const
 {
     // Multiply top of stack by matrix
-#if ((RN_3D_GRFX == RN_IRISGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    // R3Matrix matrix(Transpose());
-    // multmatrix((Matrix) matrix.m);
-#elif ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
+#if ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
     GLdouble t[4][4];
     t[0][0] = m[0][0]; t[0][1] = m[1][0]; t[0][2] = 0.0;     t[0][3] = 0.0;
     t[1][0] = m[0][1]; t[1][1] = m[1][1]; t[1][2] = 0.0;     t[1][3] = 0.0;
@@ -67,9 +61,7 @@ void R3Matrix::
 Push(void) const
 {
     // Push top of stack
-#if (RN_3D_GRFX == RN_IRISGL)
-    pushmatrix(); 
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
     glPushMatrix();
 #else
     RNAbort("Not Implemented");
@@ -85,9 +77,7 @@ void R3Matrix::
 Pop(void) const
 {
     // Pop top of stack
-#if (RN_3D_GRFX == RN_IRISGL)
-    popmatrix();
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
     glPopMatrix();
 #else
     RNAbort("Not Implemented");

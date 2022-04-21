@@ -801,8 +801,8 @@ Draw(RNFlags flags) const
 {
   // Draw point at surfel
   glBegin(GL_POINTS);
-  if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3ubv(color);
-  glVertex3fv(position);
+  if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(color);
+  R3LoadPoint(position);
   glEnd();
 }
 

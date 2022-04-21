@@ -275,7 +275,7 @@ DrawModel(void)
   // Draw model faces
   if (show_model) {
     glEnable(GL_LIGHTING);
-    glColor3d(0, 0.8, 0);
+    RNLoadRgb(0.0, 0.8, 0.0);
     model->Draw(R3_DEFAULT_DRAW_FLAGS);
     glDisable(GL_LIGHTING);
   }
@@ -283,7 +283,7 @@ DrawModel(void)
   // Draw model node names
   if (show_model_names) {
     glDisable(GL_LIGHTING);
-    glColor3d(1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     for (int i = 0; i < model->NNodes(); i++) {
       R3SceneNode *node = model->Node(i);
       if (node->Name() == NULL) continue;

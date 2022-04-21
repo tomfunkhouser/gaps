@@ -161,12 +161,12 @@ DrawPolygon(RNFlags draw_flags) const
   // Draw edges
   if (draw_flags & MP_DRAW_EDGES) {
     glDisable(GL_LIGHTING);
-    glBegin(GL_LINE_LOOP);
+    RNGrfxBegin(RN_GRFX_LINE_LOOP);
     for (int i = 0; i < vertices.NEntries(); i++) {
       MPVertex *vertex = vertices.Kth(i);
       R3LoadPoint(vertex->position);
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw vertices

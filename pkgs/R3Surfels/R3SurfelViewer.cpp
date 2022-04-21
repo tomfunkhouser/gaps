@@ -534,7 +534,7 @@ LoadColor(int k) const
   // Load color
   unsigned char color[3];
   CreateColor(color, k);
-  glColor3ubv(color);
+  RNLoadRgb(color);
 }
 
 
@@ -546,7 +546,7 @@ LoadColor(double value) const
   // Load color
   unsigned char color[3];
   CreateColor(color, value);
-  glColor3ubv(color);
+  RNLoadRgb(color);
 }
 
 
@@ -560,7 +560,7 @@ LoadColor(int color_scheme,
   // Load color
   unsigned char color[3];
   CreateColor(color, color_scheme, surfel, block, node, object, label);
-  glColor3ubv(color);
+  RNLoadRgb(color);
 }
 
 
@@ -582,7 +582,7 @@ DrawViewingExtent(void) const
 
   // Draw extent
   glDisable(GL_LIGHTING);
-  glColor3d(0.5, 0.5, 0.5);
+  RNLoadRgb(0.5, 0.5, 0.5);
   extent.Outline();
 }
 
@@ -922,7 +922,7 @@ DrawSurfels(int color_scheme) const
   case R3_SURFEL_VIEWER_COLOR_BY_SHADING:
     // Draw with colors based on shading
     glEnable(GL_LIGHTING);
-    glColor3d(0.8, 0.8, 0.8);
+    RNLoadRgb(0.8, 0.8, 0.8);
     for (int i = 0; i < resident_nodes.NNodes(); i++) {
       R3SurfelNode *node = resident_nodes.Node(i);
       DrawSurfels(node, R3_SURFEL_NORMAL_DRAW_FLAG);
@@ -940,16 +940,16 @@ DrawSurfels(int color_scheme) const
         const R3Point& block_origin = block->PositionOrigin();
         glPushMatrix();
         glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-        glBegin(GL_POINTS);
+        RNGrfxBegin(RN_GRFX_POINTS);
         for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
           const R3Surfel *surfel = block->Surfel(k);
           float r = 0.5F + 0.5F * surfel->NX();
           float g = 0.5F + 0.5F * surfel->NY();
           float b = 0.5F + 0.5F * surfel->NZ();
-          glColor3f(r, g, b);
+          RNLoadRgb(r, g, b);
           R3LoadPoint(surfel->PositionPtr());
         }
-        glEnd();
+        RNGrfxEnd();
         glPopMatrix();
       }
     }
@@ -968,7 +968,7 @@ DrawSurfels(int color_scheme) const
         const R3Point& block_origin = block->PositionOrigin();
         glPushMatrix();
         glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-        glBegin(GL_POINTS);
+        RNGrfxBegin(RN_GRFX_POINTS);
         for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
           const R3Surfel *surfel = block->Surfel(k);
           if (color_scheme == R3_SURFEL_VIEWER_COLOR_BY_Z) {
@@ -992,7 +992,7 @@ DrawSurfels(int color_scheme) const
           }
           R3LoadPoint(surfel->PositionPtr());
         }
-        glEnd();
+        RNGrfxEnd();
         glPopMatrix();
       }
     }
@@ -1033,7 +1033,7 @@ DrawNormals(void) const
       const R3Point& block_origin = block->PositionOrigin();
       glPushMatrix();
       glTranslated(block_origin.X(), block_origin.Y(), block_origin.Z());
-      glBegin(GL_LINES);
+      RNGrfxBegin(RN_GRFX_LINES);
       for (int k = 0; k < block->NSurfels(); k++) {
         const R3Surfel *surfel = block->Surfel(k);
         double px = surfel->X();
@@ -1045,7 +1045,7 @@ DrawNormals(void) const
         R3LoadPoint(px, py, pz);
         R3LoadPoint(px + r * nx, py + r * ny, pz + r * nz);
       }
-      glEnd();
+      RNGrfxEnd();
       glPopMatrix();
     }
   }
@@ -1121,8 +1121,8 @@ DrawNodeBBoxes(void) const
   RNLoadRgb(node_bbox_color);
   for (int i = 0; i < resident_nodes.NNodes(); i++) {
     R3SurfelNode *node = resident_nodes.Node(i);
-    if (node->NParts() > 0) glColor3d(0, 1, 0);
-    else glColor3d(1, 0, 0);
+    if (node->NParts() > 0) RNLoadRgb(0, 1, 0);
+    else RNLoadRgb(1, 0, 0);
     node->BBox().Outline();
   }
 }
@@ -1191,7 +1191,7 @@ DrawScanViewpoints(void) const
   // Draw scan viewpoints
   glDisable(GL_LIGHTING);
   RNLoadRgb(scan_viewpoint_color);
-  glBegin(GL_LINES);
+  RNGrfxBegin(RN_GRFX_LINES);
   for (int i = 0; i < scene->NScans(); i++) {
     R3SurfelScan *scan = scene->Scan(i);
     const R3Point& viewpoint = scan->Viewpoint();
@@ -1202,7 +1202,7 @@ DrawScanViewpoints(void) const
     R3LoadPoint(viewpoint);
     R3LoadPoint(viewpoint + 0.5 * up);
   }
-  glEnd();
+  RNGrfxEnd();
 }
 
 
@@ -1325,7 +1325,7 @@ DrawImageInset(void) const
     // Draw quad
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
-    glBegin(GL_QUADS);
+    RNGrfxBegin(RN_GRFX_QUADS);
     R3LoadTextureCoords(0.0, 0.0);
     R3LoadPoint(x1 + tx, y1 + ty, -0.5);
     R3LoadTextureCoords(1.0, 0.0);
@@ -1334,7 +1334,7 @@ DrawImageInset(void) const
     R3LoadPoint(x2 + tx, y2 + ty, -0.5);
     R3LoadTextureCoords(0.0, 1.0);
     R3LoadPoint(x1 + tx, y2 + ty, -0.5);
-    glEnd();
+    RNGrfxEnd();
 
     // Unbind texture
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1392,7 +1392,7 @@ DrawImagePlane(void) const
     // Draw quad
     glDisable(GL_LIGHTING);
     RNLoadRgb(1.0, 1.0, 1.0);
-    glBegin(GL_QUADS);
+    RNGrfxBegin(RN_GRFX_QUADS);
     R3LoadTextureCoords(0.0, 0.0);
     R3LoadPoint(c - dx - dy);
     R3LoadTextureCoords(1.0, 0.0);
@@ -1401,7 +1401,7 @@ DrawImagePlane(void) const
     R3LoadPoint(c + dx + dy);
     R3LoadTextureCoords(0.0, 1.0);
     R3LoadPoint(c - dx + dy);
-    glEnd();
+    RNGrfxEnd();
 
     // Unbind texture
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1433,7 +1433,7 @@ DrawImagePoints(void) const
   // Draw image points
   glDisable(GL_LIGHTING);
   glPointSize(surfel_size);
-  glBegin(GL_POINTS);
+  RNGrfxBegin(RN_GRFX_POINTS);
   for (int iy = 0; iy < selected_image->ImageHeight(); iy++) {
     for (int ix = 0; ix < selected_image->ImageWidth(); ix++) {
       RNScalar depth = depth_channel->GridValue(ix, iy);
@@ -1444,7 +1444,7 @@ DrawImagePoints(void) const
       R3LoadPoint(world_position);
     }
   }
-  glEnd();
+  RNGrfxEnd();
   glPointSize(1);
 }
 
@@ -1461,17 +1461,17 @@ DrawAxes(void) const
   glDisable(GL_LIGHTING);
   glLineWidth(3);
   R3BeginLine();
-  glColor3f(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   R3LoadPoint(R3zero_point);
   R3LoadPoint(R3zero_point + d * R3posx_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 1, 0);
+  RNLoadRgb(0, 1, 0);
   R3LoadPoint(R3zero_point);
   R3LoadPoint(R3zero_point + d * R3posy_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 0, 1);
+  RNLoadRgb(0, 0, 1);
   R3LoadPoint(R3zero_point);
   R3LoadPoint(R3zero_point + d * R3posz_vector);
   R3EndLine();
@@ -2640,7 +2640,7 @@ PickImage(int x, int y, R3Point *picked_position)
       rgba[1] = (image_index >> 8) & 0xFF;
       rgba[2] = image_index & 0xFF;
       rgba[3] = 0xFD;
-      glColor4ubv(rgba);
+      RNLoadRgba(rgba);
       image->Draw(0);
     }
   }
@@ -3111,7 +3111,7 @@ DrawVBO(int color_scheme) const
 
     // Draw points with shading
     glEnable(GL_LIGHTING);
-    glColor3d(0.8, 0.8, 0.8);
+    RNLoadRgb(0.8, 0.8, 0.8);
     glDrawArrays(GL_POINTS, 0, vbo_nsurfels);
     glDisable(GL_LIGHTING);
   }

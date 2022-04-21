@@ -731,7 +731,7 @@ LoadColorIndex(int model_index, int element_type, int element_index)
   color[2] = (k      ) & 0xFF;
   color[3] = ((model_index + 1) & 0x0F) << 4;
   color[3] |= (element_type + 1) & 0x0F;
-  glColor4ubv(color);
+  RNLoadRgba(color);
 }
 
 
@@ -769,7 +769,7 @@ LoadColorIdentifier(int k)
   };
 
   // Load color
-  if (k == -1) glColor3d(0.8, 0.8, 0.8);
+  if (k == -1) RNLoadRgb(0.8, 0.8, 0.8);
   else if (k == 0) RNLoadRgb(colors[0]);
   else RNLoadRgb(colors[1 + (k % (ncolors-1))]);
 }
@@ -819,7 +819,7 @@ LoadColorValue(double value)
   }
 
   // Load color
-  glColor3ubv(color);
+  RNLoadRgb(color);
 }
 
 
@@ -894,7 +894,7 @@ DrawSelectedPosition(void)
 
   // Draw sphere
   glEnable(GL_LIGHTING);
-  glColor3f(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   R3Sphere(selected_position, 0.05).Draw();
 }
 
@@ -908,7 +908,7 @@ DrawBBox(void)
 
   // Draw bounding box
   glDisable(GL_LIGHTING);
-  glColor3f(0.5, 0.5, 0.5);
+  RNLoadRgb(0.5, 0.5, 0.5);
   world_bbox.Outline();
 }
 
@@ -925,17 +925,17 @@ DrawAxes(void)
   glDisable(GL_LIGHTING);
   glLineWidth(3);
   R3BeginLine();
-  glColor3f(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   R3LoadPoint(R3zero_point + 0.5*d * R3negx_vector);
   R3LoadPoint(R3zero_point + d * R3posx_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 1, 0);
+  RNLoadRgb(0, 1, 0);
   R3LoadPoint(R3zero_point + 0.5*d * R3negy_vector);
   R3LoadPoint(R3zero_point + d * R3posy_vector);
   R3EndLine();
   R3BeginLine();
-  glColor3f(0, 0, 1);
+  RNLoadRgb(0, 0, 1);
   R3LoadPoint(R3zero_point + 0.5*d * R3negz_vector);
   R3LoadPoint(R3zero_point + d * R3posz_vector);
   R3EndLine();
@@ -974,17 +974,17 @@ DrawImageInset(ImageData *data,
   glEnable(GL_TEXTURE_2D);
 
   // Draw textured polygon
-  glColor3d(1, 1, 1);
-  glBegin(GL_POLYGON);
-  glTexCoord2d(0, 0);
-  glVertex3d(x, y, -0.5);
-  glTexCoord2d(1, 0);
-  glVertex3d(x+w, y, -0.5);
-  glTexCoord2d(1, 1);
-  glVertex3d(x+w, y+h, -0.5);
-  glTexCoord2d(0, 1);
-  glVertex3d(x, y+h, -0.5);
-  glEnd();
+  RNLoadRgb(1, 1, 1);
+  RNGrfxBegin(RN_GRFX_POLYGON);
+  R3LoadTextureCoords(0, 0);
+  R3LoadPoint(x, y, -0.5);
+  R3LoadTextureCoords(1, 0);
+  R3LoadPoint(x+w, y, -0.5);
+  R3LoadTextureCoords(1, 1);
+  R3LoadPoint(x+w, y+h, -0.5);
+  R3LoadTextureCoords(0, 1);
+  R3LoadPoint(x, y+h, -0.5);
+  RNGrfxEnd();
 
   // Disable texture
   glDisable(GL_TEXTURE_2D);
@@ -1024,11 +1024,11 @@ DrawDotOnImageInset(ImageData *data,
   glLoadIdentity();
 
   // Draw dot
-  glColor3d(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   glPointSize(5);
-  glBegin(GL_POINTS);
-  glVertex3d(image_position.X(), image_position.Y(), -0.25);
-  glEnd();
+  RNGrfxBegin(RN_GRFX_POINTS);
+  R3LoadPoint(image_position.X(), image_position.Y(), -0.25);
+  RNGrfxEnd();
   glPointSize(1);
 
   // Restore viewing transformation
@@ -1067,17 +1067,17 @@ DrawImageBillboard(ImageData *data, const R3Point& viewpoint,
   R3Point lr = origin + dx - dy;
   R3Point ul = origin - dx + dy;
   R3Point ll = origin - dx - dy;
-  glColor3d(1, 1, 1);
-  glBegin(GL_POLYGON);
-  glTexCoord2d(0,0);
+  RNLoadRgb(1, 1, 1);
+  RNGrfxBegin(RN_GRFX_POLYGON);
+  R3LoadTextureCoords(0,0);
   R3LoadPoint(ll);
-  glTexCoord2d(1,0);
+  R3LoadTextureCoords(1,0);
   R3LoadPoint(lr);
-  glTexCoord2d(1, 1);
+  R3LoadTextureCoords(1, 1);
   R3LoadPoint(ur);
-  glTexCoord2d(0,1);
+  R3LoadTextureCoords(0,1);
   R3LoadPoint(ul);
-  glEnd();
+  RNGrfxEnd();
   
   // Disable texture
   glDisable(GL_TEXTURE_2D);
@@ -1113,7 +1113,7 @@ DrawDotOnImageBillboard(ImageData *data, const R3Point& viewpoint,
   world_position += image_billboard_depth * dy * up * tan(yfov);
 
   // Draw sphere
-  glColor3d(1, 0, 0);
+  RNLoadRgb(1, 0, 0);
   R3Sphere(world_position, radius).Draw();
 }
 
@@ -1143,7 +1143,7 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
   glBindTexture(GL_TEXTURE_2D, data->texture_id);
   glEnable(GL_TEXTURE_2D);
   glDisable(GL_LIGHTING);
-  glColor3d(1, 1, 1);
+  RNLoadRgb(1, 1, 1);
 
   // Check if have ray images
   if ((data->ray_origin_images[0].XResolution() == w) &&
@@ -1158,7 +1158,7 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
       (data->ray_direction_images[0].YResolution() == h) &&
       (data->ray_direction_images[1].YResolution() == h) &&
       (data->ray_direction_images[2].YResolution() == h)) {
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int ix = 0; ix < w; ix++) {
       for (int iy = 0; iy < h; iy++) {
         // Get/check depth
@@ -1191,7 +1191,7 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
         R3LoadPoint(p);
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else {
     // Compute view plane rectangle in world coordinates
@@ -1201,7 +1201,7 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
     R3Point lower_left = origin - 0.5*dx - 0.5*dy;
 
     // Backproject pixels from the view plane rectangle
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int ix = 0; ix < w; ix++) {
       for (int iy = 0; iy < h; iy++) {
         double depth = data->depth_image.GridValue(ix, iy);
@@ -1217,7 +1217,7 @@ DrawImageDepths(ImageData *data, const R3Point& viewpoint,
         R3LoadPoint(p);
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
   
   // Disable texture
@@ -1254,7 +1254,7 @@ DrawImageRay(ImageData *data,
 
   // Draw ray
   glDisable(GL_LIGHTING);
-  glColor3f(0, 1, 1);
+  RNLoadRgb(0, 1, 1);
   R3Span(ray_origin, p).Draw();
 }
 
@@ -1274,26 +1274,26 @@ DrawPointSet(R3PointSet *pointset,
   // Draw points
   if (show_points) {
     glDisable(GL_LIGHTING);    
-    glColor3d(0.0, 0.0, 1.0);
-    glBegin(GL_POINTS);
+    RNLoadRgb(0.0, 0.0, 1.0);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < pointset->NPoints(); i++) {
       const R3Point& position = pointset->PointPosition(i);
       RNScalar value = pointset->PointValue(i);
       if (color_scheme == PICK_COLOR_SCHEME)
         LoadColorIndex(model_index, POINTSET_POINT_ELEMENT_TYPE, i);
       else if (color_scheme == RGB_COLOR_SCHEME)
-        glColor3d(-10*value, 0, 10*value);
+        RNLoadRgb(-10*value, 0.0, 10*value);
       R3LoadPoint(position);
     }
-    glEnd();
+    RNGrfxEnd();
     glPointSize(1);
   }
   
   // Draw normals
   if (show_normals) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0);
-    glBegin(GL_LINES);
+    RNLoadRgb(0.0, 1.0, 0.0);
+    RNGrfxBegin(RN_GRFX_LINES);
     RNScalar d = 0.0025 * world_bbox.DiagonalRadius();
     for (int i = 0; i < pointset->NPoints(); i++) {
       const R3Point& position = pointset->PointPosition(i);
@@ -1301,7 +1301,7 @@ DrawPointSet(R3PointSet *pointset,
       R3LoadPoint(position);
       R3LoadPoint(position + d * normal);
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 
@@ -1318,8 +1318,8 @@ DrawMesh(R3Mesh *mesh,
   if (show_surfaces) {
     if (color_scheme == SHADING_COLOR_SCHEME) glEnable(GL_LIGHTING);
     else glDisable(GL_LIGHTING);
-    glColor3d(0.8, 0.8, 0.8);
-    glBegin(GL_TRIANGLES);
+    RNLoadRgb(0.8, 0.8, 0.8);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < mesh->NFaces(); i++) {
       R3MeshFace *face = mesh->Face(i);
       if (color_scheme == PICK_COLOR_SCHEME)
@@ -1337,14 +1337,14 @@ DrawMesh(R3Mesh *mesh,
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw edges
   if (show_edges) {
     if (color_scheme != PICK_COLOR_SCHEME) {
       glDisable(GL_LIGHTING);
-      glColor3f(1.0, 0.0, 0.0);
+      RNLoadRgb(1.0, 0.0, 0.0);
       mesh->DrawEdges();
     }
   }
@@ -1352,8 +1352,8 @@ DrawMesh(R3Mesh *mesh,
   // Draw vertices
   if (show_points) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 0.0, 1.0);
-    glBegin(GL_POINTS);
+    RNLoadRgb(0.0, 0.0, 1.0);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < mesh->NVertices(); i++) {
       R3MeshVertex *vertex = mesh->Vertex(i);
       if (color_scheme == PICK_COLOR_SCHEME)
@@ -1362,14 +1362,14 @@ DrawMesh(R3Mesh *mesh,
         R3LoadRgb(mesh->VertexColor(vertex));
       R3LoadPoint(mesh->VertexPosition(vertex));
     }
-    glEnd();
+    RNGrfxEnd();
   }
   
   // Draw normals
   if (show_normals) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0); 
-    glBegin(GL_LINES);
+    RNLoadRgb(0.0, 1.0, 0.0); 
+    RNGrfxBegin(RN_GRFX_LINES);
     RNScalar d = 0.0025 * world_bbox.DiagonalRadius();
     for (int i = 0; i < mesh->NVertices(); i++) {
       R3MeshVertex *vertex = mesh->Vertex(i);
@@ -1378,7 +1378,7 @@ DrawMesh(R3Mesh *mesh,
       R3LoadPoint(position);
       R3LoadPoint(position + d * normal);
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 
@@ -1402,7 +1402,7 @@ DrawScene(R3Scene *scene,
   if (show_edges) {
     if (color_scheme != PICK_COLOR_SCHEME) {
       glDisable(GL_LIGHTING);
-      glColor3d(0.0, 1.0, 0.0);
+      RNLoadRgb(0.0, 1.0, 0.0);
       scene->Draw(R3_EDGES_DRAW_FLAG);
     }
   }
@@ -1489,7 +1489,7 @@ DrawSFL(R3SurfelScene *scene,
   // Draw points
   if (show_points) {
     glDisable(GL_LIGHTING);
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     int sfl_count = 0;
     for (int i = 0; i < tree->NNodes(); i++) {
       R3SurfelNode *node = tree->Node(i);
@@ -1517,14 +1517,14 @@ DrawSFL(R3SurfelScene *scene,
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw normals
   if (show_normals && (color_scheme != PICK_COLOR_SCHEME)) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0); 
-    glBegin(GL_LINES);
+    RNLoadRgb(0.0, 1.0, 0.0); 
+    RNGrfxBegin(RN_GRFX_LINES);
     RNScalar d = 0.0025 * world_bbox.DiagonalRadius();
     for (int i = 0; i < tree->NNodes(); i++) {
       R3SurfelNode *node = tree->Node(i);
@@ -1539,13 +1539,13 @@ DrawSFL(R3SurfelScene *scene,
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw cameras
   if (show_cameras) {
     glDisable(GL_LIGHTING);
-    glColor3d(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
       if (color_scheme == PICK_COLOR_SCHEME)
@@ -1560,7 +1560,7 @@ DrawSFL(R3SurfelScene *scene,
   // Draw images
   if (show_image_insets || show_image_billboards || show_image_depths || show_image_rays) {
     glDisable(GL_LIGHTING);
-    glColor3d(1, 1, 1);
+    RNLoadRgb(1, 1, 1);
     int image_count = 0;
     for (int i = 0; i < scene->NImages(); i++) {
       R3SurfelImage *image = scene->Image(i);
@@ -1626,7 +1626,7 @@ DrawGSV(GSVScene *scene,
   // Draw points
   if (show_points) {
     glDisable(GL_LIGHTING);
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     int point_count = 0;
     for (int ir = 0; ir < scene->NRuns(); ir++) {
       GSVRun *run = scene->Run(ir);
@@ -1658,14 +1658,14 @@ DrawGSV(GSVScene *scene,
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw normals
   if (show_normals && (color_scheme != PICK_COLOR_SCHEME)) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0); 
-    glBegin(GL_LINES);
+    RNLoadRgb(0.0, 1.0, 0.0); 
+    RNGrfxBegin(RN_GRFX_LINES);
     RNScalar d = 0.0025 * world_bbox.DiagonalRadius();
     for (int ir = 0; ir < scene->NRuns(); ir++) {
       GSVRun *run = scene->Run(ir);
@@ -1689,13 +1689,13 @@ DrawGSV(GSVScene *scene,
         }
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw cameras
   if (show_cameras) {
     glDisable(GL_LIGHTING);
-    glColor3d(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     int image_count = 0;
     for (int ir = 0; ir < scene->NRuns(); ir++) {
       GSVRun *run = scene->Run(ir);

@@ -5216,7 +5216,7 @@ DrawIsoSurface(RNScalar isolevel) const
 
   // Draw isosurface
   R3Point *pointsp = isosurface_points;
-  glBegin(GL_TRIANGLES);
+  RNGrfxBegin(RN_GRFX_TRIANGLES);
   for (int i = 0; i < isosurface_npoints; i += 3) {
     R3Point p0 = *(pointsp++);
     R3Point p1 = *(pointsp++);
@@ -5227,7 +5227,7 @@ DrawIsoSurface(RNScalar isolevel) const
     R3LoadPoint(p1);
     R3LoadPoint(p2);
   }
-  glEnd();
+  RNGrfxEnd();
 }
 
 

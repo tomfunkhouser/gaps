@@ -172,16 +172,16 @@ void GLUTRedraw(void)
   int xmax = (selected_grid_window.XMax()+1 < selected_grid->XResolution()-1) ? selected_grid_window.XMax()+1 : selected_grid->XResolution()-1;
   int ymax = (selected_grid_window.YMax()+1 < selected_grid->YResolution()-1) ? selected_grid_window.YMax()+1 : selected_grid->YResolution()-1;
   for (int j = ymin; j <= ymax; j++) {
-    glBegin(GL_TRIANGLE_STRIP);
+    RNGrfxBegin(RN_GRFX_TRIANGLE_STRIP);
     for (int i = xmin; i <= xmax; i++) {
       for (int k = -1; k <= 0; k++) { 
         RNScalar value = selected_grid->GridValue(i, j+k);
         RNRgb color = Color(value);
         RNLoadRgb(color);
-        glVertex2i(i, j+k);
+        R2LoadPoint(i, j+k);
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Draw value at selected grid position

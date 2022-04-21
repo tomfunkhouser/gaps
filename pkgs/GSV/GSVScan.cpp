@@ -606,7 +606,7 @@ Draw(RNFlags flags) const
     const int ncolors = 3;
     GLfloat color[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
     int laser_index = (Laser()) ? Laser()->RunIndex() : 0;
-    glColor3fv(color[laser_index % ncolors]);
+    RNLoadRgb(color[laser_index % ncolors]);
     for (int i = 0; i < NScanlines(); i++) {
       GSVScanline *scanline = Scanline(i);
       scanline->Draw(flags);

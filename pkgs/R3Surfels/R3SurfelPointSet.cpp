@@ -882,7 +882,7 @@ Draw(RNFlags flags) const
   // Draw discs
   if (d) {
     const int nsides = 6;
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
       R3Point position = point->Position();
@@ -893,7 +893,7 @@ Draw(RNFlags flags) const
       double r2 = point->Radius(1);
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
-      if (c) glColor3ubv(point->Color());
+      if (c) RNLoadRgb(point->Color());
       if (id) LoadUnsignedInt(point->Identifier());
       else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
@@ -909,19 +909,19 @@ Draw(RNFlags flags) const
         R3LoadPoint(p[j]);
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else {
     // Draw surfels with color
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
-      if (c) glColor3ubv(point->Color());
+      if (c) RNLoadRgb(point->Color());
       if (id) LoadUnsignedInt(point->Identifier());
       else if (n) R3LoadNormal(point->Normal());
       R3LoadPoint(point->Position());
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 

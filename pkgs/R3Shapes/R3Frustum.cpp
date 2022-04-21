@@ -304,7 +304,7 @@ void R3Frustum::
 Draw(const R3DrawFlags draw_flags) const
 {
   // Draw quads
-  glBegin(GL_QUADS);
+  RNGrfxBegin(RN_GRFX_QUADS);
   R3LoadPoint(Corner(0,0,0));  // Front
   R3LoadPoint(Corner(1,0,0));
   R3LoadPoint(Corner(1,1,0));
@@ -329,7 +329,7 @@ Draw(const R3DrawFlags draw_flags) const
   R3LoadPoint(Corner(0,0,1));
   R3LoadPoint(Corner(1,0,1));
   R3LoadPoint(Corner(1,0,0));
-  glEnd();
+  RNGrfxEnd();
 }
 
 

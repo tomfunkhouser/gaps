@@ -691,7 +691,7 @@ LoadInteger(int value)
   color[1] = (value >> 16) & 0xFF;
   color[2] = (value >>  8) & 0xFF;
   color[3] = (value      ) & 0xFF;
-  glColor4ubv(color);
+  RNLoadRgba(color);
 }
 
 
@@ -824,7 +824,7 @@ RenderConfiguration(const RGBDConfiguration& configuration,
   glClearColor(background.R(), background.G(), background.B(), 0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
-  glColor3d(1.0, 1.0, 1.0);
+  RNLoadRgb(1.0, 1.0, 1.0);
 
   // Draw images
   if (configuration.NImages() > 0) {
@@ -891,14 +891,14 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
-  glColor3d(1.0, 1.0, 1.0);
+  RNLoadRgb(1.0, 1.0, 1.0);
 
   // Get world to camera matrix
   R3CoordSystem cs(viewpoint, R3Triad(towards, up));
   R4Matrix world_to_camera = cs.InverseMatrix();
 
   // Draw mesh
-  glBegin(GL_TRIANGLES);
+  RNGrfxBegin(RN_GRFX_TRIANGLES);
   for (int i = 0; i < mesh.NFaces(); i++) {
     R3MeshFace *face = mesh.Face(i);
     if (skip_removed_faces) {
@@ -1016,7 +1016,7 @@ RenderMesh(const R3Mesh& mesh, int rendering_scheme,
       }
     }
   }
-  glEnd();
+  RNGrfxEnd();
 }
 
 

@@ -257,10 +257,10 @@ void R3SurfelPoint::
 Draw(RNFlags flags) const
 {
   // Draw surfel
-  glBegin(GL_POINTS);
-  if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3ubv(Color());
+  RNGrfxBegin(RN_GRFX_POINTS);
+  if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(Color());
   R3LoadPoint(Position().Coords());
-  glEnd();
+  RNGrfxEnd();
 }
 
 

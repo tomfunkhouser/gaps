@@ -248,7 +248,7 @@ DrawLabel(RNFlags draw_flags) const
   // Draw sphere at position
   if (!label) return;
   glDisable(GL_LIGHTING);
-  glColor3d(1,1,1);
+  RNLoadRgb(1,1,1);
   DrawText(position + 0.25 * R3posz_vector, label);
 }
 

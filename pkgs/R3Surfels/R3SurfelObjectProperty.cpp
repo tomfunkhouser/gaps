@@ -108,39 +108,39 @@ Draw(RNFlags flags) const
 
       // Draw normal
       glLineWidth(5);
-      glBegin(GL_LINES);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 0, 1);
+      RNGrfxBegin(RN_GRFX_LINES);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 0, 1);
       R3LoadPoint(centroid);
       R3LoadPoint(centroid + extent13*axis3);
-      glEnd();
+      RNGrfxEnd();
 
       // Draw stddevs
       glLineWidth(2);
-      glBegin(GL_LINES);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(1, 0, 0);
+      RNGrfxBegin(RN_GRFX_LINES);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(1, 0, 0);
       R3LoadPoint(centroid - stddev1 * axis1);
       R3LoadPoint(centroid + stddev1 * axis1);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 1, 0);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 1, 0);
       R3LoadPoint(centroid - stddev2 * axis2);
       R3LoadPoint(centroid + stddev2 * axis2);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 0, 1);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 0, 1);
       R3LoadPoint(centroid - stddev3 * axis3);
       R3LoadPoint(centroid + stddev3 * axis3);
-      glEnd();
+      RNGrfxEnd();
 
       // Draw extents
       glLineWidth(1);
-      glBegin(GL_LINES);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(1, 0, 0);
+      RNGrfxBegin(RN_GRFX_LINES);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(1, 0, 0);
       R3LoadPoint(centroid + extent01 * axis1);
       R3LoadPoint(centroid + extent11 * axis1);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 1, 0);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 1, 0);
       R3LoadPoint(centroid + extent02 * axis2);
       R3LoadPoint(centroid + extent12 * axis2);
-      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) glColor3d(0, 0, 1);
+      if (flags[R3_SURFEL_COLOR_DRAW_FLAG]) RNLoadRgb(0, 0, 1);
       R3LoadPoint(centroid + extent03 * axis3);
       R3LoadPoint(centroid + extent13 * axis3);
-      glEnd();
+      RNGrfxEnd();
     }
     break; 
   }

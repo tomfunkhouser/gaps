@@ -439,13 +439,13 @@ LoadColor(int k)
 #else
   // Load identifier color
   if (k < 0) {
-    glColor3d(0.5, 0.5, 0.5);
+    RNLoadRgb(0.5, 0.5, 0.5);
   }
   else {
     unsigned char r = (224 + 67*k) % 256;
     unsigned char g = (32  + 47*k) % 256;
     unsigned char b = (32  + 29*k) % 256;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
   }
 #endif
 }
@@ -496,7 +496,7 @@ LoadColor(double value)
     g = 0;
     b = 1;
   }
-  glColor3d(r, g, b);
+  RNLoadRgb(r, g, b);
 }
 
 
@@ -513,7 +513,7 @@ Draw(RNFlags flags) const
     const int ncolors = 3;
     GLfloat color[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
     RNLength max_edge_length_squared = 1;
-    glBegin(GL_LINES);
+    RNGrfxBegin(RN_GRFX_LINES);
     R3Point prev_point = PointPosition(0);
     for (int ik = 1; ik < NPoints(); ik++) {
       const R3Point& current_point = PointPosition(ik);
@@ -521,19 +521,19 @@ Draw(RNFlags flags) const
       RNScalar dy = prev_point[1] - current_point[1];
       RNScalar dd = dx*dx + dy*dy;
       if (dd < max_edge_length_squared) {
-        glColor3fv(color[(int) (0.1 * (NPoints()-ik)) % ncolors]);
+        RNLoadRgb(color[(int) (0.1 * (NPoints()-ik)) % ncolors]);
         R3LoadPoint(prev_point);
         R3LoadPoint(current_point);
       }
       prev_point = current_point;
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else {
     // Draw points
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     LoadPoints(flags);
-    glEnd();
+    RNGrfxEnd();
   }
 }
 
@@ -594,8 +594,8 @@ LoadPoints(RNFlags flags) const
   else if (flags & GSV_DRAW_POINTS_WITH_GROUND_COLOR) {
     // Load points
     for (int i = 0; i < NPoints(); i++) {
-      if (PointFlags(i) & GSV_POINT_ON_GROUND_FLAG) glColor3d(1, 0, 0);
-      else glColor3d(0, 0, 1);
+      if (PointFlags(i) & GSV_POINT_ON_GROUND_FLAG) RNLoadRgb(1, 0, 0);
+      else RNLoadRgb(0, 0, 1);
       R3LoadPoint(PointPosition(i));
     }
   }
@@ -610,7 +610,7 @@ LoadPoints(RNFlags flags) const
     // Load points
     for (int i = 0; i < NPoints(); i++) {
       R3Vector vector = 0.5 * (PointNormal(i) + R3ones_vector);
-      glColor3dv(vector.Coords());
+      RNLoadRgb(vector.Coords());
       R3LoadPoint(PointPosition(i));
     }
   }

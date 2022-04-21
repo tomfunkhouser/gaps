@@ -3110,7 +3110,7 @@ void R3Mesh::
 DrawFaces(void) const
 {
   // Draw all faces
-  glBegin(GL_TRIANGLES);
+  RNGrfxBegin(RN_GRFX_TRIANGLES);
   for (int i = 0; i < faces.NEntries(); i++) {
     R3MeshFace *f = faces.Kth(i);
     R3LoadNormal(FaceNormal(f));
@@ -3118,7 +3118,7 @@ DrawFaces(void) const
     R3LoadPoint(f->vertex[1]->position);
     R3LoadPoint(f->vertex[2]->position);
   }
-  glEnd();
+  RNGrfxEnd();
 }
 
 
@@ -3133,7 +3133,7 @@ DrawVertexIDs(void) const
     unsigned char r = ((i << 16) & 0xFF);
     unsigned char g = (i << 8) & 0xFF;
     unsigned char b = (i << 0) & 0xFF;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
     DrawVertex(vertices[i]);
   }
   glEnable(GL_LIGHTING);
@@ -3151,7 +3151,7 @@ DrawEdgeIDs(void) const
     unsigned char r = ((i << 16) & 0xFF);
     unsigned char g = (i << 8) & 0xFF;
     unsigned char b = (i << 0) & 0xFF;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
     DrawEdge(edges[i]);
   }
   glEnable(GL_LIGHTING);
@@ -3169,7 +3169,7 @@ DrawFaceIDs(void) const
     unsigned char r = (i << 16) & 0xFF;
     unsigned char g = (i << 8) & 0xFF;
     unsigned char b = (i << 0) & 0xFF;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
     DrawFace(faces[i]);
   }
   glEnable(GL_LIGHTING);

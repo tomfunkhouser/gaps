@@ -93,7 +93,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
     while (a2 > (a1 + RN_TWO_PI)) a2 -= RN_TWO_PI;
 
     // Draw right side of cone at p1
-    glColor3ub(0, 255, 0);
+    RNLoadRgb(0, 1, 0);
     R3BeginPolygon();
     double da = (a2 - a1);
     double desired_step = (RN_PI / 60.0);
@@ -115,7 +115,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
     R3EndPolygon();
 
     // Draw left side of cone at p1
-    glColor3ub(255, 0, 0);
+    RNLoadRgb(1, 0, 0);
     R3BeginPolygon();
     da = RN_TWO_PI - (a2 - a1);
     nsteps = da / desired_step;
@@ -138,7 +138,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
     // Draw wedge 
     if (closed || (i < n-1)) {
       // Draw right side of wedge
-      glColor3ub(0, 255, 0);
+      RNLoadRgb(0, 1, 0);
       R3BeginPolygon();
       R3LoadPoint(p1->X(), p1->Y(), 0.0);
       R3LoadPoint(p1->X() - max_distance * n2.X(), p1->Y() - max_distance * n2.Y(), -max_distance);
@@ -147,7 +147,7 @@ int RasterizeSDF(R2Grid& grid, const R2Polygon& polygon, int end_condition)
       R3EndPolygon();
 
       // Draw left side of wedge
-      glColor3ub(255, 0, 0);
+      RNLoadRgb(1, 0, 0);
       R3BeginPolygon();
       R3LoadPoint(p1->X(), p1->Y(), 0.0);
       R3LoadPoint(p2->X(), p2->Y(), 0.0);

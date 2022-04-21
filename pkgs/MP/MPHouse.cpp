@@ -664,7 +664,7 @@ DrawMesh(RNFlags draw_flags) const
     else if (draw_flags[MP_COLOR_BY_LABEL]) {
       if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
       else glEnable(GL_LIGHTING);
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         int category = mesh->FaceCategory(face);
@@ -675,12 +675,12 @@ DrawMesh(RNFlags draw_flags) const
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else if (draw_flags[MP_COLOR_BY_INDEX]) {
       if (draw_flags & MP_COLOR_FOR_PICK) glDisable(GL_LIGHTING);
       else glEnable(GL_LIGHTING);
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         int segment = mesh->FaceSegment(face);
@@ -691,11 +691,11 @@ DrawMesh(RNFlags draw_flags) const
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else {
       glDisable(GL_LIGHTING);
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         for (int j = 0; j < 3; j++) {
@@ -704,7 +704,7 @@ DrawMesh(RNFlags draw_flags) const
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 
@@ -712,7 +712,7 @@ DrawMesh(RNFlags draw_flags) const
   if (draw_flags[MP_DRAW_EDGES]) {
     if (!draw_flags[MP_COLOR_FOR_PICK]) {
       glDisable(GL_LIGHTING);
-      glColor3d(0.0, 1.0, 0.0);
+      RNLoadRgb(0.0, 1.0, 0.0);
       mesh->DrawEdges();
     }
   }
@@ -721,7 +721,7 @@ DrawMesh(RNFlags draw_flags) const
   if (draw_flags[MP_DRAW_VERTICES]) {
     if (draw_flags[MP_COLOR_FOR_PICK]) {
       glDisable(GL_LIGHTING);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
@@ -729,11 +729,11 @@ DrawMesh(RNFlags draw_flags) const
         LoadIndex(mesh->FaceID(face), MP_MESH_TAG);
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else if (draw_flags[MP_COLOR_BY_LABEL]) {
       glDisable(GL_LIGHTING);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
@@ -742,11 +742,11 @@ DrawMesh(RNFlags draw_flags) const
         LoadColor(category);
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else if (draw_flags[MP_COLOR_BY_INDEX]) {
       glDisable(GL_LIGHTING);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3MeshFace *face = mesh->FaceOnVertex(vertex);
@@ -755,17 +755,17 @@ DrawMesh(RNFlags draw_flags) const
         LoadColor(segment);
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else {
       glDisable(GL_LIGHTING);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3LoadRgb(mesh->VertexColor(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 }
@@ -784,14 +784,14 @@ DrawScene(RNFlags draw_flags) const
   // Draw faces
   if (draw_flags[MP_DRAW_FACES]) {
     glEnable(GL_LIGHTING);
-    glColor3d(1.0, 1.0, 1.0); 
+    RNLoadRgb(1.0, 1.0, 1.0); 
     scene->Draw(R3_DEFAULT_DRAW_FLAGS);
   }
 
   // Draw edges
   if (draw_flags[MP_DRAW_EDGES]) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0);
+    RNLoadRgb(0.0, 1.0, 0.0);
     scene->Draw(R3_EDGES_DRAW_FLAG);
   }
 }

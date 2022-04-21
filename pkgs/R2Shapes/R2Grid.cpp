@@ -2926,12 +2926,12 @@ DrawMesh(void) const
 
   // Draw triangle strip
   for (int j = 1; j < grid_resolution[1]; j++) {
-    glBegin(GL_TRIANGLE_STRIP);
+    RNGrfxBegin(RN_GRFX_TRIANGLE_STRIP);
     for (int i = 0; i < grid_resolution[0]; i++) {
-      R3LoadPoint(i, j, GridValue(i, j));
-      R3LoadPoint(i, j-1, GridValue(i, j-1));
+      R3LoadPoint((double) i, (double) j,     GridValue(i, j));
+      R3LoadPoint((double) i, (double) (j-1), GridValue(i, j-1));
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Pop transformation

@@ -119,18 +119,18 @@ DrawCamera(R3Scene *scene, const R3Camera& camera, RNScalar radius = 0)
   R3Point lr = org + dx - dy;
   R3Point ul = org - dx + dy;
   R3Point ll = org - dx - dy;
-  glBegin(GL_LINE_LOOP);
-  glVertex3d(ur[0], ur[1], ur[2]);
-  glVertex3d(ul[0], ul[1], ul[2]);
-  glVertex3d(ll[0], ll[1], ll[2]);
-  glVertex3d(lr[0], lr[1], lr[2]);
-  glVertex3d(ur[0], ur[1], ur[2]);
-  glVertex3d(eye[0], eye[1], eye[2]);
-  glVertex3d(lr[0], lr[1], lr[2]);
-  glVertex3d(ll[0], ll[1], ll[2]);
-  glVertex3d(eye[0], eye[1], eye[2]);
-  glVertex3d(ul[0], ul[1], ul[2]);
-  glEnd();
+  RNGrfxBegin(RN_GRFX_LINE_LOOP);
+  R3LoadPoint(ur[0], ur[1], ur[2]);
+  R3LoadPoint(ul[0], ul[1], ul[2]);
+  R3LoadPoint(ll[0], ll[1], ll[2]);
+  R3LoadPoint(lr[0], lr[1], lr[2]);
+  R3LoadPoint(ur[0], ur[1], ur[2]);
+  R3LoadPoint(eye[0], eye[1], eye[2]);
+  R3LoadPoint(lr[0], lr[1], lr[2]);
+  R3LoadPoint(ll[0], ll[1], ll[2]);
+  R3LoadPoint(eye[0], eye[1], eye[2]);
+  R3LoadPoint(ul[0], ul[1], ul[2]);
+  RNGrfxEnd();
 }
 
 
@@ -167,11 +167,11 @@ DrawLights(R3Scene *scene)
       R3Vector direction = directional_light->Direction();
 
       // Draw direction vector
-      glBegin(GL_LINES);
+      RNGrfxBegin(RN_GRFX_LINES);
       R3Point centroid = scene->BBox().Centroid();
       R3LoadPoint(centroid - radius * direction);
       R3LoadPoint(centroid - 0.1 * radius * direction);
-      glEnd();
+      RNGrfxEnd();
     }
     else if (light->ClassID() == R3PointLight::CLASS_ID()) {
       // Draw sphere at point light position
@@ -190,10 +190,10 @@ DrawLights(R3Scene *scene)
       R3Sphere(position, 0.01 * radius).Draw();
   
       // Draw direction vector
-      glBegin(GL_LINES);
+      RNGrfxBegin(RN_GRFX_LINES);
       R3LoadPoint(position);
       R3LoadPoint(position + 0.025 * radius * direction);
-      glEnd();
+      RNGrfxEnd();
     }
     else {
       RNFail("Unrecognized light type: %d\n", light->ClassID());
@@ -224,7 +224,7 @@ DrawNormals(R3Scene *scene, R3SceneNode *node)
   }
 
   // Draw element normals
-  glBegin(GL_LINES);
+  RNGrfxBegin(RN_GRFX_LINES);
   double r = 0.01 * scene->BBox().DiagonalRadius();
   for (int i = 0; i < node->NElements(); i++) {
     R3SceneElement *element = node->Element(i);
@@ -246,7 +246,7 @@ DrawNormals(R3Scene *scene, R3SceneNode *node)
       }
     }
   }
-  glEnd();
+  RNGrfxEnd();
   
   // Pop transformation
   node->Transformation().Pop();
@@ -357,7 +357,7 @@ Pick(R3Scene *scene, int x, int y,
     rgba[1] = (index >> 8) & 0xFF;
     rgba[2] = index & 0xFF;
     rgba[3] = 0xFF;
-    glColor4ubv(rgba);
+    RNLoadRgba(rgba);
     node->Draw(R3_SURFACES_DRAW_FLAG);
     parent_transformation.Pop();
   }
@@ -444,7 +444,7 @@ void GLUTRedraw(void)
   if (show_cameras) {
     glDisable(GL_LIGHTING);
     glLineWidth(5);
-    glColor3d(0.0, 1.0, 0.0);
+    RNLoadRgb(0.0, 1.0, 0.0);
     DrawCameras(scene, cameras);
     glLineWidth(1);
   }
@@ -452,7 +452,7 @@ void GLUTRedraw(void)
   // Draw lights
   if (show_lights) {
     glDisable(GL_LIGHTING);
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
     glLineWidth(5);
     DrawLights(scene);
     glLineWidth(1);
@@ -461,14 +461,14 @@ void GLUTRedraw(void)
   // Draw normals
   if (show_normals) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 1.0);
+    RNLoadRgb(0.0, 1.0, 1.0);
     DrawNormals(scene, scene->Root());
   }
 
   // Draw rays
   if (show_rays) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0);
+    RNLoadRgb(0.0, 1.0, 0.0);
     glLineWidth(3);
     DrawRays(scene);
     glLineWidth(1);
@@ -480,7 +480,7 @@ void GLUTRedraw(void)
     static R3Material selection_material(new R3Brdf(1.0, 0.0, 0.0), "Selection");
     R3Affine transformation = selected_node->CumulativeParentTransformation();
     transformation.Push();
-    glColor3d(1.0, 0.0, 0.0);
+    RNLoadRgb(1.0, 0.0, 0.0);
     glLineWidth(3.0);
     selected_node->Draw(R3_EDGES_DRAW_FLAG);
     glLineWidth(1.0);
@@ -508,14 +508,14 @@ void GLUTRedraw(void)
   // Draw edges
   if (show_edges) {
     glDisable(GL_LIGHTING);
-    glColor3d(0.0, 1.0, 0.0);
+    RNLoadRgb(0.0, 1.0, 0.0);
     scene->Draw(R3_EDGES_DRAW_FLAG);
   }
 
   // Draw bboxes
   if (show_bboxes) {
     glDisable(GL_LIGHTING);
-    glColor3d(1.0, 0.0, 0.0);
+    RNLoadRgb(1.0, 0.0, 0.0);
     DrawBBoxes(scene, scene->Root());
   }
 
@@ -525,17 +525,17 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     glLineWidth(3);
     R3BeginLine();
-    glColor3f(1, 0, 0);
+    RNLoadRgb(1, 0, 0);
     R3LoadPoint(R3zero_point + 0.5 * d * R3negx_vector);
     R3LoadPoint(R3zero_point + d * R3posx_vector);
     R3EndLine();
     R3BeginLine();
-    glColor3f(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     R3LoadPoint(R3zero_point + 0.5 * d * R3negy_vector);
     R3LoadPoint(R3zero_point + d * R3posy_vector);
     R3EndLine();
     R3BeginLine();
-    glColor3f(0, 0, 1);
+    RNLoadRgb(0, 0, 1);
     R3LoadPoint(R3zero_point + 0.5 * d * R3negz_vector);
     R3LoadPoint(R3zero_point + d * R3posz_vector);
     R3EndLine();
@@ -550,7 +550,7 @@ void GLUTRedraw(void)
     last_time.Read();
     if ((frame_time > 0) && (frame_time < 10)) {
       glDisable(GL_LIGHTING);
-      glColor3d(1.0, 1.0, 1.0);
+      RNLoadRgb(1.0, 1.0, 1.0);
       sprintf(buffer, "%.1f fps", 1.0 / frame_time);
       DrawText(R2Point(100, 100), buffer);
     }

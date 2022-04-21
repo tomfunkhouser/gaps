@@ -73,13 +73,11 @@ Compile Switches:
 
 /* Graphics library selection */
 
-#define RN_IRISGL 1
-#define RN_OPENGL 2
-#define RN_3DR 3
-#define RN_XLIB 4
-#ifdef RN_USE_IRISGL
-#   define RN_2D_GRFX RN_IRISGL
-#   define RN_3D_GRFX RN_IRISGL
+#define RN_OPENGL 1
+#define RN_XLIB 2
+#ifdef RN_USE_XLIB
+#   define RN_2D_GRFX RN_XLIB
+#   define RN_3D_GRFX RN_OPENGL
 #else
 #   ifdef RN_USE_OPENGL
 #       define RN_2D_GRFX RN_OPENGL

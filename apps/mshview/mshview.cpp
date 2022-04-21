@@ -155,8 +155,8 @@ void GLUTRedraw(void)
       else if (show_categories) glDisable(GL_LIGHTING);
       else if (show_vertex_colors) glDisable(GL_LIGHTING);
       else if (show_vertex_texcoords) glDisable(GL_LIGHTING);
-      else { glEnable(GL_LIGHTING); glColor3d(0.8, 0.8, 0.8); }
-      glBegin(GL_TRIANGLES);
+      else { glEnable(GL_LIGHTING); RNLoadRgb(0.8, 0.8, 0.8); }
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         if (show_materials) RNLoadRgb(colors[1 + mesh->FaceMaterial(face)%(ncolors-1)]); 
@@ -171,13 +171,13 @@ void GLUTRedraw(void)
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
 
     // Draw edges
     if (show_edges) {
       glDisable(GL_LIGHTING);
-      glColor3f(1.0, 0.0, 0.0);
+      RNLoadRgb(1.0, 0.0, 0.0);
       mesh->DrawEdges();
     }
 
@@ -185,7 +185,7 @@ void GLUTRedraw(void)
     if (show_boundaries) {
       glLineWidth(3);
       glDisable(GL_LIGHTING);
-      glColor3f(0.0, 0.0, 0.0);
+      RNLoadRgb(0.0, 0.0, 0.0);
       for (int i = 0; i < mesh->NEdges(); i++) {
         R3MeshEdge *edge = mesh->Edge(i);
         if (mesh->FaceOnEdge(edge, 0) && mesh->FaceOnEdge(edge, 1)) continue;
@@ -197,22 +197,22 @@ void GLUTRedraw(void)
     // Draw vertices
     if (show_vertices) {
       if (show_vertex_colors) glDisable(GL_LIGHTING);
-      else { glEnable(GL_LIGHTING); glColor3d(0.0, 0.5, 1.0); }
-      glBegin(GL_POINTS);
+      else { glEnable(GL_LIGHTING); RNLoadRgb(0.0, 0.5, 1.0); }
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
         else R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
-      glEnd();
+      RNGrfxEnd();
     }
 
     // Draw face normals
     if (show_face_normals) {
       glDisable(GL_LIGHTING);
-      glColor3f(0.2, 0.2, 0.2);
-      glBegin(GL_LINES);
+      RNLoadRgb(0.2, 0.2, 0.2);
+      RNGrfxBegin(RN_GRFX_LINES);
       RNScalar radius = 0.01 * mesh->BBox().DiagonalLength();
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
@@ -221,31 +221,31 @@ void GLUTRedraw(void)
         R3LoadPoint(position);
         R3LoadPoint(position + radius * normal);
       }
-      glEnd();
+      RNGrfxEnd();
     }
 
     // Draw vertex normals
     if (show_vertex_normals) {
       glDisable(GL_LIGHTING);
-      glColor3d(0.5, 0.5, 0.5);
-      glBegin(GL_LINES);
+      RNLoadRgb(0.5, 0.5, 0.5);
+      RNGrfxBegin(RN_GRFX_LINES);
       RNScalar radius = 0.0025 * mesh->BBox().DiagonalLength();
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         R3Point position = mesh->VertexPosition(vertex);
         R3Vector normal = mesh->VertexNormal(vertex);
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
-        R3LoadRgb(sqrt(normal.Length()), 0, 1);
+        R3LoadRgb(sqrt(normal.Length()), 0.0, 1.0);
         R3LoadPoint(position);
         R3LoadPoint(position + radius * normal);
       }
-      glEnd();
+      RNGrfxEnd();
     }
 
     // Draw face names
     if (show_face_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0, 0, 0);
+      RNLoadRgb(0, 0, 0);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
@@ -257,7 +257,7 @@ void GLUTRedraw(void)
     // Draw edge names   
     if (show_edge_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0.8, 0.0, 0.0);
+      RNLoadRgb(0.8, 0.0, 0.0);
       for (int i = 0; i < mesh->NEdges(); i++) {
         R3MeshEdge *edge = mesh->Edge(i);
         char buffer[256];
@@ -269,7 +269,7 @@ void GLUTRedraw(void)
     // Draw vertex names
     if (show_vertex_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0.5, 0.3, 0.1);
+      RNLoadRgb(0.5, 0.3, 0.1);
       RNLength r = 1E-5 * mesh->BBox().DiagonalRadius();
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
@@ -285,7 +285,7 @@ void GLUTRedraw(void)
     // Draw material names
     if (show_material_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0, 0, 1);
+      RNLoadRgb(0, 0, 1);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
@@ -297,7 +297,7 @@ void GLUTRedraw(void)
     // Draw segment names
     if (show_segment_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0, 0, 1);
+      RNLoadRgb(0, 0, 1);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
@@ -309,7 +309,7 @@ void GLUTRedraw(void)
     // Draw category names
     if (show_category_names) {
       glDisable(GL_LIGHTING);
-      glColor3f(0, 0, 1);
+      RNLoadRgb(0, 0, 1);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
@@ -325,17 +325,17 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     glLineWidth(3);
     R3BeginLine();
-    glColor3f(1, 0, 0);
+    RNLoadRgb(1, 0, 0);
     R3LoadPoint(R3zero_point + 0.5*d * R3negx_vector);
     R3LoadPoint(R3zero_point + d * R3posx_vector);
     R3EndLine();
     R3BeginLine();
-    glColor3f(0, 1, 0);
+    RNLoadRgb(0, 1, 0);
     R3LoadPoint(R3zero_point + 0.5*d * R3negy_vector);
     R3LoadPoint(R3zero_point + d * R3posy_vector);
     R3EndLine();
     R3BeginLine();
-    glColor3f(0, 0, 1);
+    RNLoadRgb(0, 0, 1);
     R3LoadPoint(R3zero_point + 0.5*d * R3negz_vector);
     R3LoadPoint(R3zero_point + d * R3posz_vector);
     R3EndLine();

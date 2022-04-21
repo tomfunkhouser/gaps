@@ -685,30 +685,30 @@ void GSVMesh::
 Draw(RNBoolean texture_coordinates) const
 {
   if (texture_coordinates) {
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < NFaces(); i++) {
       GSVMeshFace *face = Face(i);
       R3LoadNormal(FaceNormal(face));
       GSVMeshVertex *v0 = VertexOnFace(face, 0);
       int s0 = VertexScanlineIndex(v0);
       int t0 = (int) (180.0 * VertexLaserAngle(v0) / RN_PI + 0.5);
-      glTexCoord2i(s0, t0);
+      R3LoadTextureCoords(s0, t0);
       R3LoadPoint(VertexPosition(v0));
       GSVMeshVertex *v1 = VertexOnFace(face, 1);
       int s1 = VertexScanlineIndex(v1);
       int t1 = (int) (180.0 * VertexLaserAngle(v1) / RN_PI + 0.5);
-      glTexCoord2i(s1, t1);
+      R3LoadTextureCoords(s1, t1);
       R3LoadPoint(VertexPosition(v1));
       GSVMeshVertex *v2 = VertexOnFace(face, 2);
       int s2 = VertexScanlineIndex(v2);
       int t2 = (int) (180.0 * VertexLaserAngle(v2) / RN_PI + 0.5);
-      glTexCoord2i(s2, t2);
+      R3LoadTextureCoords(s2, t2);
       R3LoadPoint(VertexPosition(v2));
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else {
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < NFaces(); i++) {
       GSVMeshFace *face = Face(i);
       R3LoadNormal(FaceNormal(face));
@@ -719,7 +719,7 @@ Draw(RNBoolean texture_coordinates) const
       GSVMeshVertex *v2 = VertexOnFace(face, 2);
       R3LoadPoint(VertexPosition(v2));
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 

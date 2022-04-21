@@ -20,32 +20,16 @@ int R3draw_mirrored = FALSE;
 
 
 
-/* Private variables */
-
-#if (RN_3D_GRFX == RN_3DR)
-    static PointF_t R3dr_vertex_normal { 0.0, 0.0, 0.0 };
-    static PointF_t R3dr_vertex_texcoords = { 0.0, 0.0, 0.0 };
-    static ColorFA_t R3dr_vertex_color = { 0.0, 0.0, 0.0, 0.0 };
-#endif
-
-
-
-
 void R4Matrix::
 Load(void) const
 {
     // Load matrix onto stack replacing top of stack
-#if ((RN_3D_GRFX == RN_IRISGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    R4Matrix matrix(Transpose());
-    loadmatrix((Matrix) matrix.m);
-#elif ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
+#if ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
     R4Matrix matrix(Transpose());
     glLoadMatrixf((const GLfloat *) matrix.m);
 #elif ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_DOUBLE_PRECISION))
     R4Matrix matrix(Transpose());
     glLoadMatrixd((const GLdouble *) matrix.m);
-#elif ((RN_3D_GRFX == RN_3DR) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    G3dSetTransform(R3dr_gc, m);
 #else
     RNAbort("Not Implemented");
 #endif
@@ -57,17 +41,12 @@ void R4Matrix::
 Draw(void) const
 {
     // Multiply top of stack by matrix
-#if ((RN_3D_GRFX == RN_IRISGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    R4Matrix matrix(Transpose());
-    multmatrix((Matrix) matrix.m);
-#elif ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
+#if ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
     R4Matrix matrix(Transpose());
     glMultMatrixf((const GLfloat *) matrix.m);
 #elif ((RN_3D_GRFX == RN_OPENGL) && (RN_MATH_PRECISION == RN_DOUBLE_PRECISION))
     R4Matrix matrix(Transpose());
     glMultMatrixd((const GLdouble *) matrix.m);
-#elif ((RN_3D_GRFX == RN_3DR) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
-    G3dPreMultTransform(R3dr_gc, m);
 #else
     RNAbort("Not Implemented");
 #endif
@@ -79,12 +58,8 @@ void R4Matrix::
 Push(void) const
 {
     // Push top of stack
-#if (RN_3D_GRFX == RN_IRISGL)
-    pushmatrix(); 
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
     glPushMatrix();
-#elif (RN_3D_GRFX == RN_3DR)
-    G3dPushTransform(R3dr_gc);
 #else
     RNAbort("Not Implemented");
 #endif
@@ -99,12 +74,8 @@ void R4Matrix::
 Pop(void) const
 {
     // Pop top of stack
-#if (RN_3D_GRFX == RN_IRISGL)
-    popmatrix();
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
     glPopMatrix();
-#elif (RN_3D_GRFX == RN_3DR)
-    G3dPopTransform(R3dr_gc);
 #else
     RNAbort("Not Implemented");
 #endif
@@ -162,13 +133,8 @@ Load(void) const
     // Set mirror flag
     if (IsMirrored()) {
         R3draw_mirrored = !R3draw_mirrored;
-#if (RN_3D_GRFX == RN_IRISGL)
-        frontface(R3draw_mirrored);
-        backface(!R3draw_mirrored);
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
         glFrontFace((R3draw_mirrored) ? GL_CW : GL_CCW);
-#elif (RN_3D_GRFX == RN_3DR)
-	G3dSetState(R3dr_gc, G3DL_FRONT_CCW, (R3draw_mirrored) ? 0 : 1);
 #else
 	RNAbort("Not Implemented");
 #endif
@@ -186,13 +152,8 @@ Draw(void) const
     // Set mirror flag - this screws up Push/Pop ???
     if (IsMirrored()) {
         R3draw_mirrored = !R3draw_mirrored;
-#if (RN_3D_GRFX == RN_IRISGL)
-        frontface(R3draw_mirrored);
-        backface(!R3draw_mirrored);
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
         glFrontFace((R3draw_mirrored) ? GL_CW : GL_CCW);
-#elif (RN_3D_GRFX == RN_3DR)
-	G3dSetState(R3dr_gc, G3DL_FRONT_CCW, (R3draw_mirrored) ? 0 : 1);
 #else
 	RNAbort("Not Implemented");
 #endif
@@ -210,13 +171,8 @@ Push(void) const
     // Set mirror flag
     if (IsMirrored()) {
         R3draw_mirrored = !R3draw_mirrored;
-#if (RN_3D_GRFX == RN_IRISGL)
-        frontface(R3draw_mirrored);
-        backface(!R3draw_mirrored);
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
         glFrontFace((R3draw_mirrored) ? GL_CW : GL_CCW);
-#elif (RN_3D_GRFX == RN_3DR)
-	G3dSetState(R3dr_gc, G3DL_FRONT_CCW, (R3draw_mirrored) ? 0 : 1);
 #else
 	RNAbort("Not Implemented");
 #endif
@@ -234,13 +190,8 @@ Pop(void) const
     // Restore mirror flag
     if (IsMirrored()) {
         R3draw_mirrored = !R3draw_mirrored;
-#if (RN_3D_GRFX == RN_IRISGL)
-        frontface(R3draw_mirrored);
-        backface(!R3draw_mirrored);
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
         glFrontFace((R3draw_mirrored) ? GL_CW : GL_CCW);
-#elif (RN_3D_GRFX == RN_3DR)
-	G3dSetState(R3dr_gc, G3DL_FRONT_CCW, (R3draw_mirrored) ? 0 : 1);
 #else
 	RNAbort("Not Implemented");
 #endif
@@ -849,22 +800,7 @@ void R3Sphere::
 Draw(const R3DrawFlags draw_flags) const
 {
     // Draw sphere - sphdraw uses n3f only ???
-#if (RN_3D_GRFX == RN_IRISGL)
-    float sphparams[4];
-    sphparams[0] = center.X();
-    sphparams[1] = center.Y();
-    sphparams[2] = center.Z();
-    sphparams[3] = radius;
-    if (draw_flags[R3_SURFACES_DRAW_FLAG]) {
-	sphmode(SPH_PRIM, SPH_MESH);
-	sphdraw(sphparams);
-    }
-    if (draw_flags[R3_EDGES_DRAW_FLAG]) {
-	sphmode(SPH_PRIM, SPH_LINE);
-	sphdraw(sphparams);
-    }
-
-#elif (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
     // Create GLU quadric
     static GLUquadricObj *sphere = gluNewQuadric(); // ???
 

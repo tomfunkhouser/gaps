@@ -673,7 +673,7 @@ DrawResidentAncestor(RNFlags draw_flags) const
 #if 1
   // Draw K*K*K points in bounding box
   int K = 3;
-  glBegin(GL_POINTS);
+  RNGrfxBegin(RN_GRFX_POINTS);
   for (int i = 0; i < K; i++) {
     double x = bbox.XMin() + bbox.XLength() * (i+0.5)/K;
     for (int j = 0; j < K; j++) {
@@ -684,7 +684,7 @@ DrawResidentAncestor(RNFlags draw_flags) const
       }
     }
   }
-  glEnd();
+  RNGrfxEnd();
 #else
   // Find closest ancestor that is resident 
   const R3SurfelNode *ancestor = this;

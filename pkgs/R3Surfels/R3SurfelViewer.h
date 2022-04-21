@@ -1392,7 +1392,7 @@ LoadUnsignedInt(unsigned int value)
   rgba[1] = (value >> 8) & 0xFF;
   rgba[2] = (value >> 16) & 0xFF;
   rgba[3] = (value >> 24) & 0xFF;
-  glColor4ubv(rgba);
+  RNLoadRgba(rgba);
 }
 
 

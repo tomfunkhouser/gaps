@@ -553,7 +553,7 @@ DrawFaces(int color_scheme) const
     rectangle->Draw();
   }
   else if (mesh) {
-    glBegin(GL_TRIANGLES);
+    RNGrfxBegin(RN_GRFX_TRIANGLES);
     for (int i = 0; i < mesh->NFaces(); i++) {
       R3MeshFace *face = mesh->Face(i);
       R3MeshVertex *v0 = mesh->VertexOnFace(face, 0);
@@ -579,7 +579,7 @@ DrawFaces(int color_scheme) const
         R3LoadPoint(mesh->VertexPosition(v2));
       }
     }
-    glEnd();
+    RNGrfxEnd();
   }
 
   // Disable lighting and material
@@ -616,21 +616,21 @@ DrawVertices(int color_scheme) const
 
   // Draw vertices
   if (rectangle) {
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < 4; i++) {
       R3Point position = rectangle->Corner(i);
       R3LoadPoint(position);
     }
-    glEnd();
+    RNGrfxEnd();
   }
   else if (mesh) {
-    glBegin(GL_POINTS);
+    RNGrfxBegin(RN_GRFX_POINTS);
     for (int i = 0; i < mesh->NVertices(); i++) {
       R3MeshVertex *vertex = mesh->Vertex(i);
       const R3Point& position = mesh->VertexPosition(vertex);
       R3LoadPoint(position);
     }
-    glEnd();
+    RNGrfxEnd();
   }
 }
 
@@ -653,7 +653,7 @@ DrawTexture(int color_scheme) const
 
   // Draw rectangle
   if (rectangle) {
-    glBegin(GL_QUADS);
+    RNGrfxBegin(RN_GRFX_QUADS);
     R3LoadTextureCoords(0.0, 0.0);
     R3LoadPoint(rectangle->Corner(0,0));
     R3LoadTextureCoords(1.0, 0.0);
@@ -662,11 +662,11 @@ DrawTexture(int color_scheme) const
     R3LoadPoint(rectangle->Corner(1,1));
     R3LoadTextureCoords(0.0, 1.0);
     R3LoadPoint(rectangle->Corner(0,1));
-    glEnd();
+    RNGrfxEnd();
   }
   else if (mesh) {
     if ((width > 0) && (height > 0)) {
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         for (int j = 0; j < 3; j ++) {
@@ -680,7 +680,7 @@ DrawTexture(int color_scheme) const
           R3LoadPoint(world_position);
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
   }
 
@@ -701,19 +701,19 @@ LoadColor(int color_scheme) const
     unsigned char r = k;
     unsigned char g = 0;
     unsigned char b = 0;
-    glColor3ub(r, g, b);
+    RNLoadRgb(r, g, b);
   }
   else if (color_scheme == RGBD_PHOTO_COLOR_SCHEME) {
     // Load white 
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
   }
   else if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
     // Load white 
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
   }
   else if (color_scheme == RGBD_HIGHLIGHT_COLOR_SCHEME) {
     // Load highlight color
-    glColor3d(1.0, 1.0, 0.0);
+    RNLoadRgb(1.0, 1.0, 0.0);
   }
 }
 

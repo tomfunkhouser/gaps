@@ -196,7 +196,7 @@ void GLUTRedraw(void)
       // Draw edges
       if (show_edges) {
         glDisable(GL_LIGHTING);
-        glColor3f(0.2, 0.2, 0.2);
+        RNLoadRgb(0.2, 0.2, 0.2);
         mesh->DrawEdges();
       }
 
@@ -213,16 +213,16 @@ void GLUTRedraw(void)
     if (points && show_points) {
       glDisable(GL_LIGHTING);
       glPointSize(3);
-      glBegin(GL_POINTS);
+      RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
-        if (show_values) glColor3d(-10*point->value, 0, 10*point->value);
-        else glColor4fv(point_colors[point_color_index]);
+        if (show_values) RNLoadRgb(-10*point->value, 0.0, 10*point->value);
+        else RNLoadRgba(point_colors[point_color_index]);
         R3LoadNormal(point->normal);
         R3LoadPoint(point->position);
       }
-      glEnd();
+      RNGrfxEnd();
       glPointSize(1);
     }
 
@@ -238,7 +238,7 @@ void GLUTRedraw(void)
         R3Sphere(point->position, radius).Draw();
         glDisable(GL_LIGHTING);
         glLineWidth(3.0);
-        glColor4fv(point_colors[point_color_index]);
+        RNLoadRgba(point_colors[point_color_index]);
         R3Span(point->position, point->position + (4 * radius) * point->normal).Draw();
         glLineWidth(1.0);
         glEnable(GL_LIGHTING);
@@ -253,23 +253,23 @@ void GLUTRedraw(void)
     // Draw point normals
     if (points && show_normals) {
       glDisable(GL_LIGHTING);
-      glBegin(GL_LINES);
+      RNGrfxBegin(RN_GRFX_LINES);
       RNLength radius = 0.008 * model->bbox.LongestAxisLength();
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
         int point_color_index = (show_point_order) ? i%max_point_colors : m%max_point_colors;
-        glColor4fv(point_colors[point_color_index]);
+        RNLoadRgba(point_colors[point_color_index]);
         R3LoadPoint(point->position);
         R3LoadPoint(point->position + radius*point->normal);
       }
-      glEnd();
+      RNGrfxEnd();
     }
 
     // Draw point names
     if (points && show_point_names) {
       char buffer[256];
       glDisable(GL_LIGHTING);
-      glColor3f(0, 0, 0);
+      RNLoadRgb(0, 0, 0);
       RNLength radius = 0.02 * model->bbox.LongestAxisLength();
       for (int i = 0; i < points->NEntries(); i++) {
         Point *point = points->Kth(i);
@@ -292,7 +292,7 @@ void GLUTRedraw(void)
         Point *point = points->Kth(i);
         Point *point0 = points0->Kth(i);
         glLineWidth(2.0);
-        glColor4fv(point_colors[i%max_point_colors]);
+        RNLoadRgba(point_colors[i%max_point_colors]);
         R3Span(point->position, point0->position).Draw();
         glLineWidth(1.0);
       }

@@ -417,7 +417,7 @@ LoadInteger(int value)
   color[0] = (value >> 16) & 0xFF;
   color[1] = (value >>  8) & 0xFF;
   color[2] = (value      ) & 0xFF;
-  glColor3ubv(color);
+  RNLoadRgb(color);
 }
 
 
@@ -463,7 +463,7 @@ LoadScalar(RNScalar value, RNScalar max_value = 65535)
 {
   // Set color to represent an scalar value
   if (value > max_value) value = max_value;
-  glColor3d(0, 0, value / max_value);
+  RNLoadRgb(0.0, 0.0, value / max_value);
 }
 
 
@@ -675,7 +675,7 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
     else if ((color_scheme == DEPTH_COLOR_SCHEME) || (color_scheme == NDOTV_COLOR_SCHEME) || (color_scheme == HEIGHT_COLOR_SCHEME)) {
       // Draw scalar values interpolated between triangle vertices
       RNScalar ground_y = (color_scheme == HEIGHT_COLOR_SCHEME) ? EstimateGroundY(camera, scene) : 0;
-      glBegin(GL_TRIANGLES);
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < node->NElements(); i++) {
         R3SceneElement *element = node->Element(i);
         for (int j = 0; j < element->NShapes(); j++) {
@@ -700,7 +700,7 @@ DrawNodeWithOpenGL(const R3Camera& camera, R3Scene *scene, R3SceneNode *node, in
           }
         }
       }
-      glEnd();
+      RNGrfxEnd();
     }
     else if (color_scheme == VRGB_COLOR_SCHEME) {
       // Draw node with vertex colors
@@ -776,7 +776,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
     }
 
     // Draw scene with only ambient light
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
     glEnable(GL_LIGHTING);
     DrawRootWithOpenGL(camera, scene, color_scheme, omit_objects);
 
@@ -797,7 +797,7 @@ DrawSceneWithOpenGL(const R3Camera& camera, R3Scene *scene, int color_scheme, RN
   else {
     // Draw scene
     glDisable(GL_LIGHTING);
-    glColor3d(1.0, 1.0, 1.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
     DrawRootWithOpenGL(camera, scene, color_scheme, omit_objects);
   }
 

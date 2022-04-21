@@ -98,7 +98,7 @@ DrawLabel(RNFlags draw_flags) const
   // Draw label above midpoint
   if (!label) return;
   glDisable(GL_LIGHTING);
-  glColor3d(1, 1, 1);
+  RNLoadRgb(1, 1, 1);
   DrawText(span.Midpoint() + 0.5 * R3posz_vector, label);
 }
 
