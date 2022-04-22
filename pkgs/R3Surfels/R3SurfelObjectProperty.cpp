@@ -82,6 +82,35 @@ R3SurfelObjectProperty::
 
 
 ////////////////////////////////////////////////////////////////////////
+// MANIPULATION FUNCDTIONS
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelObjectProperty::
+ResetOperands(RNScalar *operands, int noperands)
+{
+  // Delete previous operands
+  if (this->operands) delete this->operands;
+  this->operands = NULL;
+  this->noperands = 0;
+  
+  // Check if operands were provided
+  if ((noperands > 0) && (operands)) {
+    // Copy operands
+    this->noperands = noperands;
+    this->operands = new RNScalar [ this->noperands ];
+    for (int i = 0; i < this->noperands; i++) {
+      this->operands[i] = operands[i];
+    }
+  }
+  else {
+    // Compute operands
+    UpdateOperands();
+  }
+}
+
+
+  
+////////////////////////////////////////////////////////////////////////
 // DISPLAY FUNCDTIONS
 ////////////////////////////////////////////////////////////////////////
 
@@ -141,6 +170,24 @@ Draw(RNFlags flags) const
       R3LoadPoint(centroid + extent03 * axis3);
       R3LoadPoint(centroid + extent13 * axis3);
       RNGrfxEnd();
+    }
+    break; 
+
+  case R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY: 
+    if (noperands == 20) {
+      R3Point centroid(operands[0], operands[1], operands[2]);
+      R3Vector axis1(operands[3], operands[4], operands[5]);
+      R3Vector axis2(operands[6], operands[7], operands[8]);
+      R3Vector axis3(operands[9], operands[10], operands[11]);
+      RNScalar radius1 = operands[12];
+      RNScalar radius2 = operands[13];
+      RNScalar radius3 = operands[14];
+      // RNScalar confidence = operands[15];
+      // int originator = (int) (operands[16] + 0.5);
+
+      // Draw obb
+      R3OrientedBox obb(centroid, axis1, axis2, radius1, radius2, radius3);
+      obb.Outline();
     }
     break; 
   }
@@ -244,6 +291,51 @@ UpdateOperands(void)
 
     // Delete pointset
     delete pointset;
+    break; }
+
+  case R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY: {
+    // PCA Properties
+    // noperands = 16
+    // operands[0-2]: centroid
+    // operands[3-5]: xyz of axis1
+    // operands[6-8]: xyz of axis2
+    // operands[9-11]: xyz of axis3
+    // operands[12-14]: radii
+    // operands[15]: confidence
+    // operands[16]: originator
+    // operands[17-19]: reserved
+
+    // Allocate operands
+    noperands = 20;
+    operands = new RNScalar [ noperands ];
+    for (int i = 0; i < noperands; i++) operands[i] = 0;
+
+    // Estimate obb
+    R3OrientedBox obb = EstimateOrientedBBox(object);
+    double confidence = 0.01;
+    int originator = R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+    
+    // Fill operands
+    operands[0] = obb.Center().X();
+    operands[1] = obb.Center().Y();
+    operands[2] = obb.Center().Z();
+    operands[3] = obb.Axis(0).X();
+    operands[4] = obb.Axis(0).Y();
+    operands[5] = obb.Axis(0).Z();
+    operands[6] = obb.Axis(1).X();
+    operands[7] = obb.Axis(1).Y();
+    operands[8] = obb.Axis(1).Z();
+    operands[9] = obb.Axis(2).X();
+    operands[10] = obb.Axis(2).Y();
+    operands[11] = obb.Axis(2).Z();
+    operands[12] = obb.Radius(0);
+    operands[13] = obb.Radius(1);
+    operands[14] = obb.Radius(2);
+    operands[15] = confidence;
+    operands[16] = originator;
+    operands[17] = 0;
+    operands[18] = 0;
+    operands[19] = 0;
     break; }
   }
 }

@@ -55,6 +55,13 @@ public:
   RNScalar Operand(int k) const;
 
 
+  ////////////////////////////////
+  //// MANIPULATION FUNCTIONS ////
+  ////////////////////////////////
+
+  void ResetOperands(RNScalar *operands = NULL, int noperands = 0);
+
+  
   ///////////////////////////
   //// DISPLAY FUNCTIONS ////
   ///////////////////////////
@@ -96,6 +103,7 @@ protected:
 enum {
   R3_SURFEL_OBJECT_NULL_PROPERTY,
   R3_SURFEL_OBJECT_PCA_PROPERTY,
+  R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY,
   R3_SURFEL_OBJECT_NUM_PROPERTIES
 };
 
