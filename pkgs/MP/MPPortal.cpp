@@ -99,7 +99,7 @@ DrawLabel(RNFlags draw_flags) const
   if (!label) return;
   glDisable(GL_LIGHTING);
   RNLoadRgb(1, 1, 1);
-  DrawText(span.Midpoint() + 0.5 * R3posz_vector, label);
+  R3DrawText(span.Midpoint() + 0.5 * R3posz_vector, label);
 }
 
 

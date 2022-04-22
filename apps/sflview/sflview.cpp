@@ -256,16 +256,6 @@ ReadModel(const char *filename)
 // GLUT callback functions
 ////////////////////////////////////////////////////////////////////////
 
-static void 
-DrawText(const R3Point& p, const char *s, void *font = GLUT_BITMAP_HELVETICA_12)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(font, *(s++));
-}
-
-
-
 static void
 DrawModel(void)
 {
@@ -290,7 +280,7 @@ DrawModel(void)
       if (node->NChildren() != 0) continue;
       if (node->BBox().IsEmpty()) continue;
       R3Point p = node->Centroid() + 1.5 * node->BBox().ZRadius() * R3posz_vector;
-      DrawText(p, node->Name());
+      R3DrawText(p, node->Name());
     }
   }
 }

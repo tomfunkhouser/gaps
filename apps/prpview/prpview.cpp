@@ -149,36 +149,12 @@ NormalizedColor(R3MeshVertex *vertex)
 // Glut user interface functions
 ////////////////////////////////////////////////////////////////////////
 
-void GLUTDrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-  
-
-
-void GLUTDrawText(const R2Point& p, const char *s)
-{
-  // Draw text string s and position p
-  R3Ray ray = viewer->WorldRay((int) p[0], (int) p[1]);
-  R3Point position = ray.Point(2 * viewer->Camera().Near());
-  glRasterPos3d(position[0], position[1], position[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-
-
-
-void GLUTDrawText(const R2Point& p, const char *str, double value)
+void DrawText(double x, double y, const char *str, double value)
 {
   // Draw text string s and position p
   char buffer[1024];
-  char *s = buffer;
   sprintf(buffer, "%s:%g", str, value);
-  R3Ray ray = viewer->WorldRay((int) p[0], (int) p[1]);
-  R3Point position = ray.Point(2 * viewer->Camera().Near());
-  glRasterPos3d(position[0], position[1], position[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
+  viewer->DrawText(x, y, str, buffer);
 }
 
 
@@ -391,7 +367,7 @@ void GLUTRedraw(void)
       R3Point position = mesh->VertexPosition(vertex);
       const R3Vector normal = mesh->VertexNormal(vertex);
       sprintf(buffer, "%g", Value(vertex));
-      GLUTDrawText(position + d * normal, buffer);
+      R3DrawText(position + d * normal, buffer);
     }
   }
 
@@ -400,16 +376,16 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     RNLoadRgb(0, 0, 0);
     double y = GLUTwindow_height - 20;
-    GLUTDrawText(R2Point(10, y), current_property->Name()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Mean", current_property->Mean()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Min", current_property->Minimum()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Max", current_property->Maximum()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Stddev", current_property->StandardDeviation()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Entropy", current_property->Entropy()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Min Display Value", value_range.Min()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Max Display Value", value_range.Max()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Min Display Percentile", percentile_range.Min()); y-= 20;
-    GLUTDrawText(R2Point(10, y), "Max Display Percentile", percentile_range.Max()); y-= 20;
+    viewer->DrawText(10, y, current_property->Name()); y-= 20;
+    DrawText(10, y, "Mean", current_property->Mean()); y-= 20;
+    DrawText(10, y, "Min", current_property->Minimum()); y-= 20;
+    DrawText(10, y, "Max", current_property->Maximum()); y-= 20;
+    DrawText(10, y, "Stddev", current_property->StandardDeviation()); y-= 20;
+    DrawText(10, y, "Entropy", current_property->Entropy()); y-= 20;
+    DrawText(10, y, "Min Display Value", value_range.Min()); y-= 20;
+    DrawText(10, y, "Max Display Value", value_range.Max()); y-= 20;
+    DrawText(10, y, "Min Display Percentile", percentile_range.Min()); y-= 20;
+    DrawText(10, y, "Max Display Percentile", percentile_range.Max()); y-= 20;
   }
 
   // Capture image and exit

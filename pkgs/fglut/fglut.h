@@ -1,4 +1,7 @@
 // OpenGL GLUT include file
+#ifndef __FGLUT__H__
+#define __FGLUT__H__
+
 
 
 // External include files
@@ -13,8 +16,11 @@
 
 
 
-/* Initialization functions */
+// Initialization functions
 
 int R3InitGlut(void);
 void R3StopGlut(void);
 
+
+
+#endif

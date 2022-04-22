@@ -127,15 +127,6 @@ Color(RNScalar value)
 }
 
 
-void GLUTDrawText(const R2Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos2d(p[0], p[1]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *(s++));
-}
-  
-
-
 void GLUTStop(void)
 {
   // Destroy window 
@@ -198,7 +189,7 @@ void GLUTRedraw(void)
         // RNRgb complement = RNwhite_rgb - color;
         RNLoadRgb(RNmagenta_rgb);
         R2Box(selected_grid_position - 0.5 * R2ones_vector, selected_grid_position + 0.5 * R2ones_vector);
-        GLUTDrawText(selected_grid_position + 2 * R2ones_vector, buffer);
+        R2DrawText(selected_grid_position + 2 * R2ones_vector, buffer);
       }
     }
   }

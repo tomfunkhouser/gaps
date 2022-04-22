@@ -484,4 +484,15 @@ ViewportArea(const R3Shape& shape) const
 
 
 
+void R3Viewer::
+DrawText(double x, double y, const char *str, void *font)
+{
+  // Draw text string s and position p
+  R3Ray ray = WorldRay(x, y);
+  R3Point position = ray.Point(2 * Camera().Near());
+  R3DrawText(position, str, font);
+}
+
+
+
 } // namespace gaps

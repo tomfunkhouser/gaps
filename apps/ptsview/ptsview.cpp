@@ -137,16 +137,6 @@ static float point_colors[max_point_colors][4] = {
 
 
 
-void GLUTDrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-  
-
-
-
 void GLUTStop(void)
 {
   // Destroy window 
@@ -277,7 +267,7 @@ void GLUTRedraw(void)
         int point_color_index = (show_point_order) ? i%max_point_colors : 0;
         glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, point_colors[point_color_index]);
         sprintf(buffer, "%d", i);
-        GLUTDrawText(position, buffer);
+        R3DrawText(position, buffer);
       }
     }
 

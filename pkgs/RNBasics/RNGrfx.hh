@@ -800,42 +800,13 @@ R2DrawImage(int x, int y, int width, int height, int depth, const unsigned char 
 // Text drawing functions
 ////////////////////////////////////////////////////////////
 
-#if 0
 inline void
-R2DrawText(int x, int y, const char *str)
+R2DrawText(double x, double y, const char *str, void *font)
 {
-#if (RN_3D_GRFX == RN_OPENGL)
-    glRasterPos2i(x, y);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
-#else
-    RNGrfxError("Not Implemented");
-#endif
-}
-#endif
-
-
-
-#if 0
-inline void
-R2DrawText(float x, float y, const char *str)
-{
-#if (RN_3D_GRFX == RN_OPENGL)
-    glRasterPos2f(x, y);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
-#else
-    RNGrfxError("Not Implemented");
-#endif
-}
-#endif
-
-
-
-inline void
-R2DrawText(double x, double y, const char *str)
-{
-#if (RN_3D_GRFX == RN_OPENGL)
+#if (RN_2D_GRFX == RN_OPENGL)
     glRasterPos2d(x, y);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
+    if (!font) font = GLUT_BITMAP_HELVETICA_12;
+    while (*str) glutBitmapCharacter(font, *(str++));
 #else
     RNGrfxError("Not Implemented");
 #endif
@@ -843,42 +814,13 @@ R2DrawText(double x, double y, const char *str)
 
 
 
-#if 0
 inline void
-R3DrawText(int x, int y, int z, const char *str)
-{
-#if (RN_3D_GRFX == RN_OPENGL)
-    glRasterPos3i(x, y, z);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
-#else
-    RNGrfxError("Not Implemented");
-#endif
-}
-#endif
-
-
-
-#if 0
-inline void
-R3DrawText(float x, float y, float z, const char *str)
-{
-#if (RN_3D_GRFX == RN_OPENGL)
-    glRasterPos3f(x, y, z);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
-#else
-    RNGrfxError("Not Implemented");
-#endif
-}
-#endif
-
-
-
-inline void
-R3DrawText(double x, double y, double z, const char *str)
+R3DrawText(double x, double y, double z, const char *str, void *font)
 {
 #if (RN_3D_GRFX == RN_OPENGL)
     glRasterPos3d(x, y, z);
-    glCallLists(strlen(str), GL_UNSIGNED_BYTE, (GLubyte *) str);
+    if (!font) font = GLUT_BITMAP_HELVETICA_12;
+    while (*str) glutBitmapCharacter(font, *(str++));
 #else
     RNGrfxError("Not Implemented");
 #endif

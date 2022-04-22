@@ -120,7 +120,7 @@ DrawName(RNFlags draw_flags) const
   if (!name) return;
   glDisable(GL_LIGHTING);
   RNLoadRgb(1,1,1);
-  DrawText(position + 0.25 * R3posz_vector, name);
+  R3DrawText(position + 0.25 * R3posz_vector, name);
 }
 
 

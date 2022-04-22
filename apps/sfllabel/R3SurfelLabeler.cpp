@@ -12,7 +12,6 @@
 #include "R3SurfelSegmenter.h"
 #include "R3SurfelLabeler.h"
 #include "R3SurfelLabelerCommand.h"
-#include "DrawText.h"
 #include "split.h"
 
 
@@ -232,7 +231,7 @@ DrawObjectLabels(void) const
       int width = glutBitmapLength(font, (const unsigned char *) label->Name());
       p[0] -= width / 2;
       RNLoadRgb(label->Color());
-      DrawText(p, label->Name(), font);
+      R2DrawText(p, label->Name(), font);
       break;
     }
   }
@@ -3704,12 +3703,12 @@ DrawMessage(void) const
 
   // Draw message (haloed in background color)
   RNLoadRgb(background_color);
-  DrawText(R2Point(x-1, y-1), message, font);
-  DrawText(R2Point(x-1, y+1), message, font);
-  DrawText(R2Point(x+1, y-1), message, font);
-  DrawText(R2Point(x+1, y+1), message, font);
+  R2DrawText(x-1, y-1, message, font);
+  R2DrawText(x-1, y+1, message, font);
+  R2DrawText(x+1, y-1, message, font);
+  R2DrawText(x+1, y+1, message, font);
   RNLoadRgb(RNwhite_rgb - background_color);
-  DrawText(R2Point(x, y), message, font);
+  R2DrawText(x, y, message, font);
 
   // Reset OpenGL modes
   glDepthMask(TRUE);
@@ -3766,7 +3765,7 @@ DrawStatus(void) const
   sprintf(buffer, "ColorScheme = %s,  SurfelShape = %s,  PointSize = %.1f, Subsampling = %d, DrawLabeled = %s, Frame rate = %.1f",
     SurfelColorSchemeName(), surfel_shape, SurfelSize(), SubsamplingFactor(),
     (HumanLabeledObjectVisibility()) ? "Yes" : "No", FrameRate());
-  DrawText(origin, buffer, font);
+  R2DrawText(origin, buffer, font);
 
   // Reset OpenGL modes
   glDepthMask(TRUE);
@@ -3817,7 +3816,7 @@ DrawCommandMenu(void) const
     box.Draw();
     RNLoadRgb(1, 1, 1);
     box.Outline();
-    DrawText(R2Point(x, y), "Suggest an Object", GLUT_BITMAP_HELVETICA_18); 
+    R2DrawText(x, y, "Suggest an Object", GLUT_BITMAP_HELVETICA_18); 
     y -= 32;
   }
 
@@ -3828,7 +3827,7 @@ DrawCommandMenu(void) const
     box.Draw();
     RNLoadRgb(1, 1, 1);
     box.Outline();
-    DrawText(R2Point(x, y), "Predict All", GLUT_BITMAP_HELVETICA_18); 
+    R2DrawText(x, y, "Predict All", GLUT_BITMAP_HELVETICA_18); 
     y -= 32;
   }
 
@@ -4026,8 +4025,8 @@ DrawLabelMenu(void) const
   visibility_box.Draw();
   RNLoadRgb(1, 1, 1);
   visibility_box.Outline();
-  DrawText(visibility_origin, "v", label_menu_font); 
-  DrawText(name_origin, "Labels", label_menu_font); 
+  R2DrawText(visibility_origin, "v", label_menu_font); 
+  R2DrawText(name_origin, "Labels", label_menu_font); 
   y -= label_menu_item_height;
 
   // Draw labels
@@ -4057,7 +4056,7 @@ DrawLabelMenu(void) const
     RNLoadRgb(color[0], color[1], color[2]);
     visibility_box.Outline();
     RNLoadRgb(color[0] + 0.5, color[1] + 0.5, color[2] + 0.5);
-    DrawText(visibility_origin, "v", label_menu_font); 
+    R2DrawText(visibility_origin, "v", label_menu_font); 
 
     // Draw label box
     RNLoadRgb(0.0, 0.0, 0.0);
@@ -4074,7 +4073,7 @@ DrawLabelMenu(void) const
     else sprintf(buffer, "%s%s", prefix, label->Name());
     static const RNRgb base_text_color(0.25, 0.25, 0.25);
     RNLoadRgb(base_text_color + 0.75*color);
-    DrawText(name_origin, buffer, label_menu_font); 
+    R2DrawText(name_origin, buffer, label_menu_font); 
 
     // Update location
     // Note: this must match PickLabelMenu
@@ -4278,7 +4277,7 @@ DrawAttributeMenu(void) const
     RNLoadRgb(0.5, 0.5, 0.5);
     visibility_box.Outline();
     RNLoadRgb(1, 1, 1);
-    DrawText(visibility_origin, "v", attribute_menu_font); 
+    R2DrawText(visibility_origin, "v", attribute_menu_font); 
 
     // Determine if attribute is "on"
     RNBoolean on = DoAllSelectedObjectsHaveAttribute(this, attribute_flags);
@@ -4297,12 +4296,12 @@ DrawAttributeMenu(void) const
     if (isalpha(attribute_keystroke)) {
       RNLoadRgb(color);
       sprintf(buffer, "%s (ctrl-%c)", attribute_name, attribute_keystroke);
-      DrawText(name_origin, buffer, attribute_menu_font); 
+      R2DrawText(name_origin, buffer, attribute_menu_font); 
     }
     else {
       RNLoadRgb(1, 1, 1);
       sprintf(buffer, "%s", attribute_name);
-      DrawText(name_origin, buffer, attribute_menu_font); 
+      R2DrawText(name_origin, buffer, attribute_menu_font); 
     }
 
     // Update location

@@ -45,10 +45,10 @@ R3LoadTextureCoords(const R2Point& texcoords)
 
 
 inline void 
-R3DrawText(const R3Point& p, const char *str)
+R3DrawText(const R3Point& p, const char *str, void *font = NULL)
 {
     // Draw text at point
-    R3DrawText(p.X(), p.Y(), p.Z(), str);
+    R3DrawText(p.X(), p.Y(), p.Z(), str, font);
 }
 
 

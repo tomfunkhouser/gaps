@@ -104,15 +104,6 @@ const RNRgb colors[ncolors] = {
 
 
 
-void GLUTDrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-  
-
-
 void GLUTStop(void)
 {
   // Destroy window 
@@ -250,7 +241,7 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->FaceID(face));
-        GLUTDrawText(mesh->FaceCentroid(face), buffer);
+        R3DrawText(mesh->FaceCentroid(face), buffer);
       }
     }
 
@@ -262,7 +253,7 @@ void GLUTRedraw(void)
         R3MeshEdge *edge = mesh->Edge(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->EdgeID(edge));
-        GLUTDrawText(mesh->EdgeMidpoint(edge), buffer);
+        R3DrawText(mesh->EdgeMidpoint(edge), buffer);
       }
     }
 
@@ -278,7 +269,7 @@ void GLUTRedraw(void)
         char buffer[256];
         sprintf(buffer, "%d", mesh->VertexID(vertex));
         if (show_vertex_colors) R3LoadRgb(mesh->VertexColor(vertex));
-        GLUTDrawText(position + r * normal, buffer);
+        R3DrawText(position + r * normal, buffer);
       }
     }
 
@@ -290,7 +281,7 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->FaceMaterial(face));
-        GLUTDrawText(mesh->FaceCentroid(face), buffer);
+        R3DrawText(mesh->FaceCentroid(face), buffer);
       }
     }
 
@@ -302,7 +293,7 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->FaceSegment(face));
-        GLUTDrawText(mesh->FaceCentroid(face), buffer);
+        R3DrawText(mesh->FaceCentroid(face), buffer);
       }
     }
     
@@ -314,7 +305,7 @@ void GLUTRedraw(void)
         R3MeshFace *face = mesh->Face(i);
         char buffer[256];
         sprintf(buffer, "%d", mesh->FaceCategory(face));
-        GLUTDrawText(mesh->FaceCentroid(face), buffer);
+        R3DrawText(mesh->FaceCentroid(face), buffer);
       }
     }
   }

@@ -864,29 +864,6 @@ LoadTexture(ImageData *data)
 ////////////////////////////////////////////////////////////////////////
 
 static void
-DrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-
-
-
-
-static void 
-DrawText(const R2Point& p, const char *s)
-{
-  // Draw text string s and position p
-  R3Ray ray = viewer->WorldRay((int) p[0], (int) p[1]);
-  R3Point position = ray.Point(2 * viewer->Camera().Near());
-  glRasterPos3d(position[0], position[1], position[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-
-
-
-static void
 DrawSelectedPosition(void)
 {
   // Check if should draw selected position
@@ -1456,7 +1433,7 @@ DrawGrid(R3Grid *grid,
           RNScalar value = grid->GridValue(i, j, k);
           if (value >= grid_thresholds[model_index]) continue;
           sprintf(buffer, "%.2g", value);
-          DrawText(R3Point((RNScalar) i, (RNScalar) j, (RNScalar) k), buffer);
+          R3DrawText(i, j, k, buffer);
         }
       }
     }
@@ -1466,7 +1443,7 @@ DrawGrid(R3Grid *grid,
   if (show_grid_threshold) {
     char buffer[128];
     sprintf(buffer, "%f", grid_thresholds[selected_model_index]);
-    DrawText(R2Point(10,10), buffer);
+    viewer->DrawText(10, 10, buffer);
   }
 
   // Pop transformation

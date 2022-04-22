@@ -45,6 +45,15 @@
 
 
 
+/* Graphics windowing/drawing include files */
+/* Used only for drawing text in pkgs */
+
+#if (RN_2D_GRFX == RN_OPENGL) || (RN_3D_GRFX == RN_OPENGL)
+#  include "fglut/fglut.h"
+#endif
+
+
+
 /* Drawing modes */
 
 #define RN_GRFX_POINTS         GL_POINTS
@@ -159,15 +168,11 @@ void RNLoadRgba(const float rgba[4]);
 void RNLoadRgba(const double rgba[4]);
 
 
+  
 /* Text drawing functions */
 
-void R2DrawText(int x, int y, const char *str);
-void R2DrawText(float x, float y, const char *str);
-void R2DrawText(double x, double y, const char *str);
-
-void R3DrawText(int x, int y, int z, const char *str);
-void R3DrawText(float x, float y, float z, const char *str);
-void R3DrawText(double x, double y, double z, const char *str);
+void R2DrawText(double x, double y, const char *str, void *font = NULL);
+void R3DrawText(double x, double y, double z, const char *str, void *font = NULL);
 
 
 

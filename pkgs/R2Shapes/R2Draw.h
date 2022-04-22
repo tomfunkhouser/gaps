@@ -18,6 +18,15 @@ R2LoadPoint(const R2Point& point)
 
 
 
+inline void 
+R2DrawText(const R2Point& p, const char *str, void *font = NULL)
+{
+    // Draw text at point
+    R2DrawText(p.X(), p.Y(), str, font);
+}
+
+
+
 // End namespace
 }
 

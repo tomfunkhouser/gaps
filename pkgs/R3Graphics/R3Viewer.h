@@ -89,6 +89,10 @@ class R3Viewer {
         // Draw functions
         void Load(void) const;
 
+        // Draw utilities
+        void DrawText(const R2Point& pixel_position, const char *str, void *font = NULL);
+        void DrawText(double x, double y, const char *str, void *font = NULL);
+
     private:
         R3Camera camera;
         R2Viewport viewport;
@@ -260,6 +264,14 @@ Load(void) const
     // Load viewport and camera
     viewport.Load();
     camera.Load();
+}
+
+
+inline void R3Viewer::
+DrawText(const R2Point& pixel_position, const char *str, void *font)
+{
+  // Draw text at a pixel position
+  DrawText(pixel_position.X(), pixel_position.Y(), str, font);
 }
 
 

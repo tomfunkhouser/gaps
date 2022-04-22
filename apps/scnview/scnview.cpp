@@ -75,30 +75,6 @@ static int show_backfacing = 0;
 // Draw functions
 ////////////////////////////////////////////////////////////////////////
 
-#if 0
-static void 
-DrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-#endif
-
-
-
-static void 
-DrawText(const R2Point& p, const char *s)
-{
-  // Draw text string s and position p
-  R3Ray ray = viewer->WorldRay((int) p[0], (int) p[1]);
-  R3Point position = ray.Point(2 * viewer->Camera().Near());
-  glRasterPos3d(position[0], position[1], position[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-
-
-
 static void 
 DrawCamera(R3Scene *scene, const R3Camera& camera, RNScalar radius = 0)
 {
@@ -552,7 +528,7 @@ void GLUTRedraw(void)
       glDisable(GL_LIGHTING);
       RNLoadRgb(1.0, 1.0, 1.0);
       sprintf(buffer, "%.1f fps", 1.0 / frame_time);
-      DrawText(R2Point(100, 100), buffer);
+      viewer->DrawText(100, 100, buffer);
     }
   }  
 

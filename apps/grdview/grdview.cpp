@@ -56,16 +56,6 @@ static int grid_slice_coords[3] = { 0, 0, 0 };
 
 
 
-void GLUTDrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-  
-
-
-
 void GLUTStop(void)
 {
   // Destroy window 
@@ -136,7 +126,7 @@ void GLUTRedraw(void)
           RNScalar value = grid->GridValue(i, j, k);
           if (value >= grid_threshold) continue;
           sprintf(buffer, "%.2g", value);
-          GLUTDrawText(R3Point((RNScalar) i, (RNScalar) j, (RNScalar) k), buffer);
+          R3DrawText(i, j, k, buffer);
         }
       }
     }
