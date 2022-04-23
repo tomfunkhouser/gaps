@@ -363,7 +363,7 @@ RefineBoundaries(R3Mesh *mesh)
   RNTime start_time;
   start_time.Read();
 
-#if 1
+  // Refine boundaries
   RNBoolean done = FALSE;
   while (!done) {
     done = TRUE;
@@ -404,89 +404,6 @@ RefineBoundaries(R3Mesh *mesh)
       }
     }
   }
-#else
-  // Count faces
-  int num_faces = mesh->NFaces();
-
-  // Count labels
-  int num_labels = 0;
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    if (mesh->FaceSegment(face) >= num_labels) {
-      num_labels = mesh->FaceSegment(face)+1;
-    }
-  }
-
-  // Create gco
-  GCoptimizationGeneralGraph *gc = new GCoptimizationGeneralGraph(num_faces,num_labels);
-  assert(gc);
-  
-  // Set data costs
-  int *data = new int[num_faces*num_labels];
-  assert(data);
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    int segment = mesh->FaceSegment(face);
-    if (segment < 0) continue;
-    for (int j = 0; j < num_labels; j++) {
-      if (segment == j) data[i*num_labels+j] = 0;
-      else data[i*num_labels+j] = 1;
-    }
-  }
-  gc->setDataCost(data);
-
-  // Set smoothness costs
-  int *smooth = new int[num_labels*num_labels];
-  assert(smooth);
-#if 0
-  for ( int l1 = 0; l1 < num_labels; l1++ ) {
-    for (int l2 = 0; l2 < num_labels; l2++ ) {
-      if (l1 == l2) smooth[l1+l2*num_labels] = 0;
-      else smooth[l1+l2*num_labels] = 1;
-    }
-  }
-  gc->setSmoothCost(smooth);
-#endif
-  
-  // Set neighbor costs
-  for (int i0 = 0; i0 < mesh->NFaces(); i0++) {
-    R3MeshFace *face0 = mesh->Face(i0);
-    for (int j = 0; j < 3; j++) {
-      R3MeshEdge *edge = mesh->EdgeOnFace(face0, j);
-      R3MeshFace *face1 = mesh->FaceAcrossEdge(edge, face0);
-      if (!face1) continue;
-      int i1 = mesh->FaceID(face1);
-      if (i1 <= i0) continue;
-      RNAngle angle = mesh->EdgeInteriorAngle(edge) / RN_PI;
-      int weight = 10 * (1 - fabs((angle-RN_PI)/RN_PI));
-      gc->setNeighbors(i0, i1, weight);
-    }
-  }  
-
-  // Set initial labels
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    int segment = mesh->FaceSegment(face);
-    if (segment < 0) continue;
-    gc->setLabel(i, segment);
-  }
-
-  printf("A %d %d %g\n", num_faces, num_labels, (double) gc->compute_energy());
-  gc->expansion(1);
-  // gc->swap(1);
-  printf("B %g\n", (double) gc->compute_energy());
-
-  // Fill in result
-  for (int i = 0; i < mesh->NFaces(); i++) {
-    R3MeshFace *face = mesh->Face(i);
-    mesh->SetFaceSegment(face, gc->whatLabel(i));
-  }
-
-  // Delete temporary data
-  delete [] smooth;
-  delete [] data;
-  delete gc;
-#endif
   
   // Print statistics
   if (print_verbose) {
