@@ -1410,6 +1410,9 @@ RenderImagesWithGlut(const char *output_image_directory)
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE); 
   glutCreateWindow("Configuration Image Capture");
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
   
@@ -1459,6 +1462,9 @@ RenderImagesWithMesa(const char *output_image_directory)
     RNFail("Unable to make mesa context current\n");
     return 0;
   }
+
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
 
   // Draw images
   while (TRUE) Redraw();
@@ -1615,6 +1621,9 @@ ParseArgs(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+
   // Check number of arguments
   if (!ParseArgs(argc, argv)) exit(1);
 

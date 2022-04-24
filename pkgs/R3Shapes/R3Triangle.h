@@ -91,6 +91,11 @@ class R3Triangle : public R3Surface {
 	const RNBoolean IsFinite(void) const;
 	const RNBoolean IsDegenerate(void) const;
 
+        // Query functions/operations
+        RNBoolean HasNormals(void) const;
+        RNBoolean HasColors(void) const;
+        RNBoolean HasTextureCoords(void) const;
+  
         // Shape property functions/operators
 	virtual const RNBoolean IsPoint(void) const;
 	virtual const RNBoolean IsLinear(void) const;
@@ -383,8 +388,36 @@ IsDegenerate(void) const
 
 
 
+inline RNBoolean R3Triangle::
+HasNormals(void) const
+{
+  // Return whether all triangle vertices have explicit normals
+  return flags[R3_VERTEX_NORMALS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3Triangle::
+HasColors(void) const
+{
+  // Return whether all triangle vertices have explicit colors
+  return flags[R3_VERTEX_COLORS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3Triangle::
+HasTextureCoords(void) const
+{
+  // Return whether all triangle vertices have explicit texture coordinates
+  return flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG];
+}
+
+
+
 // End namespace
 }
+
 
 
 // End include guard

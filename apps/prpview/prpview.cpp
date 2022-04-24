@@ -630,6 +630,9 @@ void GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("Property Viewer");
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
   

@@ -476,6 +476,9 @@ void GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("OpenGL Viewer");
 
+  // Initialize grfx package (calls glewInit)
+  RNInitGrfx();
+
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
   

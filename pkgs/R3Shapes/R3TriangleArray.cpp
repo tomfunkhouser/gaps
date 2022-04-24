@@ -40,7 +40,10 @@ R3StopTriangleArray()
 
 R3TriangleArray::
 R3TriangleArray(void)
-    : bbox(R3null_box)
+  : bbox(R3null_box),
+    flags(0),
+    vbo_id(0),
+    vbo_size(0)
 {
 }
 
@@ -50,7 +53,10 @@ R3TriangleArray::
 R3TriangleArray(const R3TriangleArray& array)
   : vertices(),
     triangles(),
-    bbox(array.bbox)
+    bbox(array.bbox),
+    flags(array.flags),
+    vbo_id(0),
+    vbo_size(0)
 {
     // Copy vertices
     for (int i = 0; i < array.vertices.NEntries(); i++) {
@@ -81,7 +87,9 @@ R3TriangleArray::
 R3TriangleArray(const RNArray<R3TriangleVertex *>& vertices, const RNArray<R3Triangle *>& triangles)
   : vertices(vertices),
     triangles(triangles),
-    bbox(R3null_box)
+    bbox(R3null_box),
+    vbo_id(0),
+    vbo_size(0)
 {
     // Update everything
     Update();
@@ -95,6 +103,9 @@ R3TriangleArray::
     // Delete triangles and vertices
     for (int i = 0; i < triangles.NEntries(); i++) delete triangles[i];
     for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
+
+    // Delete vbo
+    if (vbo_id > 0) glDeleteBuffers(1, &vbo_id);
 }
 
 
@@ -270,7 +281,7 @@ operator=(const R3TriangleArray& array)
     for (int i = 0; i < vertices.NEntries(); i++) delete vertices[i];
     triangles.Empty();
     vertices.Empty();
-    
+
     // Copy vertices
     for (int i = 0; i < array.vertices.NEntries(); i++) {
       R3TriangleVertex *oldv = array.vertices.Kth(i);
@@ -296,6 +307,10 @@ operator=(const R3TriangleArray& array)
     // Update everything
     Update();
 
+    // Initialize vbo variables
+    vbo_id = 0;
+    vbo_size = 0;
+    
     // Return this
     return *this;
 }
@@ -308,6 +323,9 @@ Flip (void)
     // Flip the triangles
     for (int i = 0; i < triangles.NEntries(); i++)
       triangles[i]->Flip();
+
+    // Update
+    Update();
 }
 
 
@@ -497,6 +515,9 @@ CreateVertexNormals(RNAngle max_angle)
   // Delete temporary data
   delete [] normals;
   delete [] smooth;
+
+  // Update
+  Update();
 }
 
 
@@ -539,6 +560,210 @@ Update(void)
     R3TriangleVertex *v = vertices.Kth(i);
     bbox.Union(v->Position());
   }
+
+  // Recompute flags
+  flags.Add(R3_EVERYTHING_DRAW_FLAGS);
+  for (int i = 0; i < vertices.NEntries(); i++) {
+    R3TriangleVertex *v = vertices.Kth(i);
+    RNFlags vertex_flags = v->Flags();
+    if (!(vertex_flags[R3_VERTEX_NORMALS_DRAW_FLAG]))
+      flags.Remove(R3_VERTEX_NORMALS_DRAW_FLAG);
+    if (!(vertex_flags[R3_VERTEX_COLORS_DRAW_FLAG]))
+      flags.Remove(R3_VERTEX_COLORS_DRAW_FLAG);
+    if (!(vertex_flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG]))
+      flags.Remove(R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG);
+  }
+
+  // Invalidate VBO
+  InvalidateVBO();
+}
+
+
+
+void R3TriangleArray::
+Draw(const R3DrawFlags draw_flags) const
+{
+#if 0 && (RN_3D_GRFX == RN_OPENGL)
+  // Draw surfaces
+  if (draw_flags[R3_SURFACES_DRAW_FLAG]) {
+    DrawVBO(draw_flags);
+  }
+
+  // Draw edges
+  if (draw_flags[R3_EDGES_DRAW_FLAG]) {
+    RNGrfxBegin(RN_GRFX_LINES);
+    for (int i = 0; i < NTriangles(); i++) {
+      R3Triangle *triangle = Triangle(i);
+      for (int j = 0; j < 3; j++) {
+        R3TriangleVertex *v0 = triangle->Vertex(j);
+        R3TriangleVertex *v1 = triangle->Vertex((j+1)%3);
+        R3LoadPoint(v0->Position());
+        R3LoadPoint(v1->Position());
+      }
+    }
+    RNGrfxEnd();
+  }
+#else
+    // Draw all triangles
+    for (int i = 0; i < triangles.NEntries(); i++)
+        triangles.Kth(i)->Draw(draw_flags);
+#endif
+}
+
+
+
+void R3TriangleArray::
+InvalidateVBO(void)
+{
+  // Mark vbo as out of date
+  vbo_size = 0;
+}
+
+
+
+void R3TriangleArray::
+UpdateVBO(void)
+{
+#if (RN_3D_GRFX == RN_OPENGL)
+  // Check if VBO is uptodate
+  if (vbo_size > 0) return;
+  
+  // Check triangle array
+  if (NVertices() == 0) return;
+  if (NTriangles() == 0) return;
+
+  // Allocate buffer data
+  static const unsigned int vertex_size = 12 * sizeof(GLdouble);
+  unsigned int buffer_size = 3 * NTriangles() * vertex_size;
+  GLdouble *buffer_data = new GLdouble [ buffer_size ];
+  if (!buffer_data) return;
+  
+  // Fill vertex data 
+  GLdouble *buffer_datap = buffer_data;
+  for (int i = 0; i < NTriangles(); i++) {
+    R3Triangle *triangle = Triangle(i);
+    int dim = triangle->Normal().MaxDimension();
+    int dim1 = (dim + 1) % 3;
+    int dim2 = (dim + 2) % 3;
+    for (int j = 0; j < 3; j++) {
+      R3TriangleVertex *vertex = triangle->Vertex(j);
+
+      // Load position
+      *(buffer_datap++) = vertex->Position().X();
+      *(buffer_datap++) = vertex->Position().Y();
+      *(buffer_datap++) = vertex->Position().Z();
+
+      // Load normal
+      if (triangle->HasNormals() && vertex->HasNormal()) {
+        R3Vector normal = vertex->Normal();
+        RNScalar dot = normal.Dot(triangle->Normal());
+        if (dot < -0.25) normal = -normal;
+        else if (dot < 0.25) normal = triangle->Normal();
+        *(buffer_datap++) = normal.X();
+        *(buffer_datap++) = normal.Y();
+        *(buffer_datap++) = normal.Z();
+      }
+      else {
+        *(buffer_datap++) = triangle->Normal().X();
+        *(buffer_datap++) = triangle->Normal().Y();
+        *(buffer_datap++) = triangle->Normal().Z();
+      }
+
+      // Load color      
+      if (triangle->HasColors() && vertex->HasColor()) {
+        *(buffer_datap++) = vertex->Color().R();
+        *(buffer_datap++) = vertex->Color().G();
+        *(buffer_datap++) = vertex->Color().B();
+      }
+      else {
+        *(buffer_datap++) = 0.5;
+        *(buffer_datap++) = 0.5;
+        *(buffer_datap++) = 0.5;
+      }
+
+      // Load texture coordinates
+      if (triangle->HasTextureCoords() && vertex->HasTextureCoords()) {
+        *(buffer_datap++) = vertex->TextureCoords().X();
+        *(buffer_datap++) = vertex->TextureCoords().Y();
+        *(buffer_datap++) = 0;
+      }
+      else {
+        *(buffer_datap++) = vertex->Position()[dim1];
+        *(buffer_datap++) = vertex->Position()[dim2];
+        *(buffer_datap++) = 0;
+      }
+    }
+  }
+
+  // Just checking
+  assert((long int) (buffer_datap - buffer_data) == (long int) (buffer_size / sizeof(GLdouble)));
+
+  // Generate VBO buffer (first time only)
+  if (vbo_id == 0) glGenBuffers(1, &vbo_id);
+
+  // Load VBO buffer
+  if (vbo_id && buffer_data && buffer_size) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
+    glBufferData(GL_ARRAY_BUFFER, buffer_size, buffer_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    vbo_size = buffer_size;
+  }
+
+  // Delete in-memory data
+  if (buffer_data) delete [] buffer_data;
+#endif
+}
+
+
+
+void R3TriangleArray::
+DrawVBO(const R3DrawFlags draw_flags) const
+{
+#if (RN_3D_GRFX == RN_OPENGL)
+  // Update vbo
+  ((R3TriangleArray *) this)->UpdateVBO();
+
+  // Check vbo
+  if (vbo_id == 0) return;
+  if (vbo_size == 0) return;
+
+  // Bind vbo
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
+
+  // Set pointers
+  static const unsigned int vertex_size = 12 * sizeof(GLdouble);
+  glVertexPointer(3, GL_DOUBLE, vertex_size, (char *) NULL);
+  glNormalPointer(GL_DOUBLE, vertex_size, (char *) NULL + 3 * sizeof(GLdouble));
+  glColorPointer(3, GL_DOUBLE, vertex_size, (char *) NULL + 6 * sizeof(GLdouble));
+  glTexCoordPointer(2, GL_DOUBLE, vertex_size, (char *) NULL + 9 * sizeof(GLdouble));
+
+  // Enable client states
+  R3DrawFlags flags(Flags() & draw_flags);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  if (flags[R3_SURFACE_NORMALS_DRAW_FLAG] || flags[R3_VERTEX_NORMALS_DRAW_FLAG])
+    glEnableClientState(GL_NORMAL_ARRAY);
+  else glDisable(GL_NORMAL_ARRAY);
+  if (flags[R3_VERTEX_COLORS_DRAW_FLAG])
+    glEnableClientState(GL_COLOR_ARRAY);
+  else glDisable(GL_COLOR_ARRAY);
+  if (flags[R3_SURFACE_TEXTURE_DRAW_FLAG] || flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG])
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  else glDisable(GL_TEXTURE_COORD_ARRAY);
+  
+  // Draw triangles
+  int nvertices = vbo_size / vertex_size;
+  assert(nvertices == 3 * NTriangles());
+  glDrawArrays(GL_TRIANGLES, 0, nvertices);
+  
+  // Disable client states
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_COLOR_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+#endif
 }
 
 

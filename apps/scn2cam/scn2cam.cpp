@@ -1982,6 +1982,9 @@ CreateAndWriteCamerasWithGlut(void)
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH); 
   glutCreateWindow("Scene Camera Creation");
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize GLUT callback functions 
   glutDisplayFunc(CreateAndWriteCameras);
 
@@ -2022,6 +2025,9 @@ CreateAndWriteCamerasWithMesa(void)
     RNFail("Unable to make mesa context current\n");
     return 0;
   }
+
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
 
   // Create cameras
   CreateAndWriteCameras();

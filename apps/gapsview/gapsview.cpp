@@ -2360,6 +2360,9 @@ GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("GAPS Viewer");
   
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
   

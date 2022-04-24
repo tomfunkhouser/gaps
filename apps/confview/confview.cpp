@@ -1477,6 +1477,9 @@ void GLUTInterface(void)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
   GLUTwindow = glutCreateWindow("Configuration Viewer");
   
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize graphics modes  
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -1575,6 +1578,9 @@ ParseArgs(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+
   // Check number of arguments
   if (!ParseArgs(argc, argv)) exit(1);
 

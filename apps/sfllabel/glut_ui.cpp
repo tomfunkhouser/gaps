@@ -222,6 +222,9 @@ void UIInterface(R3SurfelLabeler *labeler)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_ALPHA);
   GLUTwindow = glutCreateWindow("Surfel Labeler");
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize GLUT callback functions
   glutDisplayFunc(GLUTRedraw);
   glutReshapeFunc(GLUTResize);
@@ -231,10 +234,6 @@ void UIInterface(R3SurfelLabeler *labeler)
   glutMotionFunc(GLUTMouseMotion);
   glutPassiveMotionFunc(GLUTMouseMotion);
   atexit(GLUTStop);
-
-  // Initialize packages (calls glewInit)
-  R3InitGraphics();
-  R3InitSurfels();
 
   // Initialize labeler
   labeler->Initialize();

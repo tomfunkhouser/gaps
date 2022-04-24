@@ -486,7 +486,10 @@ void GLUTInit(int *argc, char **argv)
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_ALPHA);
   GLUTwindow = glutCreateWindow("Surfel Viewer");
-  
+
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize GLUT callback functions
   glutDisplayFunc(GLUTRedraw);
   glutReshapeFunc(GLUTResize);
@@ -495,10 +498,6 @@ void GLUTInit(int *argc, char **argv)
   glutMouseFunc(GLUTMouseButton);
   glutMotionFunc(GLUTMouseMotion);
   atexit(GLUTStop);
-
-  // Initialize packages (calls glewInit)
-  R3InitGraphics();
-  R3InitSurfels();
 
   // Initialize viewer
   viewer->Initialize();
@@ -602,6 +601,10 @@ ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+  if (!R3InitSurfels()) exit(-1);
+
   // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(-1);
 

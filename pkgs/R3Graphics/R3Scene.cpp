@@ -2010,10 +2010,10 @@ ReadMesh(const char *filename)
 int R3Scene::
 ReadMeshFile(const char *filename, R3SceneNode *parent_node)
 {
-  // Check/set parent node                                                                                                                                   
+  // Check/set parent node
   if (!parent_node) parent_node = root;
 
-  // Load triangles into scene                                                                                                                               
+  // Load triangles into scene
   R3TriangleArray *shape = ReadMesh(filename);
   if (!shape) return 0;
   R3SceneElement *element = new R3SceneElement();

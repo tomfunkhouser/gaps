@@ -841,6 +841,9 @@ void GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
   GLUTwindow = glutCreateWindow("Scene Viewer");
   
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize depth testing
   glEnable(GL_DEPTH_TEST);
 
@@ -1144,11 +1147,11 @@ ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+
   // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(-1);
-
-  // Initialize GLUT
-  GLUTInit(&argc, argv);
 
   // Read scene
   scene = ReadScene(input_scene_name);
@@ -1172,6 +1175,9 @@ int main(int argc, char **argv)
   // Create viewer
   viewer = CreateBirdsEyeViewer(scene);
   if (!viewer) exit(-1);
+
+  // Initialize GLUT
+  GLUTInit(&argc, argv);
 
   // Run GLUT interface
   GLUTMainLoop();

@@ -110,6 +110,10 @@ ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+  if (!R3InitSurfels()) exit(-1);
+
   // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(-1);
 

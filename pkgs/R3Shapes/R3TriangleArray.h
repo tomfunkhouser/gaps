@@ -28,6 +28,7 @@ class R3TriangleArray : public R3Surface {
   
         // Triangle array properties
         const R3Box& Box(void) const;
+        const RNFlags Flags(void) const;
 
 	// Vertex access functions/operators
         int NVertices(void) const;
@@ -37,6 +38,11 @@ class R3TriangleArray : public R3Surface {
         int NTriangles(void) const;
 	R3Triangle *Triangle(int index) const;
 
+        // Query functions/operations
+        RNBoolean HasNormals(void) const;
+        RNBoolean HasColors(void) const;
+        RNBoolean HasTextureCoords(void) const;
+  
         // Shape property functions/operators
 	virtual const RNBoolean IsPoint(void) const;
 	virtual const RNBoolean IsLinear(void) const;
@@ -69,10 +75,24 @@ class R3TriangleArray : public R3Surface {
 	RN_CLASS_TYPE_DECLARATIONS(R3TriangleArray);
         R3_SHAPE_RELATIONSHIP_DECLARATIONS(R3TriangleArray);
 
-    private:
-	RNArray<R3TriangleVertex *> vertices;
+
+     private:
+        // Internal VBO drawing functions
+        virtual void InvalidateVBO(void);
+        virtual void UpdateVBO(void);
+        virtual void DrawVBO(const R3DrawFlags draw_flags) const;
+
+     private:
+        // Triangle array data
+        RNArray<R3TriangleVertex *> vertices;
 	RNArray<R3Triangle *> triangles;
         R3Box bbox;
+        RNFlags flags;
+
+public:
+        // VBO drawing data
+        unsigned int vbo_id;
+        unsigned int vbo_size;
 };
 
 
@@ -120,6 +140,42 @@ Triangle(int k) const
 {
     // Return kth triangle
     return triangles[k];
+}
+
+
+
+inline const RNFlags R3TriangleArray::
+Flags(void) const
+{
+    // Return flags
+    return flags;
+}
+
+
+
+inline RNBoolean R3TriangleArray::
+HasNormals(void) const
+{
+  // Return whether all triangle vertices have explicit normals
+  return flags[R3_VERTEX_NORMALS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3TriangleArray::
+HasColors(void) const
+{
+  // Return whether all triangle vertices have explicit colors
+  return flags[R3_VERTEX_COLORS_DRAW_FLAG];
+}
+
+
+
+inline RNBoolean R3TriangleArray::
+HasTextureCoords(void) const
+{
+  // Return whether all triangle vertices have explicit texture coordinates
+  return flags[R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG];
 }
 
 

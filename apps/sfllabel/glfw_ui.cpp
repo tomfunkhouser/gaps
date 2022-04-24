@@ -337,6 +337,9 @@ UIInterface(R3SurfelLabeler *labeler)
   // Make the window's context current
   glfwMakeContextCurrent(window);
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Set callbacks
   glfwSetErrorCallback(GLFWError);
   glfwSetFramebufferSizeCallback(window, GLFWResize);
@@ -345,10 +348,6 @@ UIInterface(R3SurfelLabeler *labeler)
   glfwSetMouseButtonCallback(window, GLFWButton);
   glfwSetKeyCallback(window, GLFWKeyboard);
   glfwSetWindowRefreshCallback(window, GLFWRedraw);
-
-  // Initialize packages (calls glewInit)
-  R3InitGraphics();
-  R3InitSurfels();
 
   // Initialize labeler
   labeler->Initialize();

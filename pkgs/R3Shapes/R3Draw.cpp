@@ -459,16 +459,6 @@ Draw(const R3DrawFlags draw_flags) const
 
 
 
-void R3TriangleArray::
-Draw(const R3DrawFlags draw_flags) const
-{
-    // Draw all triangles
-    for (int i = 0; i < triangles.NEntries(); i++)
-        triangles.Kth(i)->Draw(draw_flags);
-}
-
-
-
 void R3Circle::
 Draw(const R3DrawFlags draw_flags) const
 {

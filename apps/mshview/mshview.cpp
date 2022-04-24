@@ -635,6 +635,9 @@ void GLUTInit(int *argc, char **argv)
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
   GLUTwindow = glutCreateWindow("OpenGL Viewer");
 
+  // Initialize grfx (after create context because calls glewInit)
+  RNInitGrfx();
+
   // Initialize multisampling
   glEnable(GL_MULTISAMPLE);
   
@@ -809,6 +812,9 @@ int ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+  // Initialize packages
+  if (!R3InitGraphics()) exit(-1);
+
   // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(-1);
 
