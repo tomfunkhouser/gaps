@@ -10,9 +10,6 @@ namespace gaps {}
 using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
-#include "R3SurfelClassifier.h"
-#include "R3SurfelSegmenter.h"
-#include "R3SurfelLabeler.h"
 #include "io.h"
 #include "ui.h"
 
