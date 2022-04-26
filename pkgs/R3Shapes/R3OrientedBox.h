@@ -62,10 +62,14 @@ class R3OrientedBox : public R3Solid {
         virtual void Empty(void);
         virtual void Translate(const R3Vector& vector);
         virtual void Reposition(const R3Point& center);
+        virtual void Rotate(RNAxis rotation_axis, RNAngle theta);
+        virtual void Rotate(const R3Vector& rotation_axis, RNAngle theta);
         virtual void Resize(RNLength radius0, RNLength radius1, RNLength radius2);
         virtual void Reorient(const R3Vector& axis0, const R3Vector& axis1);
 	virtual void Transform(const R3Transformation& transformation);
-        virtual void Reset(const R3Point& center, const R3Vector& axis0, const  R3Vector& axis1, RNScalar radius0, RNScalar radius1, RNScalar radius2); 
+        virtual void SetRadius(RNAxis axis, RNLength radius);
+        virtual void Reset(const R3Point& center, const R3Vector& axis0, const  R3Vector& axis1,
+          RNScalar radius0, RNScalar radius1, RNScalar radius2); 
 
         // Draw functions/operators
         virtual void Draw(const R3DrawFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
@@ -151,15 +155,6 @@ MinRadius(void) const
 
 
 
-inline const RNBoolean R3OrientedBox::
-IsEmpty(void) const
-{
-    // Return whether box is empty
-    return (MinRadius() < 0.0);
-}
-
-
-
 inline const RNLength R3OrientedBox::
 MaxRadius(void) const
 {
@@ -183,6 +178,15 @@ DiagonalRadius(void) const
 
     // Return box radius
     return sqrt(Radius(0)*Radius(0) + Radius(1)*Radius(1) + Radius(2)*Radius(2));
+}
+
+
+
+inline const RNBoolean R3OrientedBox::
+IsEmpty(void) const
+{
+    // Return whether box is empty
+    return (MinRadius() < 0.0);
 }
 
 

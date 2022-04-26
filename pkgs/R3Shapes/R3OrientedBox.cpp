@@ -416,6 +416,15 @@ Reposition(const R3Point& center)
 
 
 void R3OrientedBox::
+SetRadius(RNAxis axis, RNLength radius) 
+{
+    // Set box radius
+    this->radius[axis] = radius;
+}
+
+
+
+void R3OrientedBox::
 Resize(RNLength radius0, RNLength radius1, RNLength radius2) 
 {
     // Check if box is empty
@@ -425,6 +434,42 @@ Resize(RNLength radius0, RNLength radius1, RNLength radius2)
     this->radius[0] = radius0;
     this->radius[1] = radius1;
     this->radius[2] = radius2;
+}
+
+
+
+void R3OrientedBox::
+Rotate(RNAxis rotation_axis, RNAngle theta) 
+{
+    // Check if box is empty
+    if (IsEmpty()) return;
+
+    // Rotate axes
+    R3Vector axis0 = Axis(0);
+    R3Vector axis1 = Axis(1);
+    axis0.Rotate(rotation_axis, theta);
+    axis1.Rotate(rotation_axis, theta);
+
+    // Reorient with rotated axes
+    Reorient(axis0, axis1);
+}
+
+
+
+void R3OrientedBox::
+Rotate(const R3Vector& rotation_axis, RNAngle theta) 
+{
+    // Check if box is empty
+    if (IsEmpty()) return;
+
+    // Rotate axes
+    R3Vector axis0 = Axis(0);
+    R3Vector axis1 = Axis(1);
+    axis0.Rotate(rotation_axis, theta);
+    axis1.Rotate(rotation_axis, theta);
+
+    // Reorient with rotated axes
+    Reorient(axis0, axis1);
 }
 
 
