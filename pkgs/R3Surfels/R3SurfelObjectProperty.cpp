@@ -313,7 +313,7 @@ UpdateOperands(void)
     // Estimate obb
     R3OrientedBox obb = EstimateOrientedBBox(object);
     double confidence = 0.01;
-    int originator = R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+    int originator = R3_SURFEL_MACHINE_ORIGINATOR;
     
     // Fill operands
     operands[0] = obb.Center().X();

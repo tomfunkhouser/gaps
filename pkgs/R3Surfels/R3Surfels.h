@@ -24,6 +24,18 @@
 
 
 
+/* Attribute/label originators */
+
+typedef enum {
+  R3_SURFEL_HUMAN_ORIGINATOR,
+  R3_SURFEL_MACHINE_ORIGINATOR,
+  R3_SURFEL_GROUND_TRUTH_ORIGINATOR,
+  R3_SURFEL_OTHER_ORIGINATOR,
+  R3_SURFEL_NUM_ORIGINATORS
+} R3SurfelOriginator;
+
+
+
 /* Class declarations */
 
 namespace gaps {

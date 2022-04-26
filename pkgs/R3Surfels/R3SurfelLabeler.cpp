@@ -107,7 +107,7 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     if (object->NParts() > 0) continue;
     if (object->HumanLabel()) continue;
     if (object->PredictedLabel()) continue;
-    R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, unknown_label, 0, R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+    R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, unknown_label, 0, R3_SURFEL_MACHINE_ORIGINATOR);
     scene->InsertLabelAssignment(assignment);
   }
 
@@ -214,8 +214,8 @@ DrawObjectLabels(void) const
     R3SurfelObject *object = scene->Object(i);
     for (int i = 0; i < object->NLabelAssignments(); i++) {
       R3SurfelLabelAssignment *assignment = object->LabelAssignment(i);
-      if (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
-      RNBoolean confirmed = (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) ? 1 : 0;
+      if (assignment->Originator() == R3_SURFEL_GROUND_TRUTH_ORIGINATOR) continue;
+      RNBoolean confirmed = (assignment->Originator() == R3_SURFEL_HUMAN_ORIGINATOR) ? 1 : 0;
       R3SurfelLabel *label = assignment->Label();
       if (!strcmp(label->Name(), "Unknown")) continue;
       if (!LabelVisibility(label)) continue;
@@ -2009,7 +2009,7 @@ AssignLabelToSelectedObjects(R3SurfelLabel *label)
   // Create assignments
   for (int i = 0; i < NObjectSelections(); i++) {
     R3SurfelObject *object = ObjectSelection(i);
-    R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, 1, R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR);
+    R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, 1, R3_SURFEL_HUMAN_ORIGINATOR);
     InsertLabelAssignment(assignment);
   }
 
@@ -2050,7 +2050,7 @@ AssignLabelToPickedObject(R3SurfelLabel *label, int x, int y)
 
   // Assign label to object
   return AssignLabelToObject(object, label, 1,
-    R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR,
+    R3_SURFEL_HUMAN_ORIGINATOR,
     R3_SURFEL_LABELER_LABEL_PICKED_COMMAND);
 }
 
@@ -2119,7 +2119,7 @@ AssignNewLabelToPickedObject(int x, int y)
 
   // Assign best new label
   return AssignLabelToObject(object, best_label, 0.01,
-    R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR,
+    R3_SURFEL_MACHINE_ORIGINATOR,
     R3_SURFEL_LABELER_RELABEL_PICKED_COMMAND);
 }
 
@@ -2144,7 +2144,7 @@ AssignNewLabelToSelectedObjects(void)
     R3SurfelLabel *label = BestNewLabel(scene, object);
     if (label) {
       R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label,
-        0.01, R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+        0.01, R3_SURFEL_MACHINE_ORIGINATOR);
       InsertLabelAssignment(assignment);
     }
   }
@@ -2368,7 +2368,7 @@ MergeSelectedObjects(void)
   // Get/check label and attribute flags
   R3SurfelLabelAssignment *assignment = ObjectSelection(0)->CurrentLabelAssignment();
   R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
-  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_MACHINE_ORIGINATOR;
   RNScalar confidence = (assignment) ? assignment->Confidence() : 0;
   RNFlags attribute_flags = ObjectSelection(0)->Flags() & R3_SURFEL_ALL_ATTRIBUTES;
   
@@ -2470,14 +2470,14 @@ UnmergeSelectedObjects(void)
     // Get/check assignment info
     R3SurfelLabelAssignment *assignment = object->CurrentLabelAssignment();
     R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
-    int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+    int originator = (assignment) ? assignment->Originator() : R3_SURFEL_MACHINE_ORIGINATOR;
     RNScalar confidence = (assignment) ? assignment->Confidence() : 0;
   
      // Find previous assignments
     RNArray<R3SurfelLabelAssignment *> previous_assignments;
     for (int i = 0; i < object->NLabelAssignments(); i++) {
       R3SurfelLabelAssignment *a = object->LabelAssignment(i);
-      if (a->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
+      if (a->Originator() == R3_SURFEL_GROUND_TRUTH_ORIGINATOR) continue;
       previous_assignments.Insert(a);
     }
 
@@ -2539,7 +2539,7 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
   while (ancestor && ancestor->Parent() && (ancestor->Parent() != scene->RootObject())) ancestor = ancestor->Parent();
   R3SurfelLabelAssignment *assignment = ancestor->CurrentLabelAssignment();
   R3SurfelLabel *label = (assignment) ? assignment->Label() : scene->FindLabelByName("Unknown");
-  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
+  int originator = (assignment) ? assignment->Originator() : R3_SURFEL_MACHINE_ORIGINATOR;
   double confidence = (assignment) ? assignment->Confidence() : 0;
   RNFlags attribute_flags = object->Flags() & R3_SURFEL_ALL_ATTRIBUTES;
 
@@ -3443,7 +3443,7 @@ InsertLabelAssignment(R3SurfelLabelAssignment *assignment)
   RNArray<R3SurfelLabelAssignment *> previous_assignments;
   for (int i = 0; i < object->NLabelAssignments(); i++) {
     R3SurfelLabelAssignment *a = object->LabelAssignment(i);
-    if (a->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR) continue;
+    if (a->Originator() == R3_SURFEL_GROUND_TRUTH_ORIGINATOR) continue;
     previous_assignments.Insert(a);
   }
 
@@ -4802,7 +4802,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   int ninserted_label_assignments = 0;
   for (int j = 0; j < command->inserted_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->inserted_label_assignments[j];
-    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    if (assignment->Originator() != R3_SURFEL_HUMAN_ORIGINATOR) continue;
     ninserted_label_assignments++;
   }
 
@@ -4810,7 +4810,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   int nremoved_label_assignments = 0;
   for (int j = 0; j < command->removed_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->removed_label_assignments[j];
-    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    if (assignment->Originator() != R3_SURFEL_HUMAN_ORIGINATOR) continue;
     nremoved_label_assignments++;
   }
 
@@ -4831,7 +4831,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   fprintf(fp, "%d", ninserted_label_assignments);
   for (int j = 0; j < command->inserted_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->inserted_label_assignments[j];
-    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    if (assignment->Originator() != R3_SURFEL_HUMAN_ORIGINATOR) continue;
     fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
   }
   fprintf(fp, "    ");
@@ -4839,7 +4839,7 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
   fprintf(fp, "%d", nremoved_label_assignments);
   for (int j = 0; j < command->removed_label_assignments.NEntries(); j++) {
     R3SurfelLabelAssignment *assignment = command->removed_label_assignments[j];
-    if (assignment->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR) continue;
+    if (assignment->Originator() != R3_SURFEL_HUMAN_ORIGINATOR) continue;
     fprintf(fp, " ( %d %d %g %d )", assignment->Object()->SceneIndex(), assignment->Label()->Identifier(), assignment->Confidence(), assignment->Originator());
   }
   fprintf(fp, "    ");

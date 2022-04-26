@@ -707,7 +707,7 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
 
     // Create label assignment
     if (label) {
-      int originator = R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR;
+      int originator = R3_SURFEL_HUMAN_ORIGINATOR;
       R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, 1.0, originator);
       scene->InsertLabelAssignment(assignment);
     }
@@ -877,9 +877,9 @@ LoadAssignmentList(R3SurfelScene *scene, const char *list_filename)
       }
 
       // Create assignment
-      int originator = R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR;
-      if (!strcmp(originator_str, "Human")) originator = R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR;
-      else if (!strcmp(originator_str, "GroundTruth")) originator = R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR;
+      int originator = R3_SURFEL_MACHINE_ORIGINATOR;
+      if (!strcmp(originator_str, "Human")) originator = R3_SURFEL_HUMAN_ORIGINATOR;
+      else if (!strcmp(originator_str, "GroundTruth")) originator = R3_SURFEL_GROUND_TRUTH_ORIGINATOR;
       R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, confidence, originator);
       scene->InsertLabelAssignment(assignment);
       count++;

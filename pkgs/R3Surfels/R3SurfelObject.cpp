@@ -304,7 +304,7 @@ R3SurfelLabelAssignment *R3SurfelObject::
 GroundTruthLabelAssignment(void) const
 {
   // Return ground truth assignment (or NULL if there is none)
-  return BestLabelAssignment(R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR);
+  return BestLabelAssignment(R3_SURFEL_GROUND_TRUTH_ORIGINATOR);
 }
 
 
@@ -313,7 +313,7 @@ R3SurfelLabelAssignment *R3SurfelObject::
 HumanLabelAssignment(void) const
 {
   // Return human generated assignment (or NULL if there is none)
-  return BestLabelAssignment(R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR);
+  return BestLabelAssignment(R3_SURFEL_HUMAN_ORIGINATOR);
 }
 
 
@@ -322,7 +322,7 @@ R3SurfelLabelAssignment *R3SurfelObject::
 PredictedLabelAssignment(void) const
 {
   // Return best predicted assignment (or NULL if there is none)
-  return BestLabelAssignment(R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+  return BestLabelAssignment(R3_SURFEL_MACHINE_ORIGINATOR);
 }
 
 
@@ -460,7 +460,7 @@ R3OrientedBox R3SurfelObject::
 GroundTruthOrientedBBox(void) const
 {
   // Return ground truth obb (or empty if there is none)
-  return BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR);
+  return BestOrientedBBox(R3_SURFEL_GROUND_TRUTH_ORIGINATOR);
 }
 
 
@@ -469,7 +469,7 @@ R3OrientedBox R3SurfelObject::
 HumanOrientedBBox(void) const
 {
   // Return obb provided by a person (or empty if there is none)
-  return BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR);
+  return BestOrientedBBox(R3_SURFEL_HUMAN_ORIGINATOR);
 }
 
 
@@ -478,7 +478,7 @@ R3OrientedBox R3SurfelObject::
 PredictedOrientedBBox(void) const
 {
   // Return predicted obb (or empty if there is none)
-  R3OrientedBox obb = BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+  R3OrientedBox obb = BestOrientedBBox(R3_SURFEL_MACHINE_ORIGINATOR);
   if (!obb.IsEmpty()) return obb;
   return EstimateOrientedBBox((R3SurfelObject *) this);
 }

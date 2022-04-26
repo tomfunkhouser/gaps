@@ -65,7 +65,7 @@ PredictLabelAssignment(R3SurfelObject *object) const
   RNArray<R3SurfelLabelAssignment *> previous_assignments;
   for (int i = 0; i < object->NLabelAssignments(); i++) {
     R3SurfelLabelAssignment *a = object->LabelAssignment(i);
-    if (a->Originator() != R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR) continue;
+    if (a->Originator() != R3_SURFEL_MACHINE_ORIGINATOR) continue;
     previous_assignments.Insert(a);
   }
 
@@ -162,7 +162,7 @@ PredictLabelAssignment(R3SurfelObject *object) const
   // Insert label assignment
   if (best_label) {
     R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, best_label, 
-      confidence, R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+      confidence, R3_SURFEL_MACHINE_ORIGINATOR);
     scene->InsertLabelAssignment(assignment);
   }
 
@@ -201,7 +201,7 @@ PredictLabelAssignments(void) const
   for (int i = 1; i < scene->NObjects(); i++) {
     R3SurfelObject *object = scene->Object(i);
     R3SurfelObjectAssignment *assignment = object->CurrentLabelAssignment();
-    if (assignment && (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR)) continue;
+    if (assignment && (assignment->Originator() == R3_SURFEL_HUMAN_ORIGINATOR)) continue;
     if (assignment && (assignment->Confidence() >= 1.0)) continue;
     if (!PredictLabelAssignment(object)) return 0;
   }
@@ -276,7 +276,7 @@ UpdateAfterInsertLabelAssignment(R3SurfelLabelAssignment *assignment)
   R3SurfelLabel *label = assignment->Label();
 
   // Update training set
-  if (object->HumanLabel() && (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR)) {
+  if (object->HumanLabel() && (assignment->Originator() == R3_SURFEL_HUMAN_ORIGINATOR)) {
     if (strcmp(label->Name(), "Unknown")) {
       if (!training_set.FindEntry(object)) {
         // Insert object into training set 
@@ -296,7 +296,7 @@ UpdateBeforeRemoveLabelAssignment(R3SurfelLabelAssignment *assignment)
   R3SurfelLabel *label = assignment->Label();
    
   // Check assignment
-  if (object->HumanLabel() && (assignment->Originator() == R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR)) {
+  if (object->HumanLabel() && (assignment->Originator() == R3_SURFEL_HUMAN_ORIGINATOR)) {
     if (strcmp(label->Name(), "Unknown")) {
       if (training_set.FindEntry(object)) {
         // Remove object from training set 
