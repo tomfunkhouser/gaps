@@ -361,6 +361,7 @@ PrintInfo(R3SurfelScene *scene)
       for (int i = 0; i < level; i++) strncat(prefix, " ", 16535);
       R3Box bbox = object->BBox();
       R3Point centroid = object->Centroid();
+      R3OrientedBox obb = object->CurrentOrientedBBox();
       RNInterval timestamp_range = object->TimestampRange();
       R3SurfelLabel *predicted_label = object->PredictedLabel();
       R3SurfelLabel *ground_truth_label = object->GroundTruthLabel();
@@ -372,7 +373,13 @@ PrintInfo(R3SurfelScene *scene)
       printf("%s Part hierarchy level = %d\n", prefix, object->PartHierarchyLevel());
       printf("%s Centroid = ( %g %g %g )\n", prefix, centroid[0], centroid[1], centroid[2]);
       if (!bbox.IsEmpty())
-        printf("%s Bounding box = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+        printf("%s ABB = ( %g %g %g ) ( %g %g %g )\n", prefix, bbox[0][0], bbox[0][1], bbox[0][2], bbox[1][0], bbox[1][1], bbox[1][2]);
+      if (!obb.IsEmpty())
+        printf("%s OBB = ( %g %g %g ) ( %g %g %g ) ( %g %g %g ) %g %g %g\n", prefix,
+          obb.Center().X(), obb.Center().Y(), obb.Center().Z(),
+          obb.Axis(0).X(), obb.Axis(0).Y(), obb.Axis(0).Z(),                
+          obb.Axis(1).X(), obb.Axis(1).Y(), obb.Axis(1).Z(),                
+          obb.Radius(0), obb.Radius(1), obb.Radius(2));               
       if (!timestamp_range.IsEmpty())
         printf("%s Timestamp Range = %.9f %.9f\n", prefix, timestamp_range.Min(), timestamp_range.Max());
       printf("%s # Nodes = %d\n", prefix, object->NNodes());

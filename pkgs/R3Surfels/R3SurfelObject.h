@@ -109,6 +109,13 @@ public:
   R3SurfelLabel *CurrentLabel(void) const;
   R3SurfelLabel *BestLabel(int originator) const;
 
+  // Amodal OBB access functions
+  R3OrientedBox GroundTruthOrientedBBox(void) const;
+  R3OrientedBox HumanOrientedBBox(void) const;
+  R3OrientedBox PredictedOrientedBBox(void) const;
+  R3OrientedBox CurrentOrientedBBox(void) const;
+  R3OrientedBox BestOrientedBBox(int originator) const;
+
   // Point access functions
   R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE) const;
   

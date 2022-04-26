@@ -421,6 +421,82 @@ BestLabel(int originator) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// AMODAL OBB ACCESS FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3OrientedBox R3SurfelObject::
+BestOrientedBBox(int originator) const
+{
+  // Return best OBB (or an empty box if there is none)
+  RNScalar best_confidence = -FLT_MAX;
+  R3OrientedBox best_obb = R3null_oriented_box;
+  for (int i = 0; i < properties.NEntries(); i++) {
+    R3SurfelObjectProperty *property = properties.Kth(i);
+    if (property->Type() != R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY) continue;
+    if (property->NOperands() != 20) continue;
+    int orig = (int) (property->Operand(16) + 0.5);
+    if (orig != originator) continue;
+    RNScalar confidence = property->Operand(15);
+    if (confidence > best_confidence) {
+      R3Point centroid(property->Operand(0), property->Operand(1), property->Operand(2));
+      R3Vector axis1(property->Operand(3), property->Operand(4), property->Operand(5));
+      R3Vector axis2(property->Operand(6), property->Operand(7), property->Operand(8));
+      // R3Vector axis3(property->Operand(9), property->Operand(10), property->Operand(11));
+      RNScalar radius1 = property->Operand(12);
+      RNScalar radius2 = property->Operand(13);
+      RNScalar radius3 = property->Operand(14);
+      best_obb.Reset(centroid, axis1, axis2, radius1, radius2, radius3);
+      best_confidence = confidence;
+    }
+  }
+
+  // Return best obb
+  return best_obb;
+}
+
+
+
+R3OrientedBox R3SurfelObject::
+GroundTruthOrientedBBox(void) const
+{
+  // Return ground truth obb (or empty if there is none)
+  return BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR);
+}
+
+
+
+R3OrientedBox R3SurfelObject::
+HumanOrientedBBox(void) const
+{
+  // Return obb provided by a person (or empty if there is none)
+  return BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR);
+}
+
+
+
+R3OrientedBox R3SurfelObject::
+PredictedOrientedBBox(void) const
+{
+  // Return predicted obb (or empty if there is none)
+  R3OrientedBox obb = BestOrientedBBox(R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR);
+  if (!obb.IsEmpty()) return obb;
+  return EstimateOrientedBBox((R3SurfelObject *) this);
+}
+
+
+
+R3OrientedBox R3SurfelObject::
+CurrentOrientedBBox(void) const
+{
+  // Return best obb (either human or predicted)
+  R3OrientedBox human_obb = HumanOrientedBBox();
+  if (!human_obb.IsEmpty()) return human_obb;
+  return PredictedOrientedBBox();
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
