@@ -191,7 +191,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     else translated_key += 96;
     ctrl = GLUT_ACTIVE_CTRL;
   }
-
+  
   // Send keyboard event to GLUTlabeler
   if (GLUTlabeler->Keyboard(x, y, translated_key, shift, ctrl, alt)) {
     glutPostRedisplay();

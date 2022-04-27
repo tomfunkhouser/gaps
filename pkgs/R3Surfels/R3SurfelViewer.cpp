@@ -2010,14 +2010,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetImageInsetSize(1.25 * ImageInsetSize());
       break;
 
-    case R3_SURFEL_VIEWER_LEFT_KEY:
-      SetImagePlaneDepth(0.8 * ImagePlaneDepth());
-      break;
-
-    case R3_SURFEL_VIEWER_RIGHT_KEY: 
-      SetImagePlaneDepth(1.25 * ImagePlaneDepth());
-      break;
-
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
       if (viewing_extent.IsEmpty()) viewing_extent = scene->BBox();
       if (shift) viewing_extent[RN_LO][RN_Z] += 0.01 * scene->BBox().ZLength();

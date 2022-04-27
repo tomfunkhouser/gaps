@@ -1068,6 +1068,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break; }
 
+    case 'I':
+    case 'i': // Tab
+      SelectSuggestedObject();
+      redraw = 1;
+      break;
+
     case 'M':
     case 'm': // Enter
       // Copied from R3SurfelViewer
@@ -1081,8 +1087,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       // Assign new label (copy label from closest other object)
       // if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
       // else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
-      SelectSuggestedObject();
-      redraw = 1;
+      // redraw = 1;
       break;
       
     case 'P':
@@ -1188,11 +1193,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break;
 
+#if 0
     case R3_SURFEL_VIEWER_LEFT_KEY:
       UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
       redraw = 1;
       break;
-
+#endif
+      
     case R3_SURFEL_VIEWER_RIGHT_KEY:
       SelectSuggestedObject();
       redraw = 1;
