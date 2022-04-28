@@ -53,7 +53,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     aerial_visibility(1),
     terrestrial_visibility(1),
     human_labeled_object_visibility(1),
-    object_property_visibility(0),
+    object_principal_axes_visibility(0),
+    object_oriented_bbox_visibility(0),
     object_relationship_visibility(0),
     object_bbox_visibility(0),
     node_bbox_visibility(0),
@@ -71,7 +72,8 @@ R3SurfelViewer(R3SurfelScene *scene)
     surfel_color_scheme(R3_SURFEL_VIEWER_COLOR_BY_RGB),
     normal_color(0,1,0),
     background_color(0,0,0),
-    object_property_color(0,1,1),
+    object_principal_axes_color(0,1,1),
+    object_oriented_bbox_color(0,1,1),
     object_bbox_color(0,1,1),
     node_bbox_color(0,0,1),
     block_bbox_color(0,1,0),
@@ -1054,17 +1056,37 @@ DrawNormals(void) const
 
 
 void R3SurfelViewer::
-DrawObjectProperties(void) const
+DrawObjectPrincipalAxes(void) const
 {
   // Check stuff
   if (!scene) return;
-  if (!object_property_visibility) return;
+  if (!object_principal_axes_visibility) return;
   
   // Draw object properties
   glDisable(GL_LIGHTING);
-  RNLoadRgb(object_property_color);
+  RNLoadRgb(object_principal_axes_color);
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
+    if (property->Type() != R3_SURFEL_OBJECT_PCA_PROPERTY) continue;
+    property->Draw(0);
+  }
+}
+
+
+
+void R3SurfelViewer::
+DrawObjectOrientedBBoxes(void) const
+{
+  // Check stuff
+  if (!scene) return;
+  if (!object_oriented_bbox_visibility) return;
+  
+  // Draw object properties
+  glDisable(GL_LIGHTING);
+  RNLoadRgb(object_oriented_bbox_color);
+  for (int i = 0; i < scene->NObjectProperties(); i++) {
+    R3SurfelObjectProperty *property = scene->ObjectProperty(i);
+    if (property->Type() != R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY) continue;
     property->Draw(0);
   }
 }
@@ -1546,7 +1568,8 @@ Redraw(void)
   // Draw everything else (with culling to viewing extent)
   DrawSurfels(surfel_color_scheme);
   DrawNormals();
-  DrawObjectProperties();
+  DrawObjectPrincipalAxes();
+  DrawObjectOrientedBBoxes();
   DrawObjectRelationships();
   DrawObjectBBoxes();
   DrawNodeBBoxes();
@@ -1754,7 +1777,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       break;
 
     case 'b':
-      SetObjectBBoxVisibility(-1);
+      SetObjectOrientedBBoxVisibility(-1);
       break;
 
     case 'C':
@@ -1859,7 +1882,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
 
     case 'X':
     case 'x':
-      SetObjectPropertyVisibility(-1);
+      SetObjectPrincipalAxesVisibility(-1);
       break;
       
     case 'Y':

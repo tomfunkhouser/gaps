@@ -478,9 +478,7 @@ R3OrientedBox R3SurfelObject::
 PredictedOrientedBBox(void) const
 {
   // Return predicted obb (or empty if there is none)
-  R3OrientedBox obb = BestOrientedBBox(R3_SURFEL_MACHINE_ORIGINATOR);
-  if (!obb.IsEmpty()) return obb;
-  return EstimateOrientedBBox((R3SurfelObject *) this);
+  return BestOrientedBBox(R3_SURFEL_MACHINE_ORIGINATOR);
 }
 
 
@@ -491,7 +489,9 @@ CurrentOrientedBBox(void) const
   // Return best obb (either human or predicted)
   R3OrientedBox human_obb = HumanOrientedBBox();
   if (!human_obb.IsEmpty()) return human_obb;
-  return PredictedOrientedBBox();
+  R3OrientedBox predicted_obb = PredictedOrientedBBox();
+  if (!predicted_obb.IsEmpty()) return predicted_obb;
+  return EstimateOrientedBBox((R3SurfelObject *) this);
 }
 
 

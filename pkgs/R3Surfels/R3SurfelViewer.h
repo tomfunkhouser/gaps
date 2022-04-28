@@ -75,7 +75,8 @@ public:
   int AerialVisibility(void) const;
   int TerrestrialVisibility(void) const;
   int HumanLabeledObjectVisibility(void) const;
-  int ObjectPropertyVisibility(void) const;
+  int ObjectPrincipalAxesVisibility(void) const;
+  int ObjectOrientedBBoxVisibility(void) const;
   int ObjectRelationshipVisibility(void) const;
   int ObjectBBoxVisibility(void) const;
   int NodeBBoxVisibility(void) const;
@@ -99,7 +100,8 @@ public:
   const char *SurfelColorSchemeName(void) const;
   const RNRgb& NormalColor(void) const;
   const RNRgb& BackgroundColor(void) const;
-  const RNRgb& ObjectPropertyColor(void) const;
+  const RNRgb& ObjectPrincipalAxesColor(void) const;
+  const RNRgb& ObjectOrientedBBoxColor(void) const;
   const RNRgb& ObjectBBoxColor(void) const;
   const RNRgb& NodeBBoxColor(void) const;
   const RNRgb& BlockBBoxColor(void) const;
@@ -150,7 +152,8 @@ public:
   virtual void SetAerialVisibility(int visibility);
   virtual void SetTerrestrialVisibility(int visibility);
   virtual void SetHumanLabeledObjectVisibility(int visibility);
-  virtual void SetObjectPropertyVisibility(int visibility);
+  virtual void SetObjectPrincipalAxesVisibility(int visibility);
+  virtual void SetObjectOrientedBBoxVisibility(int visibility);
   virtual void SetObjectRelationshipVisibility(int visibility);
   virtual void SetObjectBBoxVisibility(int visibility);
   virtual void SetNodeBBoxVisibility(int visibility);
@@ -171,7 +174,8 @@ public:
   virtual void SetSurfelColorScheme(int scheme);
   virtual void SetNormalColor(const RNRgb& color);
   virtual void SetBackgroundColor(const RNRgb& color);
-  virtual void SetObjectPropertyColor(const RNRgb& color);
+  virtual void SetObjectPrincipalAxesColor(const RNRgb& color);
+  virtual void SetObjectOrientedBBoxColor(const RNRgb& color);
   virtual void SetObjectBBoxColor(const RNRgb& color);
   virtual void SetNodeBBoxColor(const RNRgb& color);
   virtual void SetBlockBBoxColor(const RNRgb& color);
@@ -242,7 +246,8 @@ public:
   virtual void DrawSurfels(int color_scheme = 0) const;
   virtual void DrawSurfels(R3SurfelNode *node, RNFlags color_draw_flags = 0) const;
   virtual void DrawNormals(void) const;
-  virtual void DrawObjectProperties(void) const;
+  virtual void DrawObjectPrincipalAxes(void) const;
+  virtual void DrawObjectOrientedBBoxes(void) const;
   virtual void DrawObjectRelationships(void) const;
   virtual void DrawObjectBBoxes(void) const;
   virtual void DrawNodeBBoxes(void) const;
@@ -325,7 +330,8 @@ protected:
   int aerial_visibility;
   int terrestrial_visibility;
   int human_labeled_object_visibility;
-  int object_property_visibility;
+  int object_principal_axes_visibility;
+  int object_oriented_bbox_visibility;
   int object_relationship_visibility;
   int object_bbox_visibility;
   int node_bbox_visibility;
@@ -345,7 +351,8 @@ protected:
   int surfel_color_scheme;
   RNRgb normal_color;
   RNRgb background_color;
-  RNRgb object_property_color;
+  RNRgb object_principal_axes_color;
+  RNRgb object_oriented_bbox_color;
   RNRgb object_bbox_color;
   RNRgb node_bbox_color;
   RNRgb block_bbox_color;
@@ -597,10 +604,19 @@ HumanLabeledObjectVisibility(void) const
 
 
 inline int R3SurfelViewer::
-ObjectPropertyVisibility(void) const
+ObjectPrincipalAxesVisibility(void) const
 {
-  // Return object property visibililty
-  return object_property_visibility;
+  // Return object principal axes visibililty
+  return object_principal_axes_visibility;
+}
+
+
+
+inline int R3SurfelViewer::
+ObjectOrientedBBoxVisibility(void) const
+{
+  // Return object oriented bbox visibililty
+  return object_oriented_bbox_visibility;
 }
 
 
@@ -753,10 +769,19 @@ BackgroundColor(void) const
 
 
 inline const RNRgb& R3SurfelViewer::
-ObjectPropertyColor(void) const
+ObjectPrincipalAxesColor(void) const
 {
-  // Return object property color
-  return object_property_color;
+  // Return object principal axes color
+  return object_principal_axes_color;
+}
+
+
+
+inline const RNRgb& R3SurfelViewer::
+ObjectOrientedBBoxColor(void) const
+{
+  // Return object oriented bbox color
+  return object_oriented_bbox_color;
 }
 
 
@@ -1068,12 +1093,23 @@ SetHumanLabeledObjectVisibility(int visibility)
 
 
 inline void R3SurfelViewer::
-SetObjectPropertyVisibility(int visibility)
+SetObjectPrincipalAxesVisibility(int visibility)
 {
-  // Set object property visibililty
-  if (visibility == -1) object_property_visibility = 1 - object_property_visibility;
-  else if (visibility == 0) object_property_visibility = 0;
-  else object_property_visibility = 1;
+  // Set object principal axes visibililty
+  if (visibility == -1) object_principal_axes_visibility = 1 - object_principal_axes_visibility;
+  else if (visibility == 0) object_principal_axes_visibility = 0;
+  else object_principal_axes_visibility = 1;
+}
+
+
+
+inline void R3SurfelViewer::
+SetObjectOrientedBBoxVisibility(int visibility)
+{
+  // Set object oriented bbox visibililty
+  if (visibility == -1) object_oriented_bbox_visibility = 1 - object_oriented_bbox_visibility;
+  else if (visibility == 0) object_oriented_bbox_visibility = 0;
+  else object_oriented_bbox_visibility = 1;
 }
 
 
@@ -1253,10 +1289,19 @@ SetBackgroundColor(const RNRgb& color)
 
 
 inline void R3SurfelViewer::
-SetObjectPropertyColor(const RNRgb& color)
+SetObjectPrincipalAxesColor(const RNRgb& color)
 {
-  // Set object property color
-  object_property_color = color;
+  // Set object principal axes color
+  object_principal_axes_color = color;
+}
+
+
+
+inline void R3SurfelViewer::
+SetObjectOrientedBBoxColor(const RNRgb& color)
+{
+  // Set object oriented bbox color
+  object_oriented_bbox_color = color;
 }
 
 

@@ -101,6 +101,9 @@ ResetOperands(RNScalar *operands, int noperands)
     for (int i = 0; i < this->noperands; i++) {
       this->operands[i] = operands[i];
     }
+    
+    // Mark scene as dirty
+    if (scene) scene->SetDirty();
   }
   else {
     // Compute operands
@@ -111,7 +114,7 @@ ResetOperands(RNScalar *operands, int noperands)
 
   
 ////////////////////////////////////////////////////////////////////////
-// DISPLAY FUNCDTIONS
+// DISPLAY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelObjectProperty::
@@ -175,6 +178,7 @@ Draw(RNFlags flags) const
 
   case R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY: 
     if (noperands == 20) {
+      // Parse operands
       R3Point centroid(operands[0], operands[1], operands[2]);
       R3Vector axis1(operands[3], operands[4], operands[5]);
       R3Vector axis2(operands[6], operands[7], operands[8]);
@@ -338,6 +342,9 @@ UpdateOperands(void)
     operands[19] = 0;
     break; }
   }
+
+  // Mark scene as dirty
+  if (scene) scene->SetDirty();
 }
 
 

@@ -3441,14 +3441,16 @@ ReadObbFile(const char *filename, R3SceneNode *parent_node)
 
     // Parse line
     char cmd[1024], name[1024];
-    int category, instance;
-    double center[3], axis0[3], axis1[3], radii[3], score;
-    if (sscanf(bufferp, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%lf%s", cmd,
+    int category, instance, originator;
+    double center[3], axis0[3], axis1[3], radii[3], confidence;
+    if (sscanf(bufferp, "%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%d%d%lf%d%s", cmd,
       &center[0], &center[1], &center[2],
       &axis0[0], &axis0[1], &axis0[2],
       &axis1[0], &axis1[1], &axis1[2],
       &radii[0], &radii[1], &radii[2],
-      &category, &instance, &score, name) != (unsigned int) 17) {
+      &category, &instance,
+      &confidence, &originator,
+      name) != (unsigned int) 18) {
       RNFail("Error parsing line %d of %s\n", line_number, filename);
       return 0;
     }
@@ -3465,7 +3467,7 @@ ReadObbFile(const char *filename, R3SceneNode *parent_node)
 
     // Set node name
     char node_name[2048];
-    sprintf(node_name, "%s_%03d", name, (int) (1000*score));
+    sprintf(node_name, "%s_%03d", name, (int) (1000*confidence));
     node->SetName(node_name);
 
     // Create color based on category
