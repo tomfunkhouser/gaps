@@ -13,6 +13,19 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
+// CONSTANT DEFINITIONS
+////////////////////////////////////////////////////////////////////////
+
+// For backward compatibility
+#define R3_SURFEL_LABEL_ASSIGNMENT_HUMAN_ORIGINATOR          R3_SURFEL_HUMAN_ORIGINATOR        
+#define R3_SURFEL_LABEL_ASSIGNMENT_MACHINE_ORIGINATOR        R3_SURFEL_MACHINE_ORIGINATOR      
+#define R3_SURFEL_LABEL_ASSIGNMENT_GROUND_TRUTH_ORIGINATOR   R3_SURFEL_GROUND_TRUTH_ORIGINATOR 
+#define R3_SURFEL_LABEL_ASSIGNMENT_OTHER_ORIGINATOR          R3_SURFEL_OTHER_ORIGINATOR        
+#define R3_SURFEL_LABEL_ASSIGNMENT_NUM_ORIGINATORS           R3_SURFEL_NUM_ORIGINATORS         
+
+
+  
+////////////////////////////////////////////////////////////////////////
 // CLASS DEFINITION
 ////////////////////////////////////////////////////////////////////////
 
