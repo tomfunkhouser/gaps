@@ -47,12 +47,12 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     attribute_menu_names(),
     attribute_menu_item_width(190),
     attribute_menu_item_height(14),
-    attribute_menu_font(GLUT_BITMAP_HELVETICA_12),
+    attribute_menu_font(RN_GRFX_BITMAP_HELVETICA_12),
     label_menu_visibility(1),
     label_menu_list(),
     label_menu_item_width(190),
     label_menu_item_height(14),
-    label_menu_font(GLUT_BITMAP_HELVETICA_12),
+    label_menu_font(RN_GRFX_BITMAP_HELVETICA_12),
     snapshot_directory(NULL),
     object_selection_times()
 {
@@ -222,8 +222,8 @@ DrawObjectLabels(void) const
       R3Point position = object->Centroid();
       position[2] = object->BBox().ZMax() + 0.01;
       R2Point p = viewer.ViewportPoint(position);
-      void *font = (confirmed) ? GLUT_BITMAP_HELVETICA_18 : GLUT_BITMAP_HELVETICA_12;
-      int width = glutBitmapLength(font, (const unsigned char *) label->Name());
+      void *font = (confirmed) ? RN_GRFX_BITMAP_HELVETICA_18 : RN_GRFX_BITMAP_HELVETICA_12;
+      int width = RNTextWidth(label->Name(), font);
       p[0] -= width / 2;
       RNLoadRgb(label->Color());
       R2DrawText(p, label->Name(), font);
@@ -3855,10 +3855,10 @@ DrawMessage(void) const
   double y = label_menu_item_height;
 
   // Get font
-  void *font = GLUT_BITMAP_HELVETICA_10;
-  if (height > 300) font = GLUT_BITMAP_HELVETICA_12;
-  if (height > 600) font = GLUT_BITMAP_HELVETICA_18;
-  if (height > 1200) font = GLUT_BITMAP_TIMES_ROMAN_24;
+  void *font = RN_GRFX_BITMAP_HELVETICA_10;
+  if (height > 300) font = RN_GRFX_BITMAP_HELVETICA_12;
+  if (height > 600) font = RN_GRFX_BITMAP_HELVETICA_18;
+  if (height > 1200) font = RN_GRFX_BITMAP_TIMES_ROMAN_24;
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
@@ -3913,9 +3913,9 @@ DrawStatus(void) const
   origin[1] -= label_menu_item_height;
 
   // Get font
-  void *font = GLUT_BITMAP_HELVETICA_10;
-  if (height > 600) font = GLUT_BITMAP_HELVETICA_12;
-  if (height > 1200) font = GLUT_BITMAP_HELVETICA_18;
+  void *font = RN_GRFX_BITMAP_HELVETICA_10;
+  if (height > 600) font = RN_GRFX_BITMAP_HELVETICA_12;
+  if (height > 1200) font = RN_GRFX_BITMAP_HELVETICA_18;
   
   // Set OpenGL modes
   glDisable(GL_LIGHTING);
@@ -3987,7 +3987,7 @@ DrawCommandMenu(void) const
     box.Draw();
     RNLoadRgb(1, 1, 1);
     box.Outline();
-    R2DrawText(x, y, "Suggest an Object", GLUT_BITMAP_HELVETICA_18); 
+    R2DrawText(x, y, "Suggest an Object", RN_GRFX_BITMAP_HELVETICA_18); 
     y -= 32;
   }
 
@@ -3998,7 +3998,7 @@ DrawCommandMenu(void) const
     box.Draw();
     RNLoadRgb(1, 1, 1);
     box.Outline();
-    R2DrawText(x, y, "Predict All", GLUT_BITMAP_HELVETICA_18); 
+    R2DrawText(x, y, "Predict All", RN_GRFX_BITMAP_HELVETICA_18); 
     y -= 32;
   }
 
@@ -4121,21 +4121,21 @@ UpdateLabelMenu(void)
   nitems += 1; // for All labels
   nitems += attribute_menu_names.size(); // for Attribute Menu
   int height = viewer.Viewport().Height();
-  label_menu_font = GLUT_BITMAP_TIMES_ROMAN_24;
+  label_menu_font = RN_GRFX_BITMAP_TIMES_ROMAN_24;
   label_menu_item_height = 28;
   label_menu_item_width = 260;
   if (height < label_menu_item_height * nitems) {
-    label_menu_font = GLUT_BITMAP_HELVETICA_18;
+    label_menu_font = RN_GRFX_BITMAP_HELVETICA_18;
     label_menu_item_height = 24;
     label_menu_item_width = 240;
   }
   if ((nitems <= 2) || (height < label_menu_item_height * nitems)) {
-    label_menu_font = GLUT_BITMAP_HELVETICA_12;
+    label_menu_font = RN_GRFX_BITMAP_HELVETICA_12;
     label_menu_item_height = 18;
     label_menu_item_width = 190;
   }
   if (height < label_menu_item_height * nitems) {
-    label_menu_font = GLUT_BITMAP_HELVETICA_10;
+    label_menu_font = RN_GRFX_BITMAP_HELVETICA_10;
     label_menu_item_height = 14;
     label_menu_item_width = 140;
   }

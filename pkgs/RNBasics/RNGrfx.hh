@@ -828,3 +828,13 @@ R3DrawText(double x, double y, double z, const char *str, void *font)
 
 
 
+inline int
+RNTextWidth(const char *str, void *font)
+{
+#if (RN_3D_GRFX == RN_OPENGL)
+    // Return width of text in pixels
+    return glutBitmapLength(font, (const unsigned char *) str);
+#else
+    RNGrfxError("Not Implemented");
+#endif
+}
