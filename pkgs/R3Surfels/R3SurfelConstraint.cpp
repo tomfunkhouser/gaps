@@ -1064,6 +1064,14 @@ R3SurfelElevationConstraint(const RNInterval& interval)
 
 
 
+R3SurfelElevationConstraint::
+R3SurfelElevationConstraint(double min_elevation, double max_elevation)
+  : interval(min_elevation, max_elevation)
+{
+}
+
+
+
 int R3SurfelElevationConstraint::
 Check(const R3SurfelBlock *block, const R3Surfel *surfel) const
 {

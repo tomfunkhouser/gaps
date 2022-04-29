@@ -442,6 +442,7 @@ class R3SurfelElevationConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions
   R3SurfelElevationConstraint(const RNInterval& interval);
+  R3SurfelElevationConstraint(double min_elevation, double max_elevation);
 
   // Surfel check functions
   virtual int Check(const R3SurfelBlock *block, const R3Surfel *surfel) const;
