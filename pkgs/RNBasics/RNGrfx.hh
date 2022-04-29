@@ -804,9 +804,11 @@ inline void
 R2DrawText(double x, double y, const char *str, void *font)
 {
 #if (RN_2D_GRFX == RN_OPENGL)
-    glRasterPos2d(x, y);
-    if (!font) font = GLUT_BITMAP_HELVETICA_12;
-    while (*str) glutBitmapCharacter(font, *(str++));
+#   ifdef __GLUT_H__
+        glRasterPos2d(x, y);
+        if (!font) font = GLUT_BITMAP_HELVETICA_12;
+        while (*str) glutBitmapCharacter(font, *(str++));
+#   endif
 #else
     RNGrfxError("Not Implemented");
 #endif
@@ -818,9 +820,11 @@ inline void
 R3DrawText(double x, double y, double z, const char *str, void *font)
 {
 #if (RN_3D_GRFX == RN_OPENGL)
-    glRasterPos3d(x, y, z);
-    if (!font) font = GLUT_BITMAP_HELVETICA_12;
-    while (*str) glutBitmapCharacter(font, *(str++));
+#   ifdef __GLUT_H__
+        glRasterPos3d(x, y, z);
+        if (!font) font = GLUT_BITMAP_HELVETICA_12;
+        while (*str) glutBitmapCharacter(font, *(str++));
+#   endif
 #else
     RNGrfxError("Not Implemented");
 #endif
@@ -832,8 +836,13 @@ inline int
 RNTextWidth(const char *str, void *font)
 {
 #if (RN_3D_GRFX == RN_OPENGL)
-    // Return width of text in pixels
-    return glutBitmapLength(font, (const unsigned char *) str);
+#   ifdef __GLUT_H__
+        // Return width of text in pixels
+        return glutBitmapLength(font, (const unsigned char *) str);
+#   else
+        // Just a guess (could do better by switching on font)
+        return 12 * strlen(str);
+#   endif
 #else
     RNGrfxError("Not Implemented");
 #endif
