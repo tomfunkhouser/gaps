@@ -377,15 +377,15 @@ void GLUTRedraw(void)
     RNLoadRgb(0, 0, 0);
     double y = GLUTwindow_height - 20;
     viewer->DrawText(10, y, current_property->Name()); y-= 20;
-    viewer->DrawText(10, y, "Mean", current_property->Mean()); y-= 20;
-    viewer->DrawText(10, y, "Min", current_property->Minimum()); y-= 20;
-    viewer->DrawText(10, y, "Max", current_property->Maximum()); y-= 20;
-    viewer->DrawText(10, y, "Stddev", current_property->StandardDeviation()); y-= 20;
-    viewer->DrawText(10, y, "Entropy", current_property->Entropy()); y-= 20;
-    viewer->DrawText(10, y, "Min Display Value", value_range.Min()); y-= 20;
-    viewer->DrawText(10, y, "Max Display Value", value_range.Max()); y-= 20;
-    viewer->DrawText(10, y, "Min Display Percentile", percentile_range.Min()); y-= 20;
-    viewer->DrawText(10, y, "Max Display Percentile", percentile_range.Max()); y-= 20;
+    DrawText(10, y, "Mean", current_property->Mean()); y-= 20;
+    DrawText(10, y, "Min", current_property->Minimum()); y-= 20;
+    DrawText(10, y, "Max", current_property->Maximum()); y-= 20;
+    DrawText(10, y, "Stddev", current_property->StandardDeviation()); y-= 20;
+    DrawText(10, y, "Entropy", current_property->Entropy()); y-= 20;
+    DrawText(10, y, "Min Display Value", value_range.Min()); y-= 20;
+    DrawText(10, y, "Max Display Value", value_range.Max()); y-= 20;
+    DrawText(10, y, "Min Display Percentile", percentile_range.Min()); y-= 20;
+    DrawText(10, y, "Max Display Percentile", percentile_range.Max()); y-= 20;
   }
 
   // Capture image and exit
