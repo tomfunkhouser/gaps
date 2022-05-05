@@ -95,7 +95,6 @@ int CullSurfels(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NUL
 int CullScene(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
 int CullScene(R3SurfelScene *scene, const R3Box& bbox);
 
-
   
   
 ////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ int CreateObjects(R3SurfelScene *scene,
   RNBoolean release_blocks = TRUE);
 
   
-  
+
 ////////////////////////////////////////////////////////////////////////
 // Object removal
 ////////////////////////////////////////////////////////////////////////
@@ -138,6 +137,28 @@ int SplitObject(R3SurfelObject *object, R3SurfelPointSet *pointset,
   R3SurfelObject **resultA = NULL, R3SurfelObject **resultB = NULL);
 int SplitObject(R3SurfelObject *object, const R3SurfelConstraint *constraint = NULL,
   R3SurfelObject **resultA = NULL, R3SurfelObject **resultB = NULL);
+
+
+  
+////////////////////////////////////////////////////////////////////////
+// Object property management
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObjectProperty *CreateObjectProperty(R3SurfelObject *object, int property_type);
+
+int RemoveObjectProperty(R3SurfelObject *object, int property_type);
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Object OBB property management
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObjectProperty *GetObjectOBBProperty(R3SurfelObject *object,
+  R3OrientedBox *obb = NULL, RNScalar *confidence = NULL, int *originator = NULL);
+
+int SetObjectOBBProperty(R3SurfelObject *object,
+  const R3OrientedBox& obb, double confidence, int originator);
 
 
   

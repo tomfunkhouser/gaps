@@ -2709,6 +2709,28 @@ PickImage(int x, int y, R3Point *picked_position)
 
 
 
+R3SurfelObject *R3SurfelViewer::
+PickObject(int x, int y, R3Point *picked_position)
+{
+  // Pick node
+  R3SurfelNode *node = PickNode(x, y, picked_position, NULL, NULL, TRUE);
+  if (!node) return NULL;
+
+  // Get picked object
+  R3SurfelObject *picked_object = node->Object(TRUE);
+  if (!picked_object) return NULL;
+
+  // Adjust picked object to be ancestor directly under root object
+  while (picked_object && picked_object->Parent() && (picked_object->Parent() != scene->RootObject())) {
+    picked_object = picked_object->Parent();
+  }
+
+  // Return picked object
+  return picked_object;
+}
+
+
+
 R3SurfelNode *R3SurfelViewer::
 PickNode(int x, int y, R3Point *picked_position, 
   R3SurfelBlock **picked_block, int *picked_surfel_index,

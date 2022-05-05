@@ -206,6 +206,8 @@ public:
   // Pick utility functions
   virtual R3SurfelImage *PickImage(int x, int y,
     R3Point *picked_position = NULL);
+  virtual R3SurfelObject *PickObject(int x, int y,
+    R3Point *picked_position = NULL);
   virtual R3SurfelNode *PickNode(int x, int y,
     R3Point *picked_position = NULL,
     R3SurfelBlock **picked_block = NULL, int *picked_surfel_index = NULL,

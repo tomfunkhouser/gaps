@@ -1065,6 +1065,144 @@ SplitObject(R3SurfelObject *object, const R3SurfelConstraint *constraint,
 
 
 ////////////////////////////////////////////////////////////////////////
+// Object property management
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObjectProperty *CreateObjectProperty(
+  R3SurfelObject *object, int property_type)
+{
+  // Get scene
+  R3SurfelScene *scene = object->Scene();
+  if (!scene) return NULL;
+
+  // Return current property, if already exists
+  R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
+  if (property) return property;
+
+  // Create object property
+  property = new R3SurfelObjectProperty(property_type, object);
+  if (!property) return NULL;
+
+  // Insert object property into scene
+  scene->InsertObjectProperty(property);
+
+  // Return property
+  return property;
+}
+
+
+
+int RemoveObjectProperty(
+  R3SurfelObject *object, int property_type)
+{
+  // Get scene
+  R3SurfelScene *scene = object->Scene();
+  if (!scene) return 0;
+
+  // Return current property, if already exists
+  R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
+  if (!property) return 0;
+
+  // Remove object property from object
+  scene->RemoveObjectProperty(property);
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Object OBB property management
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObjectProperty *
+GetObjectOBBProperty(R3SurfelObject *object,
+  R3OrientedBox *obb, RNScalar *confidence, int *originator)
+{
+  // Constants for OBB property
+  static const int property_type = R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY;
+  static const int noperands = 20;
+
+  // Get object property
+  R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
+  property = CreateObjectProperty(object, property_type);
+  if (!property) return NULL;
+
+  // Check property operands
+  if (property->NOperands() != noperands) return NULL;
+
+  // Extract obb
+  if (obb) {
+    R3Point center(property->Operand(0), property->Operand(1), property->Operand(2));
+    R3Vector axis0(property->Operand(3), property->Operand(4), property->Operand(5));
+    R3Vector axis1(property->Operand(6), property->Operand(7), property->Operand(8));
+    // R3Vector axis2(property->Operand(9), property->Operand(10), property->Operand(11));
+    RNScalar radius0 = property->Operand(12);
+    RNScalar radius1 = property->Operand(13);
+    RNScalar radius2 = property->Operand(14);
+    obb->Reset(center, axis0, axis1, radius0, radius1, radius2);
+  }
+
+  // Extract confidence and originator
+  if (confidence) *confidence = property->Operand(15);
+  if (originator) *originator = (int) (property->Operand(16) + 0.5);
+
+  // Return property
+  return property;
+}
+
+
+
+int
+SetObjectOBBProperty(R3SurfelObject *object,
+  const R3OrientedBox& obb, double confidence, int originator)
+{
+  // Constants for OBB property
+  static const int property_type = R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY;
+  static const int noperands = 20;
+
+  // Get/create object property
+  R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
+  if (!property) property = CreateObjectProperty(object, property_type);
+  if (!property) return 0;
+
+  // Check number of operands
+  if (property->NOperands() != noperands) return 0;
+
+  // Fill property operands
+  double operands[noperands];
+  operands[0] = obb.Center().X();
+  operands[1] = obb.Center().Y();
+  operands[2] = obb.Center().Z();
+  operands[3] = obb.Axis(0).X();
+  operands[4] = obb.Axis(0).Y();
+  operands[5] = obb.Axis(0).Z();
+  operands[6] = obb.Axis(1).X();
+  operands[7] = obb.Axis(1).Y();
+  operands[8] = obb.Axis(1).Z();
+  operands[9] = obb.Axis(2).X();
+  operands[10] = obb.Axis(2).Y();
+  operands[11] = obb.Axis(2).Z();
+  operands[12] = obb.Radius(0);
+  operands[13] = obb.Radius(1);
+  operands[14] = obb.Radius(2);
+  operands[15] = confidence;
+  operands[16] = originator;
+  operands[17] = 0;
+  operands[18] = 0;
+  operands[19] = 0;
+
+  // Set property operands
+  property->ResetOperands(operands, noperands);
+  
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Label creation
 ////////////////////////////////////////////////////////////////////////
 
