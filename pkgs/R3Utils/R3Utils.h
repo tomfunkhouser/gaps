@@ -8,17 +8,45 @@
 
 namespace gaps {
 class R3Segmentation;
+class R3OrientedBoxManipulator;
+class R3SurfelViewer;
+class R3SurfelSegmenter;
+class R3SurfelClassifier;
+class R3SurfelLabeler;
+class R3SurfelLabelerCommand;
 }
 
 
 
 /* Dependency include files */
 
-#include "R3Shapes/R3Shapes.h"
+#include "R3Graphics/R3Graphics.h"
+#include "R3Surfels/R3Surfels.h"
 
 
 
-/* Utility include files */
+/* Viewing utility include files */
+
+#include "R3SurfelViewer.h"
+
+
+
+/* Labeling utility include files */
+
+#include "R3SurfelSegmenter.h"
+#include "R3SurfelClassifier.h"
+#include "R3SurfelLabeler.h"
+#include "R3SurfelLabelerCommand.h"
+
+
+
+/* Manipulation utility include files */
+
+#include "R3OrientedBoxManipulator.h"
+
+
+
+/* Processing utility include files */
 
 #include "R3Segmentation.h"
 

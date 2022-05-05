@@ -67,11 +67,6 @@ class R3SurfelLabelRelationship;
 class R3SurfelLabelAssignment;
 typedef R3SurfelLabelAssignment R3SurfelObjectAssignment;
 class R3SurfelScene;
-class R3SurfelViewer;
-class R3SurfelSegmenter;
-class R3SurfelClassifier;
-class R3SurfelLabelerCommand;
-class R3SurfelLabeler;
 }
 
 
@@ -110,11 +105,6 @@ class R3SurfelLabeler;
 /* Utility include files */
 
 #include "R3SurfelUtils.h"
-#include "R3SurfelViewer.h"
-#include "R3SurfelSegmenter.h"
-#include "R3SurfelClassifier.h"
-#include "R3SurfelLabelerCommand.h"
-#include "R3SurfelLabeler.h"
 
 
 

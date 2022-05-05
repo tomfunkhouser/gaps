@@ -7,8 +7,7 @@
 // Include files
 ////////////////////////////////////////////////////////////////////////
 
-#include "R3Graphics/R3Graphics.h"
-#include "R3Surfels/R3Surfels.h"
+#include "R3Utils/R3Utils.h"
 #include <GLFW/glfw3.h>
 #include "io.h"
 #include "ui.h"

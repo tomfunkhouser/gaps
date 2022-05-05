@@ -894,7 +894,7 @@ Draw(RNFlags flags) const
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
       if (c) RNLoadRgb(point->Color());
-      if (id) LoadUnsignedInt(point->Identifier());
+      if (id) RNLoadRgba(point->Identifier());
       else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
       for (int j = 0; j < nsides; j++) {
@@ -917,7 +917,7 @@ Draw(RNFlags flags) const
     for (int i = 0; i < NPoints(); i++) {
       const R3SurfelPoint *point = Point(i);
       if (c) RNLoadRgb(point->Color());
-      if (id) LoadUnsignedInt(point->Identifier());
+      if (id) RNLoadRgba(point->Identifier());
       else if (n) R3LoadNormal(point->Normal());
       R3LoadPoint(point->Position());
     }

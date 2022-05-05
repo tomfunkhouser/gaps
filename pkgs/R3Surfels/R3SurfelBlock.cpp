@@ -1437,7 +1437,7 @@ Draw(RNFlags flags, int subsampling_factor) const
       if (r1 <= 0) r1 = 0.1;
       if (r2 <= 0) r2 = r1;
       if (c) RNLoadRgb(surfel.ColorPtr());
-      if (id) LoadUnsignedInt(surfel.Identifier());
+      if (id) RNLoadRgba(surfel.Identifier());
       else if (n) R3LoadNormal(normal);
       R3Point p[nsides];
       for (int j = 0; j < nsides; j++) {
@@ -1460,7 +1460,7 @@ Draw(RNFlags flags, int subsampling_factor) const
     for (int i = 0; i < NSurfels(); i += subsampling_factor) {
       const R3Surfel& surfel = surfels[i];
       if (c) RNLoadRgb(surfel.ColorPtr());
-      if (id) LoadUnsignedInt(surfel.Identifier());
+      if (id) RNLoadRgba(surfel.Identifier());
       else if (n) R3LoadNormal(surfel.NX(), surfel.NY(), surfel.NZ());
       R3LoadPoint(surfel.PositionPtr());
     }

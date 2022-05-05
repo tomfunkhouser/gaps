@@ -749,6 +749,20 @@ RNLoadRgba(double rgba[4])
 
 
 
+inline void 
+RNLoadRgba(unsigned int value)
+{
+  // Load identifer
+  unsigned char rgba[4];
+  rgba[0] = value & 0xFF;
+  rgba[1] = (value >> 8) & 0xFF;
+  rgba[2] = (value >> 16) & 0xFF;
+  rgba[3] = (value >> 24) & 0xFF;
+  RNLoadRgba(rgba);
+}
+
+
+  
 ////////////////////////////////////////////////////////////
 // Image drawing functions
 ////////////////////////////////////////////////////////////

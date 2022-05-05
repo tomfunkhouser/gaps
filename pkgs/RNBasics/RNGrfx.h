@@ -184,9 +184,10 @@ void RNLoadRgba(double r, double g, double b, double a);
 void RNLoadRgba(unsigned char rgba[4]);
 void RNLoadRgba(const float rgba[4]);
 void RNLoadRgba(const double rgba[4]);
+void RNLoadRgba(unsigned int value);
 
 
-  
+ 
 /* Text drawing functions */
 
 void R2DrawText(double x, double y, const char *str, void *font = NULL);

@@ -10,7 +10,8 @@ CCSRCS=$(NAME).cpp
 # Dependency libraries
 #
 
-PKG_LIBS=-lR3Surfels -lR3Graphics -lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng
+PKG_LIBS=-lR3Utils -lR3Surfels -lR3Graphics -lR3Shapes -lR2Shapes -lRNBasics -ljpeg -lpng
+
 
 #
 # R3 application makefile
