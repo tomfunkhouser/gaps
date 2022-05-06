@@ -72,7 +72,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     normal_color(0,1,0),
     background_color(0,0,0),
     object_principal_axes_color(0,1,1),
-    object_oriented_bbox_color(0,0,1),
+    object_oriented_bbox_color(0.25,0.5,1),
     object_bbox_color(0,1,1),
     node_bbox_color(0,0,1),
     block_bbox_color(0,1,0),
