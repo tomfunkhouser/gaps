@@ -101,8 +101,8 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
       R3Point position1 = oriented_box.Corner(octant1);
       R2Point projection0 = viewer.ViewportPoint(position0);
       R2Point projection1 = viewer.ViewportPoint(position1);
-      if (!R2Contains(viewport_bbox, projection0)) continue;
-      if (!R2Contains(viewport_bbox, projection1)) continue;
+      if (R2Contains(R2infinite_point, projection0)) continue;
+      if (R2Contains(R2infinite_point, projection1)) continue;
       R2Span edge(projection0, projection1);
       if (RNIsZero(edge.Length())) continue;
       RNScalar d = R2Distance(edge, cursor_position);
