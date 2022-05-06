@@ -270,6 +270,39 @@ Check(const R3Point& point) const
 
 
 ////////////////////////////////////////////////////////////////////////
+// ORIENTED BOX CONSTRAINT FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelOrientedBoxConstraint::
+R3SurfelOrientedBoxConstraint(const R3OrientedBox& box)
+  : box(box)
+{
+}
+
+
+
+int R3SurfelOrientedBoxConstraint::
+Check(const R3Box& query) const
+{
+  // Return whether box contains/intersects query
+  if (R3Contains(box, query)) return R3_SURFEL_CONSTRAINT_PASS;
+  else if (R3Intersects(box, query)) return R3_SURFEL_CONSTRAINT_MAYBE;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+
+int R3SurfelOrientedBoxConstraint::
+Check(const R3Point& point) const
+{
+  // Return whether box contains point
+  if (R3Contains(box, point)) return R3_SURFEL_CONSTRAINT_PASS;
+  return R3_SURFEL_CONSTRAINT_FAIL;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // CYLINDER CONSTRAINT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 

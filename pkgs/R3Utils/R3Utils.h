@@ -31,12 +31,9 @@ class R3SurfelLabelerCommand;
 
 
 
-/* Labeling utility include files */
+/* Processing utility include files */
 
-#include "R3SurfelSegmenter.h"
-#include "R3SurfelClassifier.h"
-#include "R3SurfelLabeler.h"
-#include "R3SurfelLabelerCommand.h"
+#include "R3Segmentation.h"
 
 
 
@@ -46,9 +43,12 @@ class R3SurfelLabelerCommand;
 
 
 
-/* Processing utility include files */
+/* Labeling utility include files */
 
-#include "R3Segmentation.h"
+#include "R3SurfelSegmenter.h"
+#include "R3SurfelClassifier.h"
+#include "R3SurfelLabeler.h"
+#include "R3SurfelLabelerCommand.h"
 
 
 

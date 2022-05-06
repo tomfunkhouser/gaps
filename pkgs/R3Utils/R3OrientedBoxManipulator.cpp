@@ -406,8 +406,14 @@ DrawNose(void) const
   // Check oriented box
   if (oriented_box.IsEmpty()) return;
 
-  // Draw nose vector
+  // Get nose vector length
+  double min_nose_vector_length = 1;
   double nose_vector_length = 0.5 * oriented_box.Radius(0);
+  if (nose_vector_length < min_nose_vector_length) {
+    nose_vector_length = min_nose_vector_length;
+  }
+
+  // Draw nose vector
   R3Point start = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
   R3Point end = start + nose_vector_length * oriented_box.Axis(0);
   R3Span(start, end).Draw();
@@ -418,18 +424,30 @@ DrawNose(void) const
 void R3OrientedBoxManipulator::
 DrawAnchor(void) const
 {
+  // Check manipulation type
+  if (manipulation_type == R3_NO_MANIPULATION) return;
+
   // Check oriented box
   if (oriented_box.IsEmpty()) return;
-  if (selection_corner0 < 0) return;
-  if (selection_corner1 < 0) return;
-  if (selection_t < 0) return;
-  if (selection_t > 1) return;
 
+  // Compute anchor radius
+  RNLength radius = 0.05 * oriented_box.DiagonalRadius();
+  
   // Draw anchor position
-  R3Point p0 = oriented_box.Corner(selection_corner0);
-  R3Point p1 = oriented_box.Corner(selection_corner1);
-  R3Point anchor_position = (1-selection_t)*p0 + selection_t*p1;
-  R3Sphere(anchor_position, 0.05 * oriented_box.DiagonalRadius()).Draw();
+  if (manipulation_type == R3_ROTATION_MANIPULATION) {
+    R3Point anchor_position = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
+    R3Sphere(anchor_position, radius).Draw();
+  }
+  else if (manipulation_type == R3_SCALE_MANIPULATION) {
+    if (selection_corner0 < 0) return;
+    if (selection_corner1 < 0) return;
+    if (selection_t < 0) return;
+    if (selection_t > 1) return;
+    R3Point p0 = oriented_box.Corner(selection_corner0);
+    R3Point p1 = oriented_box.Corner(selection_corner1);
+    R3Point anchor_position = (1-selection_t)*p0 + selection_t*p1;
+    R3Sphere(anchor_position, radius).Draw();
+  }
 }
 
 
@@ -440,7 +458,9 @@ Draw(void) const
   // Draw everything
   DrawOrientedBox();
   DrawNose();
-  DrawAnchor();
+  if (IsManipulating()) {
+    DrawAnchor();
+  }
 }
 
 

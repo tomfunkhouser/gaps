@@ -30,25 +30,25 @@ public:
   R3OrientedBoxManipulator(void);
   R3OrientedBoxManipulator(const R3OrientedBox& oriented_box);
 
-  // Property functions
+  // Oriented box query functions
   const R3OrientedBox& OrientedBox(void) const;
-
-  // Property setting functions
-  void SetOrientedBox(const R3OrientedBox& oriented_box);
-  void RotateOrientedBox(RNAngle theta);
-  void Reset(void);
   
-  // High-level manipulation functions
-  int BeginManipulation(const R3Viewer& viewer, int x, int y);
-  int UpdateManipulation(const R3Viewer& viewer, int x, int y);
-  void EndManipulation(void);
-
   // Manipulation status query functions
   int ManipulationType(void) const;
   RNBoolean IsManipulating(void) const;
   RNBoolean IsRotating(void) const;
   RNBoolean IsScaling(void) const;
   RNBoolean IsTranslating(void) const;
+  
+  // High-level manipulation functions
+  int BeginManipulation(const R3Viewer& viewer, int x, int y);
+  int UpdateManipulation(const R3Viewer& viewer, int x, int y);
+  void EndManipulation(void);
+
+  // Property setting functions
+  void SetOrientedBox(const R3OrientedBox& oriented_box);
+  void RotateOrientedBox(RNAngle theta);
+  void Reset(void);
   
   // Draw functions
   void Draw(void) const;

@@ -142,6 +142,21 @@ private:
 
 
 
+class R3SurfelOrientedBoxConstraint : public R3SurfelConstraint {
+public:
+  // Constructor functions
+  R3SurfelOrientedBoxConstraint(const R3OrientedBox& box);
+
+  // Surfel check functions
+  virtual int Check(const R3Point& point) const;
+  virtual int Check(const R3Box& box) const;
+
+private:
+  R3OrientedBox box;
+};
+
+
+
 class R3SurfelCylinderConstraint : public R3SurfelConstraint {
 public:
   // Constructor functions

@@ -905,9 +905,10 @@ RNBoolean R3Contains(const R3Box& box, const R3Line& line)
 {
     // Return whether box contains line
     if (box.IsEmpty()) return FALSE;
-    if (box.IsFinite()) return FALSE;
-    RNAbort("Not Implemented");
-    return FALSE;
+    if (RNIsFinite(box.XLength())) return FALSE;
+    if (RNIsFinite(box.YLength())) return FALSE;
+    if (RNIsFinite(box.ZLength())) return FALSE;
+    return TRUE;
 }
 
 
@@ -916,9 +917,10 @@ RNBoolean R3Contains(const R3Box& box, const R3Ray& ray)
 {
     // Return whether box contains ray
     if (box.IsEmpty()) return FALSE;
-    if (box.IsFinite()) return FALSE;
-    RNAbort("Not Implemented");
-    return FALSE;
+    if (RNIsFinite(box.XLength())) return FALSE;
+    if (RNIsFinite(box.YLength())) return FALSE;
+    if (RNIsFinite(box.ZLength())) return FALSE;
+    return TRUE;
 }
 
 
@@ -937,9 +939,10 @@ RNBoolean R3Contains(const R3Box& box, const R3Plane& plane)
 {
     // Return whether box contains plane
     if (box.IsEmpty()) return FALSE;
-    if (box.IsFinite()) return FALSE;
-    RNAbort("Not Implemented");
-    return FALSE;
+    if (RNIsFinite(box.XLength())) return FALSE;
+    if (RNIsFinite(box.YLength())) return FALSE;
+    if (RNIsFinite(box.ZLength())) return FALSE;
+    return TRUE;
 }
 
 
@@ -1036,7 +1039,9 @@ RNBoolean R3Contains(const R3OrientedBox& box, const R3Point& point)
 RNBoolean R3Contains(const R3OrientedBox& box, const R3Line& line)
 {
     // Return whether box contains line
-    if (box.IsFinite()) return FALSE;
+    if (RNIsFinite(box.Radius(RN_X))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Y))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Z))) return FALSE;
     return TRUE;
 }
 
@@ -1045,7 +1050,9 @@ RNBoolean R3Contains(const R3OrientedBox& box, const R3Line& line)
 RNBoolean R3Contains(const R3OrientedBox& box, const R3Ray& ray)
 {
     // Return whether box contains ray
-    if (box.IsFinite()) return FALSE;
+    if (RNIsFinite(box.Radius(RN_X))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Y))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Z))) return FALSE;
     return TRUE;
 }
 
@@ -1064,7 +1071,9 @@ RNBoolean R3Contains(const R3OrientedBox& box, const R3Span& span)
 RNBoolean R3Contains(const R3OrientedBox& box, const R3Plane& plane)
 {
     // Return whether box contains plane
-    if (box.IsFinite()) return FALSE;
+    if (RNIsFinite(box.Radius(RN_X))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Y))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Z))) return FALSE;
     return TRUE;
 }
 
@@ -1073,7 +1082,9 @@ RNBoolean R3Contains(const R3OrientedBox& box, const R3Plane& plane)
 RNBoolean R3Contains(const R3OrientedBox& box, const R3Halfspace& halfspace)
 {
     // Return whether box contains halfspace
-    if (box.IsFinite()) return FALSE;
+    if (RNIsFinite(box.Radius(RN_X))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Y))) return FALSE;
+    if (RNIsFinite(box.Radius(RN_Z))) return FALSE;
     return TRUE;
 }
 
@@ -1085,7 +1096,7 @@ RNBoolean R3Contains(const R3OrientedBox& box1, const R3Box& box2)
     if (box1.IsEmpty()) return FALSE;
     if (box2.IsEmpty()) return FALSE;
 
-    // Return whether each halfspace contains point
+    // Return whether each halfspace contains box
     for (int dir = 0; dir < 2; dir++) {
       for (int dim = 0; dim < 3; dim++) {
         R3Halfspace halfspace(-box1.Plane(dir, dim), 0);
@@ -1107,7 +1118,7 @@ RNBoolean R3Contains(const R3OrientedBox& box1, const R3OrientedBox& box2)
     if (box1.IsEmpty()) return FALSE;
     if (box2.IsEmpty()) return FALSE;
 
-    // Return whether each halfspace contains point
+    // Return whether each halfspace contains box
     for (int dir = 0; dir < 2; dir++) {
       for (int dim = 0; dim < 3; dim++) {
         R3Halfspace halfspace(-box1.Plane(dir, dim), 0);

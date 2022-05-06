@@ -30,6 +30,8 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     classify_after_change_label(0),
     segmenter(scene),
     segment_after_change_label(0),
+    obb_manipulator(),
+    obb_manipulator_visibility(0),
     selection_objects(),
     selection_visibility(1),
     current_command(NULL),
@@ -237,6 +239,25 @@ DrawObjectLabels(void) const
   glPopMatrix();
   glMatrixMode(GL_MODELVIEW);
   glPopMatrix();
+}
+
+
+
+void R3SurfelLabeler::
+DrawOBBManipulator(void) const
+{
+  // Check visibility
+  if (!obb_manipulator_visibility) return;
+  
+  // Check oriented box
+  if (obb_manipulator.OrientedBox().IsEmpty()) return;
+
+  // Draw the oriented box manipulator
+  glDisable(GL_LIGHTING);
+  glLineWidth(5);
+  RNLoadRgb(0.5, 0.5, 1);
+  obb_manipulator.Draw();
+  glLineWidth(1);
 }
 
 
@@ -523,12 +544,13 @@ Redraw(void)
   // Draw labeling stuff
   DrawObjectSelections();
   DrawObjectLabels();
+  DrawOBBManipulator();
   DrawStatus();
   DrawMessage();
   DrawCommandMenu();
   DrawLabelMenu();
   DrawAttributeMenu();
-
+  
   // Draw select stuff
   DrawRubberBox(FALSE, TRUE);
   DrawRubberLine(FALSE, TRUE);
@@ -597,30 +619,37 @@ MouseMotion(int x, int y)
     }
   }
   else if (mouse_button[0] || mouse_button[1] || mouse_button[2]) {
-    // Set viewing center point
-    R3Point viewing_center_point = center_point;
-    const R3Camera& camera = viewer.Camera();
-    const R2Viewport& viewport = viewer.Viewport();
-    R3Plane camera_plane(camera.Origin(), camera.Towards());
-    RNScalar signed_distance = R3SignedDistance(camera_plane, viewing_center_point);
-    if (signed_distance < 0) viewing_center_point -= (signed_distance - 1) * camera.Towards();
-    R2Point screen_point = viewer.ViewportPoint(viewing_center_point);
-    if ((NObjectSelections() == 0) || !R2Contains(viewer.Viewport().BBox(), screen_point)) {
-      R3Ray world_ray = viewer.WorldRay(viewport.XCenter(), viewport.YCenter());
-      R3Plane world_plane(0, 0, 1, -viewing_center_point[2]);
-      R3Intersects(world_ray.Line(), world_plane, &viewing_center_point);
-      viewing_center_point = scene->BBox().ClosestPoint(viewing_center_point);
+    if (obb_manipulator_visibility && obb_manipulator.IsManipulating()) {
+      if (obb_manipulator.UpdateManipulation(viewer, x, y)) {
+        redraw = 1;
+      }
     }
+    else {
+      // Set viewing center point
+      R3Point viewing_center_point = center_point;
+      const R3Camera& camera = viewer.Camera();
+      const R2Viewport& viewport = viewer.Viewport();
+      R3Plane camera_plane(camera.Origin(), camera.Towards());
+      RNScalar signed_distance = R3SignedDistance(camera_plane, viewing_center_point);
+      if (signed_distance < 0) viewing_center_point -= (signed_distance - 1) * camera.Towards();
+      R2Point screen_point = viewer.ViewportPoint(viewing_center_point);
+      if ((NObjectSelections() == 0) || !R2Contains(viewer.Viewport().BBox(), screen_point)) {
+        R3Ray world_ray = viewer.WorldRay(viewport.XCenter(), viewport.YCenter());
+        R3Plane world_plane(0, 0, 1, -viewing_center_point[2]);
+        R3Intersects(world_ray.Line(), world_plane, &viewing_center_point);
+        viewing_center_point = scene->BBox().ClosestPoint(viewing_center_point);
+      }
   
-    // World in hand navigation 
-    if (mouse_button[0]) RotateWorld(1.0, viewing_center_point, x, y, dx, dy);
-    // else if (shift_down && (mouse_button[1] || mouse_button[2])) viewer.ScaleWorld(2.0, viewing_center_point, x, y, dx, dy);
-    // else if (ctrl_down && (mouse_button[1] || mouse_button[2])) viewer.TranslateWorld(2.0, viewing_center_point, x, y, dx, dy);
-    else if (mouse_button[1]) viewer.ScaleWorld(2.0, viewing_center_point, x, y, dx, dy);
-    else if (mouse_button[2]) viewer.TranslateWorld(2.0, viewing_center_point, x, y, dx, dy);
-    if (mouse_button[0] || mouse_button[1] || mouse_button[2]) redraw = 1;
+      // World in hand navigation 
+      if (mouse_button[0]) RotateWorld(1.0, viewing_center_point, x, y, dx, dy);
+      // else if (shift_down && (mouse_button[1] || mouse_button[2])) viewer.ScaleWorld(2.0, viewing_center_point, x, y, dx, dy);
+      // else if (ctrl_down && (mouse_button[1] || mouse_button[2])) viewer.TranslateWorld(2.0, viewing_center_point, x, y, dx, dy);
+      else if (mouse_button[1]) viewer.ScaleWorld(2.0, viewing_center_point, x, y, dx, dy);
+      else if (mouse_button[2]) viewer.TranslateWorld(2.0, viewing_center_point, x, y, dx, dy);
+      if (mouse_button[0] || mouse_button[1] || mouse_button[2]) redraw = 1;
+    }
   }
-
+  
   // Remember mouse position 
   mouse_position[0] = x;
   mouse_position[1] = y;
@@ -643,8 +672,14 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
 
   // Process mouse button event
   if (state == 1) { // Down
+    // Process command
+    obb_manipulator.ResetManipulation();
     if (!click_polygon_active) {
-      if ((button == 0) && (shift || ctrl)) {
+      if ((button == 0) && obb_manipulator_visibility &&
+          obb_manipulator.BeginManipulation(viewer, x, y)) {
+        redraw = 1;
+      }
+      else if ((button == 0) && (shift || ctrl)) {
         // Start select polygon
         select_polygon_active = TRUE;
         rubber_polygon_points[0] = R2Point(x, y);
@@ -689,7 +724,15 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
     last_mouse_down_time.Read();
 
     // Process command
-    if (select_box_active) {
+    if (obb_manipulator_visibility && obb_manipulator.IsManipulating()) {
+      if (NObjectSelections() == 1) {
+        R3SurfelObject *object = ObjectSelection(0);
+        R3OrientedBox obb = obb_manipulator.OrientedBox();
+        SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
+        redraw = 1;
+      }
+    }
+    else if (select_box_active) {
       if (0 && drag && !double_click) {
         // Get box
         R2Box box = R2null_box;
@@ -786,7 +829,8 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
 
     // Process click commands
     if (button == 0) {
-      if (!drag && !double_click && !click_polygon_active) {
+      if (!drag && !double_click && !click_polygon_active &&
+          (!obb_manipulator_visibility || !obb_manipulator.IsManipulating())) {
         if (alt) {
           // Start click polygon
           num_rubber_polygon_points = 2;
@@ -805,6 +849,9 @@ MouseButton(int x, int y, int button, int state, int shift, int ctrl, int alt, i
         }
       }
     }
+
+    // Update obb manipulator
+    UpdateOBBManipulator();
   }
 
   // Return whether need redraw
@@ -833,10 +880,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     // Make sure does not conflict with keys used by R3SurfelViewer
     switch(key) {
     case 'B':
+      SetOBBManipulatorVisibility(-1);
+      redraw = 1;
+      break;
+
     case 'b':
       // Copied from R3SurfelViewer
-      SetImagePlaneVisibility(-1);
-      SelectImage(selected_image, FALSE, FALSE);
+      SetObjectOrientedBBoxVisibility(-1);
       redraw = 1;
       break;
 
@@ -1067,7 +1117,11 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break; }
 
-    case 'I':
+    case 'I': // Shift-Tab
+      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
+      redraw = 1;
+      break;
+      
     case 'i': // Tab
       SelectSuggestedObject();
       redraw = 1;
@@ -1089,6 +1143,28 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       // redraw = 1;
       break;
       
+    case 'O':
+    case 'o':
+      if (obb_manipulator_visibility) {
+        if (!obb_manipulator.OrientedBox().IsEmpty()) {
+          if (NObjectSelections() == 1) {
+            R3OrientedBox obb;
+            RNScalar confidence;
+            int originator;
+            R3SurfelObject *object = ObjectSelection(0);
+            if (GetObjectOBBProperty(object, &obb, &confidence, &originator)) {
+              SplitSelectedObjects();
+              if (NObjectSelections() == 1) {
+                R3SurfelObject *object = ObjectSelection(0);
+                SetObjectOBBProperty(object, obb, confidence, originator);
+              }
+              redraw = 1;
+            }
+          }
+        }
+      }
+      break;
+
     case 'P':
     case 'p':
       // classifier.PredictLabelAssignments();
@@ -1192,16 +1268,10 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break;
 
-#if 0
     case R3_SURFEL_VIEWER_LEFT_KEY:
-      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
-      redraw = 1;
       break;
-#endif
       
     case R3_SURFEL_VIEWER_RIGHT_KEY:
-      SelectSuggestedObject();
-      redraw = 1;
       break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
@@ -1258,6 +1328,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       break;
     }
   }
+
+  // Update obb manipulator
+  UpdateOBBManipulator();
 
   // Return whether need redraw
   return redraw;
@@ -1386,7 +1459,7 @@ SelectPickedObject(int x, int y, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
   R3SurfelNode *node = PickNode(x, y, &pick_point, NULL, NULL, TRUE);
   R3SurfelObject *object = (node) ? node->Object(TRUE) : NULL;
   if (!object && (shift || selection_objects.IsEmpty())) return 0;
-
+  
   // Find top level object
   while (object && object->Parent() && (object->Parent() != scene->RootObject())) {
     object = object->Parent();
@@ -1400,9 +1473,13 @@ SelectPickedObject(int x, int y, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
     else SetMessage("Selected 1 object / %s", label_name);
   }
 
-  // Begin logging command 
-  BeginCommand(R3_SURFEL_LABELER_SELECT_PICKED_COMMAND);
+  // Note: center_point got updated in R3SurfelViewer::PickNode
+  // So, center_point stored with this command is new one
+  // Old center_point will not be restored with undo
   
+  // Begin logging command
+  BeginCommand(R3_SURFEL_LABELER_SELECT_PICKED_COMMAND);
+
   // Remove previous selections
   if (!ctrl && !shift) EmptyObjectSelections();
  
@@ -2711,12 +2788,8 @@ SplitSelectedObjects(void)
   R3SurfelConstraint *constraint = NULL;
   if (!R2Contains(rubber_line_points[0], rubber_line_points[1])) {
     // Create plane constraint based on split line
-    int ix0 = (int) (rubber_line_points[0].X() + 0.5);
-    int iy0 = (int) (rubber_line_points[0].Y() + 0.5);
-    int ix1 = (int) (rubber_line_points[1].X() + 0.5);
-    int iy1 = (int) (rubber_line_points[1].Y() + 0.5);
-    R3Ray ray0 = viewer.WorldRay(ix0, iy0);
-    R3Ray ray1 = viewer.WorldRay(ix1, iy1);
+    R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
+    R3Ray ray1 = viewer.WorldRay(rubber_line_points[1].X(), rubber_line_points[1].Y());
     R3Plane plane(ray0.Start(), ray0.Vector(), ray1.Vector());
     static R3SurfelPlaneConstraint plane_constraint(R3null_plane, TRUE, FALSE, TRUE);
     plane_constraint = R3SurfelPlaneConstraint(plane, TRUE, FALSE, FALSE);
@@ -2735,9 +2808,15 @@ SplitSelectedObjects(void)
    view_constraint = R3SurfelViewConstraint(viewer, &split_image, FALSE);
    constraint = &view_constraint;
   }
+  else if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+    // Create obb constraint based on obb manipulator
+    static R3SurfelOrientedBoxConstraint obb_constraint(R3null_oriented_box);
+    obb_constraint = R3SurfelOrientedBoxConstraint(obb_manipulator.OrientedBox());
+    constraint = &obb_constraint;
+  }
   else {
     // Print error message
-    SetMessage("Must drag out a curve if you want to split selected object(s)");
+    SetMessage("Must specify a region if you want to split selected object(s)");
     return 0;
   }
 
@@ -2962,6 +3041,9 @@ Undo(void)
 
   // Set camera
   viewer.SetCamera(command->camera);
+
+  // Set center point
+  SetCenterPoint(command->center_point);
 
   // Set message
   SetMessage("Undid last %s command", command_names[command->type]);
@@ -4546,6 +4628,32 @@ PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shi
 
   // No label picked
   return 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// OBB Manipulator functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelLabeler::
+UpdateOBBManipulator(void)
+{
+  // Check visibility
+  if (!obb_manipulator_visibility) return;
+
+  // Reset obb manipulation
+  obb_manipulator.ResetManipulation();
+
+  // Get obb from selected object
+  R3OrientedBox obb = R3null_oriented_box;
+  if (NObjectSelections() == 1) {
+    R3SurfelObject *object = ObjectSelection(0);
+    GetObjectOBBProperty(object, &obb);
+  }
+
+  // Set oriented box in obb manipulator
+  obb_manipulator.SetOrientedBox(obb);
 }
 
 

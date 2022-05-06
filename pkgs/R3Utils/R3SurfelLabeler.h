@@ -100,6 +100,7 @@ public:
   // Subwindow/menu properties
   const char *Message(void) const;
   int SelectionVisibility(void) const;
+  int OBBManipulatorVisibility(void) const;
   int MessageVisibility(void) const;
   int StatusVisibility(void) const;
   int CommandMenuVisibility(void) const;
@@ -132,6 +133,7 @@ public:
   // Subwindow/menu manipulation (visibility: 0=off, 1=on, -1=toggle)
   virtual void SetMessage(const char *fmt, ...);
   virtual void SetSelectionVisibility(int visibility);
+  virtual void SetOBBManipulatorVisibility(int visibility);
   virtual void SetMessageVisibility(int visibility);
   virtual void SetStatusVisibility(int visibility);
   virtual void SetCommandMenuVisibility(int visibility);
@@ -214,6 +216,9 @@ public:
   virtual void DrawLabelMenu(void) const;
   virtual int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
   
+  // OBB manipulator functions
+  virtual void UpdateOBBManipulator(void);
+  
   
   /////////////////////////////////////
   //// LOW_LEVEL INPUT FUNCTIONS ////
@@ -227,10 +232,13 @@ public:
   //// LOW_LEVEL DRAWING FUNCTIONS ////
   /////////////////////////////////////
 
-  // Message window functions
+  // Oriented box manipulator drawing functions
+  virtual void DrawOBBManipulator(void) const;
+  
+  // Message window drawing functions
   virtual void DrawMessage(void) const;
 
-  // Status window functions
+  // Status window drawing functions
   virtual void DrawStatus(void) const;
 
   // Lasso drawing functions
@@ -267,6 +275,10 @@ protected:
   R3SurfelSegmenter segmenter;
   int segment_after_change_label;
 
+  // Oriented box manipulator
+  R3OrientedBoxManipulator obb_manipulator;
+  int obb_manipulator_visibility;
+  
   // Object selections
   RNArray<R3SurfelObject *> selection_objects;
   int selection_visibility;
@@ -353,6 +365,15 @@ SelectionVisibility(void) const
 
 
 inline int R3SurfelLabeler::
+OBBManipulatorVisibility(void) const
+{
+  // Return obb manipulator visibililty
+  return obb_manipulator_visibility;
+}
+
+
+
+inline int R3SurfelLabeler::
 MessageVisibility(void) const
 {
   // Return message visibililty
@@ -432,6 +453,17 @@ SetSelectionVisibility(int visibility)
   if (visibility == -1) selection_visibility = 1 - selection_visibility;
   else if (visibility == 0) selection_visibility = 0;
   else selection_visibility = 1;
+}
+
+
+
+inline void R3SurfelLabeler::
+SetOBBManipulatorVisibility(int visibility)
+{
+  // Set obb manipulator visibililty
+  if (visibility == -1) obb_manipulator_visibility = 1 - obb_manipulator_visibility;
+  else if (visibility == 0) obb_manipulator_visibility = 0;
+  else obb_manipulator_visibility = 1;
 }
 
 
