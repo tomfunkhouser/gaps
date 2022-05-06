@@ -55,6 +55,15 @@ R3OrientedBoxManipulator(const R3OrientedBox& oriented_box)
 int R3OrientedBoxManipulator::
 BeginManipulation(const R3Viewer& viewer, int x, int y)
 {
+  // Useful constants defining pairs of corners for all edges
+  static const int nedges = 12;
+  static const int edges[nedges][2] =
+    { { RN_NNN_OCTANT, RN_PNN_OCTANT }, { RN_NNN_OCTANT, RN_NPN_OCTANT }, { RN_NNN_OCTANT, RN_NNP_OCTANT },
+      { RN_PNN_OCTANT, RN_PPN_OCTANT }, { RN_PNN_OCTANT, RN_PNP_OCTANT }, 
+      { RN_NPN_OCTANT, RN_NPP_OCTANT }, { RN_NPN_OCTANT, RN_PPN_OCTANT },
+      { RN_NNP_OCTANT, RN_NPP_OCTANT }, { RN_NNP_OCTANT, RN_PNP_OCTANT },
+      { RN_NPP_OCTANT, RN_PPP_OCTANT }, { RN_PNP_OCTANT, RN_PPP_OCTANT }, { RN_PPN_OCTANT, RN_PPP_OCTANT } };
+
   // Reset manipulation
   ResetManipulation();
   ResetSelection();
@@ -69,23 +78,25 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
   R2Point cursor_position(x, y);
 
   // Check corners
-  for (int octant = 0; octant < RN_NUM_OCTANTS; octant++) {
-    R3Point position = oriented_box.Corner(octant);
-    R2Point projection = viewer.ViewportPoint(position);
-    if (!R2Contains(viewport_bbox, projection)) continue;
-    RNScalar dd = R2SquaredDistance(projection, cursor_position);
-    if (dd > max_squared_distance) continue;
-    selection_corner0 = octant;
-    selection_corner1 = octant;
-    selection_t = 0.0;
-    manipulation_type = R3_SCALE_MANIPULATION;
+  if (manipulation_type == R3_NO_MANIPULATION) {
+    for (int octant = 0; octant < RN_NUM_OCTANTS; octant++) {
+      R3Point position = oriented_box.Corner(octant);
+      R2Point projection = viewer.ViewportPoint(position);
+      if (!R2Contains(viewport_bbox, projection)) continue;
+      RNScalar dd = R2SquaredDistance(projection, cursor_position);
+      if (dd > max_squared_distance) continue;
+      selection_corner0 = octant;
+      selection_corner1 = octant;
+      selection_t = 0.0;
+      manipulation_type = R3_SCALE_MANIPULATION;
+    }
   }
 
   // Check edges
-  for (int octant0 = 0; octant0 < RN_NUM_OCTANTS; octant0++) {
-    for (int shift = 0; shift <= 2; shift++) {
-      int octant1 = octant0 ^ (0x1 << shift);
-      if (octant1 < octant0) continue;
+  if (manipulation_type == R3_NO_MANIPULATION) {
+    for (int i = 0; i < nedges; i++) {
+      int octant0 = edges[i][0];
+      int octant1 = edges[i][1];
       R3Point position0 = oriented_box.Corner(octant0);
       R3Point position1 = oriented_box.Corner(octant1);
       R2Point projection0 = viewer.ViewportPoint(position0);
@@ -107,19 +118,24 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
   }
 
   // Check nose
-  double nose_vector_length = 0.5 * oriented_box.Radius(0);
-  R3Point position0 = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
-  R3Point position1 = position0 + nose_vector_length * oriented_box.Axis(0);
-  R2Point projection0 = viewer.ViewportPoint(position0);
-  R2Point projection1 = viewer.ViewportPoint(position1);
-  R2Span nose(projection0, projection1);
-  if (RNIsPositive(nose.Length())) {
-    RNScalar d = R2Distance(nose, cursor_position);
-    if (d < max_distance) {
-      selection_corner0 = RN_PNP_OCTANT;
-      selection_corner1 = RN_PPP_OCTANT;
-      selection_t = 0.5;
-      manipulation_type = R3_ROTATION_MANIPULATION;
+  if (manipulation_type == R3_NO_MANIPULATION) {
+    double min_nose_vector_length = 1;
+    double nose_vector_length = 0.5 * oriented_box.Radius(0);
+    if (nose_vector_length < min_nose_vector_length) 
+      nose_vector_length = min_nose_vector_length;
+    R3Point position0 = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
+    R3Point position1 = position0 + nose_vector_length * oriented_box.Axis(0);
+    R2Point projection0 = viewer.ViewportPoint(position0);
+    R2Point projection1 = viewer.ViewportPoint(position1);
+    R2Span nose(projection0, projection1);
+    if (RNIsPositive(nose.Length())) {
+      RNScalar d = R2Distance(nose, cursor_position);
+      if (d < max_distance) {
+        selection_corner0 = RN_PNP_OCTANT;
+        selection_corner1 = RN_PPP_OCTANT;
+        selection_t = 0.5;
+        manipulation_type = R3_ROTATION_MANIPULATION;
+      }
     }
   }
   
