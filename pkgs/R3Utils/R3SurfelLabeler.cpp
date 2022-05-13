@@ -1961,6 +1961,10 @@ SelectOverlappedObjects(const R3OrientedBox& box,
   if (scene->NObjects() == 0) return 0;
   if (!SurfelVisibility()) return 0;
 
+  // Inflate input box by overlap tolerance
+  R3OrientedBox query_box(box.Center(), box.Axis(0), box.Axis(1),
+    box.Radius(0) + overlap_tolerance, box.Radius(1) + overlap_tolerance, box.Radius(2) + overlap_tolerance);
+
   // Mark which objects are selected
   std::vector<unsigned char> object_is_selected;
   object_is_selected.resize(scene->NObjects());
@@ -1970,18 +1974,17 @@ SelectOverlappedObjects(const R3OrientedBox& box,
     object_is_selected[selected_object->SceneIndex()] = 1;
   }
   
-  // Find objects overlapping oriented box
+  // Find objects overlapping query box
   RNArray<R3SurfelObject *> picked_objects;
   for (int i = 0; i < scene->NObjects(); i++) {
-    R3OrientedBox obb;
     R3SurfelObject *object = scene->Object(i);
     if (object->Parent() != scene->RootObject()) continue;
     if (!object->Name()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
     if (!ObjectVisibility(object)) continue;
     if (object_is_selected[object->SceneIndex()]) continue;
-    if (!R3Intersects(box, object->BBox())) continue;
-    RNScalar overlap_fraction = EstimateOverlapFraction(box, object);
+    if (!R3Intersects(query_box, object->BBox())) continue;
+    RNScalar overlap_fraction = EstimateOverlapFraction(query_box, object);
     if (overlap_fraction < min_overlap_fraction) continue;
     picked_objects.Insert(object);
   }
