@@ -1226,10 +1226,18 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       // break;
       
     case 'E':
-    case 'e': {
-      SelectOverlappedObjects();
-      redraw = 1;
-      break; }
+    case 'e':
+      if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+        R3OrientedBox obb = obb_manipulator.OrientedBox();
+        SelectOverlappedObjects(obb);
+        obb_manipulator.SetOrientedBox(obb);
+        redraw = 1;
+      }
+      else {
+        SelectOverlappedObjects();
+        redraw = 1;
+      }
+      break; 
       
     case 'F':
     case 'f':
@@ -1274,16 +1282,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       break;
       
     case 'O':
-      if (obb_manipulator_visibility) {
-        if (!obb_manipulator.OrientedBox().IsEmpty()) {
-          R3OrientedBox obb = obb_manipulator.OrientedBox();
-          SelectOverlappedObjects(obb);
-          obb_manipulator.SetOrientedBox(obb);
-          redraw = 1;
-        }
-      }
-      break;
-      
     case 'o':
       if (obb_manipulator_visibility) {
         if (!obb_manipulator.OrientedBox().IsEmpty()) {
@@ -1912,6 +1910,88 @@ FindLeafObjects(R3SurfelObject *object, RNArray<R3SurfelObject *>& leaf_objects)
 
 
 
+static RNScalar
+EstimateOverlapFraction(const R3OrientedBox& obb, R3SurfelObject *object)
+{
+  // Get convenient variables
+  R3SurfelScene *scene = object->Scene();
+  if (!scene) return 0;
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Make array of leaf objects
+  RNArray<R3SurfelObject *> leaf_objects;
+  FindLeafObjects(object, leaf_objects);
+
+  // Count surfels overlapping obb
+  unsigned int total_count = 0;
+  unsigned int overlap_count = 0;
+  for (int i = 0; i < leaf_objects.NEntries(); i++) {
+    R3SurfelObject *leaf_object = leaf_objects.Kth(i);
+    for (int j = 0; j < leaf_object->NNodes(); j++) {
+      R3SurfelNode *node = leaf_object->Node(j);
+      for (int k = 0; k < node->NBlocks(); k++) {
+        R3SurfelBlock *block = node->Block(k);
+        database->ReadBlock(block);
+        for (int s = 0; s < block->NSurfels(); s++) {
+          R3Point position = block->SurfelPosition(s);
+          if (R3Contains(obb, position)) overlap_count++;
+          total_count++;
+        }
+        database->ReleaseBlock(block);
+      }
+    }
+  }
+
+  // Return overlap fraction
+  if (total_count == 0) return 0;
+  return (RNScalar) overlap_count / (RNScalar) total_count;
+}
+
+
+
+int R3SurfelLabeler::
+SelectOverlappedObjects(const R3OrientedBox& box,
+  RNScalar min_overlap_fraction, RNLength overlap_tolerance, RNBoolean unlabeled_only)
+{
+  // Check stuff
+  if (!scene) return 0;
+  if (scene->NObjects() == 0) return 0;
+  if (!SurfelVisibility()) return 0;
+
+  // Mark which objects are selected
+  std::vector<unsigned char> object_is_selected;
+  object_is_selected.resize(scene->NObjects());
+  for (int i = 0; i < scene->NObjects(); i++) object_is_selected[i] = 0;
+  for (int i = 0; i < NObjectSelections(); i++) {
+    R3SurfelObject *selected_object = ObjectSelection(i);
+    object_is_selected[selected_object->SceneIndex()] = 1;
+  }
+  
+  // Find objects overlapping oriented box
+  RNArray<R3SurfelObject *> picked_objects;
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3OrientedBox obb;
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    if (!object->Name()) continue;
+    if (unlabeled_only && object->HumanLabel()) continue;
+    if (!ObjectVisibility(object)) continue;
+    if (object_is_selected[object->SceneIndex()]) continue;
+    if (!R3Intersects(box, object->BBox())) continue;
+    RNScalar overlap_fraction = EstimateOverlapFraction(box, object);
+    if (overlap_fraction < min_overlap_fraction) continue;
+    picked_objects.Insert(object);
+  }
+
+  // Select objects
+  return SelectObjects(picked_objects, R3_SURFEL_LABELER_SELECT_OVERLAPPING_COMMAND, TRUE, FALSE, FALSE);
+}
+
+
+
 int R3SurfelLabeler::
 SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_tolerance, RNBoolean unlabeled_only) 
 {
@@ -2004,35 +2084,6 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     RNScalar overlap_fraction = (RNScalar) overlap_count / (RNScalar) total_count;
     if (overlap_fraction < min_overlap_fraction) continue;
     picked_objects.Insert(top_level_object);
-  }
-
-  // Select objects
-  return SelectObjects(picked_objects, R3_SURFEL_LABELER_SELECT_OVERLAPPING_COMMAND, TRUE, FALSE, FALSE);
-}
-
-
-
-int R3SurfelLabeler::
-SelectOverlappedObjects(const R3OrientedBox& box,
-  RNScalar min_overlap_fraction, RNLength overlap_tolerance, RNBoolean unlabeled_only)
-{
-  // Check stuff
-  if (!scene) return 0;
-  if (scene->NObjects() == 0) return 0;
-  if (!SurfelVisibility()) return 0;
-
-  // Find objects overlapping oriented box
-  RNArray<R3SurfelObject *> picked_objects;
-  for (int i = 0; i < scene->NObjects(); i++) {
-    R3OrientedBox obb;
-    R3SurfelObject *object = scene->Object(i);
-    if (object->Parent() != scene->RootObject()) continue;
-    if (!object->Name()) continue;
-    if (unlabeled_only && object->HumanLabel()) continue;
-    if (!ObjectVisibility(object)) continue;
-    if (!GetObjectOBBProperty(object, &obb)) continue;
-    if (!R3Intersects(box, obb)) continue;
-    picked_objects.Insert(object);
   }
 
   // Select objects
