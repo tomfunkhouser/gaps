@@ -70,9 +70,10 @@ public:
     RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   virtual int SelectIntersectedObjects(const R2Polygon& polygon,
     RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  virtual int SelectIntersectedObjects(const R3OrientedBox& box,
-    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  virtual int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectOverlappedObjects(
+    RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectOverlappedObjects(const R3OrientedBox& box,
+    RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
   virtual int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
   virtual int SelectSuggestedObject(RNBoolean unlabeled_only = FALSE);
 

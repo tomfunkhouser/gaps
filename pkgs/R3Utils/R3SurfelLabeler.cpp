@@ -1277,7 +1277,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       if (obb_manipulator_visibility) {
         if (!obb_manipulator.OrientedBox().IsEmpty()) {
           R3OrientedBox obb = obb_manipulator.OrientedBox();
-          SelectIntersectedObjects(obb, TRUE, FALSE, FALSE);
+          SelectOverlappedObjects(obb);
           obb_manipulator.SetOrientedBox(obb);
           redraw = 1;
         }
@@ -1892,34 +1892,6 @@ SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ct
 
 
 
-int R3SurfelLabeler::
-SelectIntersectedObjects(const R3OrientedBox& box, RNBoolean shift, RNBoolean ctrl, RNBoolean alt, RNBoolean unlabeled_only) 
-{
-  // Check stuff
-  if (!scene) return 0;
-  if (scene->NObjects() == 0) return 0;
-  if (!SurfelVisibility()) return 0;
-
-  // Find objects intersecting oriented box
-  RNArray<R3SurfelObject *> picked_objects;
-  for (int i = 0; i < scene->NObjects(); i++) {
-    R3OrientedBox obb;
-    R3SurfelObject *object = scene->Object(i);
-    if (object->Parent() != scene->RootObject()) continue;
-    if (!object->Name()) continue;
-    if (unlabeled_only && object->HumanLabel()) continue;
-    if (!ObjectVisibility(object)) continue;
-    if (!GetObjectOBBProperty(object, &obb)) continue;
-    if (!R3Intersects(box, obb)) continue;
-    picked_objects.Insert(object);
-  }
-
-  // Select objects
-  return SelectObjects(picked_objects, R3_SURFEL_LABELER_SELECT_ENCLOSED_COMMAND, shift, ctrl, alt);
-}
-
-
-
 static void
 FindLeafObjects(R3SurfelObject *object, RNArray<R3SurfelObject *>& leaf_objects)
 {
@@ -2032,6 +2004,35 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     RNScalar overlap_fraction = (RNScalar) overlap_count / (RNScalar) total_count;
     if (overlap_fraction < min_overlap_fraction) continue;
     picked_objects.Insert(top_level_object);
+  }
+
+  // Select objects
+  return SelectObjects(picked_objects, R3_SURFEL_LABELER_SELECT_OVERLAPPING_COMMAND, TRUE, FALSE, FALSE);
+}
+
+
+
+int R3SurfelLabeler::
+SelectOverlappedObjects(const R3OrientedBox& box,
+  RNScalar min_overlap_fraction, RNLength overlap_tolerance, RNBoolean unlabeled_only)
+{
+  // Check stuff
+  if (!scene) return 0;
+  if (scene->NObjects() == 0) return 0;
+  if (!SurfelVisibility()) return 0;
+
+  // Find objects overlapping oriented box
+  RNArray<R3SurfelObject *> picked_objects;
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3OrientedBox obb;
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    if (!object->Name()) continue;
+    if (unlabeled_only && object->HumanLabel()) continue;
+    if (!ObjectVisibility(object)) continue;
+    if (!GetObjectOBBProperty(object, &obb)) continue;
+    if (!R3Intersects(box, obb)) continue;
+    picked_objects.Insert(object);
   }
 
   // Select objects
