@@ -1903,12 +1903,14 @@ SelectIntersectedObjects(const R3OrientedBox& box, RNBoolean shift, RNBoolean ct
   // Find objects intersecting oriented box
   RNArray<R3SurfelObject *> picked_objects;
   for (int i = 0; i < scene->NObjects(); i++) {
+    R3OrientedBox obb;
     R3SurfelObject *object = scene->Object(i);
     if (object->Parent() != scene->RootObject()) continue;
     if (!object->Name()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
     if (!ObjectVisibility(object)) continue;
-    if (!R3Intersects(box, object->BBox())) continue;
+    if (!GetObjectOBBProperty(object, &obb)) continue;
+    if (!R3Intersects(box, obb)) continue;
     picked_objects.Insert(object);
   }
 
