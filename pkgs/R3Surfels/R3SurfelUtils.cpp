@@ -2735,6 +2735,36 @@ FitSupportPlane(R3SurfelScene *scene,
 ////////////////////////////////////////////////////////////////////////
 
 R3OrientedBox 
+EstimateOrientedBBox(R3SurfelPointSet *pointset,
+  const R3Point& centroid, const R3Triad& axes)
+{
+  // Check pointset
+  if (pointset->NPoints() == 0) return R3null_oriented_box;
+    
+  // Compute ranges
+  R3Box range = R3null_box;
+  for (int i = 0; i < pointset->NPoints(); i++) {
+    R3SurfelPoint *point = pointset->Point(i);
+    R3Vector v = point->Position() - centroid;
+    RNLength r0 = v.Dot(axes[0]);
+    RNLength r1 = v.Dot(axes[1]);
+    RNLength r2 = v.Dot(axes[2]);
+    range.Union(R3Point(r0, r1, r2));
+  }
+
+  // Compute center
+  if (range.IsEmpty()) range = R3zero_box;
+  R3Point c = range.Centroid();
+  R3Point center = centroid + axes[0]*c[0] + axes[1]*c[1] + axes[2]*c[2];
+
+  // Return oriented box
+  return R3OrientedBox(center, axes[0], axes[1],
+    range.XRadius(), range.YRadius(), range.ZRadius());
+}
+
+
+
+R3OrientedBox 
 EstimateOrientedBBox(R3SurfelPointSet *pointset)
 {
   // Check pointset
@@ -2744,11 +2774,11 @@ EstimateOrientedBBox(R3SurfelPointSet *pointset)
   R3Point centroid = pointset->Centroid();
 
   // Search for best axes
-  R3Box best_range = R3null_box;
-  R3Triad best_axes = R3xyz_triad;
   int nxsteps = 1;
   int nysteps = 1;
   int nzsteps = 16;
+  RNVolume best_volume = FLT_MAX;
+  R3OrientedBox best_obb = R3null_oriented_box;
   for (int ix = 0; ix < nxsteps; ix++) {
     for (int iy = 0; iy < nysteps; iy++) {
       for (int iz = 0; iz < nzsteps; iz++) {
@@ -2756,44 +2786,26 @@ EstimateOrientedBBox(R3SurfelPointSet *pointset)
         axes.Rotate(RN_X, ix*0.5*RN_PI/nxsteps);
         axes.Rotate(RN_Y, iy*0.5*RN_PI/nysteps);
         axes.Rotate(RN_Z, iz*0.5*RN_PI/nzsteps);
-    
-        // Compute ranges
-        R3Box range = R3null_box;
-        for (int i = 0; i < pointset->NPoints(); i++) {
-          R3SurfelPoint *point = pointset->Point(i);
-          R3Vector v = point->Position() - centroid;
-          RNLength r0 = v.Dot(axes[0]);
-          RNLength r1 = v.Dot(axes[1]);
-          RNLength r2 = v.Dot(axes[2]);
-          range.Union(R3Point(r0, r1, r2));
-        }
 
-        // Check if range is best
-        if (best_range.IsEmpty() || (range.Volume() < best_range.Volume())) {
-          best_range = range;
-          best_axes = axes;
+        // Compute oriented bbox
+        R3OrientedBox obb = EstimateOrientedBBox(pointset, centroid, axes);
+        RNVolume volume = obb.Volume();
+        if (volume < best_volume) {
+          best_volume = volume;
+          best_obb = obb;
         }
       }
     }
   }
       
-  // Compute center
-  if (best_range.IsEmpty()) best_range = R3zero_box;
-  R3Point c = best_range.Centroid();
-  R3Point center = centroid + best_axes[0]*c[0] + best_axes[1]*c[1] + best_axes[2]*c[2];
-
-  // Create oriented box
-  R3OrientedBox obb(center, best_axes[0], best_axes[1],
-    best_range.XRadius(), best_range.YRadius(), best_range.ZRadius());
-
   // Check if should rotate around Z by 90 degrees to make axis0 the longer axis
-  if (obb.Radius(0) < obb.Radius(1)) {
-    obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
-      obb.Radius(1), obb.Radius(0), obb.Radius(2));
+  if (best_obb.Radius(0) < best_obb.Radius(1)) {
+    best_obb.Reset(best_obb.Center(), best_obb.Axis(1), -(best_obb.Axis(0)),
+      best_obb.Radius(1), best_obb.Radius(0), best_obb.Radius(2));
   }
 
-  // Return oriented box
-  return obb;
+  // Return best oriented box
+  return best_obb;
 }
   
 

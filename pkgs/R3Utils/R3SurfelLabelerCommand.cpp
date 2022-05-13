@@ -71,6 +71,7 @@ R3SurfelLabelerCommand(R3SurfelLabeler *labeler, int type, double operand)
     operand(operand),
     camera(labeler->Camera()),
     center_point(labeler->CenterPoint()),
+    obb_manipulator(labeler->OBBManipulator()),
     timestamp(labeler->CurrentTime()),
     inserted_object_selections(),
     removed_object_selections(),

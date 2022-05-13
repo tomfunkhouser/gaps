@@ -39,6 +39,7 @@ public:
   RNBoolean IsRotating(void) const;
   RNBoolean IsScaling(void) const;
   RNBoolean IsTranslating(void) const;
+  RNBoolean IsDirty(void) const;
   
   // High-level manipulation functions
   int BeginManipulation(const R3Viewer& viewer, int x, int y);
@@ -79,6 +80,7 @@ private:
   int selection_corner1;
   double selection_t;
   int manipulation_type;
+  int manipulation_counter;
 };
 
 
@@ -156,6 +158,15 @@ IsTranslating(void) const
   // Return whether oriented box is being translated
   if (manipulation_type != R3_TRANSLATION_MANIPULATION) return FALSE;
   return TRUE;
+}
+
+
+  
+inline RNBoolean R3OrientedBoxManipulator::
+IsDirty(void) const
+{
+  // Return whether oriented box has changed since BeginManipulation
+  return (manipulation_counter > 0) ? TRUE : FALSE;
 }
 
 

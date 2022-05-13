@@ -99,6 +99,7 @@ class R3SurfelLabelerCommand {
   // Labeler state before command was executed
   R3Camera camera;
   R3Point center_point;
+  R3OrientedBoxManipulator obb_manipulator;
 
   // Time since beginning of execution
   RNScalar timestamp;

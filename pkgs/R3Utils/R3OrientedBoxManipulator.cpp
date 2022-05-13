@@ -42,7 +42,8 @@ R3OrientedBoxManipulator(const R3OrientedBox& oriented_box)
     selection_corner0(-1),
     selection_corner1(-1),
     selection_t(-1),
-    manipulation_type(R3_NO_MANIPULATION)
+    manipulation_type(R3_NO_MANIPULATION),
+    manipulation_counter(0)
 {
 }
 
@@ -138,6 +139,9 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
       }
     }
   }
+
+  // Reset manipulation counter
+  manipulation_counter = 0;
   
   // Return manipulation_type
   return manipulation_type;
@@ -148,6 +152,10 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
 int R3OrientedBoxManipulator::
 UpdateManipulation(const R3Viewer& viewer, int x, int y)
 {
+  // Increment manipulation counter
+  if (manipulation_type != R3_NO_MANIPULATION)
+    manipulation_counter++;
+  
   // Update the active manipulation
   switch (manipulation_type) {
   case R3_ROTATION_MANIPULATION:

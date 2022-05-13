@@ -58,10 +58,20 @@ public:
   virtual void ZoomCamera(RNScalar scale = 0);
 
   // Object selection 
-  virtual int SelectPickedObject(int x, int y, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
-  virtual int SelectEnclosedObjects(const R2Box& box, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  virtual int SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
-  virtual int SelectIntersectedObjects(const R2Polygon& polygon, RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectPickedObject(int x, int y,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
+  virtual int SelectObjects(const RNArray<R3SurfelObject *>& objects, int command_type,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
+  virtual int SelectEnclosedObjects(const R2Box& box,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectEnclosedObjects(const R2Polygon& polygon,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectEnclosedObjects(const R3OrientedBox& box,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectIntersectedObjects(const R2Polygon& polygon,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
+  virtual int SelectIntersectedObjects(const R3OrientedBox& box,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   virtual int SelectOverlappedObjects(RNScalar min_overlap_fraction = 0.9, RNLength overlap_tolerance = 0.25, RNBoolean unlabeled_only = FALSE);
   virtual int SelectAllObjects(RNBoolean unlabeled_only = FALSE);
   virtual int SelectSuggestedObject(RNBoolean unlabeled_only = FALSE);
@@ -97,8 +107,9 @@ public:
   //// PROPERTY QUERY ////
   ////////////////////////
 
-  // Subwindow/menu properties
+  // Subwindow/menu/manipulator properties
   const char *Message(void) const;
+  const R3OrientedBoxManipulator& OBBManipulator(void) const;
   int SelectionVisibility(void) const;
   int OBBManipulatorVisibility(void) const;
   int MessageVisibility(void) const;
@@ -132,6 +143,11 @@ public:
 
   // Subwindow/menu manipulation (visibility: 0=off, 1=on, -1=toggle)
   virtual void SetMessage(const char *fmt, ...);
+
+  // OBB manipulator manipulation
+  virtual void SetOBBManipulator(const R3OrientedBoxManipulator& obb_manipulator);
+  
+  // Visibility manpulation
   virtual void SetSelectionVisibility(int visibility);
   virtual void SetOBBManipulatorVisibility(int visibility);
   virtual void SetMessageVisibility(int visibility);
@@ -355,6 +371,24 @@ protected:
 // INLINE FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+inline const R3OrientedBoxManipulator& R3SurfelLabeler::
+OBBManipulator(void) const
+{
+  // Return obb manipulator
+  return obb_manipulator;
+}
+
+  
+
+inline const char *R3SurfelLabeler::
+Message(void) const
+{
+  // Return message
+  return message;
+}
+  
+
+  
 inline int R3SurfelLabeler::
 SelectionVisibility(void) const
 {
@@ -423,119 +457,6 @@ SnapshotDirectory(void) const
 {
   // Return snapshot directory
   return snapshot_directory;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetMessage(const char *fmt, ...)
-{
-  // Free previous message
-  if (message) free(message);
-  message = NULL;
-
-  // Set message (displayed at bottom of screen)
-  if (fmt) {
-    message = new char [4096];
-    va_list args;
-    va_start(args, fmt);
-    vsprintf(message, fmt, args);
-    va_end(args);
-  }
-}
-
-
-
-inline void R3SurfelLabeler::
-SetSelectionVisibility(int visibility)
-{
-  // Set selection visibililty
-  if (visibility == -1) selection_visibility = 1 - selection_visibility;
-  else if (visibility == 0) selection_visibility = 0;
-  else selection_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetOBBManipulatorVisibility(int visibility)
-{
-  // Set obb manipulator visibililty
-  if (visibility == -1) obb_manipulator_visibility = 1 - obb_manipulator_visibility;
-  else if (visibility == 0) obb_manipulator_visibility = 0;
-  else obb_manipulator_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetMessageVisibility(int visibility)
-{
-  // Set message visibililty
-  if (visibility == -1) message_visibility = 1 - message_visibility;
-  else if (visibility == 0) message_visibility = 0;
-  else message_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetStatusVisibility(int visibility)
-{
-  // Set status visibililty
-  if (visibility == -1) status_visibility = 1 - status_visibility;
-  else if (visibility == 0) status_visibility = 0;
-  else status_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetCommandMenuVisibility(int visibility)
-{
-  // Set command menu visibililty
-  if (visibility == -1) command_menu_visibility = 1 - command_menu_visibility;
-  else if (visibility == 0) command_menu_visibility = 0;
-  else command_menu_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetLabelMenuVisibility(int visibility)
-{
-  // Set label menu visibililty
-  if (visibility == -1) label_menu_visibility = 1 - label_menu_visibility;
-  else if (visibility == 0) label_menu_visibility = 0;
-  else label_menu_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetAttributeMenuVisibility(int visibility)
-{
-  // Set attribute menu visibililty
-  if (visibility == -1) attribute_menu_visibility = 1 - attribute_menu_visibility;
-  else if (visibility == 0) attribute_menu_visibility = 0;
-  else attribute_menu_visibility = 1;
-}
-
-
-
-inline void R3SurfelLabeler::
-SetSnapshotDirectory(const char *directory_name)
-{
-  // Delete previous snapshot directory
-  if (this->snapshot_directory) {
-    free(this->snapshot_directory);
-    this->snapshot_directory = NULL;
-  }
-  
-  // Set new snapshot directory
-  if (directory_name) {
-    this->snapshot_directory = strdup(directory_name);
-  }
 }
 
 
