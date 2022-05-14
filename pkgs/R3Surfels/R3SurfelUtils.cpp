@@ -2491,31 +2491,6 @@ CreateObjectSet(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Scene queries
-////////////////////////////////////////////////////////////////////////
-
-static R3Point
-ClosestImageViewpoint(R3SurfelScene *scene, const R3Point& position)
-{
-  // Search for closest image viewpoint
-  RNScalar best_dd = FLT_MAX;
-  R3Point best_viewpoint(0, 0, 0);
-  for (int i = 0; i < scene->NImages(); i++) {
-    R3SurfelImage *image = scene->Image(i);
-    RNScalar dd = R3SquaredDistance(image->Viewpoint(), position);
-    if (dd < best_dd) {
-      best_viewpoint = image->Viewpoint();
-      best_dd = dd;
-    }
-  }
-
-  // Return closest image viewpoint
-  return best_viewpoint;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Plane estimation
 ////////////////////////////////////////////////////////////////////////
 
@@ -2826,21 +2801,6 @@ EstimateOrientedBBox(R3SurfelObject *object)
   // Delete pointset
   delete pointset;
            
-  // Check if should rotate around Z by 180 degrees
-  // to make positive side point towards closest image viewpoint
-  R3SurfelScene *scene = object->Scene();
-  if (scene && (scene->NImages() > 0)) {
-    R3Point sensor_position = ClosestImageViewpoint(scene, obb.Centroid());
-    R3Vector sensor_direction = sensor_position - obb.Centroid();
-    RNScalar dot0 = sensor_direction.Dot(obb.Axis(0));
-    RNScalar dot1 = sensor_direction.Dot(obb.Axis(1));
-    if (((fabs(dot0) > fabs(dot1)) && (dot0 < 0)) ||
-        ((fabs(dot1) > fabs(dot0)) && (dot1 < 0))) {
-      obb.Reset(obb.Center(), -(obb.Axis(0)), -(obb.Axis(1)),
-        obb.Radius(0), obb.Radius(1), obb.Radius(2));
-    }
-  }
-
   // Return oriented box
   return obb;
 }
@@ -3560,6 +3520,34 @@ CreateClusterObjects(R3SurfelScene *scene,
 
   // Return objects
   return objects;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Scene query functions
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelImage *
+ClosestImage(R3SurfelScene *scene, const R3Point& query_position)
+{
+  // Check scene
+  if (!scene) return NULL;
+  
+  // Search for closest image
+  RNScalar best_dd = FLT_MAX;
+  R3SurfelImage *best_image = NULL;
+  for (int i = 0; i < scene->NImages(); i++) {
+    R3SurfelImage *image = scene->Image(i);
+    RNScalar dd = R3SquaredDistance(image->Viewpoint(), query_position);
+    if (dd < best_dd) {
+      best_image = image;
+      best_dd = dd;
+    }
+  }
+
+  // Return closest image
+  return best_image;
 }
 
 

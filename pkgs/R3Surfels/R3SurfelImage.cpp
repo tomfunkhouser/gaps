@@ -194,6 +194,35 @@ PixelWorldRay(const R2Point& image_position) const
 
 
 
+R3Vector R3SurfelImage::
+TrajectoryDirection(void) const
+{
+  // Check scene
+  if (!scene) return R3zero_vector;
+  if (scene_index < 0) return R3zero_vector;
+  
+  // Find images before/after this image
+  int delta = 7;
+  int index = scene_index;
+  int indexA = index - delta;
+  int indexB = index + delta;
+  if (indexA < 0) indexA = 0;
+  if (indexB > scene->NImages()-1) indexB = scene->NImages()-1;
+  R3SurfelImage *imageA = scene->Image(indexA);
+  R3SurfelImage *imageB = scene->Image(indexB);
+
+  // Compute trajector direction
+  R3Point viewpointA = imageA->Viewpoint();
+  R3Point viewpointB = imageB->Viewpoint();
+  R3Vector trajectory_direction = viewpointB - viewpointA;
+  trajectory_direction.Normalize();
+
+  // Return trajectory direction
+  return trajectory_direction;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////

@@ -75,6 +75,7 @@ public:
   RNAngle YFOV(void) const;
   R3Matrix Intrinsics(void) const;
   R4Matrix ProjectionMatrix(RNScalar neardist, RNScalar fardist) const;
+  R3Vector TrajectoryDirection(void) const;
   
   // Camera extrinsics functions
   const R3CoordSystem& Pose(void) const;
