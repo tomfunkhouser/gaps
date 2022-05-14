@@ -4838,14 +4838,57 @@ PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shi
 
 
 ////////////////////////////////////////////////////////////////////////
-// OBB Manipulator functions
+// OBB manipulation functions
 ////////////////////////////////////////////////////////////////////////
+
+static void
+RotateOrientedBox(R3OrientedBox& obb, R3SurfelObject *object = NULL)
+{
+  // Swap XY axes to make axis0 the longer axis
+  if (obb.Radius(0) < obb.Radius(1)) {
+    obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+      obb.Radius(1), obb.Radius(0), obb.Radius(2));
+  }
+
+  // Rotate around Z by 180 degrees to make positive side point towards closest image viewpoint
+  if (object) {
+    R3SurfelScene *scene = object->Scene();
+    if (scene && (scene->NImages() > 0)) {
+      R3SurfelImage *image = ClosestImage(scene, obb.Centroid());
+      R3Vector sensor_direction = image->Viewpoint() - obb.Centroid();
+      RNScalar dot0 = sensor_direction.Dot(obb.Axis(0));
+      RNScalar dot1 = sensor_direction.Dot(obb.Axis(1));
+      if (((fabs(dot0) > fabs(dot1)) && (dot0 < 0)) ||
+          ((fabs(dot1) > fabs(dot0)) && (dot1 < 0))) {
+        obb.Reset(obb.Center(), -(obb.Axis(0)), -(obb.Axis(1)),
+          obb.Radius(0), obb.Radius(1), obb.Radius(2));
+      }
+    }
+  }
+
+  // Swap XY axes to make axis1 the longer axis for some classes
+  // This is temporary -- better to estimate obbs when create scene
+  if (object) {
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (label && label->Name()) {
+      if (!strcmp(label->Name(), "TrafficSign") ||
+          !strcmp(label->Name(), "Billboard") ||
+          !strcmp(label->Name(), "BusinessSign") ||
+          !strcmp(label->Name(), "TempTrafficSign")) {
+        obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+          obb.Radius(1), obb.Radius(0), obb.Radius(2));
+      }
+    }
+  }
+}
+
+
 
 static R3OrientedBox 
 EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
 {
   // Initialize result
-  R3OrientedBox obb = R3null_oriented_box;
+  if (objects.NEntries() == 0) return R3null_oriented_box;
   
   // Check number of objects
   if (objects.NEntries() == 1) {
@@ -4876,7 +4919,13 @@ EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
   }
   
   // Estimate oriented box of pointset
-  return EstimateOrientedBBox(&pointset);
+  R3OrientedBox obb = EstimateOrientedBBox(&pointset);
+
+  // Rotate oriented box based on heuristics
+  RotateOrientedBox(obb, objects[0]);
+
+  // Return oriented bbox
+  return obb;
 }
   
 
