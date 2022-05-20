@@ -1126,7 +1126,6 @@ GetObjectOBBProperty(R3SurfelObject *object,
 
   // Get object property
   R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
-  property = CreateObjectProperty(object, property_type);
   if (!property) return NULL;
 
   // Check property operands

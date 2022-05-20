@@ -62,9 +62,10 @@ class R3OrientedBox : public R3Solid {
         virtual void Empty(void);
         virtual void Translate(const R3Vector& vector);
         virtual void Reposition(const R3Point& center);
+        virtual void Resize(RNLength radius0, RNLength radius1, RNLength radius2);
+        virtual void Inflate(RNScalar fraction);
         virtual void Rotate(RNAxis rotation_axis, RNAngle theta);
         virtual void Rotate(const R3Vector& rotation_axis, RNAngle theta);
-        virtual void Resize(RNLength radius0, RNLength radius1, RNLength radius2);
         virtual void Reorient(const R3Vector& axis0, const R3Vector& axis1);
 	virtual void Transform(const R3Transformation& transformation);
         virtual void SetRadius(RNAxis axis, RNLength radius);

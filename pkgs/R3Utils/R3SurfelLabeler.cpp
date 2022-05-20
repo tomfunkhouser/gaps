@@ -1229,9 +1229,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     // Make sure does not conflict with keys used by R3SurfelViewer
     switch(key) {
     case 'B':
-    case 'b':
-      // Copied from R3SurfelViewer
       SetObjectOrientedBBoxVisibility(-1);
+      redraw = 1;
+      break;
+
+    case 'b':
+      SetOBBManipulatorVisibility(-1);
       redraw = 1;
       break;
 
@@ -1283,12 +1286,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break;
       
-    case 'O':
-    case 'o':
-      SetOBBManipulatorVisibility(-1);
-      redraw = 1;
-      break;
-
     case 'P':
     case 'p':
       // Copied from R3SurfelViewer
@@ -1492,25 +1489,26 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     //   redraw = 1;
     //   break;
       
-    case 'O':
-    case 'o':
-      if (obb_manipulator_visibility) {
-        if (!obb_manipulator.OrientedBox().IsEmpty()) {
-          R3OrientedBox obb;
-          RNScalar confidence;
-          int originator;
-          R3SurfelObject *object = ObjectSelection(0);
-          if (GetObjectOBBProperty(object, &obb, &confidence, &originator)) {
-            SplitSelectedObjects();
-            if (NObjectSelections() == 1) {
-              R3SurfelObject *object = ObjectSelection(0);
-              SetObjectOBBProperty(object, obb, confidence, originator);
-            }
-            redraw = 1;
-          }
-        }
-      }
-      break;
+    // case 'O':
+    // case 'o':
+    //   // Split selected objects by OBB
+    //   if (obb_manipulator_visibility) {
+    //     if (!obb_manipulator.OrientedBox().IsEmpty()) {
+    //       R3OrientedBox obb;
+    //       RNScalar confidence;
+    //       int originator;
+    //       R3SurfelObject *object = ObjectSelection(0);
+    //       if (GetObjectOBBProperty(object, &obb, &confidence, &originator)) {
+    //         SplitSelectedObjects();
+    //         if (NObjectSelections() == 1) {
+    //           R3SurfelObject *object = ObjectSelection(0);
+    //           SetObjectOBBProperty(object, obb, confidence, originator);
+    //         }
+    //         redraw = 1;
+    //       }
+    //     }
+    //   }
+    //   break;
 
     case 'P':
     case 'p':

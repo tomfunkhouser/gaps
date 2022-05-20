@@ -440,6 +440,19 @@ Resize(RNLength radius0, RNLength radius1, RNLength radius2)
 
 
 void R3OrientedBox::
+Inflate (RNScalar fraction) 
+{
+  // Scale box around centroid by fraction
+  if (IsEmpty()) return;
+  if (fraction < 0) return;
+  
+  // Resize with larger radii
+  Resize(fraction * radius[0], fraction * radius[1], fraction * radius[2]);
+}
+
+
+
+void R3OrientedBox::
 Rotate(RNAxis rotation_axis, RNAngle theta) 
 {
     // Check if box is empty

@@ -1098,10 +1098,13 @@ DrawObjectOrientedBBoxes(void) const
   // Check stuff
   if (!scene) return;
   if (!object_oriented_bbox_visibility) return;
-  
-  // Draw object properties
+
+  // Set OpenGL modes
+  glLineWidth(3);
   glDisable(GL_LIGHTING);
   RNLoadRgb(object_oriented_bbox_color);
+
+  // Draw object OBBs
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
     if (property->Type() != R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY) continue;
@@ -1111,6 +1114,9 @@ DrawObjectOrientedBBoxes(void) const
     if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
     property->Draw(0);
   }
+
+  // Reset OpenGL modes
+  glLineWidth(1);
 }
 
 
