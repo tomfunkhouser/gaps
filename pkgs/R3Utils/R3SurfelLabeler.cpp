@@ -112,6 +112,9 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     scene->InsertLabelAssignment(assignment);
   }
 
+  // Update object oriented bounding boxes
+  UpdateObjectOrientedBBoxes();
+
   // Open logging file
   if (logging_filename) {
     this->logging_filename = RNStrdup(logging_filename);
@@ -413,6 +416,36 @@ EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
   return obb;
 }
   
+
+
+void R3SurfelLabeler::
+UpdateObjectOrientedBBox(R3SurfelObject *object)
+{
+  // Check if already have OBB property
+  if (GetObjectOBBProperty(object)) return;
+
+  // Estimate OBB
+  RNArray<R3SurfelObject *> objects;
+  objects.Insert(object);
+  R3OrientedBox obb = EstimateOrientedBBox(objects);
+
+  // Set OBB property
+  SetObjectOBBProperty(object, obb, 0, R3_SURFEL_MACHINE_ORIGINATOR);
+}
+
+
+
+void R3SurfelLabeler::
+UpdateObjectOrientedBBoxes(void)
+{
+  // Update oriented box for all top-level objects
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    UpdateObjectOrientedBBox(object);
+  }
+}
+
 
 
 void R3SurfelLabeler::
@@ -1177,6 +1210,13 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
   if (alt) {
     // Make sure does not conflict with keys used by R3SurfelViewer
     switch(key) {
+    case 'B':
+    case 'b':
+      // Copied from R3SurfelViewer
+      SetObjectOrientedBBoxVisibility(-1);
+      redraw = 1;
+      break;
+
     case 'C':
       // Copied from R3SurfelViewer
       SetSurfelColorScheme((surfel_color_scheme + 1) % R3_SURFEL_VIEWER_NUM_COLOR_SCHEMES);
@@ -2833,11 +2873,6 @@ MergeSelectedObjects(void)
   // Assign attribute flags to parent object
   parent->SetFlags(parent->Flags() | attribute_flags);
 
-  // Assign OBB to parent object
-  if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
-    SetObjectOBBProperty(parent, obb_manipulator.OrientedBox(), 0, R3_SURFEL_MACHINE_ORIGINATOR);
-  }
-
   // Compute feature vector
   RNScalar weight = 0;
   R3SurfelFeatureVector vector(scene->NFeatures());
@@ -2857,6 +2892,14 @@ MergeSelectedObjects(void)
     R3SurfelObject *object = ObjectSelection(i);
     SetObjectParent(object, parent);
     count++;
+  }
+
+  // Update OBB for parent object
+  if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+    SetObjectOBBProperty(parent, obb_manipulator.OrientedBox(), 0, R3_SURFEL_MACHINE_ORIGINATOR);
+  }
+  else {
+    UpdateObjectOrientedBBox(parent);
   }
 
   // Empty object selections
@@ -2920,7 +2963,7 @@ UnmergeSelectedObjects(void)
     int originator = (assignment) ? assignment->Originator() : R3_SURFEL_MACHINE_ORIGINATOR;
     RNScalar confidence = (assignment) ? assignment->Confidence() : 0;
   
-     // Find previous assignments
+    // Find previous assignments
     RNArray<R3SurfelLabelAssignment *> previous_assignments;
     for (int i = 0; i < object->NLabelAssignments(); i++) {
       R3SurfelLabelAssignment *a = object->LabelAssignment(i);
@@ -2949,6 +2992,9 @@ UnmergeSelectedObjects(void)
 
       // Insert object selection
       InsertObjectSelection(part);
+
+      // Update part OBB
+      UpdateObjectOrientedBBox(part);
 
       // Increment counter
       count++;
@@ -3057,7 +3103,7 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
     sprintf(nameB, "%s_B", name);
     objectA->SetName(nameA);
     objectB->SetName(nameB);
-
+    
     // Set feature vectors ???
     objectA->SetFeatureVector(object->FeatureVector());
     objectB->SetFeatureVector(object->FeatureVector());
@@ -3195,14 +3241,24 @@ SplitSelectedObjects(void)
 
   // Split all selected objects
   int split_count = 0;
-  RNArray<R3SurfelObject *> objectsA;
+  RNArray<R3SurfelObject *> objectsA, objectsB;
   for (int i = 0; i < copy_selection_objects.NEntries(); i++) {
     R3SurfelObject *object = copy_selection_objects.Kth(i);
     R3SurfelObject *parent = object->Parent();
     assert(parent == scene->RootObject());
-    if (SplitObject(object, parent, *constraint, &objectsA, NULL)) {
+    if (SplitObject(object, parent, *constraint, &objectsA, &objectsB)) {
       split_count += objectsA.NEntries();
     }
+  }
+
+  // Update OBBs for all split objects
+  for (int i = 0; i < objectsA.NEntries(); i++) {
+    R3SurfelObject *object = objectsA.Kth(i);
+    UpdateObjectOrientedBBox(object);
+  }
+  for (int i = 0; i < objectsB.NEntries(); i++) {
+    R3SurfelObject *object = objectsB.Kth(i);
+    UpdateObjectOrientedBBox(object);
   }
 
   // Select objects on one side of split polygon

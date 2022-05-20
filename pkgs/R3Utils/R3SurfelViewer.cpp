@@ -479,37 +479,46 @@ CreateColor(unsigned char *color, int color_scheme,
     CreateColor(color, block_index);
     break; }
       
-  case R3_SURFEL_VIEWER_COLOR_BY_NORMAL: {
-    assert(surfel);
-    *color++ = 128 + 127 * surfel->NX();
-    *color++ = 128 + 127 * surfel->NY();
-    *color++ = 128 + 127 * surfel->NZ();
-    break; }
+  case R3_SURFEL_VIEWER_COLOR_BY_NORMAL:
+    if (surfel) {
+      *color++ = 128 + 127 * surfel->NX();
+      *color++ = 128 + 127 * surfel->NY();
+      *color++ = 128 + 127 * surfel->NZ();
+    }
+    else {
+      *color++ = 128;
+      *color++ = 128;
+      *color++ = 128;
+    }
+    break;
 
   case R3_SURFEL_VIEWER_COLOR_BY_Z: {
-    assert(block && surfel);
-    double z = block->PositionOrigin().Z() + surfel->Z();
+    double z = 0;
+    if (block && surfel) z = block->PositionOrigin().Z() + surfel->Z();
+    else if (node) z = node->Centroid().Z();
+    else if (object) z = object->Centroid().Z();
     double dz = (z > center_point.Z()) ? z - center_point.Z() : 0;
     double value = 0.5 * sqrt(dz);
     CreateColor(color, value);
     break; }
       
   case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: {
-    assert(surfel);
-    double elevation = surfel->Elevation();
+    double elevation = 0;
+    if (surfel) elevation = surfel->Elevation();
     double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
     CreateColor(color, value);
     break; }
 
   case R3_SURFEL_VIEWER_COLOR_BY_SURFEL_LABEL: {
-    assert(surfel);
-    int label_identifier = surfel->Attribute() & 0xFF;
+    int label_identifier = 0;
+    if (surfel) label_identifier = surfel->Attribute() & 0xFF;
+    else if (label) label_identifier = label->Identifier();
     CreateColor(color, label_identifier);
     break; }
 
   case R3_SURFEL_VIEWER_COLOR_BY_CONFIDENCE: {
-    assert(surfel);
-    double confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
+    double confidence = 0.5;
+    if (surfel) confidence = ((surfel->Attribute() >> 8) & 0xFF) / 255.0;
     CreateColor(color, confidence);
     break; }
 
@@ -518,12 +527,18 @@ CreateColor(unsigned char *color, int color_scheme,
     CreateColor(color, (int) flags);
     break; }
       
-  default: {
-    assert(surfel);
-    *color++ = surfel->R();
-    *color++ = surfel->G();
-    *color++ = surfel->B();
-    break; }
+  default:
+    if (surfel) {
+      *color++ = surfel->R();
+      *color++ = surfel->G();
+      *color++ = surfel->B();
+    }
+    else {
+      *color++ = 127;
+      *color++ = 127;
+      *color++ = 127;
+    }
+    break;
   }
 }
 
@@ -1067,6 +1082,10 @@ DrawObjectPrincipalAxes(void) const
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
     if (property->Type() != R3_SURFEL_OBJECT_PCA_PROPERTY) continue;
+    R3SurfelObject *object = property->Object();
+    if (!object->Parent()) continue;
+    if (object->Parent() != scene->RootObject()) continue;
+    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
     property->Draw(0);
   }
 }
@@ -1086,6 +1105,10 @@ DrawObjectOrientedBBoxes(void) const
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
     if (property->Type() != R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY) continue;
+    R3SurfelObject *object = property->Object();
+    if (!object->Parent()) continue;
+    if (object->Parent() != scene->RootObject()) continue;
+    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
     property->Draw(0);
   }
 }
@@ -1124,6 +1147,7 @@ DrawObjectBBoxes(void) const
     R3SurfelObject *object = scene->Object(i);
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
+    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
     object->BBox().Outline();
   }
 }

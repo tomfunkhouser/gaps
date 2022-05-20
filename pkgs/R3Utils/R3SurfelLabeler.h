@@ -235,7 +235,11 @@ public:
   
   // OBB manipulator functions
   virtual void UpdateOBBManipulator(void);
-  
+
+  // Object OBB functions
+  virtual void UpdateObjectOrientedBBox(R3SurfelObject *object);
+  virtual void UpdateObjectOrientedBBoxes(void);
+
   
   /////////////////////////////////////
   //// LOW_LEVEL INPUT FUNCTIONS ////
