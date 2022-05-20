@@ -1403,25 +1403,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       }
       break; 
       
-    case 'F':
-    case 'f':
-      // Flip bbox orientation
-      if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
-        obb_manipulator.ResetManipulation();
-        obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
-        if (key == 'F') {
-          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
-          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
-        }
-        if (NObjectSelections() == 1) {
-          R3SurfelObject *object = ObjectSelection(0);
-          R3OrientedBox obb = obb_manipulator.OrientedBox();
-          SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
-        }
-        redraw = 1;
-      }
-      break;
-
     //case XXX:
     //  segmenter.PredictObjectSegmentations(selection_objects);
     //  redraw = 1;
@@ -1506,6 +1487,25 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     case 'z':
       Undo();
       redraw = 1;
+      break;
+
+    case R3_SURFEL_VIEWER_LEFT_KEY:
+    case R3_SURFEL_VIEWER_RIGHT_KEY:
+      // Flip bbox orientation
+      if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+        obb_manipulator.ResetManipulation();
+        obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
+        if (key == R3_SURFEL_VIEWER_RIGHT_KEY) {
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+        }
+        if (NObjectSelections() == 1) {
+          R3SurfelObject *object = ObjectSelection(0);
+          R3OrientedBox obb = obb_manipulator.OrientedBox();
+          SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
+        }
+        redraw = 1;
+      }
       break;
 
     default:
