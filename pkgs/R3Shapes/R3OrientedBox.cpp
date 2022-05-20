@@ -18,6 +18,7 @@ namespace gaps {
 
 const R3OrientedBox R3null_oriented_box(R3Point(0.0, 0.0, 0.0), R3Vector(1.0, 0.0, 0.0), R3Vector(0.0, 1.0, 0.0), -1.0, -1.0, -1.0);
 const R3OrientedBox R3zero_oriented_box(R3Point(0.0, 0.0, 0.0), R3Vector(1.0, 0.0, 0.0), R3Vector(0.0, 1.0, 0.0),  0.0,  0.0,  0.0);
+const R3OrientedBox R3unit_oriented_box(R3Point(0.0, 0.0, 0.0), R3Vector(1.0, 0.0, 0.0), R3Vector(0.0, 1.0, 0.0),  1.0,  1.0,  1.0);
 
 
 

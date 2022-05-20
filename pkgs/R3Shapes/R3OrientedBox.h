@@ -93,6 +93,7 @@ class R3OrientedBox : public R3Solid {
 
 extern const R3OrientedBox R3null_oriented_box;
 extern const R3OrientedBox R3zero_oriented_box;
+extern const R3OrientedBox R3unit_oriented_box;
 
 
 

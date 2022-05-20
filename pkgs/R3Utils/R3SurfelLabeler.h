@@ -237,7 +237,6 @@ public:
   virtual void UpdateOBBManipulator(void);
 
   // Object OBB functions
-  virtual void UpdateObjectOrientedBBox(R3SurfelObject *object);
   virtual void UpdateObjectOrientedBBoxes(void);
 
   

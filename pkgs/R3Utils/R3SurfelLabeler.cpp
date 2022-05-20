@@ -418,11 +418,29 @@ EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
   
 
 
-void R3SurfelLabeler::
+static void
+UpdateObjectOrientedBBox(R3SurfelObject *object,
+  const R3Point& centroid, const R3Triad& axes)
+{
+  // Check if already have OBB property
+  if (object->FindObjectProperty(R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY)) return;
+
+  // Estimate OBB
+  RNArray<R3SurfelObject *> objects;
+  objects.Insert(object);
+  R3OrientedBox obb = EstimateOrientedBBox(objects, centroid, axes);
+
+  // Set OBB property
+  SetObjectOBBProperty(object, obb, 0, R3_SURFEL_MACHINE_ORIGINATOR);
+}
+
+
+
+static void
 UpdateObjectOrientedBBox(R3SurfelObject *object)
 {
   // Check if already have OBB property
-  if (GetObjectOBBProperty(object)) return;
+  if (object->FindObjectProperty(R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY)) return;
 
   // Estimate OBB
   RNArray<R3SurfelObject *> objects;
@@ -3240,27 +3258,32 @@ SplitSelectedObjects(void)
   EmptyObjectSelections();
 
   // Split all selected objects
-  int split_count = 0;
-  RNArray<R3SurfelObject *> objectsA, objectsB;
+  RNArray<R3SurfelObject *> objectsA;
   for (int i = 0; i < copy_selection_objects.NEntries(); i++) {
     R3SurfelObject *object = copy_selection_objects.Kth(i);
+
+    // Get info
     R3SurfelObject *parent = object->Parent();
     assert(parent == scene->RootObject());
-    if (SplitObject(object, parent, *constraint, &objectsA, &objectsB)) {
-      split_count += objectsA.NEntries();
+    R3OrientedBox obb = object->CurrentOrientedBBox();
+    if (obb.IsEmpty()) obb = R3unit_oriented_box;
+      
+    // Split objects
+    RNArray<R3SurfelObject *> objsA, objsB;
+    SplitObject(object, parent, *constraint, &objsA, &objsB);
+    objectsA.Append(objsA);
+
+    // Update oriented bounding boxes of new objects
+    for (int j = 0; j < objsA.NEntries(); j++) {
+      R3SurfelObject *objA = objsA.Kth(j);
+      UpdateObjectOrientedBBox(objA, objA->Centroid(), obb.Axes());
+    }
+    for (int j = 0; j < objsB.NEntries(); j++) {
+      R3SurfelObject *objB = objsB.Kth(j);
+      UpdateObjectOrientedBBox(objB, objB->Centroid(), obb.Axes());
     }
   }
-
-  // Update OBBs for all split objects
-  for (int i = 0; i < objectsA.NEntries(); i++) {
-    R3SurfelObject *object = objectsA.Kth(i);
-    UpdateObjectOrientedBBox(object);
-  }
-  for (int i = 0; i < objectsB.NEntries(); i++) {
-    R3SurfelObject *object = objectsB.Kth(i);
-    UpdateObjectOrientedBBox(object);
-  }
-
+  
   // Select objects on one side of split polygon
   for (int i = 0; i < objectsA.NEntries(); i++) {
     R3SurfelObject *object = objectsA.Kth(i);
@@ -3269,7 +3292,7 @@ SplitSelectedObjects(void)
   }
     
   // Set message
-  SetMessage("Split %d objects", split_count);
+  SetMessage("Split %d objects", objectsA.NEntries());
   
   // Update obb manipulator
   if (update_obb_manipulator) UpdateOBBManipulator();
