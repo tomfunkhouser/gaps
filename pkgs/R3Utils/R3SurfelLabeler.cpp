@@ -274,6 +274,164 @@ SetSnapshotDirectory(const char *directory_name)
 
 
 ////////////////////////////////////////////////////////////////////////
+// OBB manipulation functions
+////////////////////////////////////////////////////////////////////////
+
+static void
+AddObjectsToPointSet(const RNArray<R3SurfelObject *>& objects, R3SurfelPointSet& pointset, int max_points = 0)
+{
+  // Compute max resolution
+  RNScalar max_resolution = 0;
+  if (max_points > 0) {
+    // Get axis-aligned bbox of objects
+    R3Box bbox = R3null_box;
+    for (int i = 0; i < objects.NEntries(); i++) {
+      R3SurfelObject *object = objects.Kth(i);
+      bbox.Union(object->BBox());
+    }
+  
+    // Get max resolution for pointset
+    RNVolume volume = bbox.Volume();
+    max_resolution = (volume > 0) ? max_points / volume : 0;
+  }
+  
+  // Add objects to pointset
+  for (int i = 0; i < objects.NEntries(); i++) {
+    R3SurfelObject *object = objects.Kth(i);
+    object->InsertIntoPointSet(&pointset, TRUE, max_resolution);
+  }
+}
+
+
+  
+static void
+OrientOrientedBox(R3OrientedBox& obb, R3SurfelObject *object = NULL)
+{
+  // Swap XY axes to make axis0 the longer axis
+  if (obb.Radius(0) < obb.Radius(1)) {
+    obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+      obb.Radius(1), obb.Radius(0), obb.Radius(2));
+  }
+
+  // Rotate around Z by 180 degrees to make positive side point towards closest image viewpoint
+  if (object) {
+    R3SurfelScene *scene = object->Scene();
+    if (scene && (scene->NImages() > 0)) {
+      R3SurfelImage *image = ClosestImage(scene, obb.Centroid());
+      R3Vector sensor_direction = image->Viewpoint() - obb.Centroid();
+      RNScalar dot0 = sensor_direction.Dot(obb.Axis(0));
+      RNScalar dot1 = sensor_direction.Dot(obb.Axis(1));
+      if (((fabs(dot0) > fabs(dot1)) && (dot0 < 0)) ||
+          ((fabs(dot1) > fabs(dot0)) && (dot1 < 0))) {
+        obb.Reset(obb.Center(), -(obb.Axis(0)), -(obb.Axis(1)),
+          obb.Radius(0), obb.Radius(1), obb.Radius(2));
+      }
+    }
+  }
+
+  // Swap XY axes to make axis1 the longer axis for some classes
+  // This is temporary -- better to estimate obbs when create scene
+  if (object) {
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (label && label->Name()) {
+      if (!strcmp(label->Name(), "TrafficSign") ||
+          !strcmp(label->Name(), "Billboard") ||
+          !strcmp(label->Name(), "BusinessSign") ||
+          !strcmp(label->Name(), "TempTrafficSign")) {
+        obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+          obb.Radius(1), obb.Radius(0), obb.Radius(2));
+      }
+    }
+  }
+}
+
+
+
+static R3OrientedBox 
+EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects,
+  const R3Point& centroid, const R3Triad& axes)
+{
+  // Check objects
+  if (objects.NEntries() == 0) return R3null_oriented_box;
+
+  // Create pointset
+  R3SurfelPointSet pointset;
+  static const int max_points = 1024;
+  AddObjectsToPointSet(objects, pointset, max_points);
+
+  // Check pointset
+  if (pointset.NPoints() == 0) return R3null_oriented_box;
+
+  // Estimate oriented box of pointset
+  return EstimateOrientedBBox(&pointset, centroid, axes);
+}
+
+
+
+static R3OrientedBox 
+EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
+{
+  // Initialize result
+  if (objects.NEntries() == 0) return R3null_oriented_box;
+  
+  // Check number of objects
+  if (objects.NEntries() == 1) {
+    // Get object
+    R3SurfelObject *object = objects.Kth(0);
+
+    // Check object property
+    static const int noperands = 20;
+    static const int property_type = R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY;
+    R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
+    if (property && (property->NOperands() == noperands)) {
+      // Return stored obb, if there is one
+      R3Point center(property->Operand(0), property->Operand(1), property->Operand(2));
+      R3Vector axis0(property->Operand(3), property->Operand(4), property->Operand(5));
+      R3Vector axis1(property->Operand(6), property->Operand(7), property->Operand(8));
+      RNScalar radius0 = property->Operand(12);
+      RNScalar radius1 = property->Operand(13);
+      RNScalar radius2 = property->Operand(14);
+      return R3OrientedBox(center, axis0, axis1, radius0, radius1, radius2);
+    }
+  }
+
+  // Create pointset
+  R3SurfelPointSet pointset;
+  static const int max_points = 1024;
+  AddObjectsToPointSet(objects, pointset, max_points);
+
+  // Check pointset
+  if (pointset.NPoints() == 0) return R3null_oriented_box;
+
+  // Estimate oriented box of pointset
+  R3OrientedBox obb = EstimateOrientedBBox(&pointset);
+
+  // Orient oriented box based on heuristics
+  OrientOrientedBox(obb, objects[0]);
+
+  // Return oriented bbox
+  return obb;
+}
+  
+
+
+void R3SurfelLabeler::
+UpdateOBBManipulator(void)
+{
+  // Check visibility
+  if (!obb_manipulator_visibility) return;
+
+  // Reset obb manipulation
+  obb_manipulator.ResetManipulation();
+
+  // Reset obb box
+  R3OrientedBox obb = EstimateOrientedBBox(selection_objects);
+  obb_manipulator.SetOrientedBox(obb);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -756,6 +914,11 @@ MouseMotion(int x, int y)
   else if (mouse_button[0] || mouse_button[1] || mouse_button[2]) {
     if (obb_manipulator_visibility && obb_manipulator.IsManipulating()) {
       if (obb_manipulator.UpdateManipulation(viewer, x, y)) {
+        if (obb_manipulator.IsRotating()) {
+          R3OrientedBox obb = obb_manipulator.OrientedBox();
+          obb = EstimateOrientedBBox(selection_objects, obb.Center(), obb.Axes());
+          obb_manipulator.SetOrientedBox(obb);
+        }
         redraw = 1;
       }
     }
@@ -1228,6 +1391,7 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     case 'E':
     case 'e':
       if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+        obb_manipulator.ResetManipulation();
         R3OrientedBox obb = obb_manipulator.OrientedBox();
         SelectOverlappedObjects(obb);
         obb_manipulator.SetOrientedBox(obb);
@@ -1255,16 +1419,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break; }
 
-    case 'I': // Shift-Tab
-      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
-      redraw = 1;
-      break;
-      
-    case 'i': // Tab
-      SelectSuggestedObject();
-      redraw = 1;
-      break;
-
     case 'M':
     case 'm': // Enter
       // Copied from R3SurfelViewer
@@ -1274,12 +1428,22 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       break;
 
     case 'N':
-    case 'n':
-      // Assign new label (copy label from closest other object)
-      // if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
-      // else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
-      // redraw = 1;
+      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
+      redraw = 1;
       break;
+      
+    case 'n':
+      SelectSuggestedObject();
+      redraw = 1;
+      break;
+
+    // case 'xxx':
+    // case 'xxx':
+    //   Assign new label (copy label from closest other object)
+    //   if (NObjectSelections() > 0) AssignNewLabelToSelectedObjects();
+    //   else if (!AssignNewLabelToPickedObject(x, y)) SelectPickedObject(x, y);
+    //   redraw = 1;
+    //   break;
       
     case 'O':
     case 'o':
@@ -1407,9 +1571,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     case R3_SURFEL_VIEWER_LEFT_KEY:
     case R3_SURFEL_VIEWER_RIGHT_KEY:
       if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
-        RNScalar sign = (key == R3_SURFEL_VIEWER_LEFT_KEY) ? 1.0 : -1.0;
-        RNAngle theta = sign * RN_PI / 16;
-        obb_manipulator.RotateOrientedBox(theta);
+        obb_manipulator.ResetManipulation();
+        obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
+        if (key == R3_SURFEL_VIEWER_RIGHT_KEY) {
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+        }
         if (NObjectSelections() == 1) {
           R3SurfelObject *object = ObjectSelection(0);
           R3OrientedBox obb = obb_manipulator.OrientedBox();
@@ -4833,115 +5000,6 @@ PickAttributeMenu(int xcursor, int ycursor, int button, int state, RNBoolean shi
 
   // No label picked
   return 0;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// OBB manipulation functions
-////////////////////////////////////////////////////////////////////////
-
-static void
-RotateOrientedBox(R3OrientedBox& obb, R3SurfelObject *object = NULL)
-{
-  // Swap XY axes to make axis0 the longer axis
-  if (obb.Radius(0) < obb.Radius(1)) {
-    obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
-      obb.Radius(1), obb.Radius(0), obb.Radius(2));
-  }
-
-  // Rotate around Z by 180 degrees to make positive side point towards closest image viewpoint
-  if (object) {
-    R3SurfelScene *scene = object->Scene();
-    if (scene && (scene->NImages() > 0)) {
-      R3SurfelImage *image = ClosestImage(scene, obb.Centroid());
-      R3Vector sensor_direction = image->Viewpoint() - obb.Centroid();
-      RNScalar dot0 = sensor_direction.Dot(obb.Axis(0));
-      RNScalar dot1 = sensor_direction.Dot(obb.Axis(1));
-      if (((fabs(dot0) > fabs(dot1)) && (dot0 < 0)) ||
-          ((fabs(dot1) > fabs(dot0)) && (dot1 < 0))) {
-        obb.Reset(obb.Center(), -(obb.Axis(0)), -(obb.Axis(1)),
-          obb.Radius(0), obb.Radius(1), obb.Radius(2));
-      }
-    }
-  }
-
-  // Swap XY axes to make axis1 the longer axis for some classes
-  // This is temporary -- better to estimate obbs when create scene
-  if (object) {
-    R3SurfelLabel *label = object->CurrentLabel();
-    if (label && label->Name()) {
-      if (!strcmp(label->Name(), "TrafficSign") ||
-          !strcmp(label->Name(), "Billboard") ||
-          !strcmp(label->Name(), "BusinessSign") ||
-          !strcmp(label->Name(), "TempTrafficSign")) {
-        obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
-          obb.Radius(1), obb.Radius(0), obb.Radius(2));
-      }
-    }
-  }
-}
-
-
-
-static R3OrientedBox 
-EstimateOrientedBBox(const RNArray<R3SurfelObject *>& objects)
-{
-  // Initialize result
-  if (objects.NEntries() == 0) return R3null_oriented_box;
-  
-  // Check number of objects
-  if (objects.NEntries() == 1) {
-    // Get object
-    R3SurfelObject *object = objects.Kth(0);
-
-    // Check object property
-    static const int noperands = 20;
-    static const int property_type = R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY;
-    R3SurfelObjectProperty *property = object->FindObjectProperty(property_type);
-    if (property && (property->NOperands() == noperands)) {
-      // Return stored obb, if there is one
-      R3Point center(property->Operand(0), property->Operand(1), property->Operand(2));
-      R3Vector axis0(property->Operand(3), property->Operand(4), property->Operand(5));
-      R3Vector axis1(property->Operand(6), property->Operand(7), property->Operand(8));
-      RNScalar radius0 = property->Operand(12);
-      RNScalar radius1 = property->Operand(13);
-      RNScalar radius2 = property->Operand(14);
-      return R3OrientedBox(center, axis0, axis1, radius0, radius1, radius2);
-    }
-  }
-
-  // Create pointset
-  R3SurfelPointSet pointset;
-  for (int i = 0; i < objects.NEntries(); i++) {
-    R3SurfelObject *object = objects.Kth(i);
-    object->InsertIntoPointSet(&pointset, TRUE);
-  }
-  
-  // Estimate oriented box of pointset
-  R3OrientedBox obb = EstimateOrientedBBox(&pointset);
-
-  // Rotate oriented box based on heuristics
-  RotateOrientedBox(obb, objects[0]);
-
-  // Return oriented bbox
-  return obb;
-}
-  
-
-
-void R3SurfelLabeler::
-UpdateOBBManipulator(void)
-{
-  // Check visibility
-  if (!obb_manipulator_visibility) return;
-
-  // Reset obb manipulation
-  obb_manipulator.ResetManipulation();
-
-  // Reset obb box
-  R3OrientedBox obb = EstimateOrientedBBox(selection_objects);
-  obb_manipulator.SetOrientedBox(obb);
 }
 
 

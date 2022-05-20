@@ -223,7 +223,7 @@ SetOrientedBox(const R3OrientedBox& oriented_box)
   this->oriented_box = oriented_box;
 
   // Reset manipulation
-  ResetManipulation();
+  // ResetManipulation();
 }
 
   
@@ -232,6 +232,19 @@ RotateOrientedBox(RNAngle theta)
 {
   // Rotate oriented box around Z axis
   oriented_box.Rotate(RN_Z, theta);
+
+  // Reset manipulation
+  ResetManipulation();
+}
+
+
+  
+void R3OrientedBoxManipulator::
+SwapOrientedBoxAxes(void)
+{
+  // Swap axis0 and axis1
+  oriented_box.Reset(oriented_box.Center(), oriented_box.Axis(1), -oriented_box.Axis(0),
+    oriented_box.Radius(1), oriented_box.Radius(0), oriented_box.Radius(2));
 
   // Reset manipulation
   ResetManipulation();

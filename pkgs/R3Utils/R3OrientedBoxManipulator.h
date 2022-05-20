@@ -49,6 +49,7 @@ public:
   // Property setting functions
   void SetOrientedBox(const R3OrientedBox& oriented_box);
   void RotateOrientedBox(RNAngle theta);
+  void SwapOrientedBoxAxes(void);
   void Reset(void);
   
   // Draw functions
