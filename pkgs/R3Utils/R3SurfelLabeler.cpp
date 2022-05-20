@@ -1545,25 +1545,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break;
 
-    case R3_SURFEL_VIEWER_LEFT_KEY:
-    case R3_SURFEL_VIEWER_RIGHT_KEY:
-      // Flip bbox orientation
-      if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
-        obb_manipulator.ResetManipulation();
-        obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
-        if (key == R3_SURFEL_VIEWER_RIGHT_KEY) {
-          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
-          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
-        }
-        if (NObjectSelections() == 1) {
-          R3SurfelObject *object = ObjectSelection(0);
-          R3OrientedBox obb = obb_manipulator.OrientedBox();
-          SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
-        }
-        redraw = 1;
-      }
-      break;
-
     default:
       for (unsigned int i = 0; i < attribute_menu_keystrokes.size(); i++) {
         if (!isalpha(key)) continue;
@@ -1633,13 +1614,47 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       break;
 
     case R3_SURFEL_VIEWER_LEFT_KEY:
-      UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
-      redraw = 1;
+      if (shift) {
+        // Flip obb orientation by 90 degrees
+        if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+          obb_manipulator.ResetManipulation();
+          obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
+          if (NObjectSelections() == 1) {
+            R3SurfelObject *object = ObjectSelection(0);
+            R3OrientedBox obb = obb_manipulator.OrientedBox();
+            SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
+          }
+          redraw = 1;
+        }
+      }
+      else {
+        // Select previous object
+        UndoCommandOfType(R3_SURFEL_LABELER_SELECT_SUGGESTED_COMMAND);
+        redraw = 1;
+      }
       break;
       
     case R3_SURFEL_VIEWER_RIGHT_KEY:
-      SelectSuggestedObject();
-      redraw = 1;
+      if (shift) {
+        // Flip obb orientation by 270 degrees
+        if (obb_manipulator_visibility && !obb_manipulator.OrientedBox().IsEmpty()) {
+          obb_manipulator.ResetManipulation();
+          obb_manipulator.SwapOrientedBoxAxes(); // 90 degrees rotation
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+          obb_manipulator.SwapOrientedBoxAxes();  // 90 degrees more
+          if (NObjectSelections() == 1) {
+            R3SurfelObject *object = ObjectSelection(0);
+            R3OrientedBox obb = obb_manipulator.OrientedBox();
+            SetObjectOBBProperty(object, obb, 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
+          }
+          redraw = 1;
+        }
+      }
+      else {
+        // Select next object
+        SelectSuggestedObject();
+        redraw = 1;
+      }
       break;
 
     case R3_SURFEL_VIEWER_PAGE_UP_KEY: 
