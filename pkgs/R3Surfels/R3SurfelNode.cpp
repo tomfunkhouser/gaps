@@ -299,7 +299,7 @@ Scan(RNBoolean search_ancestors) const
 
 
 R3SurfelPointSet *R3SurfelNode::
-PointSet(RNBoolean leaf_level) const
+PointSet(RNBoolean leaf_level, RNScalar max_resolution) const
 {
   // Allocate point set
   R3SurfelPointSet *pointset = new R3SurfelPointSet();
@@ -309,7 +309,7 @@ PointSet(RNBoolean leaf_level) const
   }
 
   // Insert surfels from this node into pointset
-  InsertIntoPointSet(pointset, leaf_level);
+  InsertIntoPointSet(pointset, leaf_level, max_resolution);
 
   // Return pointset
   return pointset;
@@ -318,21 +318,21 @@ PointSet(RNBoolean leaf_level) const
 
   
 void R3SurfelNode::
-InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level) const
+InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level, RNScalar max_resolution) const
 {
   // Insert points
   if (leaf_level && (NParts() > 0)) {
     // Insert points from all decendent parts at leaf level
     for (int i = 0; i < NParts(); i++) {
       R3SurfelNode *part = Part(i);
-      part->InsertIntoPointSet(pointset, leaf_level);
+      part->InsertIntoPointSet(pointset, leaf_level, max_resolution);
     }
   }
   else {
     // Insert points from all blocks in this node
     for (int i = 0; i < NBlocks(); i++) {
       R3SurfelBlock *block = Block(i);
-      pointset->InsertPoints(block);
+      pointset->InsertPoints(block, max_resolution);
     }
   }
 }

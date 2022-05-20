@@ -300,7 +300,7 @@ R3Plane FitSupportPlane(R3SurfelScene *scene,
 // Oriented bounding box estimation
 ////////////////////////////////////////////////////////////////////////
 
-R3OrientedBox EstimateOrientedBBox(R3SurfelPointSet *pointset, const R3Point& centroid, const R3Triad& axes);
+R3OrientedBox EstimateOrientedBBox(R3SurfelPointSet *pointset, const R3Point& center, const R3Triad& axes);
 R3OrientedBox EstimateOrientedBBox(R3SurfelPointSet *pointset);
 R3OrientedBox EstimateOrientedBBox(R3SurfelObject *object);
   

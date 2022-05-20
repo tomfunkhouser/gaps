@@ -87,7 +87,7 @@ public:
   R3SurfelBlock *Block(int k) const;
 
   // Point access functions
-  R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE) const;
+  R3SurfelPointSet *PointSet(RNBoolean leaf_level = FALSE, RNScalar max_resolution = 0) const;
 
 
   /////////////////////////////////////////
@@ -154,7 +154,7 @@ public:
   void UpdateProperties(void);
 
   // Pointset manipulation functions
-  void InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level = FALSE) const;
+  void InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level = FALSE, RNScalar max_resolution = 0) const;
 
 protected:
   // Object update functions

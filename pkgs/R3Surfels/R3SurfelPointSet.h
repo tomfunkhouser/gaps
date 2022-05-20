@@ -42,6 +42,7 @@ public:
   virtual void InsertPoints(R3SurfelBlock *block, const R2Box& box);
   virtual void InsertPoints(R3SurfelBlock *block, const R3Point& center, RNLength radius, RNCoord zmin = -FLT_MAX, RNCoord zmax = FLT_MAX);
   virtual void InsertPoints(R3SurfelBlock *block, const R3SurfelConstraint& constraint);
+  virtual void InsertPoints(R3SurfelBlock *block, RNScalar max_resolution);
   virtual void InsertPoints(const R3SurfelPointSet *set);
   virtual void InsertPoints(const R3SurfelPointSet *set, const R3Box& box);
   virtual void InsertPoints(const R3SurfelPointSet *set, const R2Box& box);

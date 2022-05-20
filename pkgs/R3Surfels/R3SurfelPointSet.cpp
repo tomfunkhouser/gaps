@@ -403,6 +403,60 @@ InsertPoints(R3SurfelBlock *block, const R3SurfelConstraint& constraint)
 
 
 void R3SurfelPointSet::
+InsertPoints(R3SurfelBlock *block, RNScalar max_resolution)
+{
+  // Check block
+  if (block->NSurfels() == 0) return;
+
+  // Update bounding box
+  bbox.Union(block->BBox());
+
+  // Update timestamp range
+  timestamp_range.Union(block->TimestampRange());
+
+  // Compute number of surfels to insert
+  int block_nsurfels = block->NSurfels();
+  if (max_resolution > 0) {
+    RNScalar block_resolution = block->Resolution();
+    if (block_resolution > max_resolution) {
+      RNScalar sampling_factor = max_resolution / block_resolution;
+      block_nsurfels = block->NSurfels() * sampling_factor;
+      if (block_nsurfels == 0) block_nsurfels = 1;
+    }
+  }
+  
+  // Allocate space for points
+  AllocatePoints(npoints + block_nsurfels);
+
+  // Read block
+  if (block->database) block->database->ReadBlock(block);
+
+  // Copy surfels
+  if (block_nsurfels < block->NSurfels()) {
+    // Subsample surfels
+    RNScalar step = (RNScalar) block->NSurfels() / (RNScalar) block_nsurfels;
+    for (RNScalar i = 0; i <= (RNScalar) block_nsurfels; i += step) {
+      const R3Surfel *surfel = block->Surfel((int) i);
+      points[npoints].Reset(block, surfel);
+      npoints++;
+    }
+  }
+  else {
+    // Copy all surfels
+    for (int i = 0; i < block->NSurfels(); i++) {
+      const R3Surfel *surfel = block->Surfel((int) i);
+      points[npoints].Reset(block, surfel);
+      npoints++;
+    }
+  }
+
+  // Release block
+  if (block->database) block->database->ReleaseBlock(block);
+}
+
+
+
+void R3SurfelPointSet::
 InsertPoints(const R3SurfelPointSet *set)
 {
   // Check set

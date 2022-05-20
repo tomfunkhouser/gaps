@@ -256,7 +256,7 @@ FindObjectProperty(int type) const
 ////////////////////////////////////////////////////////////////////////
 
 R3SurfelPointSet *R3SurfelObject::
-PointSet(RNBoolean leaf_level) const
+PointSet(RNBoolean leaf_level, RNScalar max_resolution) const
 {
   // Allocate point set
   R3SurfelPointSet *pointset = new R3SurfelPointSet();
@@ -266,7 +266,7 @@ PointSet(RNBoolean leaf_level) const
   }
 
   // Insert points into pointset
-  InsertIntoPointSet(pointset, leaf_level);
+  InsertIntoPointSet(pointset, leaf_level, max_resolution);
 
   // Return pointset
   return pointset;
@@ -275,21 +275,21 @@ PointSet(RNBoolean leaf_level) const
 
 
 void R3SurfelObject::
-InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level) const
+InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level, RNScalar max_resolution) const
 {
   // Insert points
   if (leaf_level && (NParts() > 0)) {
     // Insert points from leaf level of all parts of object
     for (int i = 0; i < NParts(); i++) {
       R3SurfelObject *part = Part(i);
-      part->InsertIntoPointSet(pointset, leaf_level);     
+      part->InsertIntoPointSet(pointset, leaf_level, max_resolution);     
     }
   }
   else {
     // Insert points from all nodes
     for (int i = 0; i < NNodes(); i++) {
       R3SurfelNode *node = Node(i);
-      node->InsertIntoPointSet(pointset, leaf_level);
+      node->InsertIntoPointSet(pointset, leaf_level, max_resolution);
     }
   }
 }
