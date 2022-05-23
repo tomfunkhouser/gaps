@@ -56,7 +56,8 @@ const char *command_names[R3_SURFEL_LABELER_NUM_COMMANDS] = {
   "MERGE_SELECTION",
   "UNMERGE_SELECTION",
   "SPLIT_SELECTION",
-  "ASSIGN_ATTRIBUTE"
+  "ASSIGN_ATTRIBUTE",
+  "ASSIGN_OBB"
 };
 
 
@@ -71,7 +72,6 @@ R3SurfelLabelerCommand(R3SurfelLabeler *labeler, int type, double operand)
     operand(operand),
     camera(labeler->Camera()),
     center_point(labeler->CenterPoint()),
-    obb_manipulator(labeler->OBBManipulator()),
     timestamp(labeler->CurrentTime()),
     inserted_object_selections(),
     removed_object_selections(),
@@ -80,7 +80,8 @@ R3SurfelLabelerCommand(R3SurfelLabeler *labeler, int type, double operand)
     part_parent_assignments(),
     inserted_parent_assignments(),
     removed_parent_assignments(),
-    attribute_assignments()
+    attribute_assignments(),
+    obb_assignments()
 {
 }
 

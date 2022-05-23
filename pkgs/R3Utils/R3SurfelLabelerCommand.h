@@ -50,7 +50,8 @@ enum {
   R3_SURFEL_LABELER_MERGE_SELECTION_COMMAND,
   R3_SURFEL_LABELER_UNMERGE_SELECTION_COMMAND,
   R3_SURFEL_LABELER_SPLIT_SELECTION_COMMAND,
-  R3_SURFEL_LABELER_ATTRIBUTE_ASSIGNMENT_COMMAND,
+  R3_SURFEL_LABELER_ASSIGN_ATTRIBUTE_COMMAND,
+  R3_SURFEL_LABELER_ASSIGN_OBB_COMMAND,
   R3_SURFEL_LABELER_NUM_COMMANDS
 };
 
@@ -80,6 +81,20 @@ public:
   RNBoolean new_value;
 };
 
+struct R3SurfelOBBAssignment {
+public:
+  R3SurfelOBBAssignment(void)
+    : object(NULL),
+      obb(R3null_oriented_box), previous_obb(R3null_oriented_box),
+      confidence(0), previous_confidence(0),
+      originator(R3_SURFEL_MACHINE_ORIGINATOR), previous_originator(R3_SURFEL_MACHINE_ORIGINATOR) {};
+public:
+  R3SurfelObject *object;
+  R3OrientedBox obb, previous_obb;
+  RNScalar confidence, previous_confidence;
+  int originator, previous_originator;
+};
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -99,7 +114,6 @@ class R3SurfelLabelerCommand {
   // Labeler state before command was executed
   R3Camera camera;
   R3Point center_point;
-  R3OrientedBoxManipulator obb_manipulator;
 
   // Time since beginning of execution
   RNScalar timestamp;
@@ -119,6 +133,9 @@ class R3SurfelLabelerCommand {
 
   // Attribute assignments
   std::vector<R3SurfelAttributeAssignment> attribute_assignments;
+  
+  // OBB assignments
+  std::vector<R3SurfelOBBAssignment> obb_assignments;
   
   // This is only used by R3SurfelLabeler
   friend class R3SurfelLabeler;

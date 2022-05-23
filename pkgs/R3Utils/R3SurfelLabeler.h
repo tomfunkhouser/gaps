@@ -98,6 +98,9 @@ public:
   virtual int AssignAttributeToPickedObject(int x, int y, RNFlags attribute, const char *attribute_name, int value);
   virtual int AssignAttributeToSelectedObjects(RNFlags attribute, const char *attribute_name, int value);
   
+  // Object attribute adjustments
+  virtual int AssignOBBToSelectedObject(const R3OrientedBox& obb, RNScalar confidence, int originator);
+  
   // Other commands
   virtual int Undo(void);
   virtual int Redo(void);
@@ -118,6 +121,7 @@ public:
   int CommandMenuVisibility(void) const;
   int LabelMenuVisibility(void) const;
   int AttributeMenuVisibility(void) const;
+  RNBoolean IsOBBManipulatorVisible(void) const;
 
   // Snapshot properties
   const char *SnapshotDirectory(void) const;
@@ -195,7 +199,10 @@ public:
 
   // Attribute assignment functions
   virtual int AssignAttribute(R3SurfelObject *object, RNFlags attribute, RNBoolean value);
-  
+
+  // OBB assignment functions
+  virtual int AssignOBB(R3SurfelObject *object, const R3OrientedBox& obb, RNScalar confidence, int originator);
+
   // Pointset functions
   R3SurfelPointSet *ObjectSelectionPointSet(void) const;
 
@@ -234,7 +241,7 @@ public:
   virtual int PickLabelMenu(int xcursor, int ycursor, int button, int state, RNBoolean shift, RNBoolean ctrl, RNBoolean alt);
   
   // OBB manipulator functions
-  virtual void UpdateOBBManipulator(void);
+  virtual void UpdateOBBManipulator(RNBoolean reset_manipulation = FALSE, RNBoolean update_oriented_box = FALSE, RNBoolean keep_orientation = FALSE);
 
   // Object OBB functions
   virtual void UpdateObjectOrientedBBoxes(void);

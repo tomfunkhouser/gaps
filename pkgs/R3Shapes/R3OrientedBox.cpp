@@ -440,7 +440,7 @@ Resize(RNLength radius0, RNLength radius1, RNLength radius2)
 
 
 void R3OrientedBox::
-Inflate (RNScalar fraction) 
+Inflate(RNScalar fraction) 
 {
   // Scale box around centroid by fraction
   if (IsEmpty()) return;
@@ -520,6 +520,33 @@ Empty(void)
 {
     // Empty box
     *this = R3null_oriented_box;
+}
+
+
+
+void R3OrientedBox::
+Union(const R3OrientedBox& box) 
+{
+  // Check boxes
+  if (box.IsEmpty()) return;
+  if (this->IsEmpty()) return;
+
+  // Grow ranges
+  R3Box r(-Radius(0), -Radius(1), -Radius(2), Radius(0), Radius(1), Radius(2));
+  for (int i = 0; i < RN_NUM_OCTANTS; i++) {
+    R3Vector v = box.Corner(i) - Center();
+    RNLength r0 = v.Dot(Axis(0));
+    RNLength r1 = v.Dot(Axis(1));
+    RNLength r2 = v.Dot(Axis(2));
+    r.Union(R3Point(r0, r1, r2));
+  }
+
+  // Compute center
+  R3Point c = r.Centroid();
+  R3Point center = cs.Origin() + Axis(0)*c[0] + Axis(1)*c[1] + Axis(2)*c[2];
+
+  // Initialize everything
+  Reset(center, Axis(0), Axis(1), r.XRadius(), r.YRadius(), r.ZRadius());
 }
 
 

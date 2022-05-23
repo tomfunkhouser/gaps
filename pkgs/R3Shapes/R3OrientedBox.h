@@ -69,6 +69,7 @@ class R3OrientedBox : public R3Solid {
         virtual void Reorient(const R3Vector& axis0, const R3Vector& axis1);
 	virtual void Transform(const R3Transformation& transformation);
         virtual void SetRadius(RNAxis axis, RNLength radius);
+        virtual void Union(const R3OrientedBox& box);
         virtual void Reset(const R3Point& center, const R3Vector& axis0, const  R3Vector& axis1,
           RNScalar radius0, RNScalar radius1, RNScalar radius2); 
 
