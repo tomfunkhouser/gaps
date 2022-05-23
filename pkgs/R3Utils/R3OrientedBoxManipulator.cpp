@@ -56,6 +56,7 @@ R3OrientedBoxManipulator(const R3OrientedBox& oriented_box)
 int R3OrientedBoxManipulator::
 BeginManipulation(const R3Viewer& viewer, int x, int y)
 {
+#if 0
   // Useful constants defining pairs of corners for all edges
   static const int nedges = 12;
   static const int edges[nedges][2] =
@@ -64,7 +65,8 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
       { RN_NPN_OCTANT, RN_NPP_OCTANT }, { RN_NPN_OCTANT, RN_PPN_OCTANT },
       { RN_NNP_OCTANT, RN_NPP_OCTANT }, { RN_NNP_OCTANT, RN_PNP_OCTANT },
       { RN_NPP_OCTANT, RN_PPP_OCTANT }, { RN_PNP_OCTANT, RN_PPP_OCTANT }, { RN_PPN_OCTANT, RN_PPP_OCTANT } };
-
+#endif
+  
   // Reset manipulation
   ResetManipulation();
   ResetSelection();
@@ -93,6 +95,7 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
     }
   }
 
+#if 0
   // Check edges
   if (manipulation_type == R3_NO_MANIPULATION) {
     for (int i = 0; i < nedges; i++) {
@@ -117,7 +120,8 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
       }
     }
   }
-
+#endif
+  
   // Check nose
   if (manipulation_type == R3_NO_MANIPULATION) {
     double min_nose_vector_length = 1;
