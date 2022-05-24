@@ -192,6 +192,15 @@ Draw(RNFlags flags) const
       // Draw obb
       R3OrientedBox obb(centroid, axis1, axis2, radius1, radius2, radius3);
       obb.Outline();
+
+      // Draw nose
+      double min_nose_vector_length = 0.1;
+      double nose_vector_length = 0.1 * radius1;
+      if (nose_vector_length < min_nose_vector_length)
+        nose_vector_length = min_nose_vector_length;
+      R3Point start = centroid + radius1 * axis1;
+      R3Point end = start + nose_vector_length * axis1;
+      R3Span(start, end).Draw();
     }
     break; 
   }
