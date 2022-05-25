@@ -444,6 +444,7 @@ CreateColor(unsigned char *color, int color_scheme,
     break; }
 
   case R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL: {
+    if (!label && object) label = object->CurrentLabel();
     const RNRgb& rgb = (label) ? label->Color() : RNwhite_rgb;
     *color++ = 255 * rgb.R();
     *color++ = 255 * rgb.G();
@@ -503,7 +504,7 @@ CreateColor(unsigned char *color, int color_scheme,
     break; }
       
   case R3_SURFEL_VIEWER_COLOR_BY_ELEVATION: {
-    double elevation = 0;
+    double elevation = 1;
     if (surfel) elevation = surfel->Elevation();
     double value = (elevation > 0) ? 0.5 * sqrt(elevation) : 0;
     CreateColor(color, value);
@@ -1111,7 +1112,12 @@ DrawObjectOrientedBBoxes(void) const
     R3SurfelObject *object = property->Object();
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
-    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
+    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;
+    if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
+        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
+        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {
+      LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
+    }
     property->Draw(0);
   }
 
