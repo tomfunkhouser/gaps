@@ -72,7 +72,7 @@ R3SurfelViewer(R3SurfelScene *scene)
     normal_color(0,1,0),
     background_color(0,0,0),
     object_principal_axes_color(0,1,1),
-    object_oriented_bbox_color(0.25,0.5,1),
+    object_oriented_bbox_color(0.75,0.0,0.75),
     object_bbox_color(0,1,1),
     node_bbox_color(0,0,1),
     block_bbox_color(0,1,0),
@@ -1101,7 +1101,7 @@ DrawObjectOrientedBBoxes(void) const
   if (!object_oriented_bbox_visibility) return;
 
   // Set OpenGL modes
-  glLineWidth(3);
+  glLineWidth(2);
   glDisable(GL_LIGHTING);
   RNLoadRgb(object_oriented_bbox_color);
 
