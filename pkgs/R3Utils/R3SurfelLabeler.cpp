@@ -1575,17 +1575,6 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     case R3_SURFEL_VIEWER_LEFT_KEY:
     case R3_SURFEL_VIEWER_RIGHT_KEY:
       if (shift) {
-        // Rotate obb manipulator
-        if (IsOBBManipulatorVisible()) {
-          static const double delta_angle = RN_PI / 8.0;
-          double sign = (key == R3_SURFEL_VIEWER_LEFT_KEY) ? 1 : -1;
-          obb_manipulator.RotateOrientedBox(sign * delta_angle);
-          UpdateOBBManipulator(TRUE, TRUE, TRUE);
-          AssignOBBToSelectedObject(obb_manipulator.OrientedBox(), 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
-          redraw = 1;
-        }
-      }
-      else {
         // Select next/prev object
         if (key == R3_SURFEL_VIEWER_LEFT_KEY) {
           // Select previous object (kinda)
@@ -1597,6 +1586,17 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
           SelectSuggestedObject();
           redraw = 1;
         }  
+      }
+      else {
+        // Rotate obb manipulator
+        if (IsOBBManipulatorVisible()) {
+          static const double delta_angle = RN_PI / 8.0;
+          double sign = (key == R3_SURFEL_VIEWER_LEFT_KEY) ? 1 : -1;
+          obb_manipulator.RotateOrientedBox(sign * delta_angle);
+          UpdateOBBManipulator(TRUE, TRUE, TRUE);
+          AssignOBBToSelectedObject(obb_manipulator.OrientedBox(), 1.0, R3_SURFEL_HUMAN_ORIGINATOR);
+          redraw = 1;
+        }
       }
       break;
 
