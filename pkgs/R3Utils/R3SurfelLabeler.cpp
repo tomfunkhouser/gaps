@@ -392,7 +392,8 @@ RNBoolean R3SurfelLabeler::
 IsOBBManipulatorVisible(void) const
 {
   // Check visibility
-  if (!obb_manipulator_visibility) return FALSE;
+  if (!obb_manipulator_visibility &&
+      !object_oriented_bbox_visibility) return FALSE;
 
   // Check oriented box
   if (obb_manipulator.OrientedBox().IsEmpty()) return FALSE;
@@ -412,7 +413,8 @@ UpdateOBBManipulator(RNBoolean reset_manipulation,
   RNBoolean keep_orientation)
 {
   // Check visibility
-  if (!obb_manipulator_visibility) return;
+  if (!obb_manipulator_visibility &&
+      !object_oriented_bbox_visibility) return;
 
   // Check object selection
   if (NObjectSelections() != 1) return;
