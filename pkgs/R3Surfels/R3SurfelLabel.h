@@ -38,6 +38,7 @@ public:
   int Identifier(void) const;
   int AssignmentKeystroke(void) const;
   const RNRgb& Color(void) const;
+  RNFlags Flags(void) const;
   void *Data(void) const;
 
 
@@ -84,6 +85,7 @@ public:
   virtual void SetIdentifier(int identifier);
   virtual void SetAssignmentKeystroke(int key);
   virtual void SetColor(const RNRgb& color);
+  virtual void SetFlags(RNFlags flags);
   virtual void SetData(void *data);
 
 
@@ -133,11 +135,21 @@ protected:
   int identifier;
   int assignment_keystroke;
   RNRgb color;
+  RNFlags flags;
   void *data;
 };
 
 
 
+////////////////////////////////////////////////////////////////////////
+// FLAG DEFINITIONS
+////////////////////////////////////////////////////////////////////////
+
+#define R3_SURFEL_LABEL_UNORIENTABLE_FLAG                 0x00000001
+#define R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG     0x00000002
+
+  
+  
 ////////////////////////////////////////////////////////////////////////
 // INLINE FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
@@ -165,6 +177,15 @@ Color(void) const
 {
   // Return color
   return color;
+}
+
+
+
+inline RNFlags R3SurfelLabel::
+Flags(void) const
+{
+  // Return flags
+  return flags;
 }
 
 

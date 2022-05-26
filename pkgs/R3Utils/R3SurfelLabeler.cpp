@@ -306,17 +306,11 @@ OrientOBB(R3OrientedBox& obb, R3SurfelObject *object = NULL)
   }
 
   // Swap XY axes to make axis1 the longer axis for some classes
-  // This is temporary -- better to estimate obbs when create scene
   if (object) {
     R3SurfelLabel *label = object->CurrentLabel();
-    if (label && label->Name()) {
-      if (!strcmp(label->Name(), "TrafficSign") ||
-          !strcmp(label->Name(), "Billboard") ||
-          !strcmp(label->Name(), "BusinessSign") ||
-          !strcmp(label->Name(), "TempTrafficSign")) {
-        obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
-          obb.Radius(1), obb.Radius(0), obb.Radius(2));
-      }
+    if (label->Flags()[R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG]) {
+      obb.Reset(obb.Center(), obb.Axis(1), -(obb.Axis(0)),
+        obb.Radius(1), obb.Radius(0), obb.Radius(2));
     }
   }
 }

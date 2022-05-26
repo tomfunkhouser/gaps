@@ -1242,6 +1242,7 @@ InsertScene(const R3SurfelScene& scene2,
     label1->SetIdentifier(label2->Identifier());
     label1->SetAssignmentKeystroke(label2->AssignmentKeystroke());
     label1->SetColor(label2->Color());
+    label1->SetFlags(label2->Flags());
     scene1.InsertLabel(label1, parent1);
   }
 
@@ -1893,16 +1894,18 @@ ReadAsciiStream(FILE *fp)
     R3SurfelLabel *label = read_labels.Kth(i);
     char label_name[1024];
     int identifier, assignment_key, parent_index, nparts, dummy;
+    unsigned int flags;
     double red, green, blue;
     fscanf(fp, "%s", buffer);
     if (strcmp(buffer, "L")) { RNFail("Error reading label %d in %s\n", i, filename); return 0; }
     ReadAsciiString(fp, label_name); 
-    fscanf(fp, "%d%d%d%d%d%lf%lf%lf", &identifier, &assignment_key, &dummy, &parent_index, &nparts, &red, &green, &blue);
-    for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
+    fscanf(fp, "%d%d%d%d%d%lf%lf%lf%u", &identifier, &assignment_key, &dummy, &parent_index, &nparts, &red, &green, &blue, &flags);
+    for (int j = 0; j < 3; j++) fscanf(fp, "%s", buffer);
     if (strcmp(label_name, "None")) label->SetName(label_name);
     label->SetIdentifier(identifier);
     label->SetAssignmentKeystroke(assignment_key);
     label->SetColor(RNRgb(red, green, blue));
+    label->SetFlags(flags);
     R3SurfelLabel *parent = (parent_index >= 0) ? read_labels.Kth(parent_index) : NULL;
     if (parent) InsertLabel(label, parent);
   }
@@ -2227,9 +2230,10 @@ WriteAsciiStream(FILE *fp)
     int parent_index = (label->Parent()) ? label->Parent()->SceneIndex() : -1;
     fprintf(fp, "L ");
     WriteAsciiString(fp, label->Name());
-    fprintf(fp, " %d %d %d %d %d %g %g %g", label->Identifier(), label->AssignmentKeystroke(), 
-      dummy, parent_index, label->NParts(), color.R(), color.G(), color.B());
-    for (int j = 0; j < 4; j++) fprintf(fp, " 0");
+    fprintf(fp, " %d %d %d %d %d %g %g %g %u", label->Identifier(), label->AssignmentKeystroke(), 
+      dummy, parent_index, label->NParts(), color.R(), color.G(), color.B(),
+      (unsigned int) label->Flags());
+    for (int j = 0; j < 3; j++) fprintf(fp, " 0");
     fprintf(fp, "\n");
   }
 
@@ -2664,7 +2668,7 @@ ReadBinaryStream(FILE *fp)
   for (int i = 0; i < nlabels; i++) {
     R3SurfelLabel *label = read_labels.Kth(i);
     char label_name[1024];
-    int identifier, assignment_key, parent_index, nparts, dummy;
+    int identifier, assignment_key, parent_index, nparts, flags, dummy;
     double red, green, blue;
     ReadBinaryString(fp, label_name);
     ReadBinaryInteger(fp, &identifier);
@@ -2674,11 +2678,13 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryDouble(fp, &red);
     ReadBinaryDouble(fp, &green);
     ReadBinaryDouble(fp, &blue);
-    for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
+    ReadBinaryInteger(fp, &flags);
+    for (int j = 0; j < 3; j++) ReadBinaryInteger(fp, &dummy);
     if (strcmp(label_name, "None")) label->SetName(label_name);
     label->SetIdentifier(identifier);
     label->SetAssignmentKeystroke(assignment_key);
     label->SetColor(RNRgb(red, green, blue));
+    label->SetFlags(flags);
     R3SurfelLabel *parent = (parent_index >= 0) ? read_labels.Kth(parent_index) : NULL;
     if (parent) InsertLabel(label, parent);
   }
@@ -3055,7 +3061,8 @@ WriteBinaryStream(FILE *fp)
     WriteBinaryDouble(fp, color.R());
     WriteBinaryDouble(fp, color.G());
     WriteBinaryDouble(fp, color.B());
-    for (int j = 0; j < 4; j++) WriteBinaryInteger(fp, 0);
+    WriteBinaryInteger(fp, label->Flags());
+    for (int j = 0; j < 3; j++) WriteBinaryInteger(fp, 0);
   }
 
   // Write features

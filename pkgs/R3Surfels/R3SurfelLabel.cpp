@@ -43,6 +43,7 @@ R3SurfelLabel(const char *name)
     identifier(-1),
     assignment_keystroke(-1),
     color(0.5,0.5,0.5),
+    flags(0),
     data(NULL)
 {
 }
@@ -62,6 +63,7 @@ R3SurfelLabel(const R3SurfelLabel& label)
     identifier(-1),
     assignment_keystroke(label.assignment_keystroke),
     color(label.color),
+    flags(label.flags),
     data(NULL)
 {
 }
@@ -284,6 +286,18 @@ SetColor(const RNRgb& color)
 
   // Mark scene as dirty
   // XXX if (scene) scene->SetDirty();
+}
+
+
+
+void R3SurfelLabel::
+SetFlags(RNFlags flags)
+{
+  // Set flags
+  this->flags = flags;
+
+  // Mark scene as dirty
+  if (scene) scene->SetDirty();
 }
 
 

@@ -34,6 +34,72 @@ static int print_verbose = 0;
 
 
 ///////////////////////////////////////////////////////////////////////
+// Apply temporary scene modifications
+////////////////////////////////////////////////////////////////////////
+
+static int
+AddLabelFlags(R3SurfelScene *scene, const char *label_name, RNFlags flags)
+{
+  // Find label
+  R3SurfelLabel *label = scene->FindLabelByName(label_name);
+  if (!label) return 0;
+
+  // Update label flags
+  RNFlags label_flags = label->Flags();
+  label_flags.Add(flags);
+  label->SetFlags(label_flags);
+
+  // Return success
+  return 1;
+}
+
+
+
+static void
+ApplyTemporarySceneUpdates(R3SurfelScene *scene)
+{
+  // Add label axis flags
+  AddLabelFlags(scene, "Billboard", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "BusinessSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "TempTrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "TrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+
+  // Add label unorientable flags
+  AddLabelFlags(scene, "Bridge", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "BuildingInterior", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Crosswalk", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Driveway", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Fence", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "FireHydrant", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "GuardRail", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "LidarArtifact", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Mountain", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "OtherGround", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "ParkingMeter", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "PavedRoad", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Self", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Sidewalk", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Sky", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "StreetLight", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "TempCone", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Terrain", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Tree", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Tunnel", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Unknown", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "UnpavedRoad", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Wall", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Water", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Wire", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+
+  // Sometimes orientable
+  // AddLabelFlags(scene, "OtherPermanentObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  // AddLabelFlags(scene, "OtherStructure", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  // AddLabelFlags(scene, "OtherTempObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+}
+
+
+
+///////////////////////////////////////////////////////////////////////
 // Argument Parsing Functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +182,9 @@ int main(int argc, char **argv)
   // Open scene
   R3SurfelScene *scene = OpenScene(scene_filename, database_filename, print_verbose);
   if (!scene) exit(-1);
+
+  // TEMPORARY
+  ApplyTemporarySceneUpdates(scene);
 
   // Read images
   if (input_pixel_database_filename) {
