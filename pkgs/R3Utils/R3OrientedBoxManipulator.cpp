@@ -27,6 +27,9 @@ R3OrientedBoxManipulator(void)
   : oriented_box(R3Point(0.0, 0.0, 0.0),
       R3Vector(1.0, 0.0, 0.0), R3Vector(0.0, 1.0, 0.0),
       -1.0, -1.0, -1.0),
+    rotating_allowed(TRUE),
+    scaling_allowed(TRUE),
+    translating_allowed(TRUE),
     selection_corner0(-1),
     selection_corner1(-1),
     selection_t(-1),
@@ -82,41 +85,45 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
 
   // Check corners
   if (manipulation_type == R3_NO_MANIPULATION) {
-    for (int octant = 0; octant < RN_NUM_OCTANTS; octant++) {
-      R3Point position = oriented_box.Corner(octant);
-      R2Point projection = viewer.ViewportPoint(position);
-      if (!R2Contains(viewport_bbox, projection)) continue;
-      RNScalar dd = R2SquaredDistance(projection, cursor_position);
-      if (dd > max_squared_distance) continue;
-      selection_corner0 = octant;
-      selection_corner1 = octant;
-      selection_t = 0.0;
-      manipulation_type = R3_SCALE_MANIPULATION;
+    if (scaling_allowed) {
+      for (int octant = 0; octant < RN_NUM_OCTANTS; octant++) {
+        R3Point position = oriented_box.Corner(octant);
+        R2Point projection = viewer.ViewportPoint(position);
+        if (!R2Contains(viewport_bbox, projection)) continue;
+        RNScalar dd = R2SquaredDistance(projection, cursor_position);
+        if (dd > max_squared_distance) continue;
+        selection_corner0 = octant;
+        selection_corner1 = octant;
+        selection_t = 0.0;
+        manipulation_type = R3_SCALE_MANIPULATION;
+      }
     }
   }
 
 #if 0
   // Check edges
   if (manipulation_type == R3_NO_MANIPULATION) {
-    for (int i = 0; i < nedges; i++) {
-      int octant0 = edges[i][0];
-      int octant1 = edges[i][1];
-      R3Point position0 = oriented_box.Corner(octant0);
-      R3Point position1 = oriented_box.Corner(octant1);
-      R2Point projection0 = viewer.ViewportPoint(position0);
-      R2Point projection1 = viewer.ViewportPoint(position1);
-      if (R2Contains(R2infinite_point, projection0)) continue;
-      if (R2Contains(R2infinite_point, projection1)) continue;
-      R2Span edge(projection0, projection1);
-      if (RNIsZero(edge.Length())) continue;
-      RNScalar d = R2Distance(edge, cursor_position);
-      if (d < max_distance) {
-        double t = edge.T(cursor_position) / edge.Length();
-        t = (t > 1) ? 1 : ((t < 0) ? 0 : t);
-        selection_corner0 = octant0;
-        selection_corner1 = octant1;
-        selection_t = t;
-        manipulation_type = R3_SCALE_MANIPULATION;
+    if (scaling_allowed) {
+      for (int i = 0; i < nedges; i++) {
+        int octant0 = edges[i][0];
+        int octant1 = edges[i][1];
+        R3Point position0 = oriented_box.Corner(octant0);
+        R3Point position1 = oriented_box.Corner(octant1);
+        R2Point projection0 = viewer.ViewportPoint(position0);
+        R2Point projection1 = viewer.ViewportPoint(position1);
+        if (R2Contains(R2infinite_point, projection0)) continue;
+        if (R2Contains(R2infinite_point, projection1)) continue;
+        R2Span edge(projection0, projection1);
+        if (RNIsZero(edge.Length())) continue;
+        RNScalar d = R2Distance(edge, cursor_position);
+        if (d < max_distance) {
+          double t = edge.T(cursor_position) / edge.Length();
+          t = (t > 1) ? 1 : ((t < 0) ? 0 : t);
+          selection_corner0 = octant0;
+          selection_corner1 = octant1;
+          selection_t = t;
+          manipulation_type = R3_SCALE_MANIPULATION;
+        }
       }
     }
   }
@@ -124,22 +131,24 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
   
   // Check nose
   if (manipulation_type == R3_NO_MANIPULATION) {
-    double min_nose_vector_length = 1;
-    double nose_vector_length = 0.5 * oriented_box.Radius(0);
-    if (nose_vector_length < min_nose_vector_length) 
-      nose_vector_length = min_nose_vector_length;
-    R3Point position0 = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
-    R3Point position1 = position0 + nose_vector_length * oriented_box.Axis(0);
-    R2Point projection0 = viewer.ViewportPoint(position0);
-    R2Point projection1 = viewer.ViewportPoint(position1);
-    R2Span nose(projection0, projection1);
-    if (RNIsPositive(nose.Length())) {
-      RNScalar d = R2Distance(nose, cursor_position);
-      if (d < max_distance) {
-        selection_corner0 = RN_PNP_OCTANT;
-        selection_corner1 = RN_PPP_OCTANT;
-        selection_t = 0.5;
-        manipulation_type = R3_ROTATION_MANIPULATION;
+    if (rotating_allowed) {
+      double min_nose_vector_length = 1;
+      double nose_vector_length = 0.5 * oriented_box.Radius(0);
+      if (nose_vector_length < min_nose_vector_length) 
+        nose_vector_length = min_nose_vector_length;
+      R3Point position0 = oriented_box.Center() + oriented_box.Radius(0) * oriented_box.Axis(0);
+      R3Point position1 = position0 + nose_vector_length * oriented_box.Axis(0);
+      R2Point projection0 = viewer.ViewportPoint(position0);
+      R2Point projection1 = viewer.ViewportPoint(position1);
+      R2Span nose(projection0, projection1);
+      if (RNIsPositive(nose.Length())) {
+        RNScalar d = R2Distance(nose, cursor_position);
+        if (d < max_distance) {
+          selection_corner0 = RN_PNP_OCTANT;
+          selection_corner1 = RN_PPP_OCTANT;
+          selection_t = 0.5;
+          manipulation_type = R3_ROTATION_MANIPULATION;
+        }
       }
     }
   }
@@ -152,7 +161,7 @@ BeginManipulation(const R3Viewer& viewer, int x, int y)
 }
 
 
-
+  
 int R3OrientedBoxManipulator::
 UpdateManipulation(const R3Viewer& viewer, int x, int y)
 {
@@ -204,6 +213,7 @@ ResetManipulation(void)
   manipulation_type =  R3_NO_MANIPULATION;
 }
 
+  
 
 void R3OrientedBoxManipulator::
 ResetSelection(void)
@@ -219,6 +229,33 @@ ResetSelection(void)
 ////////////////////////////////////////////////////////////////////////
 // Property manipulation functions
 ////////////////////////////////////////////////////////////////////////
+  
+void R3OrientedBoxManipulator::
+SetRotatingAllowed(RNBoolean allowed)
+{
+  // Set whether rotating is allowed
+  rotating_allowed = allowed;
+}
+
+
+  
+void R3OrientedBoxManipulator::
+SetScalingAllowed(RNBoolean allowed)
+{
+  // Set whether scaling is allowed
+  scaling_allowed = allowed;
+}
+
+
+  
+void R3OrientedBoxManipulator::
+SetTranslatingAllowed(RNBoolean allowed)
+{
+  // Set whether translating is allowed
+  translating_allowed = allowed;
+}
+
+
   
 void R3OrientedBoxManipulator::
 SetOrientedBox(const R3OrientedBox& oriented_box)
@@ -496,9 +533,15 @@ DrawAnchor(void) const
 void R3OrientedBoxManipulator::
 Draw(void) const
 {
-  // Draw everything
+  // Draw obb
   DrawOrientedBox();
-  DrawNose();
+
+  // Draw nose
+  if (rotating_allowed) {
+    DrawNose();
+  }
+
+  // Draw anchor
   if (IsManipulating()) {
     DrawAnchor();
   }

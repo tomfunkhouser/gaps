@@ -39,6 +39,9 @@ public:
   RNBoolean IsRotating(void) const;
   RNBoolean IsScaling(void) const;
   RNBoolean IsTranslating(void) const;
+  RNBoolean IsRotatingAllowed(void) const;
+  RNBoolean IsScalingAllowed(void) const;
+  RNBoolean IsTranslatingAllowed(void) const;
   RNBoolean IsDirty(void) const;
   
   // High-level manipulation functions
@@ -50,6 +53,9 @@ public:
   void SetOrientedBox(const R3OrientedBox& oriented_box);
   void RotateOrientedBox(RNAngle theta);
   void SwapOrientedBoxAxes(void);
+  void SetRotatingAllowed(RNBoolean allowed);
+  void SetScalingAllowed(RNBoolean allowed);
+  void SetTranslatingAllowed(RNBoolean allowed);
   void Reset(void);
   
   // Draw functions
@@ -77,6 +83,9 @@ public:
 
 private:
   R3OrientedBox oriented_box;
+  RNBoolean rotating_allowed;
+  RNBoolean scaling_allowed;
+  RNBoolean translating_allowed;
   int selection_corner0;
   int selection_corner1;
   double selection_t;
@@ -123,6 +132,33 @@ ManipulationType(void) const
 
 
   
+inline RNBoolean R3OrientedBoxManipulator::
+IsRotatingAllowed(void) const
+{
+  // Return whether rotating is allowed
+  return rotating_allowed;
+}
+
+  
+
+inline RNBoolean R3OrientedBoxManipulator::
+IsScalingAllowed(void) const
+{
+  // Return whether scaling is allowed
+  return scaling_allowed;
+}
+
+  
+
+inline RNBoolean R3OrientedBoxManipulator::
+IsTranslatingAllowed(void) const
+{
+  // Return whether translating is allowed
+  return translating_allowed;
+}
+
+  
+
 inline RNBoolean R3OrientedBoxManipulator::
 IsManipulating(void) const
 {
