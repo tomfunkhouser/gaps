@@ -1907,7 +1907,7 @@ ReadAsciiStream(FILE *fp)
     label->SetColor(RNRgb(red, green, blue));
     label->SetFlags(flags);
     R3SurfelLabel *parent = (parent_index >= 0) ? read_labels.Kth(parent_index) : NULL;
-    if (parent) InsertLabel(label, parent);
+    if (i > 0) InsertLabel(label, parent);
   }
 
   // Read features
@@ -1950,7 +1950,7 @@ ReadAsciiStream(FILE *fp)
       for (int i = 0; i < nobjects; i++) {
         int object_index;
         fscanf(fp, "%d", &object_index);
-        objs.Insert(Object(object_index));
+        objs.Insert(read_objects.Kth(object_index));
       }
     }
     if (noperands > 0) {
@@ -1976,7 +1976,7 @@ ReadAsciiStream(FILE *fp)
       for (int i = 0; i < nlabels; i++) {
         int label_index;
         fscanf(fp, "%d", &label_index);
-        objs.Insert(Label(label_index));
+        objs.Insert(read_labels.Kth(label_index));
       }
     }
     if (noperands > 0) {
@@ -1998,8 +1998,8 @@ ReadAsciiStream(FILE *fp)
     fscanf(fp, "%s%d%d%lf%d", buffer, &indexA, &indexB, &confidence, &originator);
     if (strcmp(buffer, "A")) { RNFail("Error reading assignment %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
-    R3SurfelObject *object = Object(indexA);
-    R3SurfelLabel *label = Label(indexB);
+    R3SurfelObject *object = read_objects.Kth(indexA);
+    R3SurfelLabel *label = read_labels.Kth(indexB);
     R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, confidence, originator);
     InsertLabelAssignment(assignment);
   }
@@ -2110,7 +2110,7 @@ ReadAsciiStream(FILE *fp)
     fscanf(fp, "%s%d%d%d", buffer, &type, &object_index, &noperands);
     if (strcmp(buffer, "OP")) { RNFail("Error reading object property %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
-    R3SurfelObject *object = (object_index >= 0) ? Object(object_index) : NULL;
+    R3SurfelObject *object = (object_index >= 0) ? read_objects.Kth(object_index) : NULL;
     if (noperands > 0) {
       operands = new RNScalar [ noperands ];
       for (int i = 0; i < noperands; i++) {
@@ -2129,7 +2129,7 @@ ReadAsciiStream(FILE *fp)
     fscanf(fp, "%s%d%d%d", buffer, &type, &label_index, &noperands);
     if (strcmp(buffer, "LP")) { RNFail("Error reading label property %d in %s\n", i, filename); return 0; }
     for (int j = 0; j < 4; j++) fscanf(fp, "%s", buffer);
-    R3SurfelLabel *label = (label_index >= 0) ? Label(label_index) : NULL;
+    R3SurfelLabel *label = (label_index >= 0) ? read_labels.Kth(label_index) : NULL;
     if (noperands > 0) {
       operands = new RNScalar [ noperands ];
       for (int i = 0; i < noperands; i++) {
@@ -2686,7 +2686,7 @@ ReadBinaryStream(FILE *fp)
     label->SetColor(RNRgb(red, green, blue));
     label->SetFlags(flags);
     R3SurfelLabel *parent = (parent_index >= 0) ? read_labels.Kth(parent_index) : NULL;
-    if (parent) InsertLabel(label, parent);
+    if (i > 0) InsertLabel(label, parent);
   }
 
   // Read features
@@ -2730,7 +2730,7 @@ ReadBinaryStream(FILE *fp)
       for (int i = 0; i < nobjects; i++) {
         int object_index;
         ReadBinaryInteger(fp, &object_index);
-        objs.Insert(Object(object_index));
+        objs.Insert(read_objects.Kth(object_index));
       }
     }
     if (noperands > 0) {
@@ -2757,7 +2757,7 @@ ReadBinaryStream(FILE *fp)
       for (int i = 0; i < nlabels; i++) {
         int label_index;
         ReadBinaryInteger(fp, &label_index);
-        objs.Insert(Label(label_index));
+        objs.Insert(read_labels.Kth(label_index));
       }
     }
     if (noperands > 0) {
@@ -2781,8 +2781,8 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryDouble(fp, &confidence);
     ReadBinaryInteger(fp, &originator);
     for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
-    R3SurfelObject *object = Object(indexA);
-    R3SurfelLabel *label = Label(indexB);
+    R3SurfelObject *object = read_objects.Kth(indexA);
+    R3SurfelLabel *label = read_labels.Kth(indexB);
     R3SurfelLabelAssignment *assignment = new R3SurfelLabelAssignment(object, label, confidence, originator);
     InsertLabelAssignment(assignment);
   }
@@ -2929,7 +2929,7 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryInteger(fp, &object_index);
     ReadBinaryInteger(fp, &noperands);
     for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
-    R3SurfelObject *object = (object_index >= 0) ? Object(object_index) : NULL;
+    R3SurfelObject *object = (object_index >= 0) ? read_objects.Kth(object_index) : NULL;
     if (noperands > 0) {
       operands = new RNScalar [ noperands ];
       for (int i = 0; i < noperands; i++) {
@@ -2950,7 +2950,7 @@ ReadBinaryStream(FILE *fp)
     ReadBinaryInteger(fp, &label_index);
     ReadBinaryInteger(fp, &noperands);
     for (int j = 0; j < 4; j++) ReadBinaryInteger(fp, &dummy);
-    R3SurfelLabel *label = (label_index >= 0) ? Label(label_index) : NULL;
+    R3SurfelLabel *label = (label_index >= 0) ? read_labels.Kth(label_index) : NULL;
     if (noperands > 0) {
       operands = new RNScalar [ noperands ];
       for (int i = 0; i < noperands; i++) {
