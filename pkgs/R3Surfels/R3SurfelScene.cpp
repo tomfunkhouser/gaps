@@ -1878,7 +1878,7 @@ ReadAsciiStream(FILE *fp)
       object->InsertNode(node);
     }
     R3SurfelObject *parent = (parent_index >= 0) ? read_objects.Kth(parent_index) : NULL;
-    InsertObject(object, parent);
+    if (i > 0) InsertObject(object, parent);
   }
 
   // Create labels
@@ -2653,7 +2653,7 @@ ReadBinaryStream(FILE *fp)
       object->InsertNode(node);
     }
     R3SurfelObject *parent = (parent_index >= 0) ? read_objects.Kth(parent_index) : NULL;
-    InsertObject(object, parent);
+    if (i > 0) InsertObject(object, parent);
   }
 
   // Create labels
