@@ -40,7 +40,8 @@ public:
 
   // Complexity property functions
   RNScalar Complexity(void) const;
-
+  RNBoolean IsEmpty(void) const;
+  
   // Geometric property functions
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;

@@ -1086,7 +1086,8 @@ DrawObjectPrincipalAxes(void) const
     R3SurfelObject *object = property->Object();
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
-    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
+    if (object->IsEmpty()) continue;
+    // if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
     property->Draw(0);
   }
 }
@@ -1112,7 +1113,8 @@ DrawObjectOrientedBBoxes(void) const
     R3SurfelObject *object = property->Object();
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
-    if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;
+    // if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;
+    if (object->IsEmpty()) continue;
     if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {

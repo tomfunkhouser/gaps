@@ -296,6 +296,30 @@ InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level, RNScalar ma
 
 
 
+RNBoolean R3SurfelObject::
+IsEmpty(void) const
+{
+  // Check parts
+  for (int i = 0; i < NParts(); i++) {
+    R3SurfelObject *part = Part(i);
+    if (!part->IsEmpty()) return FALSE;
+  }
+
+  // Check nodes
+  for (int i = 0; i < NNodes(); i++) {
+    R3SurfelNode *node = Node(i);
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      if (block->NSurfels() > 0) return FALSE;
+    }
+  }
+
+  // Did not find anything
+  return TRUE;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // ASSIGNMENT ACCESS FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
