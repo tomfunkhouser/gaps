@@ -2969,6 +2969,9 @@ UnmergeSelectedObjects(void)
       // Increment counter
       count++;
     }
+
+    // Remove object from hierarchy
+    SetObjectParent(object, NULL);
   }
 
   // Set message
@@ -3124,6 +3127,7 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
     // Set parents (use this function so can undo)
     SetObjectParent(objectA, parent);
     SetObjectParent(objectB, parent);
+    SetObjectParent(object, NULL);
 
     // Assign labels (use this function so can undo)
     InsertLabelAssignment(assignmentA);
@@ -3566,6 +3570,9 @@ Undo(void)
 int R3SurfelLabeler::
 Redo(void) 
 {
+  // Not supported, for now
+  return 1;
+
   // Check everything
   if (!scene) return 0;
   if (undo_stack.IsEmpty() || (undo_index >= undo_stack.NEntries()-1)) {
@@ -4101,7 +4108,8 @@ CreateObject(R3SurfelObject *parent, const char *name)
 
   // Insert object into scene
   if (!parent) parent = scene->RootObject();
-  scene->InsertObject(object, parent);
+  scene->InsertObject(object, NULL);
+  if (parent) SetObjectParent(object, parent);
 
   // Initialize object info
   int object_index = object->SceneIndex();
@@ -4122,7 +4130,6 @@ SetObjectParent(R3SurfelObject *object, R3SurfelObject *parent)
   // Check everything
   if (!scene) return 0;
   if (!object) return 0;
-  if (!parent) return 0;
   R3SurfelObject *old_parent = object->Parent();
   if (old_parent == parent) return 1;
   
