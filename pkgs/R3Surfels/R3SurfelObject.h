@@ -40,8 +40,7 @@ public:
 
   // Complexity property functions
   RNScalar Complexity(void) const;
-  RNBoolean IsEmpty(void) const;
-  
+
   // Geometric property functions
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
@@ -56,6 +55,7 @@ public:
   const R3SurfelFeatureVector& FeatureVector(void) const;
 
   // Other property functions
+  RNBoolean HasSurfels(RNBoolean leaf_level = FALSE) const;
   RNFlags Flags(void) const;
 
   // User data property functions

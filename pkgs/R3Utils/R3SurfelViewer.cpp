@@ -1071,25 +1071,40 @@ DrawNormals(void) const
 
 
 void R3SurfelViewer::
-DrawObjectPrincipalAxes(void) const
+DrawObjectProperties(int property_type) const
 {
   // Check stuff
   if (!scene) return;
-  if (!object_principal_axes_visibility) return;
   
   // Draw object properties
-  glDisable(GL_LIGHTING);
-  RNLoadRgb(object_principal_axes_color);
   for (int i = 0; i < scene->NObjectProperties(); i++) {
     R3SurfelObjectProperty *property = scene->ObjectProperty(i);
-    if (property->Type() != R3_SURFEL_OBJECT_PCA_PROPERTY) continue;
+    if (property->Type() != property_type) continue;
     R3SurfelObject *object = property->Object();
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
-    if (object->IsEmpty()) continue;
-    // if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;    
+    if (!object->HasSurfels(TRUE)) continue;
+    if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
+        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
+        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {
+      LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
+    }
     property->Draw(0);
   }
+}
+
+
+
+void R3SurfelViewer::
+DrawObjectPrincipalAxes(void) const
+{
+  // Check stuff
+  if (!object_principal_axes_visibility) return;
+  
+  // Draw object principal axes
+  glDisable(GL_LIGHTING);
+  RNLoadRgb(object_principal_axes_color);
+  DrawObjectProperties(R3_SURFEL_OBJECT_PCA_PROPERTY);
 }
 
 
@@ -1098,32 +1113,13 @@ void R3SurfelViewer::
 DrawObjectOrientedBBoxes(void) const
 {
   // Check stuff
-  if (!scene) return;
   if (!object_oriented_bbox_visibility) return;
 
-  // Set OpenGL modes
+  // Draw object oriented boxes
   glLineWidth(2);
   glDisable(GL_LIGHTING);
   RNLoadRgb(object_oriented_bbox_color);
-
-  // Draw object OBBs
-  for (int i = 0; i < scene->NObjectProperties(); i++) {
-    R3SurfelObjectProperty *property = scene->ObjectProperty(i);
-    if (property->Type() != R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY) continue;
-    R3SurfelObject *object = property->Object();
-    if (!object->Parent()) continue;
-    if (object->Parent() != scene->RootObject()) continue;
-    // if ((object->NParts() == 0) && (object->NNodes() == 0)) continue;
-    if (object->IsEmpty()) continue;
-    if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
-        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
-        (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {
-      LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
-    }
-    property->Draw(0);
-  }
-
-  // Reset OpenGL modes
+  DrawObjectProperties(R3_SURFEL_OBJECT_AMODAL_OBB_PROPERTY);
   glLineWidth(1);
 }
 

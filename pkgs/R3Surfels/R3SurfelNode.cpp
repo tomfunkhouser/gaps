@@ -176,8 +176,31 @@ TimestampRange(void) const
   return timestamp_range;
 }
 
+  
 
+RNBoolean R3SurfelNode::
+HasSurfels(RNBoolean leaf_level) const
+{
+  // Check blocks
+  for (int i = 0; i < NBlocks(); i++) {
+    R3SurfelBlock *block = Block(i);
+    if (block->NSurfels() > 0) return TRUE;
+  }
 
+  // Check parts
+  if (leaf_level) {
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelNode *part = Part(i);
+      if (part->HasSurfels(leaf_level)) return TRUE;
+    }
+  }
+
+  // Did not find anything
+  return FALSE;
+}
+  
+
+  
 RNBoolean R3SurfelNode::
 HasActive(void) const
 {

@@ -297,25 +297,24 @@ InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level, RNScalar ma
 
 
 RNBoolean R3SurfelObject::
-IsEmpty(void) const
+HasSurfels(RNBoolean leaf_level) const
 {
-  // Check parts
-  for (int i = 0; i < NParts(); i++) {
-    R3SurfelObject *part = Part(i);
-    if (!part->IsEmpty()) return FALSE;
-  }
-
   // Check nodes
   for (int i = 0; i < NNodes(); i++) {
     R3SurfelNode *node = Node(i);
-    for (int j = 0; j < node->NBlocks(); j++) {
-      R3SurfelBlock *block = node->Block(j);
-      if (block->NSurfels() > 0) return FALSE;
+    if (node->HasSurfels(leaf_level)) return TRUE;
+  }
+
+  // Check parts
+  if (leaf_level) {
+    for (int i = 0; i < NParts(); i++) {
+      R3SurfelObject *part = Part(i);
+      if (part->HasSurfels(leaf_level)) return TRUE;
     }
   }
 
   // Did not find anything
-  return TRUE;
+  return FALSE;
 }
 
 

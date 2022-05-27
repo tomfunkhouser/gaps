@@ -296,6 +296,7 @@ protected:
 
   // Draw functions
   virtual void DrawObject(R3SurfelObject *object, RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+  virtual void DrawObjectProperties(int property_type) const;
 
   // VBO management functions
   virtual void DrawVBO(int color_scheme) const;

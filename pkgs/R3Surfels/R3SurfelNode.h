@@ -38,7 +38,7 @@ public:
   RNScalar Complexity(void) const;
   RNScalar Resolution(void) const;
   RNScalar AverageRadius(void) const;
-
+  
   // Geometric property functions
   const R3Box& BBox(void) const;
   R3Point Centroid(void) const;
@@ -50,6 +50,7 @@ public:
   const RNInterval& TimestampRange(void) const;
 
   // Surfel property functions
+  RNBoolean HasSurfels(RNBoolean leaf_level = FALSE) const;
   RNBoolean HasActive(void) const;
   RNBoolean HasNormals(void) const;
   RNBoolean HasAerial(void) const;
