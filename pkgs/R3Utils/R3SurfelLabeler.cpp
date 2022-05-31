@@ -432,6 +432,11 @@ UpdateOBBManipulator(RNBoolean reset_manipulation,
     }
     obb_manipulator.SetOrientedBox(obb);
   }
+
+  // Update whether rotation is allowed
+  R3SurfelLabel *label = object->CurrentLabel();
+  RNBoolean rot = (label && label->Flags()[R3_SURFEL_LABEL_UNORIENTABLE_FLAG]) ? FALSE : TRUE;
+  obb_manipulator.SetRotatingAllowed(rot);
 }
 
 

@@ -29,6 +29,7 @@ static double depth_exponent = 0.5;
 static int multiresolution = 0;
 static int dynamic_cache = 0;
 static int max_images = 0;
+static int apply_may2022_scene_updates = 0;
 static int print_verbose = 0;
 
 
@@ -36,6 +37,36 @@ static int print_verbose = 0;
 ///////////////////////////////////////////////////////////////////////
 // Apply temporary scene modifications
 ////////////////////////////////////////////////////////////////////////
+
+static int
+AddLabel(R3SurfelScene *scene, const char *name,
+  int identifier, int assignment_key,
+  int r, int g, int b, const char *parent_name = NULL)
+{
+  // Check stuff
+  if (!scene) return 0;
+  if (!name) return 0;
+
+  // Check if label already exists
+  if (scene->FindLabelByName(name)) return 1;
+
+  // Find parent label
+  R3SurfelLabel *parent = scene->RootLabel();
+  if (parent_name) parent = scene->FindLabelByName(parent_name);
+  if (!parent) return 0;
+
+  // Create label
+  R3SurfelLabel *label =  new R3SurfelLabel(name);
+  label->SetColor(gaps::RNRgb(r / 255.0, g / 255.0, b / 255.0));
+  label->SetIdentifier(identifier);
+  label->SetAssignmentKeystroke(assignment_key);
+  scene->InsertLabel(label, parent);
+
+  // Return success
+  return 1;
+}
+
+
 
 static int
 AddLabelFlags(R3SurfelScene *scene, const char *label_name, RNFlags flags)
@@ -55,18 +86,47 @@ AddLabelFlags(R3SurfelScene *scene, const char *label_name, RNFlags flags)
 
 
 
-static void
-ApplyTemporarySceneUpdates(R3SurfelScene *scene)
+static int
+SetLabelAssignmentKey(R3SurfelScene *scene, const char *label_name, int assignment_key)
 {
+  // Find label
+  R3SurfelLabel *label = scene->FindLabelByName(label_name);
+  if (!label) return 0;
+
+  // Update assignment key
+  label->SetAssignmentKeystroke(assignment_key);
+
+  // Return success
+  return 1;
+}
+
+
+
+static void
+ApplyMay2022SceneUpdates(R3SurfelScene *scene)
+{
+  // Reset label assignment keys
+  SetLabelAssignmentKey(scene, "OtherVehicle", 'C');
+  
+  // Add new labels
+  const int PEDESTRIAN_ENTRANCE_LABEL = 47;
+  const int VEHICLE_ENTRANCE_LABEL = 48;
+  AddLabel(scene, "PedestrianEntrance", PEDESTRIAN_ENTRANCE_LABEL, 'n', 240, 140, 140);
+  AddLabel(scene, "VehicleEntrance", VEHICLE_ENTRANCE_LABEL, 'v', 240, 0, 240);
+  
   // Add label axis flags
   AddLabelFlags(scene, "Billboard", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
   AddLabelFlags(scene, "BusinessSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "PedestrianEntrance", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
   AddLabelFlags(scene, "TempTrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
   AddLabelFlags(scene, "TrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "VehicleEntrance", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
 
   // Add label unorientable flags
   AddLabelFlags(scene, "Bridge", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "BuildingInterior", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "BuildingExterior", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "BusStop", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Crosswalk", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Driveway", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Fence", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
@@ -75,8 +135,12 @@ ApplyTemporarySceneUpdates(R3SurfelScene *scene)
   AddLabelFlags(scene, "LidarArtifact", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Mountain", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "OtherGround", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "OtherPermanentObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "OtherStructure", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "OtherTempObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "ParkingMeter", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "PavedRoad", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "Pole", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Self", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Sidewalk", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Sky", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
@@ -90,11 +154,6 @@ ApplyTemporarySceneUpdates(R3SurfelScene *scene)
   AddLabelFlags(scene, "Wall", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Water", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Wire", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
-
-  // Sometimes orientable
-  // AddLabelFlags(scene, "OtherPermanentObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
-  // AddLabelFlags(scene, "OtherStructure", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
-  // AddLabelFlags(scene, "OtherTempObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
 }
 
 
@@ -140,6 +199,9 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-max_images")) { 
         argv++; argc--; max_images = atoi(*argv);
       }
+      else if (!strcmp(*argv, "-apply_may2022_scene_updates")) { 
+        apply_may2022_scene_updates = 1; 
+      }
       else { 
         RNFail("Invalid program argument: %s", *argv); 
         exit(1); 
@@ -184,7 +246,9 @@ int main(int argc, char **argv)
   if (!scene) exit(-1);
 
   // TEMPORARY
-  ApplyTemporarySceneUpdates(scene);
+  if (apply_may2022_scene_updates) {
+    ApplyMay2022SceneUpdates(scene);
+  }
 
   // Read images
   if (input_pixel_database_filename) {
