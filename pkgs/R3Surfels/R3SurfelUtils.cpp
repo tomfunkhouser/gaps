@@ -458,21 +458,17 @@ CreateNode(R3SurfelScene *scene,
 ////////////////////////////////////////////////////////////////////////
 
 static int
-RemoveEmptyObjects(R3SurfelScene *scene, R3SurfelObject *object)
+RemoveSubtree(R3SurfelScene *scene, R3SurfelObject *object)
 {
   // Check object
   if (!object) return 0;
   if (object == scene->RootObject()) return 1;
   
-  // Remove empty parts
+  // Remove parts
   for (int i = 0; i < object->NParts(); i++) {
     R3SurfelObject *part = object->Part(i);
-    if (!RemoveEmptyObjects(scene, part)) return 0;
+    if (!RemoveSubtree(scene, part)) return 0;
   }
-
-  // Check if object is empty
-  if (object->NParts() > 0) return 1;
-  if (object->NNodes() > 0) return 1;
 
   // Delete object
   scene->RemoveObject(object);
@@ -487,8 +483,49 @@ RemoveEmptyObjects(R3SurfelScene *scene, R3SurfelObject *object)
 int
 RemoveEmptyObjects(R3SurfelScene *scene)
 {
-  // Remove empty objects
-  return RemoveEmptyObjects(scene, scene->RootObject());
+  // Find empty subtrees of objects
+  RNArray<R3SurfelObject *> deletable_subtrees;
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object == scene->RootObject()) continue;
+    R3SurfelObject *parent = object->Parent();
+    if (parent && !parent->HasSurfels(TRUE)) continue;
+    if (object->HasSurfels(TRUE)) continue;
+    deletable_subtrees.Insert(object);
+  }
+
+  // Delete subtrees
+  for (int i = 0; i < deletable_subtrees.NEntries(); i++) {
+    R3SurfelObject *object = deletable_subtrees.Kth(i);
+    RemoveSubtree(scene, object);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+int
+RemoveDisconnectedObjects(R3SurfelScene *scene)
+{
+  // Find subtrees of objects disconnected from root
+  RNArray<R3SurfelObject *> deletable_subtrees;
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object == scene->RootObject()) continue;
+    if (object->Parent()) continue;
+    deletable_subtrees.Insert(object);
+  }
+
+  // Delete subtrees
+  for (int i = 0; i < deletable_subtrees.NEntries(); i++) {
+    R3SurfelObject *object = deletable_subtrees.Kth(i);
+    RemoveSubtree(scene, object);
+  }
+
+  // Return success
+  return 1;
 }
 
 

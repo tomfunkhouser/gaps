@@ -82,14 +82,17 @@ CleanScene(R3SurfelScene *scene, int print_verbose = 0)
   // Start statistics
   RNTime start_time;
   start_time.Read();
+  int start_nobjects = scene->NObjects();
 
+#if 0
   // Find objects to delete
   RNArray<R3SurfelObject *> deletable_objects;
   for (int i = 0; i < scene->NObjects(); i++) {
     R3SurfelObject *object = scene->Object(i);
+    if (object == scene->RootObject()) continue;
     if (object->NParts() > 0) continue;
     if (object->NNodes() > 0) continue;
-    deletable_objects.Insert(object);
+    deletable_objects.Insert();
   }
 
   // Delete objects
@@ -97,12 +100,16 @@ CleanScene(R3SurfelScene *scene, int print_verbose = 0)
     R3SurfelObject *object = deletable_objects.Kth(i);
     delete object;
   }
+#else
+  // Delete null objects
+  if (!RemoveEmptyObjects(scene)) return 0;
+#endif  
   
   // Print statistics
   if (0 && print_verbose) {
     printf("Cleaned scene ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Deleted objects = %d\n", deletable_objects.NEntries());
+    printf("  # Deleted objects = %d\n", start_nobjects - scene->NObjects());
     fflush(stdout);
   }
 

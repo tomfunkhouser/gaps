@@ -45,7 +45,7 @@ void GLUTStop(void)
 
   // Close scene
   R3SurfelScene *scene = GLUTlabeler->Scene();
-  if (scene) CloseScene(scene);
+  if (scene) CloseScene(scene, TRUE);
 
   // Exit
   exit(0);

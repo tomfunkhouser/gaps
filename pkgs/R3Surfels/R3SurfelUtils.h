@@ -85,6 +85,7 @@ R3SurfelNode *CreateNode(R3SurfelScene *scene,
 ////////////////////////////////////////////////////////////////////////
 
 int RemoveEmptyObjects(R3SurfelScene *scene);
+int RemoveDisconnectedObjects(R3SurfelScene *scene);
   
 int RemoveEmptyNodes(R3SurfelScene *scene);
 int RemoveInteriorNodes(R3SurfelScene *scene);
