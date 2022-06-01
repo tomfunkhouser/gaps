@@ -189,18 +189,25 @@ Draw(RNFlags flags) const
       // RNScalar confidence = operands[15];
       // int originator = (int) (operands[16] + 0.5);
 
+      // Check if should draw nose
+      RNBoolean draw_nose = TRUE;
+      R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+      if (label && label->Flags()[R3_SURFEL_LABEL_UNORIENTABLE_FLAG]) draw_nose = FALSE;
+
       // Draw obb
       R3OrientedBox obb(centroid, axis1, axis2, radius1, radius2, radius3);
       obb.Outline();
 
       // Draw nose
-      double min_nose_vector_length = 0.5;
-      double nose_vector_length = 0.25 * radius1;
-      if (nose_vector_length < min_nose_vector_length)
-        nose_vector_length = min_nose_vector_length;
-      R3Point start = centroid + radius1 * axis1;
-      R3Point end = start + nose_vector_length * axis1;
-      R3Span(start, end).Draw();
+      if (draw_nose) {
+        double min_nose_vector_length = 0.5;
+        double nose_vector_length = 0.25 * radius1;
+        if (nose_vector_length < min_nose_vector_length)
+          nose_vector_length = min_nose_vector_length;
+        R3Point start = centroid + radius1 * axis1;
+        R3Point end = start + nose_vector_length * axis1;
+        R3Span(start, end).Draw();
+      }
     }
     break; 
   }
