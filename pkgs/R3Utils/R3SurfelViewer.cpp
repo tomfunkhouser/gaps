@@ -1087,7 +1087,11 @@ DrawObjectProperties(int property_type) const
     if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {
-      LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
+      unsigned char color[3];
+      // LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
+      CreateColor(color, surfel_color_scheme, NULL, NULL, NULL, object, NULL);
+      color[0] *= 0.75; color[1] *= 0.75; color[2] *= 0.75;
+      RNLoadRgb(color);
     }
     property->Draw(0);
   }
