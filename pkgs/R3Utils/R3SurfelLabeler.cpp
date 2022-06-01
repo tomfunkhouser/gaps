@@ -3161,7 +3161,7 @@ SplitSelectedObjects(void)
 {
   // Just checking
   assert(IsValid());
-
+  
   // Set message
   SetMessage(NULL);
 
@@ -3184,6 +3184,7 @@ SplitSelectedObjects(void)
   // Create split constraint
   R3SurfelConstraint *constraint = NULL;
   RNBoolean update_obb_manipulator = TRUE;
+  static const int keep_obb_orientation = 0;
   if (!R2Contains(rubber_line_points[0], rubber_line_points[1])) {
     // Create plane constraint based on split line
     R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
@@ -3245,11 +3246,13 @@ SplitSelectedObjects(void)
     // Update oriented bounding boxes of new objects
     for (int j = 0; j < objsA.NEntries(); j++) {
       R3SurfelObject *objA = objsA.Kth(j);
-      UpdateObjectOrientedBBox(objA, objA->Centroid(), obb.Axes());
+      if (!keep_obb_orientation) UpdateObjectOrientedBBox(objA);
+      else UpdateObjectOrientedBBox(objA, objA->Centroid(), obb.Axes());
     }
     for (int j = 0; j < objsB.NEntries(); j++) {
       R3SurfelObject *objB = objsB.Kth(j);
-      UpdateObjectOrientedBBox(objB, objB->Centroid(), obb.Axes());
+      if (!keep_obb_orientation) UpdateObjectOrientedBBox(objB);
+      else UpdateObjectOrientedBBox(objB, objB->Centroid(), obb.Axes());
     }
   }
   
@@ -3267,7 +3270,7 @@ SplitSelectedObjects(void)
   EndCommand();
 
   // Update obb manipulator
-  if (update_obb_manipulator) UpdateOBBManipulator(TRUE, TRUE, TRUE);
+  if (update_obb_manipulator) UpdateOBBManipulator(TRUE, TRUE, keep_obb_orientation);
 
   // Invalidate VBO colors
   InvalidateVBO();
