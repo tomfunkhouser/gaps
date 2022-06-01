@@ -2982,7 +2982,7 @@ UnmergeSelectedObjects(void)
     }
 
     // Remove object from hierarchy
-    SetObjectParent(object, NULL);
+    // SetObjectParent(object, NULL);
   }
 
   // Set message
@@ -3138,7 +3138,7 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
     // Set parents (use this function so can undo)
     SetObjectParent(objectA, parent);
     SetObjectParent(objectB, parent);
-    SetObjectParent(object, NULL);
+    // SetObjectParent(object, NULL);
 
     // Assign labels (use this function so can undo)
     InsertLabelAssignment(assignmentA);
@@ -5461,7 +5461,10 @@ PrintCommand(R3SurfelLabelerCommand *command, FILE *fp) const
     R3SurfelObject *part = command->part_parent_assignments[j];
     R3SurfelObject *removed_parent = command->removed_parent_assignments[j];
     R3SurfelObject *inserted_parent = command->inserted_parent_assignments[j];
-    fprintf(fp, " ( %d %d %d )", part->SceneIndex(), removed_parent->SceneIndex(), inserted_parent->SceneIndex());
+    int part_index = (part) ? part->SceneIndex() : -1;
+    int removed_parent_index = (removed_parent) ? removed_parent->SceneIndex() : -1;
+    int inserted_parent_index = (inserted_parent) ? inserted_parent->SceneIndex() : -1;
+    fprintf(fp, " ( %d %d %d )", part_index, removed_parent_index, inserted_parent_index);
   }
   fprintf(fp, "    ");
 
