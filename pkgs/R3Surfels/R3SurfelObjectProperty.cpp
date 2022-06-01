@@ -194,8 +194,8 @@ Draw(RNFlags flags) const
       obb.Outline();
 
       // Draw nose
-      double min_nose_vector_length = 0.1;
-      double nose_vector_length = 0.1 * radius1;
+      double min_nose_vector_length = 0.5;
+      double nose_vector_length = 0.25 * radius1;
       if (nose_vector_length < min_nose_vector_length)
         nose_vector_length = min_nose_vector_length;
       R3Point start = centroid + radius1 * axis1;
