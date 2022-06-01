@@ -145,8 +145,9 @@ protected:
 // FLAG DEFINITIONS
 ////////////////////////////////////////////////////////////////////////
 
-#define R3_SURFEL_LABEL_UNORIENTABLE_FLAG                 0x00000001
-#define R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG     0x00000002
+#define R3_SURFEL_LABEL_STUFF_FLAG                        0x00000001
+#define R3_SURFEL_LABEL_UNORIENTABLE_FLAG                 0x00000002
+#define R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG     0x00000004
 
   
   

@@ -1083,12 +1083,12 @@ DrawObjectProperties(int property_type) const
     R3SurfelObject *object = property->Object();
     if (!object->Parent()) continue;
     if (object->Parent() != scene->RootObject()) continue;
+    if (!ObjectVisibility(object)) continue;
     if (!object->HasSurfels(TRUE)) continue;
     if ((surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_CURRENT_LABEL) ||
         (surfel_color_scheme == R3_SURFEL_VIEWER_COLOR_BY_OBJECT_ATTRIBUTES)) {
       unsigned char color[3];
-      // LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
       CreateColor(color, surfel_color_scheme, NULL, NULL, NULL, object, NULL);
       color[0] += 0.5 * (255 - color[0]);
       color[1] += 0.5 * (255 - color[1]);
