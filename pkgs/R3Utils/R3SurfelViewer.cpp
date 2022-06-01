@@ -1090,7 +1090,9 @@ DrawObjectProperties(int property_type) const
       unsigned char color[3];
       // LoadColor(surfel_color_scheme, NULL, NULL, NULL, object, NULL);
       CreateColor(color, surfel_color_scheme, NULL, NULL, NULL, object, NULL);
-      color[0] *= 0.75; color[1] *= 0.75; color[2] *= 0.75;
+      color[0] += 0.5 * (255 - color[0]);
+      color[1] += 0.5 * (255 - color[1]);
+      color[2] += 0.5 * (255 - color[2]);
       RNLoadRgb(color);
     }
     property->Draw(0);
