@@ -135,7 +135,7 @@ ApplyMay2022SceneUpdates(R3SurfelScene *scene)
   AddLabelFlags(scene, "LidarArtifact", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "Mountain", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "OtherGround", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
-  AddLabelFlags(scene, "OtherPermanentObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
+  AddLabelFlags(scene, "OtherPermObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "OtherStructure", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "OtherTempObject", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
   AddLabelFlags(scene, "ParkingMeter", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
