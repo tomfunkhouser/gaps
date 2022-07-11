@@ -3186,7 +3186,7 @@ SplitSelectedObjects(void)
   // Create split constraint
   R3SurfelConstraint *constraint = NULL;
   RNBoolean update_obb_manipulator = TRUE;
-  static const int keep_obb_orientation = 0;
+  static const int keep_obb_orientation = 1;
   if (!R2Contains(rubber_line_points[0], rubber_line_points[1])) {
     // Create plane constraint based on split line
     R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
