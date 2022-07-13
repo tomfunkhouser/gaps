@@ -105,14 +105,15 @@ SetLabelAssignmentKey(R3SurfelScene *scene, const char *label_name, int assignme
 static void
 ApplyMay2022SceneUpdates(R3SurfelScene *scene)
 {
-  // Reset label assignment keys
-  SetLabelAssignmentKey(scene, "OtherVehicle", 'v');
-  
   // Add new labels
   const int PEDESTRIAN_ENTRANCE_LABEL = 47;
   const int VEHICLE_ENTRANCE_LABEL = 48;
   AddLabel(scene, "PedestrianEntrance", PEDESTRIAN_ENTRANCE_LABEL, 'n', 240, 140, 140);
   AddLabel(scene, "VehicleEntrance", VEHICLE_ENTRANCE_LABEL, 'C', 240, 0, 240);
+  
+  // Reset label assignment keys
+  SetLabelAssignmentKey(scene, "OtherVehicle", 'v');
+  SetLabelAssignmentKey(scene, "VehicleEntrance", 'C');
   
   // Add label axis flags
   AddLabelFlags(scene, "Billboard", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
