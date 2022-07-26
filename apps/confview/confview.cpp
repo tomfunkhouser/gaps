@@ -656,29 +656,41 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw vertex image overlaps
   if (vertex_image_overlaps) {
     if (configuration.NSurfaces() > 0) {
-      glLineWidth(3);
-      RNLoadRgb(1, 0, 0);
-      RNGrfxBegin(RN_GRFX_LINES);
+      // Find vertex closest to center
       RGBDSurface *surface = configuration.Surface(0);
       R3Mesh *mesh = surface->mesh;
+      RNScalar closest_dd = 0.05;
+      R3MeshVertex *closest_vertex = NULL;
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         const R3Point& position = mesh->VertexPosition(vertex);
-        if (R3SquaredDistance(position, center) > 0.05) continue;
-        for (int j = 0; j < vertex_image_overlaps[i].NEntries(); j++) {
-          RGBDImage *image = vertex_image_overlaps[i][j];
+        RNScalar dd = R3SquaredDistance(position, center);
+        if (dd < closest_dd) {
+          closest_vertex = vertex;
+          closest_dd = dd;
+        }
+      }
+
+      // Draw vertex image overlaps for closest vertex
+      if (closest_vertex) {
+        glLineWidth(3);
+        RNLoadRgb(1, 0, 0);
+        RNGrfxBegin(RN_GRFX_LINES);
+        int closest_id = mesh->VertexID(closest_vertex);
+        const R3Point& position = mesh->VertexPosition(closest_vertex);
+        for (int j = 0; j < vertex_image_overlaps[closest_id].NEntries(); j++) {
+          RGBDImage *image = vertex_image_overlaps[closest_id][j];
           R3LoadPoint(image->WorldViewpoint());
           R3LoadPoint(position);
         }
-        if (vertex_image_overlaps[i].NEntries() > 0) break;
+        RNGrfxEnd();
+        glLineWidth(1);
       }
-      RNGrfxEnd();
-      glLineWidth(1);
     }
   }
 
-  // Draw vertex image overlaps
-  if (image_vertex_overlaps && (selected_image_index >= 0)) {
+  // Draw image vertex overlaps
+  if (0 && image_vertex_overlaps && (selected_image_index >= 0)) {
     if (configuration.NSurfaces() > 0) {
       glPointSize(3);
       RNGrfxBegin(RN_GRFX_POINTS);
@@ -694,7 +706,7 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   }
 
   // Draw image image overlaps
-  if (image_image_overlaps && (selected_image_index >= 0)) {
+  if (0 && image_image_overlaps && (selected_image_index >= 0)) {
     glLineWidth(3);
     for (int i = 0; i < image_image_overlaps->YResolution(); i++) {
       RNScalar value = image_image_overlaps->GridValue(selected_image_index, i);
