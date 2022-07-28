@@ -1304,6 +1304,12 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
       redraw = 1;
       break; 
 
+    case '4': 
+    case '$': 
+      SetMessageVisibility(-1);
+      redraw = 1;
+      break; 
+
     case ',': 
     case '.':
       // Copied from R3SurfelViewer
