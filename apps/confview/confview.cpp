@@ -401,9 +401,10 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
 
       // Read overlaps
       for (int i = 0; i < noverlaps; i++) {
-        // Read image index
+        // Read image index and position
         int image_index;
-        if (fscanf(fp, "%d", &image_index) != (unsigned int) 1) {
+        double image_x, image_y;
+        if (fscanf(fp, "%d%lf%lf", &image_index, &image_x, &image_y) != (unsigned int) 3) {
           RNFail("Unable to read image index in %s\n", filename);
           return 0;
         }
