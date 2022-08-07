@@ -52,7 +52,7 @@ R3SceneNode(R3Scene *scene)
     elements(),
     references(),
     info(),
-    transformation(R3identity_affine),
+    transformation(R4Matrix(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), 0),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     name(NULL),
     data(NULL)
