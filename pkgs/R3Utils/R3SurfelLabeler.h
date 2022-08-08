@@ -60,8 +60,6 @@ public:
   // Object selection 
   virtual int SelectPickedObject(int x, int y,
     RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
-  virtual int SelectObjects(const RNArray<R3SurfelObject *>& objects, int command_type,
-    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
   virtual int SelectEnclosedObjects(const R2Box& box,
     RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE, RNBoolean unlabeled_only = FALSE);
   virtual int SelectEnclosedObjects(const R2Polygon& polygon,
@@ -78,9 +76,8 @@ public:
   virtual int SelectSuggestedObject(RNBoolean unlabeled_only = FALSE);
 
   // Create label assignments 
-  virtual int AssignLabelToObject(R3SurfelObject *object, R3SurfelLabel *label, RNScalar confidence, int originator, int command);
-  virtual int AssignLabelToPickedObject(R3SurfelLabel *label, int x, int y);
-  virtual int AssignLabelToSelectedObjects(R3SurfelLabel *label);
+  virtual int AssignLabelToPickedObject(int label_assignment_keystroke, int x, int y);
+  virtual int AssignLabelToSelectedObjects(int label_assignment_keystroke);
   virtual int AssignNewLabelToPickedObject(int x, int y);
   virtual int AssignNewLabelToSelectedObjects(void);
 
@@ -184,8 +181,13 @@ public:
   virtual void InsertObjectSelection(R3SurfelObject *object);
   virtual void RemoveObjectSelection(R3SurfelObject *object);
   virtual int EmptyObjectSelections(void);
+  virtual int SelectObjects(const RNArray<R3SurfelObject *>& objects, int command_type,
+    RNBoolean shift = FALSE, RNBoolean ctrl = FALSE, RNBoolean alt = FALSE);
 
   // Label assignment functions
+  virtual int AssignLabelToPickedObject(R3SurfelLabel *label, int x, int y);
+  virtual int AssignLabelToSelectedObjects(R3SurfelLabel *label);
+  virtual int AssignLabelToObject(R3SurfelObject *object, R3SurfelLabel *label, RNScalar confidence, int originator, int command);
   virtual int InsertLabelAssignment(R3SurfelLabelAssignment *assignment);
   virtual int RemoveLabelAssignment(R3SurfelLabelAssignment *assignment);
   virtual int EmptyLabelAssignments(void);

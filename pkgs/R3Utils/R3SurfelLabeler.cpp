@@ -1657,12 +1657,9 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt, int tab)
     default: 
       // Assign label by key
       if (scene) {
-        R3SurfelLabel *label = scene->FindLabelByAssignmentKeystroke(key);
-        if (label) {
-          if (NObjectSelections() > 0) AssignLabelToSelectedObjects(label);
-          else AssignLabelToPickedObject(label, x, y);
-          redraw = 1;
-        }
+        if (NObjectSelections() > 0) AssignLabelToSelectedObjects(key);
+        else AssignLabelToPickedObject(key, x, y);
+        redraw = 1;
       }
       break;
     }
@@ -2408,6 +2405,32 @@ SelectSuggestedObject(RNBoolean unlabeled_only)
 
   // Return success
   return 1;
+}
+
+
+
+int R3SurfelLabeler::
+AssignLabelToSelectedObjects(int label_assignment_keystroke)
+{
+  // Find label
+  R3SurfelLabel *label = scene->FindLabelByAssignmentKeystroke(label_assignment_keystroke);
+  if (!label) return 0;
+
+  // Assign label
+  return AssignLabelToSelectedObjects(label);
+}
+
+
+
+int R3SurfelLabeler::
+AssignLabelToPickedObject(int label_assignment_keystroke, int x, int y)
+{
+  // Find label
+  R3SurfelLabel *label = scene->FindLabelByAssignmentKeystroke(label_assignment_keystroke);
+  if (!label) return 0;
+
+  // Assign label
+  return AssignLabelToPickedObject(label, x, y);
 }
 
 
