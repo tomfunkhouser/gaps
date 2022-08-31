@@ -1050,9 +1050,12 @@ ReadNeRFFile(const char *filename, int read_every_kth_image)
 
     // Parse image filenames
     std::string depth_filename = "-";
-    std::string color_filename = json_file_path->asString() + ".png";
+    std::string color_filename = json_file_path->asString();
     if (!RNFileExists(color_filename.c_str())) {
-      color_filename = json_file_path->asString() + ".jpg";
+      color_filename = json_file_path->asString() + ".png";
+      if (!RNFileExists(color_filename.c_str())) {
+        color_filename = json_file_path->asString() + ".jpg";
+      }
     }
 
     // Get width and height
