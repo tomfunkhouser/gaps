@@ -508,9 +508,11 @@ class R3Mesh {
       // Subdivide all faces, replacing each triangle by four with vertices at edge midpoints
     void SwapEdges(RNAngle min_angle_improvement = 0.1);
      // Swap edges to improve increase interior angles of faces
-    void FillHole(R3MeshEdge *boundary_edge);
+    void FillHole(R3MeshEdge *boundary_edge,
+      RNLength max_perimeter = 0, RNLength max_planar_deviation = 0);
      // Fill hole bounded by the given edge
-    void FillHoles(void);
+    void FillHoles(
+      RNLength max_perimeter = 0, RNLength max_planar_deviation = 0);
      // Fill all holes in mesh
     R3Mesh& operator=(const R3Mesh& mesh);
      // Copy mesh

@@ -2796,6 +2796,70 @@ AssertBoundaryVertexData(R3Mesh *mesh, R3MeshBoundaryVertexData *head)
 
 
 static void
+UnmarkHoleBoundary(R3Mesh *mesh, R3MeshBoundaryVertexData *head)
+{
+  // Just checking
+  // AssertBoundaryVertexData(mesh, head);
+
+  // Mark all edges
+  R3MeshBoundaryVertexData *vdata = head;
+  if (vdata) do {
+    if (vdata->edge) mesh->SetEdgeMark(vdata->edge, 0);
+    vdata = vdata->next;
+  } while (vdata != head);
+}
+
+
+
+static RNBoolean
+CheckHoleBoundary(R3Mesh *mesh, R3MeshBoundaryVertexData *head,
+  RNLength max_perimeter, RNLength max_planar_deviation)
+{
+  // Just checking
+  // AssertBoundaryVertexData(mesh, head);
+
+  // Check perimeter
+  if (max_perimeter > 0) {
+    RNLength perimeter = 0;
+    R3MeshBoundaryVertexData *vdata = head;
+    if (vdata) do {
+      if (vdata->edge) perimeter += mesh->EdgeLength(vdata->edge);
+      if (perimeter > max_perimeter) return FALSE;
+      vdata = vdata->next;
+    } while (vdata != head);
+  }
+
+  // Check planar deviation
+  if (max_planar_deviation > 0) {
+    // Find points
+    std::vector<R3Point> points;
+    R3MeshBoundaryVertexData *vdata = head;
+    if (vdata) do {
+      if (vdata->vertex) points.push_back(mesh->VertexPosition(vdata->vertex));
+      vdata = vdata->next;
+    } while (vdata != head);
+
+
+    // Check points
+    int npoints = points.size();
+    if (npoints > 3) {
+      // Compute best fitting plane
+      R3Plane plane(&points[0], npoints, FALSE);
+
+      // Check deviation from best fitting plane
+      for (unsigned int i = 0; i < points.size(); i++) {
+        if (R3Distance(plane, points[i]) > max_planar_deviation) return FALSE;
+      }
+    }
+  }
+
+  // Passed all tests
+  return TRUE;
+}
+
+
+
+static void
 FillHoleBoundary(R3Mesh *mesh, R3MeshBoundaryVertexData *head)
 {
   // Just checking
@@ -2870,7 +2934,7 @@ FillHoleBoundary(R3Mesh *mesh, R3MeshBoundaryVertexData *head)
 
 
 void R3Mesh::
-FillHole(R3MeshEdge *seed_edge)
+FillHole(R3MeshEdge *seed_edge, RNLength max_perimeter, RNLength max_planar_deviation)
 {
   // Check if seed edge is on boundary
   R3MeshFace *seed_face = FaceOnEdge(seed_edge);
@@ -3000,20 +3064,36 @@ FillHole(R3MeshEdge *seed_edge)
     vdata = vdata->next;
   } while (vdata != head);
 
-  // Fill hole
+  // Mark hole boundary
+  UnmarkHoleBoundary(this, head);
+
+  // Check hole boundary
+  if (!CheckHoleBoundary(this, head, max_perimeter, max_planar_deviation)) return;
+
+  // Fill hole boundary
   FillHoleBoundary(this, head);
 }
 
 
 
 void R3Mesh::
-FillHoles(void)
+FillHoles(RNLength max_perimeter, RNLength max_planar_deviation)
 {
+  // Set edge marks
+  // Cleared in FillHole
+  // Used to avoid trying to fill hole multiple times
+  RNMark edge_mark = ++R3mesh_mark;
+  for (int i = 0; i < NEdges(); i++) {
+    R3MeshEdge *edge = Edge(i);
+    SetEdgeMark(edge, edge_mark);
+  }
+  
   // Iteratively find boundary edge and fill hole
   for (int i = 0; i < NEdges(); i++) {
     R3MeshEdge *edge = Edge(i);
     if (!IsEdgeOnBoundary(edge)) continue;
-    FillHole(edge);
+    if (EdgeMark(edge) != edge_mark) continue;
+    FillHole(edge, max_perimeter, max_planar_deviation);
   }
 }
 
