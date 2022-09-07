@@ -1992,9 +1992,9 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
   // Initialize identifier maps
   int max_surfel_identifier = scene->Tree()->Database()->MaxIdentifier();
   std::vector<int> label_identifiers(max_surfel_identifier+1);
-  std::vector<int> instance_identifiers(max_surfel_identifer+1);
-  label_identifiers.assign(max_surfel_identifiers+1, -1);
-  instance_identifiers.assign(max_surfel_identifiers+1, -1);
+  std::vector<int> instance_identifiers(max_surfel_identifier+1);
+  label_identifiers.assign(max_surfel_identifier+1, -1);
+  instance_identifiers.assign(max_surfel_identifier+1, -1);
 
   // Open csv file
   FILE *fp = fopen(csv_filename, "r");
