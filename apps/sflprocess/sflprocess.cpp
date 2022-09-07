@@ -1989,6 +1989,13 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
     }
   }
 
+  // Initialize identifier maps
+  int max_surfel_identifier = scene->Tree()->Database()->MaxIdentifier();
+  std::vector<int> label_identifiers(max_surfel_identifier+1);
+  std::vector<int> instance_identifiers(max_surfel_identifer+1);
+  label_identifiers.assign(max_surfel_identifiers+1, -1);
+  instance_identifiers.assign(max_surfel_identifiers+1, -1);
+
   // Open csv file
   FILE *fp = fopen(csv_filename, "r");
   if (!fp) {
@@ -1997,16 +2004,14 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
   }
 
   // Read csv file
-  std::vector<int> instance_identifiers;
-  std::vector<int> label_identifiers;
-  int surfel_identifier, instance_identifier, label_identifier;
-  int max_identifier = scene->Tree()->Database()->MaxIdentifier();
+  int surfel_identifier, label_identifier, instance_identifier;
   while (fscanf(fp, "%d,%d,%d", &surfel_identifier,
-    &instance_identifier, &label_identifier) == (unsigned int) 3) {
+    &label_identifier, &instance_identifier) == (unsigned int) 3) {
     if (surfel_identifier < 0) continue;
-    if (surfel_identifier > max_identifier) continue;
-    instance_identifiers[surfel_identifier] = instance_identifier;
+    if (surfel_identifier > max_surfel_identifier) continue;
+    if (instance_identifier == 65535) instance_identifier = -1; // TEMPORARY
     label_identifiers[surfel_identifier] = label_identifier;
+    instance_identifiers[surfel_identifier] = instance_identifier;
   }
 
   // Close csv file
