@@ -2009,6 +2009,7 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
     &label_identifier, &instance_identifier) == (unsigned int) 3) {
     if (surfel_identifier < 0) continue;
     if (surfel_identifier > max_surfel_identifier) continue;
+    // if (label_identifier == 255) label_identifier = -1; // TEMPORARY
     if (instance_identifier == 65535) instance_identifier = -1; // TEMPORARY
     label_identifiers[surfel_identifier] = label_identifier;
     instance_identifiers[surfel_identifier] = instance_identifier;
