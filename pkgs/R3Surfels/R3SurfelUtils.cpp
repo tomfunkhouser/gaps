@@ -889,7 +889,7 @@ CreateObject(R3SurfelScene *scene,
 
 int
 CreateObjects(R3SurfelScene *scene,
-  const R3SurfelBlock& block, int *object_identifiers,
+  const std::vector<int>& instance_identifiers,
   R3SurfelObject *parent_object, R3SurfelNode *parent_node,
   RNBoolean release_blocks)
 {
@@ -903,39 +903,68 @@ CreateObjects(R3SurfelScene *scene,
   if (!parent_object) return 0;
   if (!parent_node) parent_node = tree->RootNode();
   if (!parent_node) return 0;
-  if (!object_identifiers) return 0;
+  if (instance_identifiers.empty()) return 0;
 
   // Create pointset for each unique identifier
   std::map<int, R3SurfelPointSet> pointsets;
-  for (int i = 0; i < block.NSurfels(); i++) {
-    const R3Surfel *surfel = block.Surfel(i);
-    R3SurfelPoint point((R3SurfelBlock *) &block, surfel);
-    int identifier = object_identifiers[i];
-    std::map<int, R3SurfelPointSet>::iterator it = pointsets.find(identifier);
-    if (it == pointsets.end()) {
-      pointsets.insert(std::pair<int, R3SurfelPointSet>(identifier, R3SurfelPointSet()));
-      it = pointsets.find(identifier);
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      if (!database->ReadBlock(block)) continue;
+      for (int k = 0; k < block->NSurfels(); k++) {
+        const R3Surfel *surfel = block->Surfel(k);
+
+        // Get/check surfel identifier
+        int surfel_identifier = surfel->Identifier();
+        if (surfel_identifier < 0) continue;
+        if (surfel_identifier >= (int) instance_identifiers.size()) continue;
+
+        // Get/check instance identifier
+        int instance_identifier = instance_identifiers[surfel_identifier];
+        if (instance_identifier < 0) continue;
+
+        // Get/create pointset
+        std::map<int, R3SurfelPointSet>::iterator it = pointsets.find(instance_identifier);
+        if (it == pointsets.end()) {
+          pointsets.insert(std::pair<int, R3SurfelPointSet>(instance_identifier, R3SurfelPointSet()));
+          it = pointsets.find(instance_identifier);
+        }
+
+        // Insert point into pointset
+        if (it != pointsets.end()) {
+          R3SurfelPointSet& pointset = it->second;
+          R3SurfelPoint point(block, surfel);
+          pointset.InsertPoint(point);
+        }
+      }
+      database->ReleaseBlock(block);
     }
-    it->second.InsertPoint(point);
   }
 
   // Create object for each pointset
   std::map<int, R3SurfelPointSet>::iterator it;
   for (it = pointsets.begin(); it != pointsets.end(); it++) {
-    int id = it->first;
+    int instance_identifier = it->first;
     R3SurfelPointSet& pointset = it->second;
     if (pointset.NPoints() == 0) continue;
+
+    // Create object name
     char object_name[1024];
-    sprintf(object_name, "OBJECT#%d", id);
+    sprintf(object_name, "OBJECT#%d", instance_identifier);
+
+    // Create object
     R3SurfelObject *object = CreateObject(scene, &pointset,
       parent_object, object_name, parent_node, object_name, TRUE);
-
+    if (!object) continue;
+    
     // Create PCA object property
     R3SurfelObjectProperty *pca = new R3SurfelObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY, object);
     scene->InsertObjectProperty(pca);
 
     // Release block
-    if (object && release_blocks) object->ReleaseBlocks();
+    if (release_blocks) object->ReleaseBlocks();
   }
 
   // Return success

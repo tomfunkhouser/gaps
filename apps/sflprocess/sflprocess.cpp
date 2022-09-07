@@ -1960,6 +1960,69 @@ CreateObjectRelationships(R3SurfelScene *scene,
 ////////////////////////////////////////////////////////////////////////
 
 static int
+CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
+   const char *parent_object_name, const char *parent_node_name)
+{
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Find parent object
+  R3SurfelObject *parent_object = scene->RootObject();
+  if (strcmp(parent_object_name, "Root")) {
+    parent_object = scene->FindObjectByName(parent_object_name);
+    if (!parent_object) {
+      RNFail("Unable to find parent object with name %s\n", parent_object_name);
+      return 0;
+    }
+  }
+
+  // Find parent node
+  R3SurfelNode *parent_node = tree->RootNode();
+  if (strcmp(parent_node_name, "Root")) {
+    parent_node = tree->FindNodeByName(parent_node_name);
+    if (!parent_node) {
+      RNFail("Unable to find parent node with name %s\n", parent_node_name);
+      return 0;
+    }
+  }
+
+  // Open csv file
+  FILE *fp = fopen(csv_filename, "r");
+  if (!fp) {
+    RNFail("Unable to open CSV file: %s\n", csv_filename);
+    return 0;
+  }
+
+  // Read csv file
+  std::vector<int> instance_identifiers;
+  std::vector<int> label_identifiers;
+  int surfel_identifier, instance_identifier, label_identifier;
+  int max_identifier = scene->Tree()->Database()->MaxIdentifier();
+  while (fscanf(fp, "%d,%d,%d", &surfel_identifier,
+    &instance_identifier, &label_identifier) == (unsigned int) 3) {
+    if (surfel_identifier < 0) continue;
+    if (surfel_identifier > max_identifier) continue;
+    instance_identifiers[surfel_identifier] = instance_identifier;
+    label_identifiers[surfel_identifier] = label_identifier;
+  }
+
+  // Close csv file
+  fclose(fp);
+
+  // Create object instances
+  if (!CreateObjects(scene, instance_identifiers,
+    parent_object, parent_node, TRUE)) return 0;
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
 CreateClusterObjects(R3SurfelScene *scene, 
   const char *parent_object_name, const char *parent_node_name, const char *source_node_name, 
   int max_neighbors, RNLength max_neighbor_distance, 
@@ -2524,6 +2587,13 @@ int main(int argc, char **argv)
       argc--; argv++; double max_distance = atof(*argv); 
       if (!CreateLoResNodes(scene, lores_scene_filename, lores_database_filename, max_distance)) exit(-1);
       noperations++;
+    }
+    else if (!strcmp(*argv, "-create_labeled_object_instances")) { 
+      argc--; argv++; const char *csv_filename = *argv; 
+      argc--; argv++; const char *parent_object_name = *argv; 
+      argc--; argv++; const char *parent_node_name = *argv;
+      if (!CreateLabeledObjectInstances(scene, csv_filename,
+        parent_object_name, parent_node_name)) exit(-1);
     }
     else if (!strcmp(*argv, "-create_cluster_objects")) { 
       argc--; argv++; const char *parent_object_name = *argv; 

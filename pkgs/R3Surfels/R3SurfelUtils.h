@@ -13,6 +13,18 @@ namespace gaps {
 
 
 ////////////////////////////////////////////////////////////////////////
+// Surfel search (call callback for each resident surfel satisfying constraint)
+////////////////////////////////////////////////////////////////////////
+
+void VisitResidentSurfels(R3SurfelScene *scene,
+  void (*callback_function)(const R3SurfelBlock *block, const R3Surfel *surfel, void *callback_data),
+  R3SurfelNode *source_node,
+  const R3SurfelConstraint *constraint,
+  void *callback_data);
+  
+
+  
+////////////////////////////////////////////////////////////////////////
 // Point set creation
 ////////////////////////////////////////////////////////////////////////
 
@@ -40,18 +52,6 @@ R3SurfelPointGraph *CreatePointGraph(R3SurfelScene *scene,
 
 
 
-////////////////////////////////////////////////////////////////////////
-// Surfel search (call callback for each resident surfel satisfying constraint)
-////////////////////////////////////////////////////////////////////////
-
-void VisitResidentSurfels(R3SurfelScene *scene,
-  void (*callback_function)(const R3SurfelBlock *block, const R3Surfel *surfel, void *callback_data),
-  R3SurfelNode *source_node,
-  const R3SurfelConstraint *constraint,
-  void *callback_data);
-  
-
-  
 ////////////////////////////////////////////////////////////////////////
 // Block creation
 ////////////////////////////////////////////////////////////////////////
@@ -81,24 +81,6 @@ R3SurfelNode *CreateNode(R3SurfelScene *scene,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Scene manipulation
-////////////////////////////////////////////////////////////////////////
-
-int RemoveEmptyObjects(R3SurfelScene *scene);
-int RemoveDisconnectedObjects(R3SurfelScene *scene);
-  
-int RemoveEmptyNodes(R3SurfelScene *scene);
-int RemoveInteriorNodes(R3SurfelScene *scene);
-
-int CullScans(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
-int CullImages(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
-int CullSurfels(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
-int CullScene(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
-int CullScene(R3SurfelScene *scene, const R3Box& bbox);
-
-  
-  
-////////////////////////////////////////////////////////////////////////
 // Object creation
 ////////////////////////////////////////////////////////////////////////
 
@@ -115,8 +97,9 @@ R3SurfelObject *CreateObject(R3SurfelScene *scene,
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
   RNBoolean copy_surfels = FALSE);
 int CreateObjects(R3SurfelScene *scene,
-  const R3SurfelBlock& block, int *object_identifiers,
-  R3SurfelObject *parent_object = NULL, R3SurfelNode *parent_node = NULL,
+  const std::vector<int>& object_identifiers,
+  R3SurfelObject *parent_object = NULL,
+  R3SurfelNode *parent_node = NULL,
   RNBoolean release_blocks = TRUE);
 
   
@@ -181,6 +164,24 @@ int RemoveLabels(R3SurfelScene *scene);
 int RemoveParts(R3SurfelScene *scene, R3SurfelLabel *label);
 
 
+  
+////////////////////////////////////////////////////////////////////////
+// Scene manipulation
+////////////////////////////////////////////////////////////////////////
+
+int RemoveEmptyObjects(R3SurfelScene *scene);
+int RemoveDisconnectedObjects(R3SurfelScene *scene);
+  
+int RemoveEmptyNodes(R3SurfelScene *scene);
+int RemoveInteriorNodes(R3SurfelScene *scene);
+
+int CullScans(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullImages(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullSurfels(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullScene(R3SurfelScene *scene, const R3SurfelConstraint *constraint = NULL);
+int CullScene(R3SurfelScene *scene, const R3Box& bbox);
+
+  
   
 ////////////////////////////////////////////////////////////////////////
 // Image reading
