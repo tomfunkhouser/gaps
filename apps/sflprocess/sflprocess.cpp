@@ -2019,7 +2019,7 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
 
   // Create object instances
   if (!CreateObjects(scene, instance_identifiers,
-    parent_object, parent_node, TRUE)) return 0;
+    parent_object, parent_node, FALSE)) return 0;
 
   // Assign object labels
   for (unsigned int i = 0; i < instance_identifiers.size(); i++) {
