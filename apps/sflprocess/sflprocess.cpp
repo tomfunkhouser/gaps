@@ -2021,6 +2021,31 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
   if (!CreateObjects(scene, instance_identifiers,
     parent_object, parent_node, TRUE)) return 0;
 
+  // Assign object labels
+  for (unsigned int i = 0; i < instance_identifiers.size(); i++) {
+    // Find label
+    int label_identifier = label_identifiers[i];
+    if (label_identifier < 0) continue;
+    R3SurfelLabel *label = scene->FindLabelByIdentifier(label_identifier);
+    if (!label) continue;
+
+    // Find object
+    int instance_identifier = instance_identifiers[i];
+    if (instance_identifier < 0) continue;
+    R3SurfelObject *object = scene->FindObjectByIdentifier(instance_identifier);
+    if (!object) continue;
+
+    // Check assignment
+    RNScalar confidence = 0.5;
+    int originator = R3_SURFEL_MACHINE_ORIGINATOR;
+    R3SurfelLabelAssignment *assignment = scene->FindLabelAssignment(object, label, confidence, originator);
+    if (assignment) continue;
+
+    // Create assignment
+    assignment = new R3SurfelLabelAssignment(object, label, confidence, originator);
+    scene->InsertLabelAssignment(assignment);
+  }
+
   // Return success
   return 1;
 }

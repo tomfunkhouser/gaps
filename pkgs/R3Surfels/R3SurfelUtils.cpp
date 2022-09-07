@@ -891,7 +891,7 @@ int
 CreateObjects(R3SurfelScene *scene,
   const std::vector<int>& instance_identifiers,
   R3SurfelObject *parent_object, R3SurfelNode *parent_node,
-  RNBoolean release_blocks)
+  RNBoolean copy_surfels, RNBoolean release_blocks)
 {
   // Get convenient variables
   if (!scene) return 0;
@@ -956,9 +956,12 @@ CreateObjects(R3SurfelScene *scene,
 
     // Create object
     R3SurfelObject *object = CreateObject(scene, &pointset,
-      parent_object, object_name, parent_node, object_name, TRUE);
+      parent_object, object_name, parent_node, object_name, copy_surfels);
     if (!object) continue;
     
+    // Set object identifier
+    object->SetIdentifier(instance_identifier);
+
     // Create PCA object property
     R3SurfelObjectProperty *pca = new R3SurfelObjectProperty(R3_SURFEL_OBJECT_PCA_PROPERTY, object);
     scene->InsertObjectProperty(pca);
