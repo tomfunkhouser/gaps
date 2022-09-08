@@ -54,6 +54,7 @@ static R2Grid *image_image_overlaps = NULL;
 static RNArray<RGBDImage *> *vertex_image_overlaps = NULL;
 static RNArray<R3MeshVertex *> *image_vertex_overlaps = NULL;
 static char *screenshot_image_name = NULL;
+static R3Point selected_position(-1, -1, -1);
 static int selected_surface_index = -1;
 static int selected_image_index = -1;
 static int snap_image_index = -1;
@@ -70,6 +71,7 @@ static R3Viewer viewer;
 static int show_cameras = 1;
 static int show_bboxes = 0;
 static int show_images = 0;
+static int show_patches = 0;
 static int show_points = 0;
 static int show_surfels = 0;
 static int show_quads = 0;
@@ -78,6 +80,7 @@ static int show_edges = 0;
 static int show_vertices = 0;
 static int show_textures = 0;
 static int show_overlaps = 0;
+static int show_selected_position = 1;
 static int show_axes = 0;
 
 
@@ -514,6 +517,47 @@ ReadOverlapFile(RGBDConfiguration& configuration, const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Utility functions
+////////////////////////////////////////////////////////////////////////
+
+static int
+CheckVisibility(RGBDImage *image, const R3Point& world_position)
+{
+  // Check world position
+  if (world_position == R3unknown_point) return 1;
+  
+  // Get/check point depth
+  R3Vector vector = world_position - image->WorldViewpoint();
+  RNScalar point_depth = vector.Dot(image->WorldTowards());
+  if (RNIsNegativeOrZero(point_depth)) return 0;
+
+  // Get/check projection into image
+  R2Point image_position;
+  if (!image->TransformWorldToImage(world_position, image_position)) return 0;
+
+  // Get/check image depth channel
+  R2Grid *depth_channel = image->DepthChannel();
+  if (!depth_channel) return 1;
+  
+  // Get/check image depth
+  int image_ix = image_position.X() + 0.5;
+  int image_iy = image_position.Y() + 0.5;
+  if ((image_ix < 0) || (image_ix > image->NPixels(RN_X))) return 0;
+  if ((image_iy < 0) || (image_iy > image->NPixels(RN_Y))) return 0;
+  RNScalar image_depth = image->PixelDepth(image_ix, image_iy);
+  if ((image_depth == R2_GRID_UNKNOWN_VALUE) || (image_depth == 0)) return 1;
+
+  // If depth is not within 10% of image depth, then probably not 
+  if (image_depth < 0.9 * point_depth) return 0;
+  if (image_depth > 1.1 * point_depth) return 0;
+
+  // Passed all tests
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Draw functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -523,7 +567,9 @@ DrawCameras(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
   // Draw cameras
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
-    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) image->DrawCamera(RGBD_HIGHLIGHT_COLOR_SCHEME);
+    if (!CheckVisibility(image, selected_position)) continue;
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      image->DrawCamera(RGBD_HIGHLIGHT_COLOR_SCHEME);
     else image->DrawCamera(color_scheme);
   }
 }
@@ -537,9 +583,76 @@ DrawImages(int color_scheme = RGBD_PHOTO_COLOR_SCHEME)
   for (int i = 0; i < configuration.NImages(); i++) {
     RGBDImage *image = configuration.Image(i);
     if (!image->RedChannel()) continue;
-    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index)) image->DrawImage(RGBD_HIGHLIGHT_COLOR_SCHEME, 1.0);
+    if (!CheckVisibility(image, selected_position)) continue;
+    if ((color_scheme != RGBD_INDEX_COLOR_SCHEME) && (i == selected_image_index))
+      image->DrawImage(RGBD_HIGHLIGHT_COLOR_SCHEME, 1.0);
     else image->DrawImage(color_scheme, 1.0);
   }
+}
+
+
+
+static void
+DrawPatches(int color_scheme = RGBD_PHOTO_COLOR_SCHEME,
+  double patch_width = 100, double patch_height = 100,
+  double patch_scale = 2)
+  
+{
+  // Check selected position
+  if (selected_position == R3unknown_point) return;
+
+  // Set projection matrix
+  glMatrixMode(GL_PROJECTION);  
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0, GLUTwindow_width, 0, GLUTwindow_height);
+
+  // Set model view matrix
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  // Draw images
+  int count = 0;
+  for (int i = 0; i < configuration.NImages(); i++) {
+    RGBDImage *image = configuration.Image(i);
+    if (!image->RedChannel()) continue;
+    if (!CheckVisibility(image, selected_position)) continue;
+
+    // Get center position
+    R2Point center_position;
+    if (!image->TransformWorldToImage(selected_position, center_position)) continue;
+
+    // Set patch viewport
+    glViewport(count*patch_width, 0, patch_width, patch_height);
+
+    // Draw image
+    RNLoadRgb(1, 1, 1);
+    glPushMatrix();
+    glTranslated(0.5*GLUTwindow_width, 0.5*GLUTwindow_height, 0.0);
+    glScaled(patch_scale, patch_scale, patch_scale);
+    glTranslated(-center_position.X(), -center_position.Y(), 0.0);
+    image->DrawImage(color_scheme, 0);
+    glPopMatrix();
+
+    // Draw box
+    RNLoadRgb(0, 0, 0);
+    R2Box(0, 0, GLUTwindow_width, GLUTwindow_height).Draw();
+
+    // Update counter
+    count++;
+  }
+
+  // Reset viewport
+  glViewport(0, 0, GLUTwindow_width, GLUTwindow_height);
+  
+  // Reset projection matrix
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+
+  // Reset model view matrix
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();  
 }
 
 
@@ -723,6 +836,20 @@ DrawOverlaps(int color_scheme = RGBD_INDEX_COLOR_SCHEME)
 
 
 static void
+DrawSelectedPosition(void)
+{
+  // Check selected position
+  if (selected_position == R3unknown_point) return;
+  
+  // Draw center point
+  RNLoadRgb(1, 0, 0);
+  RNScalar d = 0.025;
+  R3Sphere(selected_position, d).Draw();
+}
+
+
+
+static void
 DrawAxes(void)
 {
   // Draw axes 
@@ -812,7 +939,7 @@ Pick(int x, int y,
   int pick_result = 0;
   if (picked_surface) *picked_surface = NULL;
   if (picked_image) *picked_image = NULL;
-  if (picked_position) *picked_position = R3zero_point;
+  if (picked_position) *picked_position = R3unknown_point;
 
   // Draw everything
   viewer.Load();
@@ -1117,6 +1244,7 @@ void GLUTRedraw(void)
   if (show_cameras) DrawCameras(color_scheme);
   if (show_bboxes) DrawBBoxes(color_scheme);
   if (show_images) DrawImages(color_scheme);
+  if (show_patches) DrawPatches(color_scheme);
   if (show_faces) DrawFaces(color_scheme);
   if (show_edges) DrawEdges(color_scheme);
   if (show_vertices) DrawVertices(color_scheme);
@@ -1125,6 +1253,7 @@ void GLUTRedraw(void)
   if (show_quads) DrawQuads(color_scheme);
   if (show_textures) DrawTextures(color_scheme);
   if (show_overlaps) DrawOverlaps();
+  if (show_selected_position) DrawSelectedPosition();
   if (show_axes) DrawAxes();
 
   // Capture screenshot image 
@@ -1230,7 +1359,7 @@ void GLUTMouse(int button, int state, int x, int y)
       selected_image_index = -1;
 
       // Select image or surface
-      R3Point selected_position(0,0,0);
+      selected_position = R3unknown_point;
       RGBDImage *selected_image = NULL;
       RGBDSurface *selected_surface = NULL;
       if (Pick(x, y, &selected_surface, &selected_image, &selected_position)) {
@@ -1438,6 +1567,16 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     break;
       
+  case 'Y':
+  case 'y':
+    show_selected_position = !show_selected_position;
+    break;
+
+  case 'Z':
+  case 'z':
+    show_patches = !show_patches;
+    break;
+
   case ' ': {
     RGBDImage *selected_image = NULL;
     if (Pick(x, y, NULL, &selected_image)) {
