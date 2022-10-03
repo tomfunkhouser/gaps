@@ -98,7 +98,7 @@ inline RNScalar *RNDenseMatrix::
 operator[](int i) const
 {
   // Return pointer to ith row of values
-  return &values[i*nrows];
+  return &values[i*ncols];
 }
 
 
@@ -107,7 +107,7 @@ inline RNScalar *RNDenseMatrix::
 operator[](int i) 
 {
   // Return pointer to ith row of values
-  return &values[i*nrows];
+  return &values[i*ncols];
 }
 
 
