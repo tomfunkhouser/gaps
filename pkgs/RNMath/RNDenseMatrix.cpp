@@ -163,6 +163,32 @@ Determinant(void) const
 
 
 
+RNVector RNDenseMatrix::
+RowVector(int i) const
+{
+  // Copy row of values
+  RNVector result(NColumns());
+  for (int k = 0; k < NColumns(); k++) {
+    result[k] = (*this)[i][k];
+  }
+  return result;
+}
+
+
+  
+RNVector RNDenseMatrix::
+ColumnVector(int j) const
+{
+  // Copy column of values
+  RNVector result(NRows());
+  for (int k = 0; k < NRows(); k++) {
+    result[k] = (*this)[k][j];
+  }
+  return result;
+}
+
+  
+  
 RNDenseMatrix RNDenseMatrix::
 Transpose(void) const
 {

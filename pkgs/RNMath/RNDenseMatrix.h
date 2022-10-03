@@ -34,6 +34,8 @@ public:
   virtual RNBoolean IsZero(void) const;
   virtual RNBoolean IsSymmetric(void) const;
   virtual RNScalar Determinant(void) const;
+  virtual RNVector RowVector(int i) const;
+  virtual RNVector ColumnVector(int j) const;
   virtual RNDenseMatrix Transpose(void) const;
   virtual RNDenseMatrix Inverse(void) const;
   virtual RNDenseMatrix Submatrix(int min_row, int max_row, int min_col, int max_col) const;
