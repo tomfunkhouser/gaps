@@ -25,6 +25,7 @@ public:
   RNScalar Value(int i) const;
   void SetValue(int i, RNScalar value);
   RNScalar operator[](int i) const;
+  RNScalar& operator[](int i);
 
   // Property functions/operators
   RNBoolean IsZero(void) const;
@@ -113,8 +114,17 @@ SetValue(int i, RNScalar value)
 inline RNScalar RNVector::
 operator[](int i) const
 {
-  // Return number of values
+  // Return ith value
   return Value(i);
+}
+
+
+
+inline RNScalar& RNVector::
+operator[](int i)
+{
+  // Return ith value
+  return values[i];
 }
 
 
