@@ -971,6 +971,9 @@ int ParseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+  // Initialize gaps
+  if (!R3InitGraphics()) exit(-1);
+  
   // Parse program arguments
   if (!ParseArgs(argc, argv)) exit(-1);
 
