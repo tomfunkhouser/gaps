@@ -1906,7 +1906,7 @@ ReadPlyFile(const char *filename, R3SceneNode *parent_node)
     R3Triangle *triangle = new R3Triangle(v0, v1, v2);
     RNArray<R3Triangle *> *tris = ((face_segment == 0) && (face_category == 0)) ? tris_0_0 : NULL; 
     if (!tris) {
-      sprintf(node_name, "%d_%d", face_segment, face_category);
+      sprintf(node_name, "%d_%d", face_category, face_segment);
       if (!triangles.Find(node_name, &tris)) {
         tris = new RNArray<R3Triangle *>();
         if ((face_segment == 0) && (face_category == 0)) tris_0_0 = tris;
