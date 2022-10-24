@@ -466,6 +466,7 @@ void GLUTRedraw(void)
   // Draw front faces in front of scene
   if (show_faces && (show_backfacing == 2)) {
     glEnable(GL_LIGHTING);
+    RNLoadRgb(RNwhite_rgb);
     scene->LoadLights(headlight);
     glDepthRange(0, 0.9999);
     glEnable(GL_CULL_FACE);
@@ -477,6 +478,7 @@ void GLUTRedraw(void)
   // Draw faces
   if (show_faces) {
     glEnable(GL_LIGHTING);
+    RNLoadRgb(RNwhite_rgb);
     scene->LoadLights(headlight);
     scene->Draw();
   }
@@ -856,6 +858,10 @@ void GLUTInit(int *argc, char **argv)
   glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
   glEnable(GL_NORMALIZE);
   glEnable(GL_LIGHTING); 
+
+  // Initialize color settings
+  glEnable(GL_COLOR_MATERIAL);
+  glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
   // Initialize GLUT callback functions 
   glutDisplayFunc(GLUTRedraw);
