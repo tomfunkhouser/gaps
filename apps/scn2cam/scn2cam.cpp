@@ -45,6 +45,7 @@ static int create_path_in_room_cameras = 0;
 static int interpolate_camera_trajectory = 0;
 static int create_orbit_cameras = 0;
 static int create_dodeca_cameras = 0;
+static int create_lookat_cameras = 0;
 
 
 // Camera parameter variables
@@ -54,6 +55,7 @@ static int height = 256;//120;
 static double xfov = 0.5; // half-angle in radians
 static double eye_height = 1.55;
 static double eye_height_radius = 0.05;
+static R3Point lookat_position(0, 0, 0);
 
 
 // Camera sampling variables
@@ -1832,6 +1834,72 @@ CreateWorldInHandCameras(void)
 
 
 
+static void
+CreateLookAtCameras(void)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int camera_count = 0;
+
+  // Determine camera parameters
+  RNScalar neardist = 0.01;
+  RNScalar fardist = 10.0;
+  RNScalar aspect = (RNScalar) height / (RNScalar) width;
+  RNScalar yfov = atan(aspect * tan(xfov));
+  RNScalar downward_angle = RN_PI/3.0;
+  RNScalar downward_angle_cosine = cos(downward_angle);
+  
+  // Sample angles rotated around gravity dimension
+  for (RNAngle angle = 0; angle <= RN_TWO_PI + 0.5 * angle_sampling; angle += angle_sampling) {
+    // Determine view direction
+    R3Vector towards = R3xyz_triad[(gravity_dimension+1)%3];
+    towards.Rotate(gravity_dimension, angle);
+    towards[gravity_dimension] = -downward_angle_cosine;
+    towards.Normalize();
+
+    // Determine viewpoint and other directions
+    R3Point viewpoint = lookat_position - max_surface_distance * towards;
+    R3Vector right = towards % R3xyz_triad[gravity_dimension];
+    right.Normalize();
+    R3Vector up = right % towards;
+    up.Normalize();
+
+    // Ensure lookat position is not occluded
+    RNScalar hit_t = FLT_MAX;
+    R3Ray ray(lookat_position, -towards);
+    if (scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, 0, max_surface_distance)) {
+      if (hit_t < min_surface_distance) continue;
+      viewpoint = lookat_position - hit_t * towards;
+    }
+
+    // Create camera
+    R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+    // Compute score for camera
+    camera.SetValue(SceneCoverageScore(camera, scene, NULL, TRUE));
+    if (camera.Value() == 0) continue;
+    if (camera.Value() < min_score) continue;
+
+    // Insert camera
+    char camera_name[1024];
+    sprintf(camera_name, "%s#%i", "LookAt", camera_count);
+    Camera *insertable_camera = new Camera(camera, camera_name);
+    cameras.Insert(insertable_camera);
+    camera_count++;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Created lookat cameras ...\n");
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Cameras = %d\n", camera_count++);
+    fflush(stdout);
+  }
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Camera interpolation functions
 ////////////////////////////////////////////////////////////////////////
@@ -1946,6 +2014,7 @@ CreateAndWriteCameras(void)
   if (create_surface_cameras) CreateSurfaceCameras();
   if (create_world_in_hand_cameras) CreateWorldInHandCameras();
   if (create_orbit_cameras) CreateOrbitCameras();
+  if (create_lookat_cameras) CreateLookAtCameras();
 
   // Create specialized cameras (for SUNCG)
   if (create_room_cameras) CreateRoomCameras();
@@ -2095,6 +2164,11 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-position_sampling")) { argc--; argv++; position_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-angle_sampling")) { argc--; argv++; angle_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-interpolation_step")) { argc--; argv++; interpolation_step = atof(*argv); }
+      else if (!strcmp(*argv, "-lookat_position")) {
+        argc--; argv++; lookat_position[0] = atof(*argv);
+        argc--; argv++; lookat_position[1] = atof(*argv);
+        argc--; argv++; lookat_position[2] = atof(*argv);
+      }
       else if (!strcmp(*argv, "-create_object_cameras") || !strcmp(*argv, "-create_leaf_node_cameras")) {
         create_cameras = create_object_cameras = 1;
         angle_sampling = RN_PI / 6.0;
@@ -2124,6 +2198,9 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-create_world_in_hand_cameras")) {
         create_cameras = create_world_in_hand_cameras = 1;
+      }
+      else if (!strcmp(*argv, "-create_lookat_cameras")) {
+        create_cameras = create_lookat_cameras = 1;
       }
       else {
         RNFail("Invalid program argument: %s", *argv);
