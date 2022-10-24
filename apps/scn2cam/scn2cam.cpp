@@ -27,6 +27,7 @@ using namespace gaps;
 static char *input_scene_filename = NULL;
 static char *input_cameras_filename = NULL;
 static char *input_categories_filename = NULL;
+static char *input_points_filename = NULL;
 static char *output_cameras_filename = NULL;
 static char *output_camera_extrinsics_filename = NULL;
 static char *output_camera_intrinsics_filename = NULL;
@@ -55,7 +56,6 @@ static int height = 256;//120;
 static double xfov = 0.5; // half-angle in radians
 static double eye_height = 1.55;
 static double eye_height_radius = 0.05;
-static R3Point lookat_position(0, 0, 0);
 
 
 // Camera sampling variables
@@ -144,6 +144,7 @@ IsDifferentCameraOrientation(Camera *camera1, Camera *camera2, void *data)
 
 static R3Scene *scene = NULL;
 static RNArray<Camera *> cameras;
+static R3PointSet *points = NULL;
 
 
 // Image types
@@ -267,6 +268,41 @@ ReadCameras(const char *filename)
     printf("Read cameras from %s ...\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Cameras = %d\n", camera_count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+ReadPoints(const char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Allocate points
+  points = new R3PointSet();
+  if (!points) {
+    RNFail("Unable to allocate points for %s\n", filename);
+    return 0;
+  }
+  
+  // Read points
+  if (!points->ReadFile(filename)) {
+    RNFail("Unable to read points file %s\n", filename);
+    delete points;
+    return 0;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Read points from %s ...\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Points = %d\n", points->NPoints());
     fflush(stdout);
   }
 
@@ -806,19 +842,19 @@ static RNScalar
 ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = NULL)
 {
   // Allocate points
-  const int max_npoints = 1024;
-  const int target_npoints = 512;
-  static R3Point points[max_npoints];
-  static int npoints = 0;
+  const int max_nsamples = 1024;
+  const int target_nsamples = 512;
+  static R3Point samples[max_nsamples];
+  static int nsamples = 0;
 
   // Check if same node as last time
   // (NOTE: THIS WILL NOT PARALLELIZE)
   static R3SceneNode *last_node = NULL;
   if (last_node != node) {
     last_node = node;
-    npoints = 0;
+    nsamples = 0;
 
-    // Generate points on surface of node
+    // Generate samples on surface of node
     RNArea total_area = 0;
     for (int j = 0; j < node->NElements(); j++) {
       R3SceneElement *element = node->Element(j);
@@ -832,7 +868,7 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = 
     // Check total area
     if (RNIsZero(total_area)) return 0;
 
-    // Generate points 
+    // Generate samples 
     for (int i = 0; i < node->NElements(); i++) {
       R3SceneElement *element = node->Element(i);
       for (int j = 0; j < element->NShapes(); j++) {
@@ -842,13 +878,13 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = 
           for (int k = 0; k < triangles->NTriangles(); k++) {
             R3Triangle *triangle = triangles->Triangle(k);
             RNScalar area = triangle->Area();
-            RNScalar real_nsamples = target_npoints * area / total_area;
+            RNScalar real_nsamples = target_nsamples * area / total_area;
             int nsamples = (int) real_nsamples;
             if (RNRandomScalar() < (real_nsamples - nsamples)) nsamples++;
             for (int m = 0; m < nsamples; m++) {
-              if (npoints >= max_npoints) break;
-              R3Point point = triangle->RandomPoint();
-              points[npoints++] = point;
+              if (nsamples >= max_nsamples) break;
+              R3Point sample = triangle->RandomPoint();
+              samples[nsamples++] = sample;
             }
           }
         }
@@ -856,16 +892,16 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = 
     }
   }
 
-  // Check number of points
-  if (npoints == 0) return 0;
+  // Check number of samples
+  if (nsamples == 0) return 0;
 
-  // Count how many points are visible
+  // Count how many samples are visible
   int nvisible = 0;
-  for (int i = 0; i < npoints; i++) {
-    const R3Point& point = points[i];
-    R3Ray ray(camera.Origin(), point);
+  for (int i = 0; i < nsamples; i++) {
+    const R3Point& sample = samples[i];
+    R3Ray ray(camera.Origin(), sample);
     const RNScalar tolerance_t = 0.01;
-    RNScalar max_t = R3Distance(camera.Origin(), point) + tolerance_t;
+    RNScalar max_t = R3Distance(camera.Origin(), sample) + tolerance_t;
     RNScalar hit_t = FLT_MAX;
     R3SceneNode *hit_node = NULL;
     if (scene->Intersects(ray, &hit_node, NULL, NULL, NULL, NULL, &hit_t, 0, max_t)) {
@@ -873,8 +909,8 @@ ObjectCoverageScore(const R3Camera& camera, R3Scene *scene, R3SceneNode *node = 
     }
   }
 
-  // Compute score as fraction of points that are visible
-  RNScalar score = (RNScalar) nvisible/ (RNScalar) npoints;
+  // Compute score as fraction of samples that are visible
+  RNScalar score = (RNScalar) nvisible/ (RNScalar) nsamples;
 
   // Return score
   return score;
@@ -1837,6 +1873,9 @@ CreateWorldInHandCameras(void)
 static void
 CreateLookAtCameras(void)
 {
+  // Check points
+  if (!points) return;
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
@@ -1849,51 +1888,59 @@ CreateLookAtCameras(void)
   RNScalar yfov = atan(aspect * tan(xfov));
   RNScalar downward_angle = RN_PI/3.0;
   RNScalar downward_angle_cosine = cos(downward_angle);
+
+  // Consider every point in pointset
+  for (int i = 0; i < points->NPoints(); i++) {
+    R3Point lookat_position = points->PointPosition(i);
   
-  // Sample angles rotated around gravity dimension
-  for (RNAngle angle = 0; angle <= RN_TWO_PI + 0.5 * angle_sampling; angle += angle_sampling) {
-    // Determine view direction
-    R3Vector towards = R3xyz_triad[(gravity_dimension+1)%3];
-    towards.Rotate(gravity_dimension, angle);
-    towards[gravity_dimension] = -downward_angle_cosine;
-    towards.Normalize();
+    // Sample angles rotated around gravity dimension
+    int nangles = RN_TWO_PI / angle_sampling + 1;
+    for (int j = 0; j < nangles; j++) {
+      // Determine view direction
+      RNAngle angle = j * (RN_TWO_PI / nangles);
+      R3Vector towards = R3xyz_triad[(gravity_dimension+1)%3];
+      towards.Rotate(gravity_dimension, angle);
+      towards[gravity_dimension] = -downward_angle_cosine;
+      towards.Normalize();
 
-    // Determine viewpoint and other directions
-    R3Point viewpoint = lookat_position - max_surface_distance * towards;
-    R3Vector right = towards % R3xyz_triad[gravity_dimension];
-    right.Normalize();
-    R3Vector up = right % towards;
-    up.Normalize();
+      // Determine viewpoint and other directions
+      R3Point viewpoint = lookat_position - max_surface_distance * towards;
+      R3Vector right = towards % R3xyz_triad[gravity_dimension];
+      right.Normalize();
+      R3Vector up = right % towards;
+      up.Normalize();
 
-    // Ensure lookat position is not occluded
-    RNScalar hit_t = FLT_MAX;
-    R3Ray ray(lookat_position, -towards);
-    if (scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, 0, max_surface_distance)) {
-      if (hit_t < min_surface_distance) continue;
-      viewpoint = lookat_position - hit_t * towards;
+      // Ensure lookat position is not occluded
+      RNScalar hit_t = FLT_MAX;
+      R3Ray ray(lookat_position, -towards);
+      if (scene->Intersects(ray, NULL, NULL, NULL, NULL, NULL, &hit_t, 0.1, max_surface_distance)) {
+        if (hit_t < min_surface_distance) continue;
+        viewpoint = lookat_position - hit_t * towards;
+      }
+
+      // Create camera
+      R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
+
+      // Compute score for camera
+      camera.SetValue(SceneCoverageScore(camera, scene, NULL, TRUE));
+      if (camera.Value() == 0) continue;
+      if (camera.Value() < min_score) continue;
+
+      // Insert camera
+      char camera_name[1024];
+      sprintf(camera_name, "%s#%d_%d", "LookAt", i, j);
+      Camera *insertable_camera = new Camera(camera, camera_name);
+      cameras.Insert(insertable_camera);
+      camera_count++;
     }
-
-    // Create camera
-    R3Camera camera(viewpoint, towards, up, xfov, yfov, neardist, fardist);
-
-    // Compute score for camera
-    camera.SetValue(SceneCoverageScore(camera, scene, NULL, TRUE));
-    if (camera.Value() == 0) continue;
-    if (camera.Value() < min_score) continue;
-
-    // Insert camera
-    char camera_name[1024];
-    sprintf(camera_name, "%s#%i", "LookAt", camera_count);
-    Camera *insertable_camera = new Camera(camera, camera_name);
-    cameras.Insert(insertable_camera);
-    camera_count++;
   }
 
   // Print statistics
   if (print_verbose) {
     printf("Created lookat cameras ...\n");
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
-    printf("  # Cameras = %d\n", camera_count++);
+    printf("  # Points = %d\n", points->NPoints());
+    printf("  # Cameras = %d\n", camera_count);
     fflush(stdout);
   }
 }
@@ -2142,6 +2189,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-zup")) { gravity_dimension = RN_Z; }
       else if (!strcmp(*argv, "-categories")) { argc--; argv++; input_categories_filename = *argv; }
       else if (!strcmp(*argv, "-input_cameras")) { argc--; argv++; input_cameras_filename = *argv; }
+      else if (!strcmp(*argv, "-input_points")) { argc--; argv++; input_points_filename = *argv; }
       else if (!strcmp(*argv, "-output_camera_extrinsics")) { argc--; argv++; output_camera_extrinsics_filename = *argv; output = 1; }
       else if (!strcmp(*argv, "-output_camera_intrinsics")) { argc--; argv++; output_camera_intrinsics_filename = *argv; output = 1; }
       else if (!strcmp(*argv, "-output_camera_names")) { argc--; argv++; output_camera_names_filename = *argv; output = 1; }
@@ -2164,11 +2212,6 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-position_sampling")) { argc--; argv++; position_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-angle_sampling")) { argc--; argv++; angle_sampling = atof(*argv); }
       else if (!strcmp(*argv, "-interpolation_step")) { argc--; argv++; interpolation_step = atof(*argv); }
-      else if (!strcmp(*argv, "-lookat_position")) {
-        argc--; argv++; lookat_position[0] = atof(*argv);
-        argc--; argv++; lookat_position[1] = atof(*argv);
-        argc--; argv++; lookat_position[2] = atof(*argv);
-      }
       else if (!strcmp(*argv, "-create_object_cameras") || !strcmp(*argv, "-create_leaf_node_cameras")) {
         create_cameras = create_object_cameras = 1;
         angle_sampling = RN_PI / 6.0;
@@ -2253,6 +2296,11 @@ int main(int argc, char **argv)
   // Read categories
   if (input_categories_filename) {
     if (!ReadCategories(input_categories_filename)) exit(-1);
+  }
+
+  // Read points
+  if (input_points_filename) {
+    if (!ReadPoints(input_points_filename)) exit(-1);
   }
 
   // Create and write new cameras 

@@ -105,11 +105,17 @@ class R3Grid;
 
 
 
-/* Surface shapes include files */
+/* Linear shapes include files */
 
 #include "R3Curve.h"
 #include "R3Polyline.h"
 #include "R3CatmullRomSpline.h"
+
+
+
+/* Point set include files */
+
+#include "R3PointSet.h"
 
 
 
@@ -135,7 +141,6 @@ class R3Grid;
 #include "R3Relate.h"
 #include "R3Align.h"
 #include "R3Kdtree.h"
-
 
 
 /* Mesh utility include files */

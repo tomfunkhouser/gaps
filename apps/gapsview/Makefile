@@ -10,7 +10,7 @@ NAME=gapsview
 # Source files.
 #
 
-CCSRCS=$(NAME).cpp R3PointSet.cpp
+CCSRCS=$(NAME).cpp
 
 
 

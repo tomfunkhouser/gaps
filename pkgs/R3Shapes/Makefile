@@ -20,7 +20,7 @@ CCSRCS=$(NAME).cpp \
     R3Shape.cpp \
     R3Affine.cpp R3Xform.cpp R3Crdsys.cpp R3Triad.cpp R3Quaternion.cpp R4Matrix.cpp \
     R3PlanarGrid.cpp R3Grid.cpp \
-    R3Halfspace.cpp R3Plane.cpp R3Span.cpp R3Ray.cpp R3Line.cpp R3Point.cpp R3Vector.cpp \
+    R3Halfspace.cpp R3Plane.cpp R3Span.cpp R3Ray.cpp R3Line.cpp R3Point.cpp R3Vector.cpp R3PointSet.cpp \
     R3Base.cpp \
     ply.cpp
 

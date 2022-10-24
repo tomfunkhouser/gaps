@@ -11,7 +11,6 @@ using namespace gaps;
 #include "R3Graphics/R3Graphics.h"
 #include "R3Surfels/R3Surfels.h"
 #include "GSV/GSV.h"
-#include "R3PointSet.h"
 #include "fglut/fglut.h"
 
 
