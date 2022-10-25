@@ -154,7 +154,7 @@ void DrawText(double x, double y, const char *str, double value)
   // Draw text string s and position p
   char buffer[1024];
   sprintf(buffer, "%s:%g", str, value);
-  viewer->DrawText(x, y, str, buffer);
+  viewer->DrawText(x, y, buffer);
 }
 
 
