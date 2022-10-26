@@ -328,9 +328,12 @@ ReadBinary(const char *filename)
   // Check number of properties
   if (property_count == 0) return 1;
 
-  // Create properties
+
+  // Read property names and create properties
+  char property_name[128];
   for (int j = 0; j < property_count; j++) {
-    R3MeshProperty *property = new R3MeshProperty(mesh);
+    fread(property_name, sizeof(char), 128, fp);
+    R3MeshProperty *property = new R3MeshProperty(mesh, property_name);
     Insert(property);
   }
 
@@ -573,8 +576,18 @@ WriteBinary(const char *filename) const
     return 0;
   }
   
-  // Check number of properties
-  if (property_count == 0) return 1;
+  // Write property names
+  for (int j = 0; j < NProperties(); j++) {
+    R3MeshProperty *property = Property(j);
+    char property_name[1024];
+    memset(property_name, 0, 1024);
+    if (property->Name()) strncpy(property_name, property->Name(), 1024);
+    property_name[127] = '\0';
+    if (fwrite(property_name, sizeof(char), 128, fp) != (unsigned int) 128) {
+      RNFail("Unable to write property name to binary file: %s\n", filename);
+      return 0;
+    }    
+  }
 
   // Write data and assign property values
   for (int i = 0; i < mesh->NVertices(); i++) {
