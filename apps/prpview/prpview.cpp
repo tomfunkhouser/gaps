@@ -377,6 +377,7 @@ void GLUTRedraw(void)
     RNLoadRgb(0, 0, 0);
     double y = GLUTwindow_height - 20;
     viewer->DrawText(10, y, current_property->Name()); y-= 20;
+    DrawText(10, y, "Index", properties->PropertyIndex(current_property)); y-= 20;
     DrawText(10, y, "Mean", current_property->Mean()); y-= 20;
     DrawText(10, y, "Min", current_property->Minimum()); y-= 20;
     DrawText(10, y, "Max", current_property->Maximum()); y-= 20;
