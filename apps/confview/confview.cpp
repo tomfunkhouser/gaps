@@ -525,7 +525,7 @@ CheckVisibility(RGBDImage *image, const R3Point& world_position)
 {
   // Check world position
   if (world_position == R3unknown_point) return 1;
-  
+
   // Get/check point depth
   R3Vector vector = world_position - image->WorldViewpoint();
   RNScalar point_depth = vector.Dot(image->WorldTowards());
@@ -537,19 +537,19 @@ CheckVisibility(RGBDImage *image, const R3Point& world_position)
 
   // Get/check image depth channel
   R2Grid *depth_channel = image->DepthChannel();
-  if (!depth_channel) return 1;
-  
-  // Get/check image depth
-  int image_ix = image_position.X() + 0.5;
-  int image_iy = image_position.Y() + 0.5;
-  if ((image_ix < 0) || (image_ix > image->NPixels(RN_X))) return 0;
-  if ((image_iy < 0) || (image_iy > image->NPixels(RN_Y))) return 0;
-  RNScalar image_depth = image->PixelDepth(image_ix, image_iy);
-  if ((image_depth == R2_GRID_UNKNOWN_VALUE) || (image_depth == 0)) return 1;
+  if (depth_channel) {
+    // Get/check image depth
+    int image_ix = image_position.X() + 0.5;
+    int image_iy = image_position.Y() + 0.5;
+    if ((image_ix < 0) || (image_ix > image->NPixels(RN_X))) return 0;
+    if ((image_iy < 0) || (image_iy > image->NPixels(RN_Y))) return 0;
+    RNScalar image_depth = image->PixelDepth(image_ix, image_iy);
+    if ((image_depth == R2_GRID_UNKNOWN_VALUE) || (image_depth == 0)) return 1;
 
-  // If depth is not within 10% of image depth, then probably not 
-  if (image_depth < 0.9 * point_depth) return 0;
-  if (image_depth > 1.1 * point_depth) return 0;
+    // If depth is not within 10% of image depth, then probably not 
+    if (image_depth < 0.9 * point_depth) return 0;
+    if (image_depth > 1.1 * point_depth) return 0;
+  }
 
   // Passed all tests
   return 1;
@@ -1364,9 +1364,10 @@ void GLUTMouse(int button, int state, int x, int y)
       RGBDSurface *selected_surface = NULL;
       if (Pick(x, y, &selected_surface, &selected_image, &selected_position)) {
         // Remember selected indices
+        if (!selected_image) selected_image = configuration.FindImage(selected_position);
         if (selected_surface) selected_surface_index = selected_surface->ConfigurationIndex();
         if (selected_image) selected_image_index = selected_image->ConfigurationIndex();
-
+        
         // Print message
         if (selected_surface) {
           printf("Selected surface %d at %g %g %g\n", selected_surface->ConfigurationIndex(),

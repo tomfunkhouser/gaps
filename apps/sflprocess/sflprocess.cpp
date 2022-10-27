@@ -9,6 +9,7 @@
 namespace gaps {}
 using namespace gaps;
 #include "R3Surfels/R3Surfels.h"
+#include "RGBD/RGBD.h"
 
 
 
@@ -739,6 +740,66 @@ LoadSurfelsFromMesh(R3SurfelScene *scene, const char *mesh_filename,
 
 
 
+static int
+LoadImagesFromConfiguration(R3SurfelScene *scene, const char *configuration_filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Read configuration file
+  RGBDConfiguration configuration;
+  if (!configuration.ReadFile(configuration_filename)) return 0;
+
+  // Create images
+  for (int i = 0; i < configuration.NImages(); i++) {
+    RGBDImage *rgbd_image = configuration.Image(i);
+
+    // Get name
+    char name[1025];
+    if (rgbd_image->Name()) strncpy(name, rgbd_image->Name(), 1024);
+    else sprintf(name, "Image_%d\n", i);
+
+    // Get stuff from rgbd image
+    R3Point viewpoint = rgbd_image->WorldViewpoint();
+    R3Vector towards = rgbd_image->WorldTowards();
+    R3Vector up = rgbd_image->WorldUp();
+    int width = rgbd_image->NPixels(RN_X);
+    int height = rgbd_image->NPixels(RN_Y);
+    R3Matrix intrinsics = rgbd_image->Intrinsics();
+    double xfocal = intrinsics[0][0];
+    double yfocal = intrinsics[1][1];
+    double xcenter = intrinsics[0][2];
+    double ycenter = intrinsics[1][2];
+
+    // Create sfl image
+    R3SurfelImage *sfl_image = new R3SurfelImage();
+    sfl_image->SetViewpoint(viewpoint);
+    sfl_image->SetOrientation(towards, up);
+    sfl_image->SetImageDimensions(width, height);
+    sfl_image->SetImageCenter(R2Point(xcenter, ycenter));
+    sfl_image->SetXFocal(xfocal);
+    sfl_image->SetYFocal(yfocal);
+    sfl_image->SetName(name);
+
+    // Insert sfl image into scene
+    scene->InsertImage(sfl_image);
+  }
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("Loaded images from %s ...\n", configuration_filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", configuration.NImages());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+  
 static int
 LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_name)
 {
@@ -2500,6 +2561,11 @@ int main(int argc, char **argv)
       if (!LoadSurfelsFromMesh(scene, mesh_filename,
         parent_object_name, parent_node_name,
         surfel_spacing)) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-load_images")) { 
+      argc--; argv++; const char *configuration_filename = *argv; 
+      if (!LoadImagesFromConfiguration(scene, configuration_filename)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-load_scene")) { 
