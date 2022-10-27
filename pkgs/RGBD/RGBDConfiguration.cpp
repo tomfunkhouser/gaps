@@ -1575,4 +1575,53 @@ FindImage(const char *name) const
 
 
 
+RGBDImage *RGBDConfiguration::
+FindImage(const R3Point& lookat_position) const
+{
+  // Search for image with best view of a point
+  RNScalar best_score = 0;
+  RGBDImage *best_image = NULL;
+  for (int i = 0; i < NImages(); i++) {
+    RGBDImage *image = Image(i);
+    
+    // Check image
+    if (image->NPixels(RN_X) == 0) continue;
+    if (image->NPixels(RN_Y) == 0) continue;
+
+    // Get/check point depth
+    R3Point camera_position;
+    if (!image->TransformWorldToCamera(lookat_position, camera_position)) continue;
+    RNScalar point_depth = -camera_position.Z();
+    if (RNIsNegativeOrZero(point_depth)) continue;
+
+    // Get/check projection into image
+    R2Point image_position;
+    if (!image->TransformCameraToImage(camera_position, image_position)) continue;
+    int ix = (int) (image_position.X() + 0.5);
+    if ((ix < 0) || (ix >= image->NPixels(RN_X))) continue;
+    int iy = (int) (image_position.Y() + 0.5);
+    if ((iy < 0) || (iy >= image->NPixels(RN_Y))) continue;
+  
+    // Get image centrality
+    double dx = fabs(ix - 0.5*image->NPixels(RN_X)) / (0.5*image->NPixels(RN_X));
+    double dy = fabs(iy - 0.5*image->NPixels(RN_Y)) / (0.5*image->NPixels(RN_Y));
+    double image_centrality = (1.0 - dx) * (1.0 - dy);
+
+    // Get distance
+    RNScalar dd = R3SquaredDistance(image->WorldViewpoint(), lookat_position);
+
+    // Get/check score
+    RNScalar score = image_centrality / dd;
+    if (score > best_score) {
+      best_image = image;
+      best_score = score;
+    }
+  }
+
+  // Return best image
+  return best_image;
+}
+
+
+
 } // namespace gaps

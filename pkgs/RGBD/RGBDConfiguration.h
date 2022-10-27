@@ -82,6 +82,7 @@ public:
 
   // Access functions
   RGBDImage *FindImage(const char *name) const;
+  RGBDImage *FindImage(const R3Point& lookat_position) const;
   
   // Read/release functions
   virtual int ReadChannels(void);
