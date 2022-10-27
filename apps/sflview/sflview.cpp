@@ -35,6 +35,7 @@ static RNRgb background_color(0,0,0);
 static R3Point initial_camera_eye(0,0,0);
 static R3Vector initial_camera_towards(0,0,0);
 static R3Vector initial_camera_up(0,0,0);
+static R3Point initial_world_origin(-1,1,-1);
 static RNBoolean initial_camera = FALSE;
 
 
@@ -264,7 +265,7 @@ DrawModel(void)
   // Draw model faces
   if (show_model) {
     glEnable(GL_LIGHTING);
-    RNLoadRgb(0.0, 0.8, 0.0);
+    RNLoadRgb(1.0, 1.0, 1.0);
     model->Draw(R3_DEFAULT_DRAW_FLAGS);
     glDisable(GL_LIGHTING);
   }
@@ -512,6 +513,11 @@ void GLUTMainLoop(void)
     viewer->SetCamera(camera);
   }
 
+  // Set world origin
+  if (initial_world_origin != R3Point(-1, -1, -1)) {
+    viewer->SetCenterPoint(initial_world_origin);
+  }
+
   // Run main loop -- never returns
   glutMainLoop();
 }
@@ -550,6 +556,13 @@ ParseArgs(int argc, char **argv)
         argv++; argc--; background_color[0] = atof(*argv); 
         argv++; argc--; background_color[1] = atof(*argv); 
         argv++; argc--; background_color[2] = atof(*argv); 
+      }
+      else if (!strcmp(*argv, "-origin")) { 
+        RNCoord x, y, z;
+        argv++; argc--; x = atof(*argv); 
+        argv++; argc--; y = atof(*argv); 
+        argv++; argc--; z = atof(*argv);
+        initial_world_origin.Reset(x, y, z);
       }
       else if (!strcmp(*argv, "-camera")) { 
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;
