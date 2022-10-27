@@ -20,6 +20,7 @@ static RNBoolean initial_camera = FALSE;
 static R3Point initial_camera_origin(0,0,0);
 static R3Vector initial_camera_towards(0, 0, -1);
 static R3Vector initial_camera_up(0, 1, 0);
+static R3Point initial_world_origin(-1, -1, -1);
 // static R3Vector initial_camera_towards(0.115655, 0.447639, -0.886704);
 // static R3Vector initial_camera_up(0.00610775, 0.892357, 0.451289);
 // static R3Vector initial_camera_towards(-0.57735, -0.57735, -0.57735);
@@ -67,6 +68,7 @@ static int show_material_names = 0;
 static int show_segment_names = 0;
 static int show_category_names = 0;
 static int show_backfacing = 0;
+static int show_world_origin = 0;
 static int current_mesh = -1;
 static R3Point world_origin(0, 0, 0);
 
@@ -117,6 +119,9 @@ void GLUTStop(void)
 
 void GLUTRedraw(void)
 {
+  // Check meshes
+  if (meshes.NEntries() == 0) return;
+  
   // Set viewing transformation
   viewer->Camera().Load();
 
@@ -308,6 +313,14 @@ void GLUTRedraw(void)
         R3DrawText(mesh->FaceCentroid(face), buffer);
       }
     }
+  }
+
+  // Draw world origin
+  if (show_world_origin) {
+    glEnable(GL_LIGHTING);
+    RNLoadRgb(1.0, 0.0, 0.0);
+    RNScalar r = 0.01 * meshes[0]->BBox().DiagonalRadius();
+    R3Sphere(world_origin, r).Draw();
   }
 
   // Draw axes
@@ -546,6 +559,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_face_normals = !show_face_normals;
     break;
 
+  case 'O':
+  case 'o':
+    show_world_origin = !show_world_origin;
+    break;
+
   case 'S':
     show_segment_names = !show_segment_names;
     break;
@@ -679,7 +697,10 @@ void GLUTInit(int *argc, char **argv)
 void GLUTMainLoop(void)
 {
   // Set world origin
-  if (meshes.NEntries() > 0) {
+  if (initial_world_origin != R3unknown_point) {
+    world_origin = initial_world_origin;
+  }
+  else if (meshes.NEntries() > 0) {
     world_origin = meshes[0]->BBox().Centroid();
   }
 
@@ -788,6 +809,13 @@ int ParseArgs(int argc, char **argv)
         initial_camera_towards.Reset(tx, ty, tz);
         initial_camera_up.Reset(ux, uy, uz);
         initial_camera = TRUE;
+      }
+      else if (!strcmp(*argv, "-origin")) {
+        RNCoord x, y, z;
+        argv++; argc--; x = atof(*argv); 
+        argv++; argc--; y = atof(*argv); 
+        argv++; argc--; z = atof(*argv);
+        initial_world_origin.Reset(x, y, z);
       }
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
