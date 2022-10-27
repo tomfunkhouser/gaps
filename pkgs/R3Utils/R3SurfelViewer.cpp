@@ -1937,7 +1937,8 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
     case 'Q':
       // Print info about the currently selected image
       if (selected_image) {
-        printf("%s", selected_image->Name());
+        printf("%s\n", selected_image->Name());
+        fflush(stdout);
       }
       break;
         
