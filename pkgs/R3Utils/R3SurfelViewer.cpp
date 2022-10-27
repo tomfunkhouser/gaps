@@ -1934,8 +1934,15 @@ Keyboard(int x, int y, int key, int shift, int ctrl, int alt)
       SetViewingExtentVisibility(-1);
       break;
       
-    case 'Q': 
+    case 'Q':
+      // Print info about the currently selected image
+      if (selected_image) {
+        printf("%s", selected_image->Name());
+      }
+      break;
+        
     case 'q': {
+      // Print info about the node clicked
       R3Point pick_position(0,0,0);
       R3SurfelNode *node = PickNode(x, y, &pick_position);
       if (node) {
