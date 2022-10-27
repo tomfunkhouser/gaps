@@ -507,6 +507,9 @@ void GLUTInit(int *argc, char **argv)
 
 void GLUTMainLoop(void)
 {
+  // Set background color
+  viewer->SetBackgroundColor(background_color);
+
   // Set camera 
   if (initial_camera) {
     R3Camera camera(initial_camera_eye, initial_camera_towards, initial_camera_up, 0.4, 0.4, 0.01, 100000.0);
