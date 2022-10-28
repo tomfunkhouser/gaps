@@ -22,8 +22,11 @@ static R3Vector initial_camera_up(-0.57735, 0.57735, 0.5773);
 static R3Point initial_camera_origin(0,0,0);
 static RNBoolean initial_camera = FALSE;
 static RNInterval input_value_range(0,0);
+static R3Point initial_world_origin(-1, -1, -1);
+static int initial_property_index = 0;
 static int color_with_redness = 0;
 static int color_with_labels = 0;
+static int flip_color_range = 0;
 static int print_verbose = 0;
 
 
@@ -47,14 +50,15 @@ static R3MeshProperty *current_property = NULL;
 static int current_property_index = 0;
 static RNInterval percentile_range(0,0);
 static RNInterval value_range(0,0);
+static R3Point world_origin(0, 0, 0);
 
 
 
 // GLUT variables 
 
 static int GLUTwindow = 0;
-static int GLUTwindow_height = 800;
-static int GLUTwindow_width = 800;
+static int GLUTwindow_height = 1024;
+static int GLUTwindow_width = 768;
 static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmodifiers = 0;
@@ -75,7 +79,7 @@ static int show_local_maxima = 0;
 static int show_statistics = 1;
 static int show_text = 0;
 static int show_backfacing = 0;
-static int nisosteps = 50;
+static int nisosteps = 20;
 
 
 
@@ -121,7 +125,8 @@ NormalizedColor(R3MeshVertex *vertex)
   else {
     // Compute normalized value
     RNScalar value = NormalizedValue(vertex);
-
+    if (flip_color_range) value = 1.0 - value;
+    
     // Compute color
     if (color_with_redness) {
       c[0] = 0.8;
@@ -143,6 +148,32 @@ NormalizedColor(R3MeshVertex *vertex)
   // Return color
   return c;
 }
+
+
+
+static void
+SelectProperty(int property_index)
+{
+  // Set current property index
+  int current_property_index = property_index;
+  if (current_property_index < 0) current_property_index = 0;
+  if (current_property_index >= properties->NProperties()) current_property_index = properties->NProperties() - 1;
+
+  // Get current property
+  current_property = properties->Property(current_property_index);
+
+  // Set value range
+  if (input_value_range.Diameter() > 0) {
+    value_range = input_value_range;
+  }
+  else {
+    percentile_range.Reset(10, 90);
+    RNScalar min_value = current_property->Percentile(percentile_range.Min());
+    RNScalar max_value = current_property->Percentile(percentile_range.Max());
+    value_range.Reset(min_value, max_value);
+  }
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -191,7 +222,7 @@ void GLUTRedraw(void)
   // Draw faces
   if (show_faces) {
     if (show_values) {
-      glDisable(GL_LIGHTING);
+      glEnable(GL_LIGHTING);
       glEnable(GL_POLYGON_OFFSET_FILL);
       glPolygonOffset(2, 1);
       RNGrfxBegin(RN_GRFX_TRIANGLES);
@@ -200,6 +231,7 @@ void GLUTRedraw(void)
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
           RNLoadRgb(NormalizedColor(vertex));
+          R3LoadNormal(mesh->VertexNormal(vertex));
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
@@ -208,19 +240,14 @@ void GLUTRedraw(void)
     }
     else {
       glEnable(GL_LIGHTING);
-      static GLfloat ambient_material[] = { 0.1, 0.1, 0.1, 1.0 };
-      static GLfloat diffuse_material[] = { 0.8, 0.8, 0.8, 1.0 };
-      static GLfloat specular_material[] = { 0.2, 0.2, 0.2, 1.0};
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material); 
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
-      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
+      RNLoadRgb(0.8, 0.8, 0.8);
       RNGrfxBegin(RN_GRFX_TRIANGLES);
       for (int i = 0; i < mesh->NFaces(); i++) {
         R3MeshFace *face = mesh->Face(i);
         R3LoadNormal(mesh->FaceNormal(face));
         for (int j = 0; j < 3; j++) {
           R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
+          R3LoadNormal(mesh->VertexNormal(vertex));
           R3LoadPoint(mesh->VertexPosition(vertex));
         }
       }
@@ -236,22 +263,18 @@ void GLUTRedraw(void)
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
         RNLoadRgb(NormalizedColor(vertex));
+        R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
       RNGrfxEnd();
     }
     else {
       glEnable(GL_LIGHTING);
-      static GLfloat ambient_material[] = { 0.1, 0.1, 0.1, 1.0 };
-      static GLfloat diffuse_material[] = { 0.8, 0.8, 0.8, 1.0 };
-      // static GLfloat specular_material[] = { 0.2, 0.2, 0.2, 1.0};
-      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material); 
-      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse_material); 
-      // glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material); 
-      glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1);
+      RNLoadRgb(0.8, 0.8, 0.8);
       RNGrfxBegin(RN_GRFX_POINTS);
       for (int i = 0; i < mesh->NVertices(); i++) {
         R3MeshVertex *vertex = mesh->Vertex(i);
+        R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadNormal(mesh->VertexNormal(vertex));
         R3LoadPoint(mesh->VertexPosition(vertex));
       }
@@ -263,10 +286,8 @@ void GLUTRedraw(void)
   if (points && show_points) {
     // Draw points
     glEnable(GL_LIGHTING);
-    static GLfloat regular_material[] = { 1, 1, 0, 1 };
-    static GLfloat redness_material[] = { 0, 0, 1, 1 };
-    GLfloat *material = (color_with_redness) ? redness_material : regular_material;
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material);
+    if (color_with_redness) RNLoadRgb(0, 0, 1);
+    else RNLoadRgb(1, 1, 0);
     RNLength radius = 0.008 * mesh->BBox().LongestAxisLength();
     for (int i = 0; i < points->NEntries(); i++) {
       Point *point = points->Kth(i);
@@ -327,30 +348,22 @@ void GLUTRedraw(void)
       R3Point position = mesh->VertexPosition(vertex);
       RNScalar value = Value(vertex);
       if (show_global_minima && (value == current_property->Minimum())) {
-        static GLfloat material[] = { 1, 1, 1, 1 };
-        material[0] = 1; material[1] = 0; material[2] = 0;
-        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material); 
+        RNLoadRgb(1, 1, 1);
         RNScalar radius = 0.01 * mesh->BBox().DiagonalLength();
         R3Sphere(position, radius).Draw();
       }
       if (show_global_maxima && (value == current_property->Maximum())) {
-        static GLfloat material[] = { 1, 1, 1, 1 };
-        material[0] = 0; material[1] = 1; material[2] = 0;
-        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material); 
+        RNLoadRgb(1, 1, 1);
         RNScalar radius = 0.01 * mesh->BBox().DiagonalLength();
         R3Sphere(position, radius).Draw();
       }
       if (show_local_minima && (current_property->IsLocalMinimum(vertex))) {
-        static GLfloat material[] = { 1, 1, 1, 1 };
-        material[0] = 0.5; material[1] = 0; material[2] = 0;
-        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material); 
+        RNLoadRgb(0.5, 1, 1);
         RNScalar radius = 0.005 * mesh->BBox().DiagonalLength();
         R3Sphere(position, radius).Draw();
       }
       if (show_local_maxima && (current_property->IsLocalMaximum(vertex))) {
-        static GLfloat material[] = { 1, 1, 1, 1 };
-        material[0] = 0; material[1] = 0.5; material[2] = 0;
-        glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, material); 
+        RNLoadRgb(0, 0.5, 0);
         RNScalar radius = 0.005 * mesh->BBox().DiagonalLength();
         R3Sphere(position, radius).Draw();
       }
@@ -431,10 +444,9 @@ void GLUTMotion(int x, int y)
   int dy = y - GLUTmouse[1];
   
   // World in hand navigation 
-  R3Point origin = mesh->BBox().Centroid();
-  if (GLUTbutton[0]) viewer->RotateWorld(1.0, origin, x, y, dx, dy);
-  else if (GLUTbutton[1]) viewer->ScaleWorld(1.0, origin, x, y, dx, dy);
-  else if (GLUTbutton[2]) viewer->TranslateWorld(1.0, origin, x, y, dx, dy);
+  if (GLUTbutton[0]) viewer->RotateWorld(1.0, world_origin, x, y, dx, dy);
+  else if (GLUTbutton[1]) viewer->ScaleWorld(1.0, world_origin, x, y, dx, dy);
+  else if (GLUTbutton[2]) viewer->TranslateWorld(1.0, world_origin, x, y, dx, dy);
   if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
 
   // Remember mouse position 
@@ -450,6 +462,23 @@ void GLUTMouse(int button, int state, int x, int y)
   y = GLUTwindow_height - y;
   
   // Process mouse button event
+  // Process mouse button event
+  if ((button == GLUT_LEFT) && (state == GLUT_UP)) {
+    // Check for double click  
+    static RNBoolean double_click = FALSE;
+    static RNTime last_mouse_down_time;
+    double_click = (!double_click) && (last_mouse_down_time.Elapsed() < 0.4);
+    last_mouse_down_time.Read();
+
+    // Set world origin
+    if (double_click) {
+      R3Ray ray = viewer->WorldRay(x, y);
+      R3MeshIntersection intersection;
+      if (mesh->Intersection(ray, &intersection)) {
+        world_origin = intersection.point;
+      }
+    }
+  }
 
   // Remember button state 
   int b = (button == GLUT_LEFT_BUTTON) ? 0 : ((button == GLUT_MIDDLE_BUTTON) ? 1 : 2);
@@ -479,22 +508,12 @@ void GLUTSpecial(int key, int x, int y)
   case GLUT_KEY_END:
   case GLUT_KEY_PAGE_DOWN:
   case GLUT_KEY_PAGE_UP: {
-    if (key == GLUT_KEY_PAGE_DOWN) current_property_index--;
-    else if (key == GLUT_KEY_PAGE_UP) current_property_index++;
-    else if (key == GLUT_KEY_HOME) current_property_index = 0;
-    else if (key == GLUT_KEY_END) current_property_index = properties->NProperties() - 1;
-    if (current_property_index < 0) current_property_index = 0;
-    if (current_property_index >= properties->NProperties()) current_property_index = properties->NProperties() - 1;
-    current_property = properties->Property(current_property_index);
-    if (input_value_range.Diameter() > 0) {
-      value_range = input_value_range;
-    }
-    else {
-      percentile_range.Reset(10, 90);
-      RNScalar min_value = current_property->Percentile(percentile_range.Min());
-      RNScalar max_value = current_property->Percentile(percentile_range.Max());
-      value_range.Reset(min_value, max_value);
-    }
+    int property_index = current_property_index;
+    if (key == GLUT_KEY_PAGE_DOWN) property_index--;
+    else if (key == GLUT_KEY_PAGE_UP) property_index++;
+    else if (key == GLUT_KEY_HOME) property_index = 0;
+    else if (key == GLUT_KEY_END) property_index = properties->NProperties() - 1;
+    SelectProperty(property_index);
     break; }
 
   case GLUT_KEY_RIGHT:
@@ -663,6 +682,10 @@ void GLUTInit(int *argc, char **argv)
   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
   glEnable(GL_LIGHT1);
 
+  // Initialize color settings
+  glEnable(GL_COLOR_MATERIAL);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
   // Initialize graphics modes  
   glEnable(GL_DEPTH_TEST);
   glShadeModel(GL_SMOOTH);
@@ -680,18 +703,16 @@ void GLUTInit(int *argc, char **argv)
 
 void GLUTMainLoop(void)
 {
-  // Initialize current property
-  current_property_index = 0;
-  current_property = properties->Property(current_property_index);
-  percentile_range.Reset(10, 90);
-  if (input_value_range.Diameter() > 0) {
-    value_range = input_value_range;
+  // Initialize world origin
+  if (initial_world_origin != R3unknown_point) {
+    world_origin = initial_world_origin;
   }
   else {
-    RNScalar min_value = current_property->Percentile(percentile_range.Min());
-    RNScalar max_value = current_property->Percentile(percentile_range.Max());
-    value_range.Reset(min_value, max_value);
+    world_origin = mesh->BBox().Centroid();
   }
+
+  // Initialize current property
+  SelectProperty(initial_property_index);
 
   // Run main loop -- never returns 
   glutMainLoop();
@@ -923,13 +944,24 @@ int ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-no_statistics")) { show_statistics = 0; }
       else if (!strcmp(*argv, "-faces")) { show_faces = 1; show_values = 0; }
       else if (!strcmp(*argv, "-redness")) { color_with_redness = 1; }
+      else if (!strcmp(*argv, "-flip_color_range")) { flip_color_range = 1; }
       else if (!strcmp(*argv, "-labels")) { color_with_labels = 1; }
       else if (!strcmp(*argv, "-back")) { show_backfacing = 1; }
+      else if (!strcmp(*argv, "-property_index")) { 
+        argv++; argc--; initial_property_index = atoi(*argv);
+      }
       else if (!strcmp(*argv, "-value_range")) { 
         RNScalar min_value, max_value;
         argv++; argc--; min_value = atof(*argv);
         argv++; argc--; max_value = atof(*argv);
         input_value_range.Reset(min_value, max_value);
+      }
+      else if (!strcmp(*argv, "-origin")) {
+        RNCoord x, y, z;
+        argv++; argc--; x = atof(*argv);
+        argv++; argc--; y = atof(*argv);
+        argv++; argc--; z = atof(*argv);
+        initial_world_origin.Reset(x, y, z);
       }
       else if (!strcmp(*argv, "-camera")) {
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;
