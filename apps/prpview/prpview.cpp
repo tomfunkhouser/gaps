@@ -155,7 +155,7 @@ static void
 SelectProperty(int property_index)
 {
   // Set current property index
-  int current_property_index = property_index;
+  current_property_index = property_index;
   if (current_property_index < 0) current_property_index = 0;
   if (current_property_index >= properties->NProperties()) current_property_index = properties->NProperties() - 1;
 
