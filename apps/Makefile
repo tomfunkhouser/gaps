@@ -55,7 +55,7 @@ target:
 	cd sfl2pts; $(MAKE) $(TARGET)
 	cd sflprocess; $(MAKE) $(TARGET)
 	cd sflview; $(MAKE) $(TARGET)
-	cd sfllabel; $(MAKE) $(TARGET)
+	#cd sfllabel; $(MAKE) $(TARGET)
 	cd gapsview; $(MAKE) $(TARGET)
 
 
