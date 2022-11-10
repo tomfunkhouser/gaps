@@ -42,6 +42,9 @@ R3OrientedBoxManipulator(void)
 R3OrientedBoxManipulator::
 R3OrientedBoxManipulator(const R3OrientedBox& oriented_box)
   : oriented_box(oriented_box),
+    rotating_allowed(TRUE),
+    scaling_allowed(TRUE),
+    translating_allowed(TRUE),
     selection_corner0(-1),
     selection_corner1(-1),
     selection_t(-1),
@@ -444,9 +447,10 @@ UpdateTranslation(const R3Viewer& viewer, int x, int y)
   R3Point anchor_position = (1-t)*p0 + t*p1;
   
   // Determine plane of translation
-  unsigned int a = selection_corner0 ^ selection_corner1;
-  int axis = (a == 1) ? 0 : ((a == 2) ? 1 : 2);
-  R3Plane plane(anchor_position, oriented_box.Axis(axis));
+  // unsigned int a = selection_corner0 ^ selection_corner1;
+  // int axis = (a == 1) ? 0 : ((a == 2) ? 1 : 2);
+  // R3Plane plane(anchor_position, oriented_box.Axis(axis));
+  R3Plane plane(anchor_position, -viewer.Camera().Towards());
 
   // Find target position
   R3Point target_position;
