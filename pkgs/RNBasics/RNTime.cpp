@@ -116,6 +116,8 @@ RNSleep(RNScalar seconds)
     std::this_thread::sleep_for(std::chrono::microseconds((int) (1000000*seconds)));
 #elif (RN_OS == RN_LINUX)
     usleep((unsigned long) (1000000 * seconds));
+#elif (RN_OS == RN_MAC)
+    usleep((unsigned long) (1000000 * seconds));
 #else
     RNAbort("Not implemented");
 #endif
