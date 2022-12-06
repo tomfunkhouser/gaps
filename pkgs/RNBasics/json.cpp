@@ -2726,6 +2726,7 @@ Value::Value(ValueType vtype) {
   initBasic(vtype);
   switch (vtype) {
   case nullValue:
+    value_.int_ = 0;
     break;
   case intValue:
   case uintValue:

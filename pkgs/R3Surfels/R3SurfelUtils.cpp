@@ -1864,13 +1864,17 @@ MaskToSelectedConnectedComponent(R3Grid *grid, RNScalar isolevel,
           grid->IndicesToIndex(center_i, center_j, center_k, center_index);
           closest_component = component_membership[center_index];
           if (min_component_size > 0) {
-            if (component_sizes[closest_component] < min_component_size) {
-              closest_component = -1;
+            if (closest_component >= 0) { // to silence compiler
+              if (component_sizes[closest_component] < min_component_size) {
+                closest_component = -1;
+              }
             }
           }
           if (max_component_size > 0) {
-            if (component_sizes[closest_component] > max_component_size) {
-              closest_component = -1;
+            if (closest_component >= 0) { // to silence compiler
+              if (component_sizes[closest_component] > max_component_size) {
+                closest_component = -1;
+              }
             }
           }
         }
