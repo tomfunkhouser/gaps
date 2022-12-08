@@ -64,14 +64,18 @@ class R2Image {
   // Buffer reading/writing
   int ReadBuffer(char *buffer, size_t buffer_length);
   int ReadPNGBuffer(char *buffer, size_t buffer_length);
+  int ReadJPEGBuffer(char *buffer, size_t buffer_length);
   int WriteBuffer(char **buffer, size_t *buffer_length) const;
   int WritePNGBuffer(char **buffer, size_t *buffer_length) const;
+  int WriteJPEGBuffer(char **buffer, size_t *buffer_length) const;
   
   // Stream reading/writing
   int ReadStream(FILE *fp);
   int ReadPNGStream(FILE *fp);
+  int ReadJPEGStream(FILE *fp);
   int WriteStream(FILE *fp) const;
   int WritePNGStream(FILE *fp) const;
+  int WriteJPEGStream(FILE *fp) const;
   
   // Capture functions
   void Capture(void);

@@ -1312,20 +1312,13 @@ ReadPFMFile(const char *filename)
 
 
 ////////////////////////////////////////////////////////////////////////
-// jpeg I/O
+// JPEG I/O
 ////////////////////////////////////////////////////////////////////////
 
 int R2Image::
-ReadJPEGFile(const char *filename)
+ReadJPEGStream(FILE *fp)
 {
 #ifdef RN_USE_JPEG
-  // Open file
-  FILE *fp = fopen(filename, "rb");
-  if (!fp) {
-    RNFail("Unable to open image file: %s", filename);
-    return 0;
-  }
-
   // Initialize decompression info
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
@@ -1363,9 +1356,6 @@ ReadJPEGFile(const char *filename)
   jpeg_finish_decompress(&cinfo);
   jpeg_destroy_decompress(&cinfo);
 
-  // Close file
-  fclose(fp);
-
   // Return success
   return 1;
 #else
@@ -1378,16 +1368,9 @@ ReadJPEGFile(const char *filename)
 	
 
 int R2Image::
-WriteJPEGFile(const char *filename) const
+WriteJPEGStream(FILE *fp) const
 {
 #ifdef RN_USE_JPEG
-  // Open file
-  FILE *fp = fopen(filename, "wb");
-  if (!fp) {
-    RNFail("Unable to open image file: %s", filename);
-    return 0;
-  }
-
   // Initialize compression info
   struct jpeg_compress_struct cinfo;
   struct jpeg_error_mgr jerr;
@@ -1419,15 +1402,112 @@ WriteJPEGFile(const char *filename) const
   jpeg_finish_compress(&cinfo);
   jpeg_destroy_compress(&cinfo);
 
-  // Close file
-  fclose(fp);
-
   // Return number of bytes written
   return 1;
 #else
   RNFail("JPEG not supported");
   return 0;
 #endif
+}
+
+
+
+int R2Image::
+ReadJPEGFile(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    RNFail("Unable to open JPEG file %s\n", filename);
+    return 0;
+   }
+
+  // Read file
+  if (!ReadJPEGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Image::
+WriteJPEGFile(const char *filename) const
+{
+  // Open the file 
+  FILE *fp = fopen(filename, "wb");
+  if (fp == NULL) {
+    RNFail("Unable to open JPEG file %s\n", filename);
+    return 0;
+  }
+  
+  // Write the file
+  if (!WriteJPEGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R2Image::
+ReadJPEGBuffer(char *buffer, size_t buffer_length)
+{
+  // Open stream
+  FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
+  if (!fp) {
+    RNFail("Unable to open JPEG stream\n");
+    return 0;
+   }
+
+  // Read file
+  if (!ReadJPEGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success 
+  return 1;
+}
+
+
+
+int R2Image::
+WriteJPEGBuffer(char **buffer, size_t *buffer_length) const
+{
+  // Open the file 
+  FILE *fp = open_memstream(buffer, buffer_length);
+  if (fp == NULL) {
+    RNFail("Unable to open JPEG stream\n");
+    return 0;
+  }
+  
+  // Write the file
+  if (!WriteJPEGStream(fp)) {
+    fclose(fp);
+    return 0;
+  }
+
+  // Close the file 
+  fclose(fp);
+
+  // Return success
+  return 1;
 }
 
 
