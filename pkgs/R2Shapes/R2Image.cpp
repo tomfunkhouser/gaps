@@ -1463,7 +1463,7 @@ WriteJPEGFile(const char *filename) const
 
 
 int R2Image::
-ReadJPEGBuffer(char *buffer, size_t buffer_length)
+ReadJPEGBuffer(const char *buffer, size_t buffer_length)
 {
   // Open stream
   FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
@@ -1835,7 +1835,7 @@ WritePNGFile(const char *filename) const
 
 
 int R2Image::
-ReadPNGBuffer(char *buffer, size_t buffer_length)
+ReadPNGBuffer(const char *buffer, size_t buffer_length)
 {
   // Open stream
   FILE *fp = fmemopen((void *) buffer, buffer_length, "r");
