@@ -235,6 +235,9 @@ public:
   virtual void ReadBlocks(void);
   virtual void ReleaseBlocks(void);
 
+  // Mesh creation functions
+  virtual void CreateMesh(R3Mesh& mesh) const;
+  
 protected:
   // Structure access stuff
   friend class R3SurfelTree;

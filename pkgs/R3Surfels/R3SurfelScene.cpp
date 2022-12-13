@@ -1442,7 +1442,79 @@ ReleaseBlocks(void)
 }
 
   
+
+void R3SurfelScene::
+CreateMesh(R3Mesh& mesh) const
+{
+  // Get convenient variables
+  R3SurfelTree *tree = Tree();
+  if (!tree) return;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return;
   
+  // Create disc of triangles for each surfel
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    R3SurfelObject *object = (node) ? node->Object(TRUE, TRUE) : NULL;
+    while (object && object->Parent() && (object->Parent() != RootObject())) object = object->Parent();
+    R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+    int segment_identifier = (object) ? object->SceneIndex() : -1;
+    int label_identifier = (label) ? label->Identifier() : -1;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+
+      // Read block
+      if (!database->ReadBlock(block)) continue;
+
+      // Create disc of triangles for each surfel
+      for (int k = 0; k < block->NSurfels(); k++) {
+        int surfel_identifier = block->SurfelIdentifier(k);
+        R3Point position = block->SurfelPosition(k);
+        RNRgb color = block->SurfelColor(k);
+        R3Vector normal = block->SurfelNormal(k);
+        R3Vector tangent1 = block->SurfelTangent(k);
+        R3Vector tangent2 = normal % tangent1;
+        double r1 = block->SurfelRadius(k, 0);
+        double r2 = block->SurfelRadius(k, 1);
+        if (r1 <= 0) r1 = 0.1;
+        if (r2 <= 0) r2 = r1;
+
+        // Create central vertex
+        R3MeshVertex *central_vertex = mesh.CreateVertex(position, normal, color, R2Point(0,0));
+        if (!central_vertex) continue;
+        
+        // Create side vertices
+        static const int nsides = 6;
+        R3MeshVertex *side_vertices[nsides] = { NULL };
+        for (int j = 0; j < nsides; j++) {
+          double angle = RN_TWO_PI*j/nsides;
+          RNScalar c = cos(angle);
+          RNScalar s = sin(angle);
+          R3Point p = position;
+          p += cos(angle) * r1 * tangent1;
+          p += sin(angle) * r2 * tangent2;
+          R2Point texcoords(c, s);
+          side_vertices[j] = mesh.CreateVertex(p, normal, color, texcoords);
+        }
+
+        // Create faces
+        for (int j = 0; j < nsides; j++) {
+          R3MeshFace *face = mesh.CreateFace(central_vertex, side_vertices[j], side_vertices[(j+1)%nsides]);
+          mesh.SetFaceMaterial(face, surfel_identifier);
+          mesh.SetFaceSegment(face, segment_identifier);
+          mesh.SetFaceCategory(face, label_identifier);
+        }
+      }
+
+      // Release block
+      database->ReleaseBlock(block);
+    }
+  }
+}
+
+
+
 ///////////////////////////////////////////////////////////////////////
 // DISPLAY FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -3323,6 +3395,9 @@ WriteOffFile(R3SurfelObject *object, const char *filename)
     R3MeshVertex *v3 = mesh.CreateVertex(position3);
     mesh.CreateFace(v1, v2, v3);
   }
+
+  // Delete pointset
+  delete pointset;
 
   // Write mesh
   if (!mesh.WriteFile(filename)) return 0;
