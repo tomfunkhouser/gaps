@@ -1954,55 +1954,19 @@ ReadMesh(const char *filename)
     RNFail("Unable to read mesh %s\n", filename);
     return NULL;
   }
-  
-  // Create array of vertices
-  RNArray<R3TriangleVertex *> vertices;
-  for (int i = 0; i < mesh.NVertices(); i++) {
-    R3MeshVertex *mesh_vertex = mesh.Vertex(i);
-    const R3Point& position = mesh.VertexPosition(mesh_vertex);
-    R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
-    vertices.Insert(triangle_vertex);
 
-    // Check if should assign vertex normal
-    RNBoolean smooth = TRUE;
-    const RNAngle max_smooth_angle = RN_PI/5.0;
-    for (int j = 0; j < mesh.VertexValence(mesh_vertex); j++) {
-      R3MeshEdge *mesh_edge = mesh.EdgeOnVertex(mesh_vertex, j);
-      RNAngle angle = mesh.EdgeInteriorAngle(mesh_edge);
-      if (fabs(angle - RN_PI) > max_smooth_angle) { smooth = FALSE; break; }
-    }
-
-    // Assign vertex normal
-    if (smooth) {
-      const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
-      triangle_vertex->SetNormal(normal);
-    }
-    
-    // Assign vertex color
-    if (!mesh.VertexColor(mesh_vertex).IsBlack()) {
-      triangle_vertex->SetColor(mesh.VertexColor(mesh_vertex));
-    }
-
-    // Assign vertex texture coordinates
-    triangle_vertex->SetTextureCoords(mesh.VertexTextureCoords(mesh_vertex));
+  // Allocate triangle array
+  R3TriangleArray *array = new R3TriangleArray();
+  if (!array) {
+    RNFail("Unable to allocate triangle array");
+    return NULL;
   }
 
-  // Create array of triangles
-  RNArray<R3Triangle *> triangles;
-  for (int i = 0; i < mesh.NFaces(); i++) {
-    R3MeshFace *mesh_face = mesh.Face(i);
-    int i0 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 0));
-    int i1 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 1));
-    int i2 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 2));
-    R3TriangleVertex *v0 = vertices.Kth(i0);
-    R3TriangleVertex *v1 = vertices.Kth(i1);
-    R3TriangleVertex *v2 = vertices.Kth(i2);
-    R3Triangle *triangle = new R3Triangle(v0, v1, v2);
-    triangles.Insert(triangle);
-  }
+  // Load mesh into triangle array
+  array->LoadMesh(mesh);
 
   // Return triangle array
-  return new R3TriangleArray(vertices, triangles);
+  return array;
 }
 
  
@@ -2022,7 +1986,7 @@ ReadMeshFile(const char *filename, R3SceneNode *parent_node)
   node->InsertElement(element);
   parent_node->InsertChild(node);
 
-  // Return success                                                                                                                                          
+  // Return success
   return 1;
 }
 

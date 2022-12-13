@@ -546,6 +546,61 @@ MoveVertex(R3TriangleVertex *vertex, const R3Point& position)
 
 
 void R3TriangleArray::
+LoadMesh(const R3Mesh& mesh)
+{
+  // Create vertices
+  RNArray<R3TriangleVertex *> triangle_vertices;
+  for (int i = 0; i < mesh.NVertices(); i++) {
+    R3MeshVertex *mesh_vertex = mesh.Vertex(i);
+    const R3Point& position = mesh.VertexPosition(mesh_vertex);
+    R3TriangleVertex *triangle_vertex = new R3TriangleVertex(position);
+    triangle_vertices.Insert(triangle_vertex);
+    vertices.Insert(triangle_vertex);
+
+    // Check if should assign vertex normal
+    RNBoolean smooth = TRUE;
+    const RNAngle max_smooth_angle = RN_PI/5.0;
+    for (int j = 0; j < mesh.VertexValence(mesh_vertex); j++) {
+      R3MeshEdge *mesh_edge = mesh.EdgeOnVertex(mesh_vertex, j);
+      RNAngle angle = mesh.EdgeInteriorAngle(mesh_edge);
+      if (fabs(angle - RN_PI) > max_smooth_angle) { smooth = FALSE; break; }
+    }
+
+    // Assign vertex normal
+    if (smooth) {
+      const R3Vector& normal = mesh.VertexNormal(mesh_vertex);
+      triangle_vertex->SetNormal(normal);
+    }
+    
+    // Assign vertex color
+    if (!mesh.VertexColor(mesh_vertex).IsBlack()) {
+      triangle_vertex->SetColor(mesh.VertexColor(mesh_vertex));
+    }
+
+    // Assign vertex texture coordinates
+    triangle_vertex->SetTextureCoords(mesh.VertexTextureCoords(mesh_vertex));
+  }
+
+  // Create triangles
+  for (int i = 0; i < mesh.NFaces(); i++) {
+    R3MeshFace *mesh_face = mesh.Face(i);
+    int i0 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 0));
+    int i1 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 1));
+    int i2 = mesh.VertexID(mesh.VertexOnFace(mesh_face, 2));
+    R3TriangleVertex *v0 = triangle_vertices.Kth(i0);
+    R3TriangleVertex *v1 = triangle_vertices.Kth(i1);
+    R3TriangleVertex *v2 = triangle_vertices.Kth(i2);
+    R3Triangle *triangle = new R3Triangle(v0, v1, v2);
+    triangles.Insert(triangle);
+  }
+
+  // Update everything
+  Update();
+}
+
+
+
+void R3TriangleArray::
 Update(void)
 {
   // Mark vertices as shared

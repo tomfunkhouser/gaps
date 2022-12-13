@@ -91,8 +91,9 @@ public:
   void RemoveHierarchy(void);
   void RemoveTransformations(void);
   void SubdivideTriangles(RNLength max_edge_length);
+  void InsertMesh(const R3Mesh& mesh);
   void CreateDirectionalLights(void);
-
+  
   // Query functions
   RNLength Distance(const R3Point& point) const;
   RNBoolean FindClosest(const R3Point& point,
