@@ -100,8 +100,7 @@ int CreateObjects(R3SurfelScene *scene,
   const std::vector<int>& object_identifiers,
   R3SurfelObject *parent_object = NULL,
   R3SurfelNode *parent_node = NULL,
-  RNBoolean copy_surfels = FALSE,
-  RNBoolean release_blocks = TRUE);
+  RNBoolean copy_surfels = FALSE);
 
   
 
