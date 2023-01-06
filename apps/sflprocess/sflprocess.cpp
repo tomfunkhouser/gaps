@@ -2071,8 +2071,6 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
     if (surfel_identifier < 0) continue;
     if (surfel_identifier > max_surfel_identifier) continue;
     // if (label_identifier == 255) label_identifier = -1; // TEMPORARY
-    if (instance_identifier == 65535) instance_identifier = -1; // TEMPORARY
-    if (instance_identifier != -1) instance_identifier += 65536; // TEMPORARY
     label_identifiers[surfel_identifier] = label_identifier;
     instance_identifiers[surfel_identifier] = instance_identifier;
   }
@@ -2080,7 +2078,10 @@ CreateLabeledObjectInstances(R3SurfelScene *scene, const char *csv_filename,
   // Close csv file
   fclose(fp);
 
-  // Create object instances
+  // Remove current objects
+  RemoveObjects(scene);
+
+  // Create new objects
   if (!CreateObjects(scene, instance_identifiers,
     parent_object, parent_node, FALSE)) return 0;
 
