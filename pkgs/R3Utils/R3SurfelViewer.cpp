@@ -1498,7 +1498,7 @@ DrawImagePoints(void) const
   for (int iy = 0; iy < selected_image->ImageHeight(); iy++) {
     for (int ix = 0; ix < selected_image->ImageWidth(); ix++) {
       RNScalar depth = depth_channel->GridValue(ix, iy);
-      if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) return;
+      if (RNIsZero(depth) || (depth == R2_GRID_UNKNOWN_VALUE)) continue;
       R2Point image_position(ix, iy);
       R3Point world_position = selected_image->TransformFromImageToWorld(image_position);
       RNLoadRgb(color_channels.PixelRGB(ix, iy));
