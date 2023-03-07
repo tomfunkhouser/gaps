@@ -287,6 +287,10 @@ public:
   virtual void ReadCoarsestBlocks(RNScalar max_complexity);
   virtual void ReleaseCoarsestBlocks(RNScalar max_complexity);
 
+  // Buffer generation for surfel rendering
+  virtual void ComputeVBOBuffers(std::vector<GLfloat>& surfel_positions,
+      std::vector<GLfloat>& surfel_normals, std::vector<GLubyte>& surfel_colors) const;
+
 protected:
   // Scene manipulation functions
   virtual void SetScene(R3SurfelScene *scene);

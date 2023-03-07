@@ -3032,6 +3032,124 @@ InvalidateVBO(void)
 
 
 void R3SurfelViewer::
+ComputeVBOBuffers(std::vector<GLfloat>& surfel_positions,
+    std::vector<GLfloat>& surfel_normals, std::vector<GLubyte>& surfel_colors) const
+{
+  // Count surfels
+  int nsurfels = 0;
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      nsurfels += block->NSurfels() / subsampling_factor;
+      if (block->NSurfels() % subsampling_factor > 0) nsurfels++;
+    }
+  }
+
+  // Allocate in-memory buffers
+  surfel_positions.resize(3 * nsurfels);
+  surfel_normals.resize(3 * nsurfels);
+  surfel_colors.resize(2 * 3 * nsurfels);
+
+  // Fill in-memory buffers 
+  int count = 0;
+  unsigned int pick_color_offset = 3 * nsurfels;
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+    R3SurfelObject *object = node->Object(TRUE, TRUE);
+    while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+    R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      const R3Point& block_origin = block->PositionOrigin();
+      for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
+        const R3Surfel *surfel = block->Surfel(k);
+
+        // Compute colors
+        GLubyte surfel_color[3], pick_color[3];
+        CreateColor(surfel_color, surfel_color_scheme,
+          surfel, block, node, object, label);
+        CreateColor(pick_color, R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX,
+          surfel, block, node, object, label);
+        assert(count < nsurfels);
+
+        // Fill buffers
+        int i0 = 3 * (count++);
+        int i1 = i0+1;
+        int i2 = i1+1;
+        surfel_positions[i0] = block_origin.X() + surfel->X();
+        surfel_positions[i1] = block_origin.Y() + surfel->Y();
+        surfel_positions[i2] = block_origin.Z() + surfel->Z();
+        surfel_normals[i0] = surfel->NX();
+        surfel_normals[i1] = surfel->NY();
+        surfel_normals[i2] = surfel->NZ();
+        surfel_colors[i0] = surfel_color[0];
+        surfel_colors[i1] = surfel_color[1];
+        surfel_colors[i2] = surfel_color[2];
+        surfel_colors[i0 + pick_color_offset] = pick_color[0];
+        surfel_colors[i1 + pick_color_offset] = pick_color[1];
+        surfel_colors[i2 + pick_color_offset] = pick_color[2];
+      }
+    }
+  }
+  
+  // Just checking
+  assert(count == nsurfels);
+}
+
+
+
+#if 1
+
+void R3SurfelViewer::
+UpdateVBO(void)
+{
+#if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
+  // Check if VBO is uptodate
+  if (vbo_nsurfels > 0) return;
+
+  // Compute VBO buffers
+  std::vector<GLfloat> surfel_positions;
+  std::vector<GLfloat> surfel_normals;
+  std::vector<GLubyte> surfel_colors;
+  ComputeVBOBuffers(surfel_positions, surfel_normals, surfel_colors);
+
+  // Get/check number of surfels
+  vbo_nsurfels = surfel_positions.size() / 3;
+  if (vbo_nsurfels <= 0) return;
+  assert(surfel_positions.size() == 3 * vbo_nsurfels);
+  assert(surfel_normals.size() == 3 * vbo_nsurfels);
+  assert(surfel_colors.size() == 2 * 3 * vbo_nsurfels);
+
+  // Generate VBO buffers (first time only)
+  if (vbo_position_buffer == 0) glGenBuffers(1, &vbo_position_buffer);
+  if (vbo_normal_buffer == 0) glGenBuffers(1, &vbo_normal_buffer);
+  if (vbo_color_buffer == 0) glGenBuffers(1, &vbo_color_buffer);
+
+  // Load VBO buffers
+  if (vbo_position_buffer) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 3 * vbo_nsurfels * sizeof(GLfloat), &surfel_positions[0], GL_STATIC_DRAW);
+    glVertexPointer(3, GL_FLOAT, 0, 0);
+  }
+  if (vbo_normal_buffer) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 3 * vbo_nsurfels * sizeof(GLfloat), &surfel_normals[0], GL_STATIC_DRAW);
+    glNormalPointer(GL_FLOAT, 0, 0);
+  }
+  if (vbo_color_buffer) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_color_buffer);
+    glBufferData(GL_ARRAY_BUFFER, 2 * 3 * vbo_nsurfels * sizeof(GLubyte), &surfel_colors[0], GL_STATIC_DRAW);
+    glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+   }
+#endif
+}
+
+#else
+
+void R3SurfelViewer::
 UpdateVBO(void)
 {
 #if (R3_SURFEL_VIEWER_DRAW_METHOD == R3_SURFEL_VIEWER_DRAW_WITH_VBO)
@@ -3095,7 +3213,7 @@ UpdateVBO(void)
     assert(surfel_positionsp - surfel_positions == 3*vbo_nsurfels);
     assert(surfel_normalsp - surfel_normals == 3*vbo_nsurfels);
     assert(surfel_colorsp - surfel_colors == 3*vbo_nsurfels);
-
+    
     // Generate VBO buffers (first time only)
     if (vbo_position_buffer == 0) glGenBuffers(1, &vbo_position_buffer);
     if (vbo_normal_buffer == 0) glGenBuffers(1, &vbo_normal_buffer);
@@ -3125,6 +3243,8 @@ UpdateVBO(void)
   if (surfel_colors) delete [] surfel_colors;
 #endif
 }
+
+#endif
 
 
 
