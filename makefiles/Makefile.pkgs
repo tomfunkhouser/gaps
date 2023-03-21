@@ -80,7 +80,7 @@ clean:
 # Dependencies
 #
 
-$(OBJS) : Makefile *.h $(foreach pkg, $(PKG_DEPENDENCIES), ../$(pkg)/*.h) $(USER_DEPENDENCIES)
+$(OBJS) : Makefile *.h $(foreach pkg, $(PKG_DEPENDENCIES), ${GAPS_DIR}/pkgs/$(pkg)/*.h) $(USER_DEPENDENCIES)
 
 
 
