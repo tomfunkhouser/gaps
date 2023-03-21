@@ -23,6 +23,16 @@ ARCH=$(shell uname -m)
 
 
 #
+# Gaps directory path
+#
+
+ifndef GAPS_DIR
+  GAPS_DIR=../..
+endif
+
+
+
+#
 # C flags
 #
 
@@ -31,13 +41,13 @@ ARCH=$(shell uname -m)
 #endif
 
 CC=g++
-BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I../../pkgs
+BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I${GAPS_DIR}/pkgs
 DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 OPT_CFLAGS=$(BASE_CFLAGS) -O3 -DNDEBUG
 CFLAGS=$(DEBUG_CFLAGS)
 
 #ifeq ("$(OS)","Darwin")
-#  BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I../../pkgs -Wno-deprecated-declarations
+#  BASE_CFLAGS=$(USER_CFLAGS) $(OS_CFLAGS) -Wall -I. -I${GAPS_DIR}/pkgs -Wno-deprecated-declarations
 #endif
 
 
@@ -46,9 +56,17 @@ CFLAGS=$(DEBUG_CFLAGS)
 # Directories
 #
 
-RELEASE_DIR=../../release
-EXE_DIR=../../bin/$(ARCH)
-LIB_DIR=../../lib/$(ARCH)
+ifndef RELEASE_DIR
+  RELEASE_DIR=${GAPS_DIR}/release
+endif
+
+ifndef EXE_DIR
+  EXE_DIR=${GAPS_DIR}/bin/$(ARCH)
+endif
+
+ifndef LIB_DIR
+  LIB_DIR=${GAPS_DIR}/lib/$(ARCH)
+endif
 
 
 

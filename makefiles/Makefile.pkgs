@@ -19,10 +19,20 @@
 
 
 #
+# Gaps directory path
+#
+
+ifndef GAPS_DIR
+  GAPS_DIR=../..
+endif
+
+
+
+#
 # Set up compiler options, etc.
 #
 
-include ../../makefiles/Makefile.std
+include ${GAPS_DIR}/makefiles/Makefile.std
 
 
 

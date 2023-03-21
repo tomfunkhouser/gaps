@@ -19,10 +19,20 @@
 
 
 #
+# Gaps directory path
+#
+
+ifndef GAPS_DIR
+  GAPS_DIR=../..
+endif
+
+
+
+#
 # Set up compiler options, etc.
 #
 
-include ../../makefiles/Makefile.std
+include ${GAPS_DIR}/makefiles/Makefile.std
 
 
 
@@ -97,7 +107,7 @@ clean:
 
 PKG_LIBS += $(foreach pkg, $(PKG_DEPENDENCIES), -l$(pkg))
 PKG_LIST=$(subst -l,,$(PKG_LIBS))
-$(OBJS) : Makefile $(wildcard *.h) $(foreach pkg, $(PKG_LIST), ../../pkgs/$(pkg)/*.h) $(USER_DEPENDENCIES)
+$(OBJS) : Makefile $(wildcard *.h) $(foreach pkg, $(PKG_LIST), ${GAPS_DIR}/pkgs/$(pkg)/*.h) $(USER_DEPENDENCIES)
 
 
 
