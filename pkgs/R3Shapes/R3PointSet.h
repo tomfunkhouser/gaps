@@ -28,7 +28,9 @@ public:
   int NPoints(void) const;
   const R3Point& PointPosition(int index) const;
   const R3Vector& PointNormal(int index) const;
+  const R3Vector& PointTangent(int index) const;
   const RNRgb& PointColor(int index) const;
+  RNLength PointRadius(int index, int tangent_index) const;
   RNScalar PointTimestamp(int index) const;
   int PointCategoryIdentifier(int index) const;
   int PointInstanceIdentifier(int index) const;
@@ -47,6 +49,8 @@ public:
   int InsertPoint(const R3Point& position);
   void SetPointPosition(int index, const R3Point& position);
   void SetPointNormal(int index, const R3Vector& normal);
+  void SetPointTangent(int index, const R3Vector& tangent);
+  void SetPointRadius(int index, int tangent_index, RNLength radius);
   void SetPointColor(int index, const RNRgb& color);
   void SetPointTimestamp(int index, RNScalar timestamp);
   void SetPointCategoryIdentifier(int index, int category);
@@ -74,6 +78,8 @@ public:
 private:
   std::vector<R3Point> positions;
   std::vector<R3Vector> normals;
+  std::vector<R3Vector> tangents;
+  std::vector<RNLength> radii[2];
   std::vector<RNRgb> colors;
   std::vector<RNScalar> timestamps;
   std::vector<int> category_identifiers;
@@ -114,6 +120,28 @@ PointNormal(int index) const
   assert(index >= 0);
   if (index >= (int) normals.size()) return R3zero_vector;
   return normals[index];
+}
+
+
+
+inline const R3Vector& R3PointSet::
+PointTangent(int index) const
+{
+  // Return tangent of point with given index
+  assert(index >= 0);
+  if (index >= (int) tangents.size()) return R3zero_vector;
+  return tangents[index];
+}
+
+
+
+inline RNLength R3PointSet::
+PointRadius(int index, int tangent_index) const
+{
+  // Return radius of point with given index for the given tangent
+  assert(index >= 0);
+  if (index >= (int) radii[tangent_index].size()) return 0;
+  return radii[tangent_index][index];
 }
 
 

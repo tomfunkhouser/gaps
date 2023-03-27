@@ -124,6 +124,28 @@ SetPointNormal(int index, const R3Vector& normal)
 
 
 void R3PointSet::
+SetPointTangent(int index, const R3Vector& tangent)
+{
+  // Set tangent for point with given index
+  while (index >= (int) tangents.size())
+    tangents.push_back(R3zero_vector);
+  tangents[index] = tangent;
+}
+
+
+
+void R3PointSet::
+SetPointRadius(int index, int tangent_index, RNLength radius)
+{
+  // Set radius for point with given index
+  while (index >= (int) radii[tangent_index].size())
+    radii[tangent_index].push_back(0);
+  radii[tangent_index][index] = radius;
+}
+
+
+
+void R3PointSet::
 SetPointColor(int index, const RNRgb& color)
 {
   // Set color for point with given index
