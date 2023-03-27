@@ -135,12 +135,12 @@ SetPointTangent(int index, const R3Vector& tangent)
 
 
 void R3PointSet::
-SetPointRadius(int index, int tangent_index, RNLength radius)
+SetPointRadius(int index, int axis, RNLength radius)
 {
   // Set radius for point with given index
-  while (index >= (int) radii[tangent_index].size())
-    radii[tangent_index].push_back(0);
-  radii[tangent_index][index] = radius;
+  while (index >= (int) radii[axis].size())
+    radii[axis].push_back(0);
+  radii[axis][index] = radius;
 }
 
 

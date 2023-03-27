@@ -30,7 +30,7 @@ public:
   const R3Vector& PointNormal(int index) const;
   const R3Vector& PointTangent(int index) const;
   const RNRgb& PointColor(int index) const;
-  RNLength PointRadius(int index, int tangent_index) const;
+  RNLength PointRadius(int index, int axis) const;
   RNScalar PointTimestamp(int index) const;
   int PointCategoryIdentifier(int index) const;
   int PointInstanceIdentifier(int index) const;
@@ -50,7 +50,7 @@ public:
   void SetPointPosition(int index, const R3Point& position);
   void SetPointNormal(int index, const R3Vector& normal);
   void SetPointTangent(int index, const R3Vector& tangent);
-  void SetPointRadius(int index, int tangent_index, RNLength radius);
+  void SetPointRadius(int index, int axis, RNLength radius);
   void SetPointColor(int index, const RNRgb& color);
   void SetPointTimestamp(int index, RNScalar timestamp);
   void SetPointCategoryIdentifier(int index, int category);
@@ -136,12 +136,12 @@ PointTangent(int index) const
 
 
 inline RNLength R3PointSet::
-PointRadius(int index, int tangent_index) const
+PointRadius(int index, int axis) const
 {
   // Return radius of point with given index for the given tangent
   assert(index >= 0);
-  if (index >= (int) radii[tangent_index].size()) return 0;
-  return radii[tangent_index][index];
+  if (index >= (int) radii[axis].size()) return 0;
+  return radii[axis][index];
 }
 
 
