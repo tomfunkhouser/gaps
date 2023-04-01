@@ -77,6 +77,20 @@ Type(void) const
 // MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelFeature& R3SurfelFeature::
+operator=(const R3SurfelFeature& feature)
+{
+  // Assign properties
+  this->name = (feature.name) ? RNStrdup(feature.name) : NULL;
+  this->range = feature.range;
+  this->weight = feature.weight;
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelFeature::
 SetName(const char *name) 
 {

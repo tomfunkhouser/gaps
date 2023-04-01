@@ -78,6 +78,37 @@ R3SurfelLabelProperty::
 
 
 
+////////////////////////////////////////////////////////////////////////
+// MANIPULATION FUNCDTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelLabelProperty& R3SurfelLabelProperty::
+operator=(const R3SurfelLabelProperty& property)
+{
+  // Assign stuff
+  this->label = property.label;
+  this->type = property.type;
+  
+  // Delete previous operands
+  if (this->operands) {
+    delete [] this->operands;
+    this->operands = NULL;
+    this->noperands = 0;
+  }
+
+  // Copy operands
+  if ((property.noperands > 0) && (property.operands)) {
+    this->noperands = property.noperands;
+    this->operands = new RNScalar [ this->noperands ];
+    for (int i = 0; i < this->noperands; i++) {
+      this->operands[i] = property.operands[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////

@@ -78,6 +78,9 @@ public:
   //// MANIPULUATION FUNCTIONS ////
   /////////////////////////////////
 
+  // Copy assignment operator
+  R3SurfelLabelAssignment& operator=(const R3SurfelLabelAssignment& assignment);
+  
   // Property manipulation functions
   void SetConfidence(double confidence);
   void SetOriginator(int originator);

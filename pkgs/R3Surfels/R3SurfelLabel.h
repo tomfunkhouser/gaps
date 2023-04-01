@@ -77,6 +77,9 @@ public:
   //// MANIPULATION FUNCTIONS ////
   ////////////////////////////////
 
+  // Copy assignment operator
+  virtual R3SurfelLabel& operator=(const R3SurfelLabel& label);
+
   // Hierarchy manipulation functions
   virtual void SetParent(R3SurfelLabel *parent);
 
@@ -88,7 +91,7 @@ public:
   virtual void SetFlags(RNFlags flags);
   virtual void SetData(void *data);
 
-
+  
   ///////////////////////////
   //// DISPLAY FUNCTIONS ////
   ///////////////////////////

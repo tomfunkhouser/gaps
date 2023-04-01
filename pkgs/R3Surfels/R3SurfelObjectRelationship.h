@@ -58,6 +58,14 @@ public:
   RNScalar Operand(int k) const;
 
 
+  ////////////////////////////////
+  //// MANIPULATION FUNCTIONS ////
+  ////////////////////////////////
+
+  // Copy assignment operator
+  R3SurfelObjectRelationship& operator=(const R3SurfelObjectRelationship& relationship);
+
+
   ///////////////////////////
   //// DISPLAY FUNCTIONS ////
   ///////////////////////////

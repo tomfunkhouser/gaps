@@ -67,6 +67,23 @@ R3SurfelLabelAssignment::
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelLabelAssignment& R3SurfelLabelAssignment::
+operator=(const R3SurfelLabelAssignment& assignment)
+{
+  // Copy properties
+  this->object = assignment.object;
+  this->object_index = -1;
+  this->label = assignment.label;
+  this->label_index = -1;
+  this->confidence = assignment.confidence;
+  this->originator = assignment.originator;
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelLabelAssignment::
 SetConfidence(RNScalar confidence)
 {

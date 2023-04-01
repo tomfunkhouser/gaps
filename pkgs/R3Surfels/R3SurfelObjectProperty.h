@@ -59,6 +59,10 @@ public:
   //// MANIPULATION FUNCTIONS ////
   ////////////////////////////////
 
+  // Copy assignment operator
+  R3SurfelObjectProperty& operator=(const R3SurfelObjectProperty& property);
+
+  // Operand manipulation functions
   void ResetOperands(RNScalar *operands = NULL, int noperands = 0);
 
   

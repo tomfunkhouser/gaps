@@ -145,6 +145,10 @@ protected:
   void UpdateAfterInsert(R3SurfelScene *scene);
   void UpdateBeforeRemove(R3SurfelScene *scene);
 
+private:
+  // Prevent inadvertent use of copy assignment operator
+  R3SurfelTree& operator=(const R3SurfelTree& tree) /* = delete */;
+  
 protected:
   // Scene stuff
   friend class R3SurfelScene;
@@ -286,6 +290,15 @@ UpdateBeforeRemove(R3SurfelScene *scene)
 
 
 
+inline R3SurfelTree& R3SurfelTree::
+operator=(const R3SurfelTree& tree)
+{
+  // Not implemented
+  RNAbort("Not implemented");
+  return *this;
+}
+
+  
 // End namespace
 }
 

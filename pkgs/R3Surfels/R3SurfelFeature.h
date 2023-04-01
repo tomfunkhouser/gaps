@@ -64,6 +64,9 @@ public:
   //// MANIPULTION FUNCTIONS ////
   ///////////////////////////////
 
+  // Copy assignment
+  R3SurfelFeature& operator=(const R3SurfelFeature& feature);
+  
   // Name manipulation
   void SetName(const char *name);
 

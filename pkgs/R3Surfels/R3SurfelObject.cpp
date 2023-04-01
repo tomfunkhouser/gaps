@@ -523,6 +523,24 @@ CurrentOrientedBBox(void) const
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelObject& R3SurfelObject::
+operator=(const R3SurfelObject& object)
+{
+  // Copy properties
+  this->feature_vector = object.feature_vector;
+  this->name = (object.name) ? RNStrdup(object.name) : NULL;
+  this->identifier = object.identifier;
+  this->complexity = object.complexity;
+  this->bbox = object.bbox;
+  this->timestamp_range = object.timestamp_range;
+  this->flags = 0;
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelObject::
 SetParent(R3SurfelObject *parent)
 {

@@ -128,6 +128,9 @@ public:
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
 
+  // Copy assignment operator
+  R3SurfelImage& operator=(const R3SurfelImage& image);
+  
   // Channel manipulation functions
   virtual void SetChannel(int channel_index, const R2Grid& channel);
   virtual void SetRedChannel(const R2Grid& channel);
@@ -241,7 +244,7 @@ protected:
   RNLength xfocal, yfocal;
   int distortion_type;
   RNScalar radial_distortion[3];
-  RNScalar tangential_distortion[3];
+  RNScalar tangential_distortion[2];
   R3CoordSystem rolling_shutter_poses[2];
   RNScalar rolling_shutter_timestamps[2];
   char *name;

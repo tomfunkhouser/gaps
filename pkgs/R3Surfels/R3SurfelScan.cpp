@@ -101,6 +101,26 @@ PointSet(RNBoolean leaf_level) const
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelScan& R3SurfelScan::
+operator=(const R3SurfelScan& scan)
+{
+  // Copy properties
+  this->pose = scan.pose;
+  this->timestamp = scan.timestamp;
+  this->image_width = scan.image_width; 
+  this->image_height = scan.image_height;
+  this->image_center = scan.image_center;
+  this->xfocal = scan.xfocal;
+  this->yfocal = scan.yfocal;
+  this->name = (scan.name) ? RNStrdup(scan.name) : NULL;
+  this->flags = 0;
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelScan::
 SetPose(const R3CoordSystem& pose) 
 {

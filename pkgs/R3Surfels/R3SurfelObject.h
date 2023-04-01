@@ -125,6 +125,9 @@ public:
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
 
+  // Copy assignment operator
+  virtual R3SurfelObject& operator=(const R3SurfelObject& object);
+
   // Name manipulation functions
   virtual void SetName(const char *name);
   virtual void SetIdentifier(int identifier);
@@ -137,7 +140,6 @@ public:
 
   // User data manipulation functions
   virtual void SetData(void *data);
-
 
   /////////////////////////////////////////
   //// STRUCTURE MANIPULATION FUNCTIONS ////

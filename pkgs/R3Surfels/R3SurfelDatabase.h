@@ -171,6 +171,10 @@ protected:
   virtual int WriteFileHeader(FILE *fp, int swap_endian);
   virtual int WriteBlockHeader(FILE *fp, int swap_endian);
 
+private:
+  // Prevent inadvertent use of copy assignment operator
+  R3SurfelDatabase& operator=(const R3SurfelDatabase& database) /* = delete */;
+  
 protected:
   FILE *fp;
   char *filename;
@@ -396,6 +400,15 @@ Filename(void) const
 }
 
   
+
+inline R3SurfelDatabase& R3SurfelDatabase::
+operator=(const R3SurfelDatabase& database)
+{
+  // Not implemented
+  RNAbort("Not implemented");
+  return *this;
+}
+
   
 // End namespace
 }

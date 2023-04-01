@@ -111,6 +111,36 @@ R3SurfelObjectRelationship::
 
 
 
+////////////////////////////////////////////////////////////////////////
+// MANIPULATION FUNCDTIONS
+////////////////////////////////////////////////////////////////////////
+
+R3SurfelObjectRelationship& R3SurfelObjectRelationship::
+operator=(const R3SurfelObjectRelationship& relationship)
+{
+  // Copy stuff
+  this->objects = relationship.objects;
+  this->type = relationship.type;
+
+  // Delete previous operands
+  if (this->operands) {
+    delete [] this->operands;
+    this->operands = NULL;
+    this->noperands =0;
+  }
+  
+  // Copy operands
+  if ((relationship.noperands > 0) && (relationship.operands)) {
+    this->noperands = relationship.noperands;
+    this->operands = new RNScalar [ this->noperands ];
+    for (int i = 0; i < this->noperands; i++) {
+      this->operands[i] = relationship.operands[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
 
 
 

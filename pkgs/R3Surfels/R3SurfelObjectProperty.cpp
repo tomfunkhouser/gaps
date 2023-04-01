@@ -85,6 +85,35 @@ R3SurfelObjectProperty::
 // MANIPULATION FUNCDTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelObjectProperty& R3SurfelObjectProperty::
+operator=(const R3SurfelObjectProperty& property)
+{
+  // Assign stuff
+  this->object = property.object;
+  this->type = property.type;
+  
+  // Delete previous operands
+  if (this->operands) {
+    delete [] this->operands;
+    this->operands = NULL;
+    this->noperands = 0;
+  }
+
+  // Copy operands
+  if ((property.noperands > 0) && (property.operands)) {
+    this->noperands = property.noperands;
+    this->operands = new RNScalar [ this->noperands ];
+    for (int i = 0; i < this->noperands; i++) {
+      this->operands[i] = property.operands[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelObjectProperty::
 ResetOperands(RNScalar *operands, int noperands)
 {

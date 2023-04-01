@@ -95,6 +95,13 @@ public:
   //// PROPERTY MANIPULATION FUNCTIONS ////
   /////////////////////////////////////////
 
+  ////////////////////////////////
+  //// MANIPULATION FUNCTIONS ////
+  ////////////////////////////////
+
+  // Copy assignment operator
+  R3SurfelScan& operator=(const R3SurfelScan& scan);
+
   // Pose manipulation functions
   virtual void SetPose(const R3CoordSystem& pose);
   virtual void SetViewpoint(const R3Point& viewpoint);

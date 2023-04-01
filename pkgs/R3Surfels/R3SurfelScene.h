@@ -238,6 +238,10 @@ public:
   // Mesh creation functions
   virtual void CreateMesh(R3Mesh& mesh) const;
   
+private:
+  // Prevent inadvertent use of copy assignment operator
+  R3SurfelScene& operator=(const R3SurfelScene& scene) /* = delete */;
+  
 protected:
   // Structure access stuff
   friend class R3SurfelTree;
@@ -568,6 +572,15 @@ SetDirty(void)
 
 
 
+inline R3SurfelScene& R3SurfelScene::
+operator=(const R3SurfelScene& scene)
+{
+  // Not implemented
+  RNAbort("Not implemented");
+  return *this;
+}
+
+  
 // End namespace
 }
 

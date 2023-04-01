@@ -213,6 +213,22 @@ InsertIntoPointSet(R3SurfelPointSet *pointset, RNBoolean leaf_level) const
 // PROPERTY MANIPULATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
+R3SurfelLabel& R3SurfelLabel::
+operator=(const R3SurfelLabel& label)
+{
+  // Copy properties
+  this->name = (label.name) ? RNStrdup(label.name) : NULL;
+  this->identifier = label.identifier;
+  this->assignment_keystroke = label.assignment_keystroke;
+  this->color = label.color;
+  this->flags = label.flags;
+
+  // Return this
+  return *this;
+}
+
+
+
 void R3SurfelLabel::
 SetParent(R3SurfelLabel *parent)
 {

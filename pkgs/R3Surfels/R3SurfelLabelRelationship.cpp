@@ -101,4 +101,33 @@ R3SurfelLabelRelationship::
 
 
 
+R3SurfelLabelRelationship& R3SurfelLabelRelationship::
+operator=(const R3SurfelLabelRelationship& relationship)
+{
+  // Copy stuff
+  this->labels = relationship.labels;
+  this->type = relationship.type;
+
+  // Delete previous operands
+  if (this->operands) {
+    delete [] this->operands;
+    this->operands = NULL;
+    this->noperands =0;
+  }
+  
+  // Copy operands
+  if ((relationship.noperands > 0) && (relationship.operands)) {
+    this->noperands = relationship.noperands;
+    this->operands = new RNScalar [ this->noperands ];
+    for (int i = 0; i < this->noperands; i++) {
+      this->operands[i] = relationship.operands[i];
+    }
+  }
+
+  // Return this
+  return *this;
+}
+
+
+
 } // namespace gaps
