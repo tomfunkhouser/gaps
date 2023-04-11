@@ -881,7 +881,6 @@ WriteOverlaidObjectImages(R3SurfelScene *scene, const char *output_directory)
       if (!pixel_database.FindImage(input_image_filename, &image))
         sprintf(input_image_filename, "color_images/%s.png", sfl_image->Name());
       if (!pixel_database.FindImage(input_image_filename, &image)) continue;
-      if (!image.Read(input_image_filename)) continue;
     }
     else if (input_image_directory) {
       // Read image from directory of images
@@ -905,6 +904,9 @@ WriteOverlaidObjectImages(R3SurfelScene *scene, const char *output_directory)
     R2Image crop_image = CropImage(image, crop_box);
     image = crop_image;
 
+    // Check image
+    if ((image.Width() == 0) || (image.Height() == 0)) { delete object_pointset; continue; }
+    
     // Write overlay image
     char output_image_filename[1024];
     sprintf(output_image_filename, "%s/%s_%d_%d_overlaid.png", output_directory,
