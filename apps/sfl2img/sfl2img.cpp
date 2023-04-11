@@ -16,13 +16,17 @@ using namespace gaps;
 // Program arguments
 ////////////////////////////////////////////////////////////////////////
 
-static char *input_scene_name = NULL;
-static char *input_database_name = NULL;
-static char *output_directory_name = NULL;
+static char *input_scene_filename = NULL;
+static char *input_database_filename = NULL;
+static char *input_image_directory = NULL;
+static char *input_pixel_database_filename = NULL;
+static char *output_directory = NULL;
 static int write_geometry_grids = 0;
 static int write_color_grids = 0;
 static int write_ground_grids = 0;
 static int write_semantic_grids = 0;
+static int write_zoomed_object_images = 0;
+static int write_overlaid_object_images = 0;
 static int print_verbose = 0;
 static int print_debug = 0;
 
@@ -31,6 +35,7 @@ static int max_resolution = 32768;
 static double min_elevation = -FLT_MAX;
 static double max_elevation = FLT_MAX;
 static double max_depth = FLT_MAX;
+static const char *selected_label_name = NULL;
 
 
 
@@ -39,7 +44,7 @@ static double max_depth = FLT_MAX;
 ////////////////////////////////////////////////////////////////////////
 
 static R3SurfelScene *
-OpenScene(const char *input_scene_name, const char *input_database_name)
+OpenScene(const char *input_scene_filename, const char *input_database_filename)
 {
   // Start statistics
   RNTime start_time;
@@ -53,7 +58,7 @@ OpenScene(const char *input_scene_name, const char *input_database_name)
   }
 
   // Open scene files
-  if (!scene->OpenFile(input_scene_name, input_database_name, "r", "r")) {
+  if (!scene->OpenFile(input_scene_filename, input_database_filename, "r", "r")) {
     delete scene;
     return NULL;
   }
@@ -121,11 +126,11 @@ CloseScene(R3SurfelScene *scene)
 
 static int
 WriteGrid(const R2Grid& grid, 
-  const char *directory_name, const char *category_name, const char *field_name)
+  const char *output_directory, const char *category_name, const char *field_name)
 {
   // Create filename
   char filename[4096];
-  sprintf(filename, "%s/%s_%s.grd", directory_name, category_name, field_name);
+  sprintf(filename, "%s/%s_%s.grd", output_directory, category_name, field_name);
 
   // Write grid
   return grid.WriteFile(filename);
@@ -135,7 +140,7 @@ WriteGrid(const R2Grid& grid,
 
 static int
 WriteImage(const R2Grid& red, const R2Grid& green, const R2Grid& blue, 
-  const char *directory_name, const char *category_name, const char *field_name)
+  const char *output_directory, const char *category_name, const char *field_name)
 {
   // Create image
   R2Image image(red.XResolution(), red.YResolution());
@@ -153,7 +158,7 @@ WriteImage(const R2Grid& red, const R2Grid& green, const R2Grid& blue,
 
   // Create filename
   char filename[1024];
-  sprintf(filename, "%s/%s_%s.jpg", directory_name, category_name, field_name);
+  sprintf(filename, "%s/%s_%s.jpg", output_directory, category_name, field_name);
 
   // Write image
   return image.Write(filename);
@@ -166,13 +171,13 @@ WriteImage(const R2Grid& red, const R2Grid& green, const R2Grid& blue,
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
+WriteGeometryGrids(R3SurfelScene *scene, const char *output_directory)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
   if (print_verbose) {
-    printf("Creating geometry images ...\n");
+    printf("Creating geometry grids ...\n");
     fflush(stdout);
   }
     
@@ -274,13 +279,13 @@ WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
   horizontal_grid.Divide(weight_grid);
 
   // Write grids
-  if (!WriteGrid(density_grid, directory_name, "Geometry", "Density")) return 0;
-  if (!WriteGrid(zmin_grid, directory_name, "Geometry", "ZMin")) return 0;
-  if (!WriteGrid(zmax_grid, directory_name, "Geometry", "ZMax")) return 0;
-  if (!WriteGrid(nx_grid, directory_name, "Geometry", "NX")) return 0;
-  if (!WriteGrid(ny_grid, directory_name, "Geometry", "NY")) return 0;
-  if (!WriteGrid(nz_grid, directory_name, "Geometry", "NZ")) return 0;
-  if (!WriteGrid(horizontal_grid, directory_name, "Geometry", "Horizontal")) return 0;
+  if (!WriteGrid(density_grid, output_directory, "Geometry", "Density")) return 0;
+  if (!WriteGrid(zmin_grid, output_directory, "Geometry", "ZMin")) return 0;
+  if (!WriteGrid(zmax_grid, output_directory, "Geometry", "ZMax")) return 0;
+  if (!WriteGrid(nx_grid, output_directory, "Geometry", "NX")) return 0;
+  if (!WriteGrid(ny_grid, output_directory, "Geometry", "NY")) return 0;
+  if (!WriteGrid(nz_grid, output_directory, "Geometry", "NZ")) return 0;
+  if (!WriteGrid(horizontal_grid, output_directory, "Geometry", "Horizontal")) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -301,13 +306,13 @@ WriteGeometryGrids(R3SurfelScene *scene, const char *directory_name)
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
+WriteColorGrids(R3SurfelScene *scene, const char *output_directory)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
   if (print_verbose) {
-    printf("Creating color images ...\n");
+    printf("Creating color grids ...\n");
     fflush(stdout);
   }
 
@@ -380,10 +385,10 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
   }
 
   // Write grids
-  if (!WriteGrid(red_grid, directory_name, "Color", "Red")) return 0;
-  if (!WriteGrid(green_grid, directory_name, "Color", "Green")) return 0;
-  if (!WriteGrid(blue_grid, directory_name, "Color", "Blue")) return 0;
-  if (!WriteImage(red_grid, green_grid, blue_grid, directory_name, "Color", "Rgb")) return 0;
+  if (!WriteGrid(red_grid, output_directory, "Color", "Red")) return 0;
+  if (!WriteGrid(green_grid, output_directory, "Color", "Green")) return 0;
+  if (!WriteGrid(blue_grid, output_directory, "Color", "Blue")) return 0;
+  if (!WriteImage(red_grid, green_grid, blue_grid, output_directory, "Color", "Rgb")) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -404,13 +409,13 @@ WriteColorGrids(R3SurfelScene *scene, const char *directory_name)
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
+WriteSemanticGrids(R3SurfelScene *scene, const char *output_directory)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
   if (print_verbose) {
-    printf("Creating semantic images ...\n");
+    printf("Creating semantic grids ...\n");
     fflush(stdout);
   }
 
@@ -490,8 +495,8 @@ WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
   }
 
   // Write grids
-  if (!WriteGrid(category_grid, directory_name, "Semantic", "Category")) return 0;
-  if (!WriteGrid(instance_grid, directory_name, "Semantic", "Instance")) return 0;
+  if (!WriteGrid(category_grid, output_directory, "Semantic", "Category")) return 0;
+  if (!WriteGrid(instance_grid, output_directory, "Semantic", "Instance")) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -512,13 +517,13 @@ WriteSemanticGrids(R3SurfelScene *scene, const char *directory_name)
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteGroundGrids(R3SurfelScene *scene, const char *directory_name)
+WriteGroundGrids(R3SurfelScene *scene, const char *output_directory)
 {
   // Start statistics
   RNTime start_time;
   start_time.Read();
   if (print_verbose) {
-    printf("Creating ground images ...\n");
+    printf("Creating ground grids ...\n");
     fflush(stdout);
   }
 
@@ -585,7 +590,7 @@ WriteGroundGrids(R3SurfelScene *scene, const char *directory_name)
   ground_z_grid.Divide(density_grid);
 
   // Write grids
-  if (!WriteGrid(ground_z_grid, directory_name, "Ground", "Z")) return 0;
+  if (!WriteGrid(ground_z_grid, output_directory, "Ground", "Z")) return 0;
 
   // Print statistics
   if (print_verbose) {
@@ -602,22 +607,360 @@ WriteGroundGrids(R3SurfelScene *scene, const char *directory_name)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Object image functions
+////////////////////////////////////////////////////////////////////////
+
+static R3SurfelImage
+CreateObjectCamera(R3SurfelObject *object)
+{
+  // Set some default parameters (hardwired for now)
+  int width = 512;
+  int height = 512;
+
+  // Determine orientation
+  R3OrientedBox obb = object->CurrentOrientedBBox();
+  R3Vector towards = -obb.Axes()[0];
+  towards.Rotate(obb.Axes()[1], -RN_PI/4.0);
+  towards.Normalize();
+  R3Vector right = towards % R3posz_vector;
+  right.Normalize();
+  R3Vector up = right % towards;
+  up.Normalize();
+
+  // Determine viewpoint
+  R3Point lookat = obb.Center();
+  double r = 5.0 * obb.DiagonalRadius();
+  if (r == 0) r = 10;
+  R3Point viewpoint= lookat - r * towards;
+
+  // Create camera
+  R3SurfelImage camera;
+  camera.SetViewpoint(viewpoint);
+  camera.SetOrientation(towards, up);
+  camera.SetImageDimensions(width, height);
+  camera.SetFocalLengths(width);
+  camera.SetImageCenter(R2Point(0.5*width, 0.5*height));
+
+  // Return camera
+  return camera;
+}
+
+
+
+static R2Box
+ComputeImageBBox(R3SurfelImage *image, R3SurfelObject *object, double inflation_factor = 1, int min_length = 0)
+{
+  // Initialize extent
+  R2Box image_bbox = R2null_box;
+
+  // Union projections of object bbox corners
+  R3Box object_bbox = object->BBox();
+  for (int i = 0; i < 8; i++) {
+    R3Point world_position = object_bbox.Corner(i);
+    R2Point image_position = image->TransformFromWorldToImage(world_position);
+    if (image_position == R2unknown_point) continue;
+    image_bbox.Union(image_position);
+  }
+
+  // Check if empty
+  if (image_bbox.IsEmpty()) return image_bbox;
+  if (RNIsZero(image_bbox.Area())) return image_bbox;
+  
+  // Inflate bbox
+  image_bbox.Inflate(inflation_factor);
+
+  // Fix min image resolution in each dimension
+  if (min_length > 0) {
+    for (int i = 0; i < 2; i++) {
+      int delta_length = 0.5 * (min_length - image_bbox.AxisLength(i));
+      if (delta_length <= 0) continue;
+      image_bbox[0][i] -= delta_length;
+      image_bbox[1][i] += delta_length;
+    }
+  }
+  
+  // Keep within image extent
+  image_bbox.Intersect(R2Box(0, 0, image->ImageWidth()-1, image->ImageHeight()-1));
+    
+  // Return image bbox
+  return image_bbox;
+}
+
+
+
+static R2Image
+CropImage(const R2Image& input_image, const R2Box& bbox)
+{
+  int input_width = input_image.Width();
+  int input_height = input_image.Height();
+  int output_width = bbox.XLength();
+  int output_height = bbox.YLength();
+  R2Image output_image(output_width, output_height, 3);
+
+  // Fill output image
+  for (int output_iy = 0; output_iy < output_height; output_iy++) {
+    int input_iy = output_iy + bbox.YMin();
+    if (input_iy >= input_height) continue;
+    for (int output_ix = 0; output_ix < output_width; output_ix++) {
+      int input_ix = output_ix + bbox.XMin();
+      if (input_ix >= input_width) continue;
+      RNRgb input_rgb = input_image.PixelRGB(input_ix, input_iy);
+      output_image.SetPixelRGB(output_ix, output_iy, input_rgb);
+    }
+  }
+
+  // Return output image
+  return output_image;
+}
+
+
+
+static R2Image
+RenderImage(R2Image& image,
+  const R3SurfelPointSet& pointset,
+  const R3SurfelImage& camera,
+  int pointradius, int color_scheme)
+{
+  // Get convenient variables
+  int width = image.Width();
+  int height = image.Height();
+  R3Point viewpoint = camera.Viewpoint();
+  R3Vector towards = camera.Towards();
+  
+  // Render pointset
+  for (int i = 0; i < pointset.NPoints(); i++) {
+    R3SurfelPoint *point = pointset.Point(i);
+    R3Point position = point->Position();
+    R3Vector vector = position - viewpoint;
+    double depth = towards.Dot(vector);
+    if (RNIsNegativeOrZero(depth)) continue;
+    R2Point image_position = camera.TransformFromWorldToImage(position);
+    if (!camera.ContainsImagePosition(image_position)) continue;
+    int cx = image_position.X() + 0.5;
+    int cy = image_position.Y() + 0.5;
+    for (int dx = -pointradius; dx <= pointradius; dx++) {
+      int ix = cx + dx;
+      if ((ix < 0) || (ix >= width)) continue;
+      for (int dy = -pointradius; dy <= pointradius; dy++) {
+        int iy = cy + dy;
+        if ((iy < 0) || (iy >= height)) continue;
+        RNRgb rgb = (color_scheme == 0) ? point->Rgb() : RNyellow_rgb;
+        image.SetPixelRGB(ix, iy, rgb);
+      }
+    }
+  }
+
+  // Return the image
+  return image;
+}
+
+
+    
+static int
+WriteZoomedObjectImages(R3SurfelScene *scene, const char *output_directory)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int count = 0;
+  if (print_verbose) {
+    printf("Creating zoomed object images ...\n");
+    fflush(stdout);
+  }
+
+  // Default parameters
+  int width = 512;
+  int height = 512;
+  
+  // Create pointset for whole scene
+  R3SurfelPointSet *scene_pointset = CreatePointSet(scene);
+  if (!scene_pointset) return 0;
+  if (scene_pointset->NPoints() == 0) { delete scene_pointset; return 0; }
+
+  // Write image for each object
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    if (!object->Name()) continue;
+
+    // Get/check label
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (!label) continue;
+    if (!label->Name()) continue;
+    if (selected_label_name && strcmp(label->Name(), selected_label_name)) continue;
+
+    // Get/check pointset
+    R3SurfelPointSet *object_pointset = object->PointSet(TRUE);
+    if (!object_pointset) continue;
+    if (object_pointset->NPoints() == 0) { delete object_pointset; continue; }
+
+    // Render image
+    R2Image image(width, height, 3);
+    R3SurfelImage camera = CreateObjectCamera(object);
+    RenderImage(image, *scene_pointset, camera, 1, 0);
+    RenderImage(image, *object_pointset, camera, 2, 1);
+
+    // Write image
+    char image_filename[1024];
+    sprintf(image_filename, "%s/%s_%d_%d_zoomed.png", output_directory,
+      label->Name(), object_pointset->NPoints(), object->SceneIndex());
+    image.Write(image_filename);
+
+    // Delete object_pointset
+    delete object_pointset;
+
+    // Write debug message
+    if (print_debug) {
+      printf("  %s\n", image_filename);
+      fflush(stdout);
+    }
+    
+    // Increment count
+    count++;
+  }
+
+  // Delete scene pointset
+  delete scene_pointset;
+  
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+static int
+WriteOverlaidObjectImages(R3SurfelScene *scene, const char *output_directory)
+{
+  // Check inputs
+  if (!input_image_directory && !input_pixel_database_filename) return 1;
+  
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+  int count = 0;
+  if (print_verbose) {
+    printf("Creating overlaid object images ...\n");
+    fflush(stdout);
+  }
+
+  // Open pixel database
+  R2PixelDatabase pixel_database;
+  if (input_pixel_database_filename) {
+    if (!pixel_database.OpenFile(input_pixel_database_filename, "r")) return 0;
+  }
+
+  // Write image for each object
+  for (int i = 0; i < scene->NObjects(); i++) {
+    R3SurfelObject *object = scene->Object(i);
+    if (object->Parent() != scene->RootObject()) continue;
+    if (!object->Name()) continue;
+
+    // Get/check label
+    R3SurfelLabel *label = object->CurrentLabel();
+    if (!label) continue;
+    if (!label->Name()) continue;
+    if (selected_label_name && strcmp(label->Name(), selected_label_name)) continue;
+
+    // Find best sfl image
+    R3SurfelImage *sfl_image = scene->FindImageByBestView(object->BBox().Centroid(), R3zero_vector);
+    if (!sfl_image) continue;
+    
+    // Get/read input color image
+    R2Image image;
+    char input_image_filename[1024];
+    if (input_pixel_database_filename) {
+      // Read image from pixel database
+      sprintf(input_image_filename, "color_images/%s.jpg", sfl_image->Name());
+      if (!pixel_database.FindImage(input_image_filename, &image))
+        sprintf(input_image_filename, "color_images/%s.png", sfl_image->Name());
+      if (!pixel_database.FindImage(input_image_filename, &image)) continue;
+      if (!image.Read(input_image_filename)) continue;
+    }
+    else if (input_image_directory) {
+      // Read image from directory of images
+      sprintf(input_image_filename, "%s/color_images/%s.jpg", input_image_directory, sfl_image->Name());
+      if (!RNFileExists(input_image_filename)) sprintf(input_image_filename, "%s/color_images/%s.png", input_image_directory, sfl_image->Name());
+      if (!RNFileExists(input_image_filename)) continue;
+      if (!image.Read(input_image_filename)) continue;
+    }
+
+    // Get/check pointset
+    R3SurfelPointSet *object_pointset = object->PointSet(TRUE);
+    if (!object_pointset) continue;
+    if (object_pointset->NPoints() == 0) { delete object_pointset; continue; }
+
+    // Create overlay image
+    RenderImage(image, *object_pointset, *sfl_image, 2, 1);
+
+    // Crop overlay image
+    R2Box crop_box = ComputeImageBBox(sfl_image, object, 4, 100);
+    if (crop_box.IsEmpty()) { delete object_pointset; continue; }
+    R2Image crop_image = CropImage(image, crop_box);
+    image = crop_image;
+
+    // Write overlay image
+    char output_image_filename[1024];
+    sprintf(output_image_filename, "%s/%s_%d_%d_overlaid.png", output_directory,
+      label->Name(), object_pointset->NPoints(), object->SceneIndex());
+    image.Write(output_image_filename);
+
+    // Delete object_pointset
+    delete object_pointset;
+
+    // Write debug message
+    if (print_debug) {
+      printf("  %s\n", output_image_filename);
+      fflush(stdout);
+    }
+    
+    // Increment count
+    count++;
+  }
+
+  // Close pixel database
+  if (input_pixel_database_filename) {
+    if (!pixel_database.CloseFile()) return 0;
+  }
+
+  // Print statistics
+  if (print_verbose) {
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Images = %d\n", count);
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // GRID WRITING
 ////////////////////////////////////////////////////////////////////////
 
 static int
-WriteGrids(R3SurfelScene *scene, const char *directory_name)
+WriteGrids(R3SurfelScene *scene, const char *output_directory)
 {
   // Create directory
   char buffer[1024];
-  sprintf(buffer, "mkdir -p %s", directory_name);
+  sprintf(buffer, "mkdir -p %s", output_directory);
   system(buffer);
 
   // Write grids
-  if (write_geometry_grids && !WriteGeometryGrids(scene, directory_name)) return 0;
-  if (write_color_grids && !WriteColorGrids(scene, directory_name)) return 0;
-  if (write_semantic_grids && !WriteSemanticGrids(scene, directory_name)) return 0;
-  if (write_ground_grids && !WriteGroundGrids(scene, directory_name)) return 0;
+  if (write_geometry_grids && !WriteGeometryGrids(scene, output_directory)) return 0;
+  if (write_color_grids && !WriteColorGrids(scene, output_directory)) return 0;
+  if (write_semantic_grids && !WriteSemanticGrids(scene, output_directory)) return 0;
+  if (write_ground_grids && !WriteGroundGrids(scene, output_directory)) return 0;
+  if (write_overlaid_object_images && !WriteOverlaidObjectImages(scene, output_directory)) return 0;
+  if (write_zoomed_object_images && !WriteZoomedObjectImages(scene, output_directory)) return 0;
 
   // Return success
   return 1;
@@ -645,25 +988,30 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-color")) { write_color_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-semantic")) { write_semantic_grids = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-ground")) { write_ground_grids = 1; default_grids = 0; }
+      else if (!strcmp(*argv, "-zoomed_object_images")) { write_zoomed_object_images = 1; default_grids = 0; }
+      else if (!strcmp(*argv, "-overlaid_object_images")) { write_overlaid_object_images = 1; default_grids = 0; }
       else if (!strcmp(*argv, "-pixel_spacing")) { argc--; argv++; pixel_spacing = atof(*argv); }
       else if (!strcmp(*argv, "-max_resolution")) { argc--; argv++; max_resolution = atoi(*argv); }
       else if (!strcmp(*argv, "-min_elevation")) { argc--; argv++; min_elevation = atof(*argv); }
       else if (!strcmp(*argv, "-max_elevation")) { argc--; argv++; max_elevation = atof(*argv); }
       else if (!strcmp(*argv, "-max_depth")) { argc--; argv++; max_depth = atof(*argv); }
+      else if (!strcmp(*argv, "-selected_label")) { argc--; argv++; selected_label_name = *argv; }
+      else if (!strcmp(*argv, "-image_directory")) { argc--; argv++; input_image_directory = *argv; }
+      else if (!strcmp(*argv, "-pixel_database")) { argc--; argv++; input_pixel_database_filename = *argv; }
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
     else {
-      if (!input_scene_name) input_scene_name = *argv;
-      else if (!input_database_name) input_database_name = *argv;
-      else if (!output_directory_name) output_directory_name = *argv;
+      if (!input_scene_filename) input_scene_filename = *argv;
+      else if (!input_database_filename) input_database_filename = *argv;
+      else if (!output_directory) output_directory = *argv;
       else { RNFail("Invalid program argument: %s", *argv); exit(1); }
       argv++; argc--;
     }
   }
 
   // Check file names
-  if (!input_scene_name || !input_database_name || !output_directory_name) {
+  if (!input_scene_filename || !input_database_filename || !output_directory) {
     RNFail("Usage: sfl2img scenefile databasefile [options]\n");
     return FALSE;
   }
@@ -692,11 +1040,11 @@ int main(int argc, char **argv)
   if (!ParseArgs(argc, argv)) exit(-1);
 
   // Open tree
-  R3SurfelScene *scene = OpenScene(input_scene_name, input_database_name);
+  R3SurfelScene *scene = OpenScene(input_scene_filename, input_database_filename);
   if (!scene) exit(-1);
 
   // Write grids
-  if (!WriteGrids(scene, output_directory_name)) exit(-1);
+  if (!WriteGrids(scene, output_directory)) exit(-1);
 
   // Close scene
   if (!CloseScene(scene)) exit(-1);
