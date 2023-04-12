@@ -166,6 +166,31 @@ WriteImage(const R2Grid& red, const R2Grid& green, const R2Grid& blue,
 
 
 
+static int
+WriteCamera(const R3SurfelImage& camera, const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "w");
+  if (!fp) {
+    RNFail("Unable to open camera file %s\n", filename);
+    return 0;
+  }
+
+  // Write camera
+  printf("%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
+         camera.Viewpoint().X(), camera.Viewpoint().Y(), camera.Viewpoint().Z(),
+         camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
+         camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
+         camera.XFOV(), camera.YFOV());
+
+  // Close file
+  fclose(fp);
+  
+  // Return success
+  return 1;
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 // Geometry image functions
 ////////////////////////////////////////////////////////////////////////
@@ -801,17 +826,23 @@ WriteZoomedObjectImages(R3SurfelScene *scene, const char *output_directory)
     RenderImage(image, *object_pointset, camera, 2, 1);
 
     // Write image
-    char image_filename[1024];
-    sprintf(image_filename, "%s/%s_%d_%d_zoomed.png", output_directory,
+    char output_image_filename[1024];
+    sprintf(output_image_filename, "%s/%s_%d_%d_zoomed.png", output_directory,
       label->Name(), object_pointset->NPoints(), object->SceneIndex());
-    image.Write(image_filename);
+    image.Write(output_image_filename);
+
+    // Write camera
+    char output_camera_filename[1024];
+    sprintf(output_camera_filename, "%s/%s_%d_%d_zoomed.cam", output_directory,
+      label->Name(), object_pointset->NPoints(), object->SceneIndex());
+    WriteCamera(camera, output_camera_filename);
 
     // Delete object_pointset
     delete object_pointset;
 
     // Write debug message
     if (print_debug) {
-      printf("  %s\n", image_filename);
+      printf("  %s\n", output_image_filename);
       fflush(stdout);
     }
     
@@ -907,11 +938,17 @@ WriteOverlaidObjectImages(R3SurfelScene *scene, const char *output_directory)
     // Check image
     if ((image.Width() == 0) || (image.Height() == 0)) { delete object_pointset; continue; }
     
-    // Write overlay image
+    // Write image
     char output_image_filename[1024];
     sprintf(output_image_filename, "%s/%s_%d_%d_overlaid.png", output_directory,
       label->Name(), object_pointset->NPoints(), object->SceneIndex());
     image.Write(output_image_filename);
+
+    // Write camera
+    char output_camera_filename[1024];
+    sprintf(output_camera_filename, "%s/%s_%d_%d_zoomed.cam", output_directory,
+      label->Name(), object_pointset->NPoints(), object->SceneIndex());
+    WriteCamera(*sfl_image, output_camera_filename);
 
     // Delete object_pointset
     delete object_pointset;
