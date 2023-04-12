@@ -177,7 +177,7 @@ WriteCamera(const R3SurfelImage& camera, const char *filename)
   }
 
   // Write camera
-  printf("%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
+  fprintf(fp, "%g %g %g  %g %g %g  %g %g %g  %g %g  1\n",
          camera.Viewpoint().X(), camera.Viewpoint().Y(), camera.Viewpoint().Z(),
          camera.Towards().X(), camera.Towards().Y(), camera.Towards().Z(),
          camera.Up().X(), camera.Up().Y(), camera.Up().Z(),
