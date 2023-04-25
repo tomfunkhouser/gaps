@@ -393,6 +393,81 @@ CloseFile(void)
 
 
 ////////////////////////////////////////////////////////////////////////
+// STREAM I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R2PixelDatabase::
+OpenStream(FILE *fp, const char *rwaccess)
+{
+  // Set dummy file name
+  if (this->filename) free(this->filename);
+  this->filename = RNStrdup("stream");
+
+  // Parse rwaccess
+  if (this->rwaccess) free(this->rwaccess);
+  if (!rwaccess) this->rwaccess = RNStrdup("w+b");
+  else if (strstr(rwaccess, "w")) this->rwaccess = RNStrdup("w+b");
+  else if (strstr(rwaccess, "+")) this->rwaccess = RNStrdup("r+b");
+  else this->rwaccess = RNStrdup("rb"); 
+
+  // Check if file is new
+  if (!strcmp(this->rwaccess, "w+b")) {
+    // Just checking ...
+    assert(entries_count == 0);
+
+    // File is new -- write header
+    if (!WriteHeader(fp, 0)) return 0;
+
+    // Update entries info
+    entries_seek = RNFileTell(fp);
+  }
+  else {
+    // Read header
+    if (!ReadHeader(fp)) return 0;
+
+    // Read entries
+    if (!ReadEntries(fp, swap_endian)) return 0;
+  }
+
+  // Remember file
+  this->fp = fp;
+
+  // Return success
+  return 1;
+}
+
+
+
+int R2PixelDatabase::
+CloseStream(void)
+{
+  // Check if writing file
+  if (strcmp(rwaccess, "rb")) {
+    // Write entries
+    if (!WriteEntries(fp, swap_endian)) return 0;
+
+    // Write header again (now that the seek values have been filled in)
+    if (!WriteHeader(fp, swap_endian)) return 0;
+
+    // Seek back to end of stream
+    RNFileSeek(fp, 0, RN_FILE_SEEK_END);
+  }
+
+  // Reset filename
+  if (filename) free(filename);
+  filename = NULL;
+
+  // Reset rwaccess
+  if (rwaccess) free(rwaccess);
+  rwaccess = NULL;
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // INTERNAL I/O FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 

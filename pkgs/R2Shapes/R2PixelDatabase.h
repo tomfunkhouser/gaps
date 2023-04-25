@@ -39,11 +39,15 @@ public:
     RNBoolean apply_transformation = TRUE);
   virtual int Remove(const char *key);
 
-  // I/O functions
+  // File I/O functions
   virtual int OpenFile(const char *filename, const char *rwaccess = NULL);
   virtual int CloseFile(void);
 
 public:
+  // Stream I/O functions
+  virtual int OpenStream(FILE *fp, const char *rwaccess = NULL);
+  virtual int CloseStream(void);
+
   // For backward compatibility
   int NEntries() const;
 

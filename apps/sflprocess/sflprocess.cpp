@@ -2385,6 +2385,27 @@ ParseConstraint(int& argc, char **& argv)
     R3SurfelBoxConstraint *constraint = new R3SurfelBoxConstraint(box);
     return constraint;
   }
+  else if (!strcmp(constraint_type, "OrientedBoundingBox")) {
+    // Read bounding box coordinates
+    argc--; argv++; double cx = atof(*argv);
+    argc--; argv++; double cy = atof(*argv);
+    argc--; argv++; double cz = atof(*argv);
+    argc--; argv++; double ax1 = atof(*argv);
+    argc--; argv++; double ay1 = atof(*argv);
+    argc--; argv++; double az1 = atof(*argv);
+    argc--; argv++; double ax2 = atof(*argv);
+    argc--; argv++; double ay2 = atof(*argv);
+    argc--; argv++; double az2 = atof(*argv);
+    argc--; argv++; double r1 = atof(*argv);
+    argc--; argv++; double r2 = atof(*argv);
+    argc--; argv++; double r3 = atof(*argv);
+    R3Point center(cx, cy, cz);
+    R3Vector axis1(ax1, ay1, az1);
+    R3Vector axis2(ax2, ay2, az2);
+    R3OrientedBox obb(center, axis1, axis2, r1, r2, r3);
+    R3SurfelOrientedBoxConstraint *constraint = new R3SurfelOrientedBoxConstraint(obb);
+    return constraint;
+  }
   else if (!strcmp(constraint_type, "OverheadGrid")) {
     // Read overhead grid
     argc--; argv++; const char *overhead_grid_name = *argv;
