@@ -78,7 +78,7 @@ public:
   ////////////////////////////////
 
   // Copy assignment operator
-  virtual R3SurfelLabel& operator=(const R3SurfelLabel& label);
+  R3SurfelLabel& operator=(const R3SurfelLabel& label);
 
   // Hierarchy manipulation functions
   virtual void SetParent(R3SurfelLabel *parent);

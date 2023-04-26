@@ -126,7 +126,7 @@ public:
   /////////////////////////////////////////
 
   // Copy assignment operator
-  virtual R3SurfelObject& operator=(const R3SurfelObject& object);
+  R3SurfelObject& operator=(const R3SurfelObject& object);
 
   // Name manipulation functions
   virtual void SetName(const char *name);

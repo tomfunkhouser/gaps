@@ -58,7 +58,7 @@ public:
   virtual void Subtract(const R3SurfelPointSet *set);
   virtual void Intersect(const R3SurfelPointSet *set);
   virtual void Union(const R3SurfelPointSet *set);
-  virtual R3SurfelPointSet& operator=(const R3SurfelPointSet& set);
+  R3SurfelPointSet& operator=(const R3SurfelPointSet& set);
 
   // Point manipulation functions
   virtual void SetMarks(RNBoolean mark = TRUE);
