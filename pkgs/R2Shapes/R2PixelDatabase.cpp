@@ -446,11 +446,14 @@ CloseStream(void)
     // Write entries
     if (!WriteEntries(fp, swap_endian)) return 0;
 
+    // Get position at end of stream
+    unsigned long long end_of_stream = RNFileTell(fp);
+    
     // Write header again (now that the seek values have been filled in)
     if (!WriteHeader(fp, swap_endian)) return 0;
 
     // Seek back to end of stream
-    RNFileSeek(fp, 0, RN_FILE_SEEK_END);
+    RNFileSeek(fp, end_of_stream, RN_FILE_SEEK_SET);
   }
 
   // Reset filename
