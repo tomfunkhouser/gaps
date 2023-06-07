@@ -434,8 +434,8 @@ InsertPoints(R3SurfelBlock *block, RNScalar max_resolution)
   // Copy surfels
   if (block_nsurfels < block->NSurfels()) {
     // Subsample surfels
-    RNScalar step = (RNScalar) block->NSurfels() / (RNScalar) block_nsurfels;
-    for (RNScalar i = 0; i <= (RNScalar) block_nsurfels; i += step) {
+    int step = block->NSurfels() / block_nsurfels + 1;
+    for (RNScalar i = 0; i <= block->NSurfels(); i+= step) {
       const R3Surfel *surfel = block->Surfel((int) i);
       points[npoints].Reset(block, surfel);
       npoints++;
