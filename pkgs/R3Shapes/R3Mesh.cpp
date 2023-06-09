@@ -2611,28 +2611,28 @@ SubdivideFaces(void)
 // EDGE SWAPPING FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-static RNScalar 
-R3MeshEdgeSwapValue(R3Mesh *mesh, R3MeshEdge *e)
+RNAngle R3Mesh:: 
+EdgeSwapAngleImprovement(const R3MeshEdge *edge) const
 {
   // Get/check faces
-  R3MeshFace *f0 = mesh->FaceOnEdge(e, 0);
-  R3MeshFace *f1 = mesh->FaceOnEdge(e, 1);
+  R3MeshFace *f0 = FaceOnEdge(edge, 0);
+  R3MeshFace *f1 = FaceOnEdge(edge, 1);
   if (!f0 || !f1) return -RN_INFINITY;
 
   // Get/check vertices
-  R3MeshVertex *v0 = mesh->VertexOnEdge(e, 0);
-  R3MeshVertex *v1 = mesh->VertexOnEdge(e, 1);
-  R3MeshVertex *vf0 = mesh->VertexAcrossFace(f0, e);
-  R3MeshVertex *vf1 = mesh->VertexAcrossFace(f1, e);
-  if (mesh->EdgeBetweenVertices(vf0, vf1)) return -RN_INFINITY;
+  R3MeshVertex *v0 = VertexOnEdge(edge, 0);
+  R3MeshVertex *v1 = VertexOnEdge(edge, 1);
+  R3MeshVertex *vf0 = VertexAcrossFace(f0, edge);
+  R3MeshVertex *vf1 = VertexAcrossFace(f1, edge);
+  if (EdgeBetweenVertices(vf0, vf1)) return -RN_INFINITY;
 
   // Check if swap would flip face normals
-  R3Vector n0 = mesh->FaceNormal(f0);
-  R3Vector n1 = mesh->FaceNormal(f1);
-  const R3Point& p0 = mesh->VertexPosition(v0);
-  const R3Point& p1 = mesh->VertexPosition(v1);
-  const R3Point& pf0 = mesh->VertexPosition(vf0);
-  const R3Point& pf1 = mesh->VertexPosition(vf1);
+  R3Vector n0 = FaceNormal(f0);
+  R3Vector n1 = FaceNormal(f1);
+  const R3Point& p0 = VertexPosition(v0);
+  const R3Point& p1 = VertexPosition(v1);
+  const R3Point& pf0 = VertexPosition(vf0);
+  const R3Point& pf1 = VertexPosition(vf1);
   R3Vector vec00 = pf0 - p0;
   R3Vector vec01 = pf1 - p0;
   R3Vector vec10 = pf0 - p1;
@@ -2684,7 +2684,7 @@ SwapEdges(RNAngle min_angle_improvement)
   RNScalar *edge_values = new RNScalar [ NEdges() ];
   for (int i = 0; i < NEdges(); i++) {
     R3MeshEdge *edge = Edge(i);
-    edge_values[i] = R3MeshEdgeSwapValue(this, edge);
+    edge_values[i] = EdgeSwapAngleImprovement(edge);
     if (edge_values[i] < min_angle_improvement) continue;
     heap.Push(&edge_values[i]);
   }
@@ -2698,7 +2698,7 @@ SwapEdges(RNAngle min_angle_improvement)
     if (*edge_value < min_angle_improvement) break;
 
     // Check current edge value
-    RNScalar current_value = R3MeshEdgeSwapValue(this, edge);
+    RNScalar current_value = EdgeSwapAngleImprovement(edge);
     if (current_value != edge_values[edge_index]) {
       edge_values[edge_index] = current_value;
       if (current_value >= min_angle_improvement) heap.Push(&edge_values[edge_index]);
@@ -2709,7 +2709,7 @@ SwapEdges(RNAngle min_angle_improvement)
     if (!SwapEdge(edge)) continue;
 
     // Update edge value
-    edge_values[edge_index] = -current_value; // R3MeshEdgeSwapValue(this, edge);
+    edge_values[edge_index] = -current_value; // EdgeSwapAngleImprovement(edge);
 
     // Update neighbors
     for (int i = 0; i < 2; i++) {
@@ -2719,7 +2719,7 @@ SwapEdges(RNAngle min_angle_improvement)
         R3MeshEdge *neighbor_edge = EdgeOnFace(face, edge, j);
         int neighbor_index = EdgeID(neighbor_edge);
         RNScalar old_neighbor_value = edge_values[neighbor_index];
-        edge_values[neighbor_index] = R3MeshEdgeSwapValue(this, neighbor_edge);
+        edge_values[neighbor_index] = EdgeSwapAngleImprovement(neighbor_edge);
         if (old_neighbor_value >= min_angle_improvement) {
           if (edge_values[neighbor_index] >= min_angle_improvement) heap.Update(&edge_values[neighbor_index]);
           else heap.Remove(&edge_values[neighbor_index]);

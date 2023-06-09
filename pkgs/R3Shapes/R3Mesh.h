@@ -229,6 +229,8 @@ class R3Mesh {
       // Returns the line supporting the edge
     R3Box EdgeBBox(const R3MeshEdge *edge) const;
       // Returns the bounding box of the edge
+    RNAngle EdgeSwapAngleImprovement(const R3MeshEdge *edge) const;
+      // Returns the improvement of interior angles if swap edge
     int EdgeID(const R3MeshEdge *edge) const;
       // Returns the ID stored with a edge
     RNFlags EdgeFlags(const R3MeshEdge *edge) const;
