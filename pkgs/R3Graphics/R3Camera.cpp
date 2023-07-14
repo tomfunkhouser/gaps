@@ -512,13 +512,12 @@ Load(RNBoolean select_mode) const
 
 
 void R3Camera::
-Draw(void) const
+Draw(RNScalar scale) const
 {
 #if TRUE
     // Draw pyramid to near plane
     // static float pyramid_color[3] = { 1.0, 0.0, 0.0 };
     // R3LoadRgb(pyramid_color);
-    RNScalar scale = 1.0;
     R3Point org = Origin() + Towards() * scale;
     R3Vector dx = Right() * scale * tan(xfov);
     R3Vector dy = Up() * scale * tan(yfov);

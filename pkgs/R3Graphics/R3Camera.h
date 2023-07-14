@@ -89,7 +89,7 @@ class R3Camera {
 
         // Draw functions/operators
         void Load(RNBoolean select_mode = FALSE) const;
-        void Draw(void) const;
+        void Draw(RNScalar scale = 1) const;
         void Outline(void) const;
 
     private:

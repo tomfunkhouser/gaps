@@ -205,7 +205,7 @@ public:
   ///////////////////////////
 
   // Draw function
-  virtual void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS) const;
+  virtual void Draw(RNFlags flags = R3_SURFEL_DEFAULT_DRAW_FLAGS, RNScalar scale = 1) const;
 
   // Print function
   virtual void Print(FILE *fp = NULL, const char *prefix = NULL, const char *suffix = NULL) const;

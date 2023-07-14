@@ -973,7 +973,7 @@ Print(FILE *fp, const char *prefix, const char *suffix) const
 
 
 void R3SurfelImage::
-Draw(RNFlags flags) const
+Draw(RNFlags flags, RNScalar scale) const
 {
 #if 1
   // Draw towards and up
@@ -982,32 +982,13 @@ Draw(RNFlags flags) const
   const R3Vector towards = Towards();
   const R3Vector up = Up();
   R3LoadPoint(viewpoint);
-  R3LoadPoint(viewpoint + towards);
+  R3LoadPoint(viewpoint + scale * towards);
   R3LoadPoint(viewpoint);
-  R3LoadPoint(viewpoint + 0.5 * up);
+  R3LoadPoint(viewpoint + 0.5 * scale * up);
   RNGrfxEnd();
 #else
-  // Draw camera
-  RNScalar scale = 1.0;
-  R3Point org = Viewpoint() + Towards() * scale;
-  R3Vector dx = Right() * scale * tan(XFOV());
-  R3Vector dy = Up() * scale * tan(YFOV());
-  R3Point ur = org + dx + dy;
-  R3Point lr = org + dx - dy;
-  R3Point ul = org - dx + dy;
-  R3Point ll = org - dx - dy;
-  R3BeginLine();
-  R3LoadPoint(ur);
-  R3LoadPoint(ul);
-  R3LoadPoint(ll);
-  R3LoadPoint(lr);
-  R3LoadPoint(ur);
-  R3LoadPoint(Viewpoint());
-  R3LoadPoint(lr);
-  R3LoadPoint(ll);
-  R3LoadPoint(Viewpoint());
-  R3LoadPoint(ul);
-  R3EndLine();
+  // Draw R3Camera approximation
+  Camera().Draw(scale);
 #endif
 }
 
