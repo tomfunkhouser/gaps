@@ -72,11 +72,11 @@ R3SurfelBlock *CreateBlock(R3SurfelScene *scene,
 R3SurfelNode *CreateNode(R3SurfelScene *scene, 
   R3SurfelPointSet *pointset, 
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
-  RNBoolean copy_surfels = FALSE);
+  RNBoolean copy_surfels = FALSE, RNBoolean release_copied_blocks = TRUE);
 R3SurfelNode *CreateNode(R3SurfelScene *scene,
   R3SurfelNode *source_node = NULL, const R3SurfelConstraint *constraint = NULL,
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
-  RNBoolean copy_surfels = FALSE);
+  RNBoolean copy_surfels = FALSE, RNBoolean release_copied_blocks = TRUE);
 
 
 
@@ -90,17 +90,17 @@ R3SurfelObject *CreateObject(R3SurfelScene *scene,
   R3SurfelPointSet *pointset, 
   R3SurfelObject *parent_object = NULL, const char *object_name = NULL, 
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
-  RNBoolean copy_surfels = FALSE);
+  RNBoolean copy_surfels = FALSE, RNBoolean release_copied_blocks = TRUE);
 R3SurfelObject *CreateObject(R3SurfelScene *scene, 
   R3SurfelNode *source_node = NULL, const R3SurfelConstraint *constraint = NULL,
   R3SurfelObject *parent_object = NULL, const char *object_name = NULL, 
   R3SurfelNode *parent_node = NULL, const char *node_name = NULL,
-  RNBoolean copy_surfels = FALSE);
+  RNBoolean copy_surfels = FALSE, RNBoolean release_copied_blocks = TRUE);
 int CreateObjects(R3SurfelScene *scene,
   const std::vector<int>& object_identifiers,
   R3SurfelObject *parent_object = NULL,
   R3SurfelNode *parent_node = NULL,
-  RNBoolean copy_surfels = FALSE);
+  RNBoolean copy_surfels = FALSE, RNBoolean release_copied_blocks = TRUE);
 
   
 
@@ -330,7 +330,7 @@ CreatePlanarGrids(R3SurfelScene *scene,
 RNArray<R3SurfelObject *> *
 CreatePlanarObjects(R3SurfelScene *scene, 
   R3SurfelNode *source_node = NULL, const R3SurfelConstraint *constraint = NULL, 
-  R3SurfelObject *parent_object = NULL, R3SurfelNode *parent_node = NULL, RNBoolean copy_surfels = TRUE,
+  R3SurfelObject *parent_object = NULL, R3SurfelNode *parent_node = NULL,
   int max_neighbors = 16, RNLength max_neighbor_distance = 0.5, 
   RNLength max_offplane_distance = 0.5, RNAngle max_normal_angle = 0.5,
   RNArea min_area = 1, RNScalar min_density = 10, int min_points = 100,

@@ -2218,7 +2218,7 @@ CreatePlanarObjects(R3SurfelScene *scene,
 
   // Create planar objects 
   RNArray<R3SurfelObject *> *objects = CreatePlanarObjects(scene, 
-    source_node, NULL, parent_object, parent_node,                                                   
+    source_node, NULL, parent_object, parent_node,
     max_neighbors, max_neighbor_distance, 
     max_offplane_distance, max_normal_angle,
     min_area, min_density, min_points, 
