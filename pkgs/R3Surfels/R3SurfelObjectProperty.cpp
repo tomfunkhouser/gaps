@@ -118,7 +118,7 @@ void R3SurfelObjectProperty::
 ResetOperands(RNScalar *operands, int noperands)
 {
   // Delete previous operands
-  if (this->operands) delete this->operands;
+  if (this->operands) delete [] this->operands;
   this->operands = NULL;
   this->noperands = 0;
   
