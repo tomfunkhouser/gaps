@@ -53,6 +53,7 @@ class RNMap {
         void Empty(void);
         void Insert(KeyType key, ValueType value);
         void Replace(KeyType key, ValueType value);
+        void ReplaceOrInsert(KeyType key, ValueType value);
         void Remove(KeyType key);
 
         // Manipulation operators

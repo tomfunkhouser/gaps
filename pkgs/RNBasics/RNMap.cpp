@@ -116,6 +116,16 @@ Replace(KeyType key, ValueType value)
 
 template <class KeyType, class ValueType>
 void RNMap<KeyType, ValueType>::
+ReplaceOrInsert(KeyType key, ValueType value)
+{
+    // Insert entry into map
+    (*m)[key] = value;
+}
+
+
+
+template <class KeyType, class ValueType>
+void RNMap<KeyType, ValueType>::
 Remove(KeyType key)
 {
     // Remove entry from map

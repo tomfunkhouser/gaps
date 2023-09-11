@@ -108,6 +108,9 @@ public:
   //// PROPERTY QUERY ////
   ////////////////////////
 
+  // Object selections
+  RNBoolean IsObjectSelected(R3SurfelObject * object) const;
+  
   // Subwindow/menu/manipulator properties
   const char *Message(void) const;
   const R3OrientedBoxManipulator& OBBManipulator(void) const;
@@ -310,6 +313,7 @@ protected:
   
   // Object selections
   RNArray<R3SurfelObject *> selection_objects;
+  RNMap<R3SurfelObject *, RNBoolean> selection_map;
   int selection_visibility;
 
   // Command logging

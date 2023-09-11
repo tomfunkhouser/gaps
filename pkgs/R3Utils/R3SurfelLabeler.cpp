@@ -33,6 +33,7 @@ R3SurfelLabeler(R3SurfelScene *scene, const char *logging_filename)
     obb_manipulator(),
     obb_manipulator_visibility(0),
     selection_objects(),
+    selection_map(),
     selection_visibility(1),
     current_command(NULL),
     undo_stack(),
@@ -147,6 +148,19 @@ R3SurfelLabeler::
 
 
 
+////////////////////////////////////////////////////////////////////////
+// Property query functions
+////////////////////////////////////////////////////////////////////////
+
+RNBoolean R3SurfelLabeler::
+IsObjectSelected(R3SurfelObject *object) const
+{
+  // Search object selection map
+  return selection_map.Find(object);
+}
+
+  
+  
 ////////////////////////////////////////////////////////////////////////
 // Manipulation functions
 ////////////////////////////////////////////////////////////////////////
@@ -1820,7 +1834,7 @@ SelectPickedObject(int x, int y, RNBoolean shift, RNBoolean ctrl, RNBoolean alt)
   // Update object selections
   if (object) {
     // Check if object is already selected
-    if (selection_objects.FindEntry(object)) {
+    if (IsObjectSelected(object)) {
       // Remove object from selected objects
       if (ctrl) RemoveObjectSelection(object);
     }
@@ -1864,7 +1878,7 @@ SelectObjects(const RNArray<R3SurfelObject *>& objects, int command_type,
     R3SurfelObject *object = objects.Kth(i);
 
     // Check if object is already selected
-    if (selection_objects.FindEntry(object)) {
+    if (IsObjectSelected(object)) {
       // Remove object from selected objects
       if (ctrl) RemoveObjectSelection(object);
     }
@@ -1901,13 +1915,13 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
   if (!SurfelVisibility()) return 0;
   
   // Get projection matrices
-  GLdouble p[3];
-  GLdouble modelview_matrix[16];
-  GLdouble projection_matrix[16];
-  GLint viewport[16];
-  glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
-  glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
-  glGetIntegerv(GL_VIEWPORT, viewport);
+  // GLdouble p[3];
+  // GLdouble modelview_matrix[16];
+  // GLdouble projection_matrix[16];
+  // GLint viewport[16];
+  // glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+  // glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+  // glGetIntegerv(GL_VIEWPORT, viewport);
 
   // Make array of picked objects
   RNArray<R3SurfelObject *> picked_objects;
@@ -1923,8 +1937,9 @@ SelectEnclosedObjects(const R2Box& box, RNBoolean shift, RNBoolean ctrl, RNBoole
     for (int octant = 0; octant < 8; octant++) {
       R3Point corner = object->BBox().Corner(octant);
       if (!R3Contains(viewer.Camera().Halfspace(RN_LO, RN_Z), corner)) continue;
-      gluProject(corner[0], corner[1], corner[2], modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
-      R2Point corner_projection(p[0], p[1]);
+      // gluProject(corner[0], corner[1], corner[2], modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
+      // R2Point corner_projection(p[0], p[1]);
+      R2Point corner_projection = viewer.ViewportPoint(corner);
       if (!R2Contains(viewer.Viewport().BBox(), corner_projection)) continue;
       if (!R2Contains(box, corner_projection)) continue;
       corner_count++;
@@ -1953,13 +1968,13 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
   if (!SurfelVisibility()) return 0;
 
   // Get projection matrices
-  GLdouble p[3];
-  GLdouble modelview_matrix[16];
-  GLdouble projection_matrix[16];
-  GLint viewport[16];
-  glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
-  glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
-  glGetIntegerv(GL_VIEWPORT, viewport);
+  // GLdouble p[3];
+  // GLdouble modelview_matrix[16];
+  // GLdouble projection_matrix[16];
+  // GLint viewport[16];
+  // glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix);
+  // glGetDoublev(GL_PROJECTION_MATRIX, projection_matrix);
+  // glGetIntegerv(GL_VIEWPORT, viewport);
 
   // Make array of picked objects
   RNArray<R3SurfelObject *> picked_objects;
@@ -1979,8 +1994,9 @@ SelectEnclosedObjects(const R2Polygon& polygon, RNBoolean shift, RNBoolean ctrl,
     for (int octant = 0; octant < 8; octant++) {
       R3Point corner = object->BBox().Corner(octant);
       if (!R3Contains(viewer.Camera().Halfspace(RN_LO, RN_Z), corner)) continue;
-      gluProject(corner[0], corner[1], corner[2], modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
-      R2Point corner_projection(p[0], p[1]);
+      // gluProject(corner[0], corner[1], corner[2], modelview_matrix, projection_matrix, viewport, &(p[0]), &(p[1]), &(p[2]));
+      // R2Point corner_projection(p[0], p[1]);
+      R2Point corner_projection = viewer.ViewportPoint(corner);
       if (!R2Contains(viewer.Viewport().BBox(), corner_projection)) continue;
       if (!R2Contains(polygon.BBox(), corner_projection)) continue;
       if (!R2Contains(polygon, corner_projection)) continue;
@@ -2157,15 +2173,6 @@ SelectOverlappedObjects(const R3OrientedBox& box,
   R3OrientedBox query_box(box.Center(), box.Axis(0), box.Axis(1),
     box.Radius(0) + overlap_tolerance, box.Radius(1) + overlap_tolerance, box.Radius(2) + overlap_tolerance);
 
-  // Mark which objects are selected
-  std::vector<unsigned char> object_is_selected;
-  object_is_selected.resize(scene->NObjects());
-  for (int i = 0; i < scene->NObjects(); i++) object_is_selected[i] = 0;
-  for (int i = 0; i < NObjectSelections(); i++) {
-    R3SurfelObject *selected_object = ObjectSelection(i);
-    object_is_selected[selected_object->SceneIndex()] = 1;
-  }
-  
   // Find objects overlapping query box
   RNArray<R3SurfelObject *> picked_objects;
   for (int i = 0; i < scene->NObjects(); i++) {
@@ -2174,7 +2181,7 @@ SelectOverlappedObjects(const R3OrientedBox& box,
     if (!object->Name()) continue;
     if (unlabeled_only && object->HumanLabel()) continue;
     if (!ObjectVisibility(object)) continue;
-    if (object_is_selected[object->SceneIndex()]) continue;
+    if (IsObjectSelected(object)) continue;
     if (!R3Intersects(query_box, object->BBox())) continue;
     RNScalar overlap_fraction = EstimateOverlapFraction(query_box, object);
     if (overlap_fraction < min_overlap_fraction) continue;
@@ -2233,15 +2240,6 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     }
   }
 
-  // Mark which objects are selected
-  std::vector<unsigned char> object_is_selected;
-  object_is_selected.resize(scene->NObjects());
-  for (int i = 0; i < scene->NObjects(); i++) object_is_selected[i] = 0;
-  for (int i = 0; i < NObjectSelections(); i++) {
-    R3SurfelObject *selected_object = ObjectSelection(i);
-    object_is_selected[selected_object->SceneIndex()] = 1;
-  }
-  
   // Find other top-level objects overlapping selected objects
   RNArray<R3SurfelObject *> picked_objects;
   R3SurfelObject *root_object = scene->RootObject();
@@ -2249,7 +2247,7 @@ SelectOverlappedObjects(RNScalar min_overlap_fraction, RNLength overlap_toleranc
     R3SurfelObject *top_level_object = root_object->Part(r);
 
     // Check if should select if overlapped
-    if (object_is_selected[top_level_object->SceneIndex()]) continue;
+    if (IsObjectSelected(top_level_object)) continue;
     if (unlabeled_only && top_level_object->HumanLabel()) continue;
 
     // Count overlaps
@@ -3964,6 +3962,9 @@ InsertObjectSelection(R3SurfelObject *object)
   // Insert into selected objects
   selection_objects.Insert(object);
 
+  // Insert into selected objects map
+  selection_map.Insert(object, TRUE);
+
   // Update last selection time
   while (object_selection_times.size() <= (unsigned int) object->SceneIndex())
     object_selection_times.push_back(-1.0);
@@ -3984,8 +3985,11 @@ RemoveObjectSelection(R3SurfelObject *object)
   // Update current command 
   if (current_command) current_command->removed_object_selections.Insert(object);
 
-  // Insert into selected objects
+  // Remove from selected objects
   selection_objects.Remove(object);
+
+  // Remove from selected objects map
+  selection_map.Remove(object);
 
   // Release blocks
   object->ReleaseBlocks(TRUE);
@@ -4008,8 +4012,11 @@ EmptyObjectSelections(void)
     object->ReleaseBlocks(TRUE);
   }
 
-  // Empty object selection
+  // Empty object selection array
   selection_objects.Empty();
+
+  // Empty object selection map
+  selection_map.Empty();
 
   // Return success
   return 1;
