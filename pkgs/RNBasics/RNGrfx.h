@@ -30,6 +30,10 @@
 #       elif (RN_OS == RN_WINDOWS)
 #           include <GL/gl.h>
 #           include <GL/glu.h>
+#       elif defined __EMSCRIPTEN__
+#           define GL_GLEXT_PROTOTYPES
+#           include <GL/gl.h>
+#           include <GL/glu.h>
 #       else
 #           define GLEW_STATIC 1
 #           include <GL/glew.h>
