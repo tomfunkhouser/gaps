@@ -108,8 +108,11 @@ ApplyMay2022SceneUpdates(R3SurfelScene *scene)
   // Add new labels
   const int PEDESTRIAN_ENTRANCE_LABEL = 47;
   const int VEHICLE_ENTRANCE_LABEL = 48;
+  const int UNDERGROUND_ENTRANCE_LABEL = 49;
+  
   AddLabel(scene, "PedestrianEntrance", PEDESTRIAN_ENTRANCE_LABEL, 'n', 240, 140, 140);
   AddLabel(scene, "VehicleEntrance", VEHICLE_ENTRANCE_LABEL, 'C', 240, 0, 240);
+  AddLabel(scene, "UndergndEntrance", UNDERGROUND_ENTRANCE_LABEL, 'E', 255, 165, 0);
   
   // Reset label assignment keys
   SetLabelAssignmentKey(scene, "OtherVehicle", 'v');
@@ -122,6 +125,7 @@ ApplyMay2022SceneUpdates(R3SurfelScene *scene)
   AddLabelFlags(scene, "TempTrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
   AddLabelFlags(scene, "TrafficSign", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
   AddLabelFlags(scene, "VehicleEntrance", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
+  AddLabelFlags(scene, "UndergndEntrance", R3_SURFEL_LABEL_SHORT_AXIS_TOWARDS_FRONT_FLAG);
 
   // Add label unorientable flags
   AddLabelFlags(scene, "Bridge", R3_SURFEL_LABEL_UNORIENTABLE_FLAG);
