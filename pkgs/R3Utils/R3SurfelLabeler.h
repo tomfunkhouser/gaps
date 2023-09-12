@@ -215,6 +215,11 @@ public:
   virtual void DrawObjectSelections(void) const;
   virtual void DrawObjectLabels(void) const;
 
+  // Color utility functions (overrides R3SurfelViewer function)
+  virtual void CreateColor(unsigned char *color, int color_scheme,
+    const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+    R3SurfelObject *object, R3SurfelLabel *label) const;
+
   // Selection utility functions
   virtual int RasterizeObjectMask(unsigned int *object_mask);
 

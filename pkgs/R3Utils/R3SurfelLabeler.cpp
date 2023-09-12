@@ -462,6 +462,31 @@ UpdateOBBManipulator(RNBoolean reset_manipulation,
 
 
 ////////////////////////////////////////////////////////////////////////
+// Color utility functions
+////////////////////////////////////////////////////////////////////////
+
+void R3SurfelLabeler::
+CreateColor(unsigned char *color, int color_scheme,
+  const R3Surfel *surfel, R3SurfelBlock *block, R3SurfelNode *node,
+  R3SurfelObject *object, R3SurfelLabel *label) const
+{
+  // Check if drawing selected object in highlight color
+  if ((color_scheme != R3_SURFEL_VIEWER_COLOR_BY_PICK_INDEX) &&
+      SelectionVisibility() && object && IsObjectSelected(object)) {
+    // Draw in selection highlight color (yellow)
+    color[0] = 255;
+    color[1] = 255;
+    color[2] = 0;
+  }
+  else {
+    // Draw in normal color
+    R3SurfelViewer::CreateColor(color, color_scheme, surfel, block, node, object, label);
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Drawing utility functions
 ////////////////////////////////////////////////////////////////////////
 
@@ -862,7 +887,7 @@ Redraw(void)
   glLineWidth(1);
 
   // Draw labeling stuff
-  DrawObjectSelections();
+  // DrawObjectSelections();
   DrawObjectLabels();
   DrawOBBManipulator();
   DrawStatus();
@@ -3972,6 +3997,9 @@ InsertObjectSelection(R3SurfelObject *object)
 
   // Read blocks
   object->ReadBlocks(TRUE);
+
+  // Invalidate VBO
+  InvalidateVBO();
 }
 
 
@@ -3993,6 +4021,9 @@ RemoveObjectSelection(R3SurfelObject *object)
 
   // Release blocks
   object->ReleaseBlocks(TRUE);
+
+  // Invalidate VBO
+  InvalidateVBO();
 }
 
 
@@ -4017,6 +4048,9 @@ EmptyObjectSelections(void)
 
   // Empty object selection map
   selection_map.Empty();
+
+  // Invalidate VBO
+  InvalidateVBO();
 
   // Return success
   return 1;
