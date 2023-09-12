@@ -112,7 +112,7 @@ ApplyMay2022SceneUpdates(R3SurfelScene *scene)
   
   AddLabel(scene, "PedestrianEntrance", PEDESTRIAN_ENTRANCE_LABEL, 'n', 240, 140, 140);
   AddLabel(scene, "VehicleEntrance", VEHICLE_ENTRANCE_LABEL, 'C', 240, 0, 240);
-  AddLabel(scene, "UndergndEntrance", UNDERGROUND_ENTRANCE_LABEL, 'E', 255, 165, 0);
+  AddLabel(scene, "UndergndEntrance", UNDERGROUND_ENTRANCE_LABEL, 'E', 233, 180, 0);
   
   // Reset label assignment keys
   SetLabelAssignmentKey(scene, "OtherVehicle", 'v');
