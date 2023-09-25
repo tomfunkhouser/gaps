@@ -497,6 +497,41 @@ CreateColor(unsigned char *color, int color_scheme,
 ////////////////////////////////////////////////////////////////////////
 
 void R3SurfelLabeler::
+ComputeVBOBuffersForSelectedObjects(std::vector<GLfloat>& surfel_positions,
+    std::vector<GLfloat>& surfel_normals, std::vector<GLubyte>& surfel_colors) const
+{
+  // Fill buffers 
+  GLubyte surfel_color[3];
+  for (int i = 0; i < resident_nodes.NNodes(); i++) {
+    R3SurfelNode *node = resident_nodes.Node(i);
+    if (!NodeVisibility(node)) continue;
+    R3SurfelObject *object = node->Object(TRUE, TRUE);
+    while (object && object->Parent() && (object->Parent() != scene->RootObject())) object = object->Parent();
+    if (!IsObjectSelected(object)) continue;
+    R3SurfelLabel *label = (object) ? object->CurrentLabel() : NULL;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      const R3Point& block_origin = block->PositionOrigin();
+      for (int k = 0; k < block->NSurfels(); k += subsampling_factor) {
+        const R3Surfel *surfel = block->Surfel(k);
+        CreateColor(surfel_color, surfel_color_scheme, surfel, block, node, object, label);
+        surfel_positions.push_back(block_origin.X() + surfel->X());
+        surfel_positions.push_back(block_origin.Y() + surfel->Y());
+        surfel_positions.push_back(block_origin.Z() + surfel->Z());
+        surfel_normals.push_back(surfel->NX());
+        surfel_normals.push_back(surfel->NY());
+        surfel_normals.push_back(surfel->NZ());
+        surfel_colors.push_back(surfel_color[0]);
+        surfel_colors.push_back(surfel_color[1]);
+        surfel_colors.push_back(surfel_color[2]);
+      }
+    }
+  }
+}
+
+
+
+void R3SurfelLabeler::
 DrawObjectSelections(void) const
 {
   // Check if need to draw
@@ -3217,7 +3252,8 @@ SplitObject(R3SurfelObject *object, R3SurfelObject *parent, const R3SurfelConstr
 
 
 int R3SurfelLabeler::
-SplitSelectedObjects(void)
+SplitSelectedObjects(const R3SurfelConstraint& constraint,
+  RNBoolean update_obb_manipulator)
 {
   // Just checking
   assert(IsValid());
@@ -3239,44 +3275,6 @@ SplitSelectedObjects(void)
       SetMessage("Cannot split object %s because it has no parent", object_name);
       return 0;
     }
-  }
-
-  // Create split constraint
-  R3SurfelConstraint *constraint = NULL;
-  RNBoolean update_obb_manipulator = TRUE;
-  if (!R2Contains(rubber_line_points[0], rubber_line_points[1])) {
-    // Create plane constraint based on split line
-    R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
-    R3Ray ray1 = viewer.WorldRay(rubber_line_points[1].X(), rubber_line_points[1].Y());
-    R3Plane plane(ray0.Start(), ray0.Vector(), ray1.Vector());
-    static R3SurfelPlaneConstraint plane_constraint(R3null_plane, TRUE, FALSE, TRUE);
-    plane_constraint = R3SurfelPlaneConstraint(plane, TRUE, FALSE, FALSE);
-    constraint = &plane_constraint;
-  }
-  else if (num_rubber_polygon_points > 1) {
-    // Create view constraint based on split polygon
-    static R2Grid split_image;
-    R2Polygon polygon(rubber_polygon_points, num_rubber_polygon_points);
-    R2Viewport viewport = viewer.Viewport();
-     split_image.Resample(viewport.Width(), viewport.Height());
-    int end_condition = (click_polygon_active) ? 1 : 0;
-    RasterizeSDF(split_image, polygon, end_condition);
-    split_image.Threshold(0, 0, 1);
-    static R3SurfelViewConstraint view_constraint(viewer, &split_image, FALSE);
-    view_constraint = R3SurfelViewConstraint(viewer, &split_image, FALSE);
-    constraint = &view_constraint;
-  }
-  else if (IsOBBManipulatorVisible()) {
-    // Create obb constraint based on obb manipulator
-    static R3SurfelOrientedBoxConstraint obb_constraint(R3null_oriented_box);
-    obb_constraint = R3SurfelOrientedBoxConstraint(obb_manipulator.OrientedBox());
-    constraint = &obb_constraint;
-    update_obb_manipulator = FALSE;
-  }
-  else {
-    // Print error message
-    SetMessage("Must specify a region if you want to split selected object(s)");
-    return 0;
   }
 
   // Begin logging command
@@ -3305,7 +3303,7 @@ SplitSelectedObjects(void)
     
     // Split objects
     RNArray<R3SurfelObject *> objsA, objsB;
-    SplitObject(object, parent, *constraint, &objsA, &objsB);
+    SplitObject(object, parent, constraint, &objsA, &objsB);
     objectsA.Append(objsA);
 
     // Update oriented bounding boxes of new objects
@@ -3349,6 +3347,90 @@ SplitSelectedObjects(void)
 
   // Return success
   return 1;
+}
+
+
+
+int R3SurfelLabeler::
+SplitSelectedObjects(const R2Point rubber_line_points[2])
+{
+  // Check selected objects
+  if (R2Contains(rubber_line_points[0], rubber_line_points[1])) return 0;
+
+  // Create split constraint
+  R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
+  R3Ray ray1 = viewer.WorldRay(rubber_line_points[1].X(), rubber_line_points[1].Y());
+  R3Plane plane(ray0.Start(), ray0.Vector(), ray1.Vector());
+  R3SurfelPlaneConstraint constraint(plane, TRUE, FALSE, FALSE);
+
+  // Split selected objects
+  return SplitSelectedObjects(constraint);
+}
+
+
+
+int R3SurfelLabeler::
+SplitSelectedObjects(const R2Point *rubber_polygon_points, int num_rubber_polygon_points)
+{
+  // Check selected objects
+  if (num_rubber_polygon_points < 2) return 0;
+  if (R2Contains(rubber_polygon_points[0], rubber_polygon_points[1])) return 0;
+
+  // Create split constraint
+  R3Ray ray0 = viewer.WorldRay(rubber_line_points[0].X(), rubber_line_points[0].Y());
+  R3Ray ray1 = viewer.WorldRay(rubber_line_points[1].X(), rubber_line_points[1].Y());
+  R3Plane plane(ray0.Start(), ray0.Vector(), ray1.Vector());
+  R3SurfelConstraint plane_constraint = R3SurfelPlaneConstraint(plane, TRUE, FALSE, FALSE);
+
+  // Create split constraint
+  static R2Grid split_image;
+  R2Polygon polygon(rubber_polygon_points, num_rubber_polygon_points);
+  R2Viewport viewport = viewer.Viewport();
+   split_image.Resample(viewport.Width(), viewport.Height());
+  int end_condition = (click_polygon_active) ? 1 : 0;
+  RasterizeSDF(split_image, polygon, end_condition);
+  split_image.Threshold(0, 0, 1);
+  static R3SurfelViewConstraint view_constraint(viewer, &split_image, FALSE);
+  R3SurfelViewConstraint constraint(viewer, &split_image, FALSE);
+
+  // Split selected objects according to constraint
+  return SplitSelectedObjects(constraint);
+}
+
+
+
+int R3SurfelLabeler::
+SplitSelectedObjects(const R3OrientedBoxManipulator& obb_manipulator)
+{
+  // Check obb
+  if (obb_manipulator.OrientedBox().Volume() == 0) return 0;
+  
+  // Create obb constraint based on obb manipulator
+  R3SurfelOrientedBoxConstraint constraint(obb_manipulator.OrientedBox());
+
+  // Split selected objects according to constraint
+  return SplitSelectedObjects(constraint, FALSE);
+}
+
+
+
+int R3SurfelLabeler::
+SplitSelectedObjects(void)
+{
+  // Split based on whatever user input has been provided
+  if (!R2Contains(rubber_line_points[0], rubber_line_points[1])) {
+    return SplitSelectedObjects(rubber_line_points);
+  }
+  else if (num_rubber_polygon_points > 1) {
+    return SplitSelectedObjects(rubber_polygon_points, num_rubber_polygon_points);
+  }
+  else if (IsOBBManipulatorVisible()) {
+    return SplitSelectedObjects(OBBManipulator());
+  }
+
+  // Otherwise, print error message
+  SetMessage("Must specify a region if you want to split selected object(s)");
+  return 0;
 }
 
 
