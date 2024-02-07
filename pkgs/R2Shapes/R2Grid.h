@@ -142,10 +142,10 @@ public:
   void RasterizeWorldPoint(const R2Point& point, RNScalar value, int operation = 0);
   void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
   void RasterizeWorldSpan(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
-  void RasterizeGridSpan(const int p1[3], const int p2[3], RNScalar value1, RNScalar value2, int operation = 0);
+  void RasterizeGridSpan(const int p1[2], const int p2[2], RNScalar value1, RNScalar value2, int operation = 0);
   void RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation = 0);
   void RasterizeWorldSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScalar value2, int operation = 0);
-  void RasterizeGridBox(const int p1[3], const int p2[3], RNScalar value, int operation = 0);
+  void RasterizeGridBox(const int p1[2], const int p2[2], RNScalar value, int operation = 0);
   void RasterizeGridBox(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
   void RasterizeWorldBox(const R2Point& p1, const R2Point& p2, RNScalar value, int operation = 0);
   void RasterizeGridTriangle(const R2Point& p1, const R2Point& p2, const R2Point& p3, RNScalar value, int operation = 0);

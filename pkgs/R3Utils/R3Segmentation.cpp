@@ -943,10 +943,10 @@ MergedConvexity(const R3SegmentationCluster *cluster1, const R3SegmentationClust
 {
   // THIS DOES NOT MAKE CLUSTERS MORE CONVEX :(
   
-  int external1 = 0;
+  // int external1 = 0;
   int internal1 = 0;
   int interface1 = 0;
-  int external2 = 0;
+  // int external2 = 0;
   int internal2 = 0;
   int interface2 = 0;
   int max_samples = 1024;
@@ -959,7 +959,7 @@ MergedConvexity(const R3SegmentationCluster *cluster1, const R3SegmentationClust
       R3SegmentationPoint *neighbor = point1->neighbors.Kth(j1);
       if (neighbor->cluster == cluster1) internal1++;
       else if (neighbor->cluster == cluster2) interface1++;
-      else external1++;
+      // else external1++;
     }
   }
 
@@ -975,7 +975,7 @@ MergedConvexity(const R3SegmentationCluster *cluster1, const R3SegmentationClust
       R3SegmentationPoint *neighbor = point2->neighbors.Kth(j2);
       if (neighbor->cluster == cluster2) internal2++;
       else if (neighbor->cluster == cluster1) interface2++;
-      else external2++;
+      // else external2++;
     }
   }
 
@@ -2199,9 +2199,9 @@ MergeClusters(void)
       if ((max_clusters > 0) && (cluster_count > max_clusters)) merge = TRUE;
       if (!merge) { delete pair; continue; }
 
-#if 0
-      // Print message
-      if (print_progress) {
+      // Print message (do not print, but keep so that compiler does not complain
+      // about unused variables merge_count and push_count
+      if (print_progress == 123) {
         static unsigned long count = 0;
         if ((count++ % 1000) == 0) {
           printf("        %15.12f : %9d %9d : %15d %15d %15d %15d\n", pair->affinity, 
@@ -2209,7 +2209,6 @@ MergeClusters(void)
                  heap.NEntries(), merge_count, push_count, cluster_count);
         }
       }
-#endif
       
 #if 0
       // Create merged cluster

@@ -5242,7 +5242,6 @@ ReadRayFile(const char *filename)
 
   // Read body
   char cmd[128];
-  int triangle_count = 0;
   int command_number = 1;
   RNArray<R3MeshVertex *> degenerate_triangle_vertices;
   while (fscanf(fp, "%s", cmd) == 1) {
@@ -5291,9 +5290,6 @@ ReadRayFile(const char *filename)
 
       // Set face material
       if (face) SetFaceMaterial(face, m);
-
-      // Increment triangle counter
-      triangle_count++;
     }
 	
     // Increment command number
@@ -6227,7 +6223,6 @@ ReadVRMLFile(const char *filename)
 
   // Read file
   char buffer[1024];
-  int line_count = 0;
   RNBoolean coordinate3_active = FALSE;
   RNBoolean coordinate3_point_active = FALSE;
   RNBoolean indexedfaceset_active = FALSE;
@@ -6235,9 +6230,6 @@ ReadVRMLFile(const char *filename)
   RNArray<R3MeshVertex *> vertices;
   RNArray<R3MeshVertex *> degenerate_triangle_vertices;
   while (fgets(buffer, 1023, fp)) {
-    // Increment line counter
-    line_count++;
-
     // Skip white space
     char *bufferp = buffer;
     while (isspace(*bufferp)) bufferp++;

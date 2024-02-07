@@ -5,6 +5,13 @@
 NAME=png
 
 
+#
+# Depress warnings
+#
+
+USER_CFLAGS=-Wno-deprecated-non-prototype
+
+
 
 #
 # List of source files

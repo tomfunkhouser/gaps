@@ -516,6 +516,7 @@ template <class PtrType>
 int RNHeap<PtrType>::
 IsValid(void)
 {
+#ifndef NDEBUG
   // Check array
   assert(nallocated >= 0);
   assert(nentries >= 0);
@@ -561,7 +562,8 @@ IsValid(void)
       else { assert(value >= child2_value); }
     }
   }
-
+#endif
+  
   // Return success
   return 1;
 }

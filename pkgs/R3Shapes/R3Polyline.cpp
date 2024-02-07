@@ -311,16 +311,24 @@ Length(void) const
 const R3Point R3Polyline::
 Centroid(void) const
 {
-  // Return centroid of vertices weighted by parameters
+  // Compute centroid of vertices weighted by parameters
   RNScalar weight = 0;
   R3Point sum = R3zero_point;
   for (int i = 0; i < nvertices; i++) {
-    RNScalar weight = 0;
     if (i > 0) weight += VertexParameter(i) - VertexParameter(i-1);
     if (i < nvertices-1) weight += VertexParameter(i+1) - VertexParameter(i);
-    sum += vertex_positions[i];
+    sum += weight * vertex_positions[i];
   }
 
+  // Or, if no weight, recompute without weighting
+  if (weight == 0) {
+    sum = R3zero_point;
+    for (int i = 0; i < nvertices; i++) {
+      sum += vertex_positions[i];
+      weight += 1;
+    }
+  }
+  
   // Return weighted average
   if (weight == 0) return R3zero_point;
   return sum / weight;
