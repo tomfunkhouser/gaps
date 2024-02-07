@@ -3,6 +3,10 @@
 #define __RN__BASICS__H__
 
 
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
 
 /* Compatibility switch include files */
 
@@ -99,6 +103,10 @@ namespace gaps {
 int RNInitBasics(void);
 void RNStopBasics(void);
 }
+
+
+
+// IWYU pragma:end_exports
 
 
 

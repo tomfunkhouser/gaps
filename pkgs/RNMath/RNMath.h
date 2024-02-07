@@ -4,6 +4,11 @@
 
 
 
+// Tell IWYU to allow indirect access to these declarations and includes 
+// IWYU pragma:begin_exports
+
+
+
 // Dependency include files
 
 #include "RNBasics/RNBasics.h"
@@ -41,6 +46,10 @@ class RNSystemOfEquations;
 #include "RNAlgebraic.h"
 #include "RNEquation.h"
 #include "RNSystemOfEquations.h"
+
+
+
+// IWYU pragma:end_exports
 
 
 

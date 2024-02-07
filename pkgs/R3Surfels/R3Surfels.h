@@ -5,6 +5,11 @@
 
 
 
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
+
 /* Dependency include files */
 
 #include "R3Graphics/R3Graphics.h"
@@ -114,6 +119,10 @@ namespace gaps {
 int R3InitSurfels(void);
 void R3StopSurfels(void);
 }
+
+
+
+// IWYU pragma:end_exports
 
 
 

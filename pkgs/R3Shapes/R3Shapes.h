@@ -4,6 +4,11 @@
 
 
 
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
+
 /* Dependency include files */
 
 #include "R2Shapes/R2Shapes.h"
@@ -163,6 +168,10 @@ namespace gaps {
 int R3InitShapes(void);
 void R3StopShapes(void);
 }
+
+
+
+// Tell IWYU to allow indirect access to these declarations and includes 
 
 
 

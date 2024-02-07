@@ -5,6 +5,11 @@
 
 
 
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
+
 // Dependency include files
 
 #include "R3Shapes/R3Shapes.h"
@@ -74,6 +79,10 @@ void PDBStop(void);
 // Other functions
 
 void PDBClearMarks(void);
+
+
+
+// IWYU pragma:end_exports
 
 
 

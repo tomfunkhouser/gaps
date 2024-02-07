@@ -4,6 +4,11 @@
 
 
 
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
+
 /* Class declarations */
 
 namespace gaps {
@@ -58,6 +63,10 @@ namespace gaps{
 int R3InitUtils(void);
 void R3StopUtils(void);
 }
+
+
+
+// IWYU pragma:end_exports
 
 
 

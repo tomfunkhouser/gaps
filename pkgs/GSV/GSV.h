@@ -4,6 +4,12 @@
 #define __GSV__H__
 
 
+
+// Tell IWYU to allow indirect access to these declaration and includes 
+// IWYU pragma:begin_exports
+
+
+
 // Dependency includes
 
 #include "R3Shapes/R3Shapes.h"
@@ -68,6 +74,10 @@ class GSVScene;
 #include "GSVSegment.h"
 #include "GSVRun.h"
 #include "GSVScene.h"
+
+
+
+// IWYU pragma:end_exports
 
 
 
