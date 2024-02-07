@@ -60,7 +60,7 @@ mesa:
 $(LIB):     $(CCSRCS) $(CSRCS) $(OSRCS) $(OBJS) $(DEPENDENCIES)
 	    mkdir -p $(LIB_DIR)
 	    rm -f $(LIB)
-	    ar ur $(LIB) $(OBJS) $(USER_OBJS)
+	    ar r $(LIB) $(OBJS) $(USER_OBJS)
 
 release:
 	    mkdir -p $(RELEASE_DIR)/pkgs
