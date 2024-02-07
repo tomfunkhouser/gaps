@@ -263,7 +263,7 @@ png_inflate(png_structp png_ptr, const png_byte *data, png_size_t size,
          else
          {
 #ifdef PNG_STDIO_SUPPORTED
-            char umsg[52];
+            static char umsg[52];
 
             switch (ret)
             {
