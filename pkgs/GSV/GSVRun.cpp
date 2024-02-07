@@ -428,13 +428,11 @@ ReadCameraInfoFile(void)
   }
 
   // Read camera information
-  int line_count = 0;
   GSVCamera *camera = NULL;
   const int buffer_size = 16*1024;
   char buffer[buffer_size];
   while (fgets(buffer, buffer_size, fp)) {
     // Parse line
-    line_count++;
     char *keyword = strtok(buffer, ": \t\n");
     if (!keyword) continue;
     if (keyword[0] == '#') continue;
@@ -494,12 +492,10 @@ ReadImageSegmentFile(RNArray<GSVPanorama *>& panoramas)
   }
 
   // Read range of panorama indices for each segment
-  int line_count = 0;
   const int buffer_size = 16*1024;
   char buffer[buffer_size];
   while (fgets(buffer, buffer_size, fp)) {
     // Parse line
-    line_count++;
     if (buffer[0] == '\0') continue;
     if (buffer[0] == '#') continue;
     int segment_index;

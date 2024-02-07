@@ -551,8 +551,6 @@ CreatePoints(R3Grid *grid, R3Mesh *mesh, RNArray<Point *>& points)
   R3Kdtree<Point *> kdtree(points, position_offset);
   
   // Compute radius for each point
-  int count = 0;
-  RNScalar sum = 0;
   const int max_neighbors = 6;
   RNScalar neighbor_distances[max_neighbors];
   for (int i = 0; i < points.NEntries(); i++) {
@@ -564,8 +562,6 @@ CreatePoints(R3Grid *grid, R3Mesh *mesh, RNArray<Point *>& points)
         RNScalar radius = 0.5 * neighbor_distances[neighbors.NEntries()-1];
         if (radius < point->radius) {
           point->radius = radius;
-          sum += radius;
-          count++;
         }
       }
     }

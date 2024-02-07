@@ -244,7 +244,6 @@ LoadScan(GSVScan *scan,
 
   // Create mesh
   int vertex_count = 0;
-  RNScalar travel_distance = 0;
   prev_viewpoint = scan->Scanline(0)->Pose().Viewpoint();
   for (int ie = 0; ie < scan->NScanlines(); ie++) {
     GSVScanline *scanline = scan->Scanline(ie);
@@ -252,7 +251,6 @@ LoadScan(GSVScan *scan,
     const R3Point& viewpoint = pose.Viewpoint();
     RNLength movement = R3Distance(viewpoint, prev_viewpoint);
     if (movement < min_viewpoint_movement) continue;
-    travel_distance += movement;
     prev_viewpoint = viewpoint;
     const R3Vector& towards = pose.Towards();
     R3Vector up = pose.Up();

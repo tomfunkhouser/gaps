@@ -3391,7 +3391,6 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
   }
 
   // Merge clusters hierarchically
-  int merge_count = 0;
   while (!heap.IsEmpty()) {
     // Get pair
     R3SurfelClusterPair *pair = heap.Pop();
@@ -3412,9 +3411,6 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
 
     // Delete pair
     delete pair;
-
-    // Update count
-    merge_count++;
   }
 
   // Create array of objects
@@ -3427,7 +3423,6 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
   }
 
   // Create objects with copies of surfels
-  int object_count = 0;
   for (int i = 0; i < clusters.NEntries(); i++) {
     R3SurfelCluster *cluster = clusters.Kth(i);
 
@@ -3502,9 +3497,6 @@ CreateClusterObjects(R3SurfelScene *scene, R3SurfelPointGraph *graph,
 
     // Print debug statement
     printf("    %d %d\n", i, block->NSurfels());
-
-    // Update count
-    object_count++;
   }
   
   // Delete normals
