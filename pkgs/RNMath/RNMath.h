@@ -5,7 +5,7 @@
 
 
 // Tell IWYU to allow indirect access to these declarations and includes 
-// IWYU pragma:begin_exports
+// IWYU pragma: begin_exports
 
 
 
@@ -49,7 +49,7 @@ class RNSystemOfEquations;
 
 
 
-// IWYU pragma:end_exports
+// IWYU pragma: end_exports
 
 
 

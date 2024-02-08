@@ -6,7 +6,7 @@
 
 
 // Tell IWYU to allow indirect access to these declaration and includes 
-// IWYU pragma:begin_exports
+// IWYU pragma: begin_exports
 
 
 
@@ -82,7 +82,7 @@ void PDBClearMarks(void);
 
 
 
-// IWYU pragma:end_exports
+// IWYU pragma: end_exports
 
 
 
