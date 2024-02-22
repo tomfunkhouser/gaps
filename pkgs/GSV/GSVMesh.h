@@ -110,7 +110,7 @@ public:
 
     // R3Mesh Draw functions (overridden to include texture coordinates)
     virtual void Draw(RNBoolean texture_coordinates) const;
-    virtual void Draw(void) const;
+    virtual void Draw(const RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS) const;
 
     // Input/output files (overridden to include GSVScan)
     virtual int ReadPlyFile(const char *filename);

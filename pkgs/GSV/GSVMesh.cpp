@@ -671,10 +671,10 @@ CreateVertex(const R3Point& position, const R3Vector& normal, R3MeshVertex *v)
 ////////////////////////////////////////////////////////////////////////
 
 void GSVMesh::
-Draw(void) const
+Draw(const RNFlags draw_flags) const
 {
   // Draw without texture coordinates by default
-  Draw(FALSE);
+  R3Mesh::Draw(draw_flags);
 }
 
 
@@ -706,18 +706,7 @@ Draw(RNBoolean texture_coordinates) const
     RNGrfxEnd();
   }
   else {
-    RNGrfxBegin(RN_GRFX_TRIANGLES);
-    for (int i = 0; i < NFaces(); i++) {
-      GSVMeshFace *face = Face(i);
-      R3LoadNormal(FaceNormal(face));
-      GSVMeshVertex *v0 = VertexOnFace(face, 0);
-      R3LoadPoint(VertexPosition(v0));
-      GSVMeshVertex *v1 = VertexOnFace(face, 1);
-      R3LoadPoint(VertexPosition(v1));
-      GSVMeshVertex *v2 = VertexOnFace(face, 2);
-      R3LoadPoint(VertexPosition(v2));
-    }
-    RNGrfxEnd();
+    DrawFaces();
   }
 }
 
