@@ -31,6 +31,14 @@ R3Mesh(void)
   : vertex_block(NULL),
     edge_block(NULL),
     face_block(NULL),
+    vbo_vertex_position_buffer(0),
+    vbo_vertex_normal_buffer(0),
+    vbo_vertex_color_buffer(0),
+    vbo_vertex_id_buffer(0),
+    vbo_face_position_buffer(0),
+    vbo_face_normal_buffer(0),
+    vbo_face_color_buffer(0),
+    vbo_face_id_buffer(0),
     bbox(R3null_box),
     data(NULL)
 {
@@ -48,6 +56,14 @@ R3Mesh(const R3Mesh& mesh)
   : vertex_block(NULL),
     edge_block(NULL),
     face_block(NULL),
+    vbo_vertex_position_buffer(0),
+    vbo_vertex_normal_buffer(0),
+    vbo_vertex_color_buffer(0),
+    vbo_vertex_id_buffer(0),
+    vbo_face_position_buffer(0),
+    vbo_face_normal_buffer(0),
+    vbo_face_color_buffer(0),
+    vbo_face_id_buffer(0),
     bbox(mesh.bbox),
     data(NULL)
 {
@@ -103,6 +119,16 @@ R3Mesh(const R3Mesh& mesh)
 R3Mesh::
 ~R3Mesh(void) 
 {
+  // Delete OpenGL buffers
+  if (vbo_vertex_position_buffer > 0) glDeleteBuffers(1, &vbo_vertex_position_buffer);
+  if (vbo_vertex_normal_buffer > 0) glDeleteBuffers(1, &vbo_vertex_normal_buffer);
+  if (vbo_vertex_color_buffer > 0) glDeleteBuffers(1, &vbo_vertex_color_buffer);
+  if (vbo_vertex_id_buffer > 0) glDeleteBuffers(1, &vbo_vertex_id_buffer);
+  if (vbo_face_position_buffer > 0) glDeleteBuffers(1, &vbo_face_position_buffer);
+  if (vbo_face_normal_buffer > 0) glDeleteBuffers(1, &vbo_face_normal_buffer);
+  if (vbo_face_color_buffer > 0) glDeleteBuffers(1, &vbo_face_color_buffer);
+  if (vbo_face_id_buffer > 0) glDeleteBuffers(1, &vbo_face_id_buffer);
+
   // Delete everything
   Empty();
 }
@@ -3166,39 +3192,244 @@ operator=(const R3Mesh& mesh)
 // DRAW FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-void R3Mesh::
-DrawVertices(void) const
+int R3Mesh::
+UpdateVBOVertexBuffers(void)
 {
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+  
+  // Check if already up to date
+  if (vbo_vertex_position_buffer > 0) return 1;
+  if (vbo_vertex_normal_buffer > 0) return 1;
+  if (vbo_vertex_color_buffer > 0) return 1;
+  if (vbo_vertex_id_buffer > 0) return 1;
+
+  // Get info from mesh vertices
+  std::vector<GLfloat> positions;
+  std::vector<GLfloat> normals;
+  std::vector<GLubyte> colors;
+  std::vector<GLubyte> pick_indices;
+  for (int i = 0; i < NVertices(); i++) {
+    R3MeshVertex *vertex = Vertex(i);
+    const R3Point& position = VertexPosition(vertex);
+    const R3Vector& normal = VertexNormal(vertex);
+    const RNRgb& color = VertexColor(vertex);
+    unsigned int pick_index = i+1;
+    positions.push_back(position.X());
+    positions.push_back(position.Y());
+    positions.push_back(position.Z());
+    normals.push_back(normal.X());
+    normals.push_back(normal.Y());
+    normals.push_back(normal.Z());
+    colors.push_back(255.0 * color.R());
+    colors.push_back(255.0 * color.G());
+    colors.push_back(255.0 * color.B());
+    pick_indices.push_back((pick_index >> 0) & 0xFF);
+    pick_indices.push_back((pick_index >> 8) & 0xFF);
+    pick_indices.push_back((pick_index >> 16) & 0xFF);
+  }
+
+  // Fill position buffer
+  glGenBuffers(1, &vbo_vertex_position_buffer);
+  if (vbo_vertex_position_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_position_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 3 * NVertices() * sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
+
+  // Fill normal buffer
+  glGenBuffers(1, &vbo_vertex_normal_buffer);
+  if (vbo_vertex_normal_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_normal_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 3 * NVertices() * sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
+
+  // Fill color buffer
+  glGenBuffers(1, &vbo_vertex_color_buffer);
+  if (vbo_vertex_color_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_color_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 3 * NVertices() * sizeof(GLubyte), &colors[0], GL_STATIC_DRAW);
+
+  // Fill pick buffer
+  glGenBuffers(1, &vbo_vertex_id_buffer);
+  if (vbo_vertex_id_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_id_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 3 * NVertices() * sizeof(GLubyte), &pick_indices[0], GL_STATIC_DRAW);
+
+  // Unbind buffer
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  
+  // Return success
+  return 1;
+}
+
+
+
+int R3Mesh::
+UpdateVBOFaceBuffers(void)
+{
+  // Check if nothing to be done
+  if (NFaces() == 0) return 0;
+  
+  // Check if already up to date
+  if (vbo_face_position_buffer > 0) return 1;
+  if (vbo_face_normal_buffer > 0) return 1;
+  if (vbo_face_color_buffer > 0) return 1;
+  if (vbo_face_id_buffer > 0) return 1;
+
+  // Get info from mesh vertices
+  std::vector<GLfloat> positions;
+  std::vector<GLfloat> normals;
+  std::vector<GLubyte> colors;
+  std::vector<GLubyte> pick_indices;
+  for (int i = 0; i < NFaces(); i++) {
+    R3MeshFace *face = Face(i);
+    const R3Vector& normal = FaceNormal(face);
+    unsigned int pick_index = i+1;
+    for (int j = 0; j < 3; j++) {
+      R3MeshVertex *vertex = VertexOnFace(face, j);
+      const R3Point& position = VertexPosition(vertex);
+      const RNRgb& color = VertexColor(vertex);
+      positions.push_back(position.X());
+      positions.push_back(position.Y());
+      positions.push_back(position.Z());
+      normals.push_back(normal.X());
+      normals.push_back(normal.Y());
+      normals.push_back(normal.Z());
+      colors.push_back(255.0 * color.R());
+      colors.push_back(255.0 * color.G());
+      colors.push_back(255.0 * color.B());
+      pick_indices.push_back((pick_index >> 0) & 0xFF);
+      pick_indices.push_back((pick_index >> 8) & 0xFF);
+      pick_indices.push_back((pick_index >> 16) & 0xFF);
+    }
+  }
+  
+  // Fill position buffer
+  glGenBuffers(1, &vbo_face_position_buffer);
+  if (vbo_face_position_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_position_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 9 * NFaces() * sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
+
+  // Fill normal buffer
+  glGenBuffers(1, &vbo_face_normal_buffer);
+  if (vbo_face_normal_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_normal_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 9 * NFaces() * sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
+
+  // Fill color buffer
+  glGenBuffers(1, &vbo_face_color_buffer);
+  if (vbo_face_color_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_color_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 9 * NFaces() * sizeof(GLubyte), &colors[0], GL_STATIC_DRAW);
+
+  // Fill pick buffer
+  glGenBuffers(1, &vbo_face_id_buffer);
+  if (vbo_face_id_buffer <= 0) return 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_id_buffer);
+  glBufferData(GL_ARRAY_BUFFER, 9 * NFaces() * sizeof(GLubyte), &pick_indices[0], GL_STATIC_DRAW);
+
+  // Unbind buffer
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  
+  // Return success
+  return 1;
+}
+
+
+
+void R3Mesh::
+DrawVertices(const RNFlags draw_flags) const
+{
+#if 0
   // Draw all vertices
   for (int i = 0; i < vertices.NEntries(); i++)
     DrawVertex(vertices[i]);
+#else
+  // Update VBO buffers
+  R3Mesh *m = (R3Mesh *) this;
+  if (!m->UpdateVBOVertexBuffers()) return;
+
+  // Bind vertex position buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_position_buffer);
+  glVertexPointer(3, GL_FLOAT, 0, 0);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  
+  // Bind vertex normal buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_normal_buffer);
+  glNormalPointer(GL_FLOAT, 0, 0);
+  glEnableClientState(GL_NORMAL_ARRAY);
+  
+  // Bind vertex color buffer
+  if (draw_flags[R3_VERTEX_IDS_DRAW_FLAG]) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_id_buffer);
+    glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+    glEnableClientState(GL_COLOR_ARRAY);
+  }
+  else if (draw_flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_color_buffer);
+    glColorPointer(3, GL_UNSIGNED_BYTE, 0, 0);
+    glEnableClientState(GL_COLOR_ARRAY);
+  }
+  
+  // Draw vertices
+  glDrawArrays(GL_POINTS, 0, NVertices());
+
+  // Reset everything
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_COLOR_ARRAY);
+#endif
 }
 
 
 
 void R3Mesh::
-DrawEdges(void) const
+DrawEdges(const R3DrawFlags draw_flags) const
 {
   // Draw all edges
-  for (int i = 0; i < edges.NEntries(); i++)
-    DrawEdge(edges[i]);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  DrawFaces(draw_flags);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 
 
 void R3Mesh::
-DrawFaces(void) const
+DrawFaces(const R3DrawFlags draw_flags) const
 {
-  // Draw all faces
-  RNGrfxBegin(RN_GRFX_TRIANGLES);
-  for (int i = 0; i < faces.NEntries(); i++) {
-    R3MeshFace *f = faces.Kth(i);
-    R3LoadNormal(FaceNormal(f));
-    R3LoadPoint(f->vertex[0]->position);
-    R3LoadPoint(f->vertex[1]->position);
-    R3LoadPoint(f->vertex[2]->position);
+  // Update VBO buffers
+  R3Mesh *m = (R3Mesh *) this;
+  if (!m->UpdateVBOFaceBuffers()) return;
+
+  // Bind face position buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_position_buffer);
+  glVertexPointer(3, GL_FLOAT, 3 * sizeof(GLfloat), 0);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  
+  // Bind face normal buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_normal_buffer);
+  glNormalPointer(GL_FLOAT, 3 * sizeof(GLfloat), 0);
+  glEnableClientState(GL_NORMAL_ARRAY);
+  
+  // Bind face color buffer
+  if (draw_flags[R3_SURFACE_IDS_DRAW_FLAG]) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_face_id_buffer);
+    glColorPointer(3, GL_UNSIGNED_BYTE, 3 * sizeof(GLubyte), 0);
+    glEnableClientState(GL_COLOR_ARRAY);
   }
-  RNGrfxEnd();
+  else if (draw_flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_face_color_buffer);
+    glColorPointer(3, GL_UNSIGNED_BYTE, 3 * sizeof(GLubyte), 0);
+    glEnableClientState(GL_COLOR_ARRAY);
+  }
+  
+  // Draw vertices
+  glDrawArrays(GL_TRIANGLES, 0, 3 * NFaces());
+
+  // Reset everything
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_COLOR_ARRAY);
 }
 
 
@@ -3208,14 +3439,7 @@ DrawVertexIDs(void) const
 {
   // Draw all vertex IDs
   glDisable(GL_LIGHTING);
-  for (int i = 0; i < vertices.NEntries(); i++) {
-    assert(vertices[i]->id == i);
-    unsigned char r = ((i << 16) & 0xFF);
-    unsigned char g = (i << 8) & 0xFF;
-    unsigned char b = (i << 0) & 0xFF;
-    RNLoadRgb(r, g, b);
-    DrawVertex(vertices[i]);
-  }
+  DrawVertices(R3_VERTEX_IDS_DRAW_FLAG);
   glEnable(GL_LIGHTING);
 }
 
@@ -3226,13 +3450,16 @@ DrawEdgeIDs(void) const
 {
   // Draw all edge IDs
   glDisable(GL_LIGHTING);
+  RNGrfxBegin(RN_GRFX_LINES);
   for (int i = 0; i < edges.NEntries(); i++) {
-    assert(edges[i]->id == i);
-    unsigned char r = ((i << 16) & 0xFF);
-    unsigned char g = (i << 8) & 0xFF;
-    unsigned char b = (i << 0) & 0xFF;
+    R3MeshEdge *e = edges.Kth(i);
+    unsigned int index = i+1;    
+    unsigned char r = (index >> 0) & 0xFF;
+    unsigned char g = (index >> 8) & 0xFF;
+    unsigned char b = (index >> 16) & 0xFF;
     RNLoadRgb(r, g, b);
-    DrawEdge(edges[i]);
+    R3LoadPoint(VertexPosition(VertexOnEdge(e, 0)));
+    R3LoadPoint(VertexPosition(VertexOnEdge(e, 1)));
   }
   glEnable(GL_LIGHTING);
 }
@@ -3244,14 +3471,7 @@ DrawFaceIDs(void) const
 {
   // Draw all face IDs
   glDisable(GL_LIGHTING);
-  for (int i = 0; i < faces.NEntries(); i++) {
-    assert(faces[i]->id == i);
-    unsigned char r = (i << 16) & 0xFF;
-    unsigned char g = (i << 8) & 0xFF;
-    unsigned char b = (i << 0) & 0xFF;
-    RNLoadRgb(r, g, b);
-    DrawFace(faces[i]);
-  }
+  DrawVertices(R3_SURFACE_IDS_DRAW_FLAG);
   glEnable(GL_LIGHTING);
 }
 
