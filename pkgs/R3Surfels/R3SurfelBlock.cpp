@@ -1519,6 +1519,9 @@ ReadFile(const char *filename)
   if (!strncmp(extension, ".obj", 4)) {
     return ReadOBJFile(filename);
   }
+  else if (!strncmp(extension, ".ply", 4)) {
+    return ReadPlyFile(filename);
+  }
   else if (!strncmp(extension, ".xyz", 4)) {
     return ReadXYZAsciiFile(filename);
   }
@@ -1670,6 +1673,85 @@ ReadOBJ(FILE *fp)
       surfels[nsurfels].SetPosition(x - cx, y - cy, z - cz);
       nsurfels++;
     }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// PLY I/O FUNCTIONS
+////////////////////////////////////////////////////////////////////////
+
+int R3SurfelBlock::
+ReadPlyFile(const char *filename)
+{
+  // Open file
+  FILE *fp;
+  if (!(fp = fopen(filename, "r"))) {
+    RNFail("Unable to open file %s\n", filename);
+    return 0;
+  }
+
+  // Read file
+  if (!ReadPly(fp)) {
+    RNFail("Unable to read ply file %s\n", filename);
+    fclose(fp);
+    return 0;
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3SurfelBlock::
+ReadPly(FILE *fp)
+{
+  // Read into mesh
+  R3Mesh mesh;
+  if (!mesh.ReadPlyStream(fp)) return 0;
+
+  // Determine the number of surfels
+  nsurfels = mesh.NVertices();
+  if (nsurfels == 0) return 1;
+
+  // Determine position origin
+  position_origin = mesh.Centroid();
+
+  // Allocate array of surfels
+  surfels = new R3Surfel [ nsurfels ];
+  if (!surfels) {
+    RNFail("Unable to allocate surfels\n");
+    return 0;
+  }
+
+  // Fill array of surfels
+  for (int i = 0; i < mesh.NVertices(); i++) {
+    R3MeshVertex *vertex = mesh.Vertex(i);
+    const R3Point& position = mesh.VertexPosition(vertex);
+    R3Vector normal = mesh.VertexNormal(vertex);
+    if (normal.Length() == 0) normal = R3posz_vector;
+    const RNRgb& color = mesh.VertexColor(vertex);
+    RNLength radius = mesh.VertexAverageEdgeLength(vertex);
+    if (radius == 0) radius = 0.01;
+    RNBoolean boundary = mesh.IsVertexOnBoundary(vertex);
+    float x = (float) (position.X() - position_origin.X());
+    float y = (float) (position.Y() - position_origin.Y());
+    float z = (float) (position.Z() - position_origin.Z());
+    surfels[i].SetPosition(x, y, z);
+    surfels[i].SetNormal(normal.X(), normal.Y(), normal.Z());
+    surfels[i].SetRadius(radius);
+    surfels[i].SetIdentifier(i+1);
+    surfels[i].SetColor(color);
+    surfels[i].SetBorderBoundary(boundary);
+    surfels[i].SetAerial(FALSE);
   }
 
   // Return success

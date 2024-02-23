@@ -178,11 +178,13 @@ public:
 
   // File I/O
   int ReadFile(const char *filename);
+  int ReadPlyFile(const char *filename);
   int ReadXYZAsciiFile(const char *filename);
   int ReadXYZBinaryFile(const char *filename);
   int ReadBinaryFile(const char *filename);
   int ReadUPCFile(const char *filename);
   int ReadOBJFile(const char *filename);
+  int ReadPly(FILE *fp);
   int ReadXYZAscii(FILE *fp);
   int ReadXYZBinary(FILE *fp);
   int ReadBinary(FILE *fp);
