@@ -1183,7 +1183,10 @@ OverwriteSurfelCategoryIdentifiersByColorLookup(R3SurfelScene *scene)
     unsigned int r = 255.0 * color.R();
     unsigned int g = 255.0 * color.G();
     unsigned int b = 255.0 * color.B();
-    unsigned int encoded_color = r | (g<<8) || (b<<16);
+    unsigned int encoded_color = 0;
+    encoded_color |= r & 0xFF;
+    encoded_color |= (g & 0xFF) << 8;
+    encoded_color |= (b & 0xFF) << 16;
     encoded_color_to_category_identifier.Insert(encoded_color, category_identifier);
   }
   
@@ -1199,7 +1202,10 @@ OverwriteSurfelCategoryIdentifiersByColorLookup(R3SurfelScene *scene)
         unsigned int r = surfel->R();
         unsigned int g = surfel->G();
         unsigned int b = surfel->B();
-        unsigned int encoded_color = r | (g<<8) || (b<<16);
+        unsigned int encoded_color = 0;
+        encoded_color |= r & 0xFF;
+        encoded_color |= (g & 0xFF) << 8;
+        encoded_color |= (b & 0xFF) << 16;
         unsigned int new_category_identifier = 255;
         int category_identifier = 255;
         if (encoded_color_to_category_identifier.Find(encoded_color, &category_identifier)) 
