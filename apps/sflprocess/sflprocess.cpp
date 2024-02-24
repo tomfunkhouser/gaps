@@ -881,6 +881,11 @@ LoadLabelList(R3SurfelScene *scene, const char *list_filename, const char *root_
       create_count++;
     }
 
+    // Adjust color if out of range
+    if (RNIsGreater(r,1) || RNIsGreater(g,1) || RNIsGreater(b,1)) {
+      r /= 255.0; g /= 255.0; b /= 255.0;
+    }
+
     // Set label properties
     if (assignment_keystroke[0] != '-') label->SetAssignmentKeystroke(assignment_keystroke[0]);
     label->SetIdentifier(identifier);
