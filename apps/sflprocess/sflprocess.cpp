@@ -1165,6 +1165,59 @@ OverwriteSurfelCategoryIdentifiers(R3SurfelScene *scene, const char *filename)
 
 
 
+static int
+OverwriteSurfelCategoryIdentifiersByColorLookup(R3SurfelScene *scene)
+{
+  // Get convenient variables
+  R3SurfelTree *tree = scene->Tree();
+  if (!tree) return 0;
+  R3SurfelDatabase *database = tree->Database();
+  if (!database) return 0;
+
+  // Create map from colors to category identifiers
+  RNMap<unsigned int, int> encoded_color_to_category_identifier;
+  for (int i = 0; i < scene->NLabels(); i++) {
+    R3SurfelLabel *label = scene->Label(i);
+    int category_identifier = label->Identifier();
+    RNRgb color = label->Color();
+    unsigned int r = 255.0 * color.R();
+    unsigned int g = 255.0 * color.G();
+    unsigned int b = 255.0 * color.B();
+    unsigned int encoded_color = r | (g<<8) || (b<<16);
+    encoded_color_to_category_identifier.Insert(encoded_color, category_identifier);
+  }
+  
+  // Overwrite category identifiers by reverse mapping from colors
+  for (int i = 0; i < tree->NNodes(); i++) {
+    R3SurfelNode *node = tree->Node(i);
+    if (node->NParts() > 0) continue;
+    for (int j = 0; j < node->NBlocks(); j++) {
+      R3SurfelBlock *block = node->Block(j);
+      database->ReadBlock(block);
+      for (int k = 0; k < block->NSurfels(); k++) {
+        const R3Surfel *surfel = block->Surfel(k);
+        unsigned int r = surfel->R();
+        unsigned int g = surfel->G();
+        unsigned int b = surfel->B();
+        unsigned int encoded_color = r | (g<<8) || (b<<16);
+        unsigned int new_category_identifier = 255;
+        int category_identifier = 255;
+        if (encoded_color_to_category_identifier.Find(encoded_color, &category_identifier)) 
+          new_category_identifier = category_identifier;
+        unsigned int old_attribute = surfel->Attribute();
+        unsigned int new_attribute = (old_attribute & 0xFFFFFF00) | (new_category_identifier & 0xFF);
+        block->SetSurfelAttribute(k, new_attribute);
+      }
+      database->ReleaseBlock(block);
+    }
+  }
+
+  // Return success
+  return 1;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // TRANSFORMATION FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -2658,6 +2711,10 @@ int main(int argc, char **argv)
     else if (!strcmp(*argv, "-overwrite_surfel_category_identifiers")) { 
       argc--; argv++; const char *category_identifier_filename = *argv; 
       if (!OverwriteSurfelCategoryIdentifiers(scene, category_identifier_filename)) exit(-1);
+      noperations++;
+    }
+    else if (!strcmp(*argv, "-overwrite_surfel_category_identifiers_by_color_lookup")) { 
+      if (!OverwriteSurfelCategoryIdentifiersByColorLookup(scene)) exit(-1);
       noperations++;
     }
     else if (!strcmp(*argv, "-cull_box")) { 
