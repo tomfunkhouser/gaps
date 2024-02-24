@@ -757,7 +757,19 @@ LoadImagesFromConfiguration(R3SurfelScene *scene, const char *configuration_file
 
     // Get name
     char name[1025];
-    if (rgbd_image->Name()) strncpy(name, rgbd_image->Name(), 1024);
+    if (rgbd_image->Name() && strcmp(rgbd_image->Name(), "-")) {
+      strncpy(name, rgbd_image->Name(), 1024);
+    }
+    else if (rgbd_image->ColorFilename() && strcmp(rgbd_image->ColorFilename(), "-")) {
+      const char *start = strrchr(rgbd_image->ColorFilename(), '/');
+      if (start) strncpy(name, start+1, 1024);
+      else strncpy(name, rgbd_image->ColorFilename(), 1024);
+    }
+    else if (rgbd_image->DepthFilename() && strcmp(rgbd_image->DepthFilename(), "-")) {
+      const char *start = strrchr(rgbd_image->DepthFilename(), '/');
+      if (start) strncpy(name, start+1, 1024);
+      else strncpy(name, rgbd_image->DepthFilename(), 1024);
+    }
     else sprintf(name, "Image_%d\n", i);
 
     // Get stuff from rgbd image
