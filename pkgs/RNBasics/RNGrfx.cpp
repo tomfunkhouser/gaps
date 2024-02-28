@@ -108,6 +108,35 @@ RNStopGrfx(void)
 
 
 
+/* Pick index encoding */
+
+void
+EncodePickColor(unsigned int index, unsigned char alpha, unsigned char color[4])
+{
+  // Pack index (after adding one to avoid zero)
+  index++;
+  color[0] = (index >> 0) & 0xFF;
+  color[1] = (index >> 8) & 0xFF;
+  color[2] = (index >> 16) & 0xFF;
+  color[3] = alpha;
+}
+
+
+  
+void
+DecodePickColor(unsigned char color[4], unsigned int *index, unsigned char *alpha)
+{
+  // Unpack index (and then subtract one)
+  unsigned int k = 0;
+  k |= color[0] << 0;
+  k |= color[1] << 8;
+  k |= color[2] << 16;
+  if (alpha) *alpha = color[4];
+  if (index) *index = k - 1;
+}
+
+
+
 /* 2D viewing functions */
 
 void 

@@ -111,6 +111,13 @@ void RNStopGrfx(void);
 
 
 
+/* Pick index encoding */
+
+void EncodePickColor(unsigned int index, unsigned char alpha, unsigned char color[4]);
+void DecodePickColor(unsigned char color[4], unsigned int *index = NULL, unsigned char *alpha = NULL);
+
+  
+
 /* 2D viewing functions */
 
 void R2SetViewport(int xmin, int ymin, int xmax, int ymax);

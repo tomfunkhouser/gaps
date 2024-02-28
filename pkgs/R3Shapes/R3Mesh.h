@@ -686,6 +686,13 @@ class R3Mesh {
     void SetData(void *data);
       // Set the user data stored with mesh
   
+    // VBO FUNCTIONS
+    virtual unsigned int GLPositionBufferObject(void) const;
+    virtual unsigned int GLNormalBufferObject(void) const;
+    virtual unsigned int GLTextureCoordBufferObject(void) const;
+    virtual unsigned int GLRgbColorBufferObject(void) const;
+    virtual unsigned int GLPickColorBufferObject(void) const;
+  
   protected:
     // INTERNAL DELETE FUNCTIONS
     virtual void DeallocateVertex(R3MeshVertex *v);
@@ -702,10 +709,6 @@ class R3Mesh {
       R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3,
       R3MeshEdge *e1, R3MeshEdge *e2, R3MeshEdge *e3);
 
-    // INTERNAL VBO FUNCTIONS
-    virtual int UpdateVBOVertexBuffers(void);
-    virtual int UpdateVBOFaceBuffers(void);
-  
   protected:
     // Arrays of all vertices, edges, faces
     RNArray<R3MeshVertex *> vertices;
@@ -718,14 +721,11 @@ class R3Mesh {
     R3MeshFace *face_block;
 
     // OpenGL buffer ids
-    unsigned int vbo_vertex_position_buffer;
-    unsigned int vbo_vertex_normal_buffer;
-    unsigned int vbo_vertex_color_buffer;
-    unsigned int vbo_vertex_id_buffer;
-    unsigned int vbo_face_position_buffer;
-    unsigned int vbo_face_normal_buffer;
-    unsigned int vbo_face_color_buffer;
-    unsigned int vbo_face_id_buffer;
+    unsigned int vbo_position_buffer;
+    unsigned int vbo_normal_buffer;
+    unsigned int vbo_texcoord_buffer;
+    unsigned int vbo_rgb_color_buffer;
+    unsigned int vbo_pick_color_buffer;
 
     // Other attributes
     char name[R3_MESH_NAME_LENGTH];
@@ -1825,8 +1825,11 @@ inline void R3Mesh::
 Draw(const R3DrawFlags draw_flags) const
 {
   // Draw the mesh
-  DrawFaces(draw_flags);
+  if (draw_flags[R3_SURFACES_DRAW_FLAG]) DrawFaces(draw_flags);
+  else if (draw_flags[R3_EDGES_DRAW_FLAG]) DrawEdges(draw_flags);
+  else DrawVertices(draw_flags);
 } 
+
 
 
 ////////////////////////////////////////////////////////////////////////

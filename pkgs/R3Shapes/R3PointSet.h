@@ -58,6 +58,10 @@ public:
   void SetPointWeight(int index, RNScalar weight);
   void SetPointValue(int index, RNScalar value);
 
+  // Draw functions
+  void Draw(const R3DrawFlags draw_flags = R3_VERTICES_DRAW_FLAG |
+    R3_VERTEX_NORMALS_DRAW_FLAG | R3_VERTEX_COLORS_DRAW_FLAG) const;
+
   // Input/output
   int ReadFile(const char *filename);
   int ReadXYZFile(const char *filename);
@@ -75,6 +79,13 @@ public:
   int WriteSDFFile(const char *filename) const;
   int WriteMeshFile(const char *filename) const;
 
+public:
+  // OpenGL buffer object access
+  unsigned int GLPositionBufferObject(void) const;
+  unsigned int GLNormalBufferObject(void) const;
+  unsigned int GLRgbColorBufferObject(void) const;
+  unsigned int GLPickColorBufferObject(void) const;
+
 private:
   std::vector<R3Point> positions;
   std::vector<R3Vector> normals;
@@ -86,6 +97,10 @@ private:
   std::vector<int> instance_identifiers;
   std::vector<RNScalar> weights;
   std::vector<RNScalar> values;
+  unsigned int vbo_position_buffer;
+  unsigned int vbo_normal_buffer;
+  unsigned int vbo_rgb_color_buffer;
+  unsigned int vbo_pick_color_buffer;
   R3Box bbox;
 };
 

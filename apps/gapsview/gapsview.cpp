@@ -725,9 +725,9 @@ LoadColorIndex(int model_index, int element_type, int element_index)
   // Set color to represent an integer (24 bits)
   int k = element_index + 1;
   unsigned char color[4];
-  color[0] = (k >> 16) & 0xFF;
+  color[0] = (k      ) & 0xFF;
   color[1] = (k >>  8) & 0xFF;
-  color[2] = (k      ) & 0xFF;
+  color[2] = (k >> 16) & 0xFF;
   color[3] = ((model_index + 1) & 0x0F) << 4;
   color[3] |= (element_type + 1) & 0x0F;
   RNLoadRgba(color);
@@ -1251,17 +1251,22 @@ DrawPointSet(R3PointSet *pointset,
   if (show_points) {
     glDisable(GL_LIGHTING);    
     RNLoadRgb(0.0, 0.0, 1.0);
-    RNGrfxBegin(RN_GRFX_POINTS);
-    for (int i = 0; i < pointset->NPoints(); i++) {
-      const R3Point& position = pointset->PointPosition(i);
-      RNScalar value = pointset->PointValue(i);
-      if (color_scheme == PICK_COLOR_SCHEME)
+    glPointSize(3);
+    if (color_scheme == PICK_COLOR_SCHEME) {
+      RNGrfxBegin(RN_GRFX_POINTS);
+      for (int i = 0; i < pointset->NPoints(); i++) {
+        const R3Point& position = pointset->PointPosition(i);
         LoadColorIndex(model_index, POINTSET_POINT_ELEMENT_TYPE, i);
-      else if (color_scheme == RGB_COLOR_SCHEME)
-        RNLoadRgb(-10*value, 0.0, 10*value);
-      R3LoadPoint(position);
+        R3LoadPoint(position);
+      }
+      RNGrfxEnd();
     }
-    RNGrfxEnd();
+    else {
+      RNFlags draw_flags = R3_VERTICES_DRAW_FLAG;
+      if (color_scheme == RGB_COLOR_SCHEME) 
+        draw_flags.Add(R3_VERTEX_COLORS_DRAW_FLAG);
+      pointset->Draw(draw_flags);
+    }
     glPointSize(1);
   }
   
@@ -1295,25 +1300,32 @@ DrawMesh(R3Mesh *mesh,
     if (color_scheme == SHADING_COLOR_SCHEME) glEnable(GL_LIGHTING);
     else glDisable(GL_LIGHTING);
     RNLoadRgb(0.8, 0.8, 0.8);
-    RNGrfxBegin(RN_GRFX_TRIANGLES);
-    for (int i = 0; i < mesh->NFaces(); i++) {
-      R3MeshFace *face = mesh->Face(i);
-      if (color_scheme == PICK_COLOR_SCHEME)
-        LoadColorIndex(model_index, MESH_FACE_ELEMENT_TYPE, i);
-      else if (color_scheme == CATEGORY_COLOR_SCHEME)
-        LoadColorIdentifier(1 + mesh->FaceCategory(face));
-      else if (color_scheme == INSTANCE_COLOR_SCHEME)
-        LoadColorIdentifier(1 + mesh->FaceSegment(face)); 
-      if (color_scheme == SHADING_COLOR_SCHEME)
-        R3LoadNormal(mesh->FaceNormal(face));
-      for (int j = 0; j < 3; j++) {
-        R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
-        if (color_scheme == RGB_COLOR_SCHEME)
-          R3LoadRgb(mesh->VertexColor(vertex));
-        R3LoadPoint(mesh->VertexPosition(vertex));
-      }
+    if ((color_scheme == RGB_COLOR_SCHEME) || (color_scheme == SHADING_COLOR_SCHEME)) {
+      RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS;
+      if (color_scheme == RGB_COLOR_SCHEME) draw_flags.Add(R3_VERTEX_COLORS_DRAW_FLAG);
+      mesh->Draw(draw_flags);
     }
-    RNGrfxEnd();
+    else {
+      RNGrfxBegin(RN_GRFX_TRIANGLES);
+      for (int i = 0; i < mesh->NFaces(); i++) {
+        R3MeshFace *face = mesh->Face(i);
+        if (color_scheme == PICK_COLOR_SCHEME)
+          LoadColorIndex(model_index, MESH_FACE_ELEMENT_TYPE, i);
+        else if (color_scheme == CATEGORY_COLOR_SCHEME)
+          LoadColorIdentifier(1 + mesh->FaceCategory(face));
+        else if (color_scheme == INSTANCE_COLOR_SCHEME)
+          LoadColorIdentifier(1 + mesh->FaceSegment(face)); 
+        if (color_scheme == SHADING_COLOR_SCHEME)
+          R3LoadNormal(mesh->FaceNormal(face));
+        for (int j = 0; j < 3; j++) {
+          R3MeshVertex *vertex = mesh->VertexOnFace(face, j);
+          if (color_scheme == RGB_COLOR_SCHEME)
+            R3LoadRgb(mesh->VertexColor(vertex));
+          R3LoadPoint(mesh->VertexPosition(vertex));
+        }
+      }
+      RNGrfxEnd();
+    }
   }
 
   // Draw edges
@@ -1321,7 +1333,7 @@ DrawMesh(R3Mesh *mesh,
     if (color_scheme != PICK_COLOR_SCHEME) {
       glDisable(GL_LIGHTING);
       RNLoadRgb(1.0, 0.0, 0.0);
-      mesh->DrawEdges();
+      mesh->DrawEdges(0);
     }
   }
 
@@ -1875,7 +1887,7 @@ Pick(double x, double y, R3Point *hit_position = NULL,
   element_type -= 1;
 
   // Get element index
-  int element_index = (r << 16) | (g << 8) | b;
+  int element_index = (r) | (g << 8) | (b << 16);
   if (element_index < 1) return 0;
   element_index -= 1;
 

@@ -27,6 +27,10 @@ R3PointSet(void)
     instance_identifiers(),
     weights(),
     values(),
+    vbo_position_buffer(0),
+    vbo_normal_buffer(0),
+    vbo_rgb_color_buffer(0),
+    vbo_pick_color_buffer(0),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
 }
@@ -36,6 +40,11 @@ R3PointSet(void)
 R3PointSet::
 ~R3PointSet(void)
 {
+  // Delete OpenGL buffers
+  if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
+  if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
+  if (vbo_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_rgb_color_buffer);
+  if (vbo_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_pick_color_buffer);
 }
 
 
@@ -207,6 +216,174 @@ SetPointValue(int index, RNScalar value)
   while (index >= (int) values.size())
     values.push_back(-1);
   values[index] = value;
+}
+
+
+
+unsigned int  R3PointSet::
+GLPositionBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NPoints() == 0) return 0;
+
+  // Update position buffer object
+  if (vbo_position_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_position_buffer);
+    if (vbo_position_buffer > 0) {
+      std::vector<GLfloat> positions;
+      for (int i = 0; i < NPoints(); i++) {
+        const R3Point& position = PointPosition(i);
+        positions.push_back(position.X());
+        positions.push_back(position.Y());
+        positions.push_back(position.Z());
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+      glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+  
+  // Return buffer object identifier
+  return vbo_position_buffer;
+}
+
+
+  
+unsigned int R3PointSet::
+GLNormalBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NPoints() == 0) return 0;
+
+  // Update normal buffer
+  if (vbo_normal_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_normal_buffer);
+    if (vbo_normal_buffer > 0) {
+      std::vector<GLfloat> normals;
+      for (int i = 0; i < NPoints(); i++) {
+        const R3Vector& normal = PointNormal(i);
+        normals.push_back(normal.X());
+        normals.push_back(normal.Y());
+        normals.push_back(normal.Z());
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return buffer object identifier
+  return vbo_normal_buffer;
+}
+
+  
+
+unsigned int R3PointSet::
+GLRgbColorBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NPoints() == 0) return 0;
+
+  // Update rgb color buffer
+  if (vbo_rgb_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_rgb_color_buffer);
+    if (vbo_rgb_color_buffer > 0) {
+      std::vector<GLubyte> rgb_colors;
+      for (int i = 0; i < NPoints(); i++) {
+        const RNRgb& rgb_color = PointColor(i);
+        rgb_colors.push_back(255.0 * rgb_color.R());
+        rgb_colors.push_back(255.0 * rgb_color.G());
+        rgb_colors.push_back(255.0 * rgb_color.B());
+        rgb_colors.push_back(255);
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_rgb_color_buffer);
+      glBufferData(GL_ARRAY_BUFFER, rgb_colors.size() * sizeof(GLubyte), &rgb_colors[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return buffer object identifier
+  return vbo_rgb_color_buffer;
+}
+
+
+  
+unsigned int R3PointSet::
+GLPickColorBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NPoints() == 0) return 0;
+
+  // Update pick color buffer
+  if (vbo_pick_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_pick_color_buffer);
+    if (vbo_pick_color_buffer > 0) {
+      std::vector<GLubyte> pick_colors;
+      for (int i = 0; i < NPoints(); i++) {
+        unsigned char pick_color[4];
+        EncodePickColor(i, 255, pick_color);
+        pick_colors.push_back(pick_color[0]);
+        pick_colors.push_back(pick_color[1]);
+        pick_colors.push_back(pick_color[2]);
+        pick_colors.push_back(pick_color[3]);
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_pick_color_buffer);
+      glBufferData(GL_ARRAY_BUFFER, pick_colors.size() * sizeof(GLubyte), &pick_colors[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return buffer object identifier
+  return vbo_pick_color_buffer;
+}
+
+
+
+void R3PointSet::
+Draw(const RNFlags draw_flags) const
+{
+  // Check if nothing to be done
+  if (NPoints() == 0) return;
+
+  // Bind vertex position buffer
+  if (GLPositionBufferObject() <= 0) return;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+  glVertexPointer(3, GL_FLOAT, 0, 0);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  
+  // Bind vertex normal buffer
+  if (draw_flags[R3_VERTEX_NORMALS_DRAW_FLAG]) {
+    if (GLNormalBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glNormalPointer(GL_FLOAT, 0, 0);
+      glEnableClientState(GL_NORMAL_ARRAY);
+    }
+  }
+  
+  // Bind vertex color buffer
+  if (draw_flags[R3_VERTEX_PICK_DRAW_FLAG]) {
+    if (GLPickColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_pick_color_buffer);
+      glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
+      glEnableClientState(GL_COLOR_ARRAY);
+    }
+  }
+  else if (draw_flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
+    if (GLRgbColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_rgb_color_buffer);
+      glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
+      glEnableClientState(GL_COLOR_ARRAY);
+    }
+  }
+  
+  // Draw points
+  glDrawArrays(GL_POINTS, 0, NPoints());
+
+  // Reset everything
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_COLOR_ARRAY);
 }
 
 
