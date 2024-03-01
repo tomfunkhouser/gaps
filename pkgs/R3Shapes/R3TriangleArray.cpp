@@ -690,13 +690,13 @@ UpdateVBO(void)
   if (NTriangles() == 0) return;
 
   // Allocate buffer data
-  static const unsigned int vertex_size = 12 * sizeof(GLdouble);
+  static const unsigned int vertex_size = 12 * sizeof(GLfloat);
   unsigned int buffer_size = 3 * NTriangles() * vertex_size;
-  GLdouble *buffer_data = new GLdouble [ buffer_size ];
+  GLfloat *buffer_data = new GLfloat [ buffer_size ];
   if (!buffer_data) return;
   
   // Fill vertex data 
-  GLdouble *buffer_datap = buffer_data;
+  GLfloat *buffer_datap = buffer_data;
   for (int i = 0; i < NTriangles(); i++) {
     R3Triangle *triangle = Triangle(i);
     int dim = triangle->Normal().MaxDimension();
@@ -753,7 +753,7 @@ UpdateVBO(void)
   }
 
   // Just checking
-  assert((long int) (buffer_datap - buffer_data) == (long int) (buffer_size / sizeof(GLdouble)));
+  assert((long int) (buffer_datap - buffer_data) == (long int) (buffer_size / sizeof(GLfloat)));
 
   // Generate VBO buffer (first time only)
   if (vbo_id == 0) glGenBuffers(1, &vbo_id);
@@ -788,11 +788,11 @@ DrawVBO(const R3DrawFlags draw_flags) const
   glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
 
   // Set pointers
-  static const unsigned int vertex_size = 12 * sizeof(GLdouble);
-  glVertexPointer(3, GL_DOUBLE, vertex_size, (char *) NULL);
-  glNormalPointer(GL_DOUBLE, vertex_size, (char *) NULL + 3 * sizeof(GLdouble));
-  glColorPointer(3, GL_DOUBLE, vertex_size, (char *) NULL + 6 * sizeof(GLdouble));
-  glTexCoordPointer(2, GL_DOUBLE, vertex_size, (char *) NULL + 9 * sizeof(GLdouble));
+  static const unsigned int vertex_size = 12 * sizeof(GLfloat);
+  glVertexPointer(3, GL_FLOAT, vertex_size, (char *) NULL);
+  glNormalPointer(GL_FLOAT, vertex_size, (char *) NULL + 3 * sizeof(GLfloat));
+  glColorPointer(3, GL_FLOAT, vertex_size, (char *) NULL + 6 * sizeof(GLfloat));
+  glTexCoordPointer(2, GL_FLOAT, vertex_size, (char *) NULL + 9 * sizeof(GLfloat));
 
   // Enable client states
   R3DrawFlags flags(Flags() & draw_flags);
