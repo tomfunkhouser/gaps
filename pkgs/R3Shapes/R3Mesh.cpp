@@ -113,13 +113,6 @@ R3Mesh(const R3Mesh& mesh)
 R3Mesh::
 ~R3Mesh(void) 
 {
-  // Delete OpenGL buffers
-  if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
-  if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
-  if (vbo_texcoord_buffer > 0) glDeleteBuffers(1, &vbo_texcoord_buffer);
-  if (vbo_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_rgb_color_buffer);
-  if (vbo_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_pick_color_buffer);
-
   // Delete everything
   Empty();
 }
@@ -872,6 +865,9 @@ SetVertexPosition(R3MeshVertex *v, const R3Point& position)
 
   // Update bounding box
   bbox.Union(position);
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -1117,6 +1113,9 @@ FindConnectedFaces(R3MeshFace *seed, RNArray<R3MeshFace *>& faces)
 void R3Mesh::
 Empty(void)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Delete all faces, edges, vertices
   while (NFaces() > 0) DeleteFace(Face(0));
   while (NEdges() > 0) DeleteEdge(Edge(0));
@@ -1249,6 +1248,9 @@ AddRandomNoise(RNScalar factor)
     R3MeshFace *face = Face(i);
     face->flags.Remove(R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
   }
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -1278,6 +1280,9 @@ Inflate(RNScalar factor)
     R3MeshFace *face = Face(i);
     face->flags.Remove(R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
   }
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -1305,6 +1310,9 @@ Transform(const R3Transformation& transformation)
     R3MeshFace *face = Face(i);
     face->flags.Remove(R3_MESH_FACE_PLANE_UPTODATE | R3_MESH_FACE_BBOX_UPTODATE);
   }
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -1317,6 +1325,9 @@ Transform(const R3Transformation& transformation)
 R3MeshVertex *R3Mesh::
 CreateVertex(const R3MeshVertex& source_vertex, R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create vertex
   if (!v) {
     v = new R3MeshVertex();
@@ -1344,6 +1355,9 @@ CreateVertex(const R3MeshVertex& source_vertex, R3MeshVertex *v)
 R3MeshVertex *R3Mesh::
 CreateVertex(const R3Point& position, R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create vertex
   if (!v) {
     v = new R3MeshVertex();
@@ -1368,6 +1382,9 @@ CreateVertex(const R3Point& position, R3MeshVertex *v)
 R3MeshVertex *R3Mesh::
 CreateVertex(const R3Point& position, const R3Vector& normal, R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create vertex
   if (!v) {
     v = new R3MeshVertex();
@@ -1393,6 +1410,9 @@ CreateVertex(const R3Point& position, const R3Vector& normal, R3MeshVertex *v)
 R3MeshVertex *R3Mesh::
 CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create vertex
   if (!v) {
     v = new R3MeshVertex();
@@ -1419,6 +1439,9 @@ CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color
 R3MeshVertex *R3Mesh::
 CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color, const R2Point& texcoords, R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create vertex
   if (!v) {
     v = new R3MeshVertex();
@@ -1446,6 +1469,9 @@ CreateVertex(const R3Point& position, const R3Vector& normal, const RNRgb& color
 R3MeshEdge *R3Mesh::
 CreateEdge(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshEdge *e)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create edge
   if (!e) {
     e = new R3MeshEdge();
@@ -1517,6 +1543,9 @@ CreateFace(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3,
   if ((e3->vertex[0] == v3) && e3->face[0]) return NULL;
   if ((e3->vertex[0] == v1) && e3->face[1]) return NULL;
 
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Create face
   if (!f) {
     f = new R3MeshFace();
@@ -1541,6 +1570,9 @@ CreateFace(R3MeshVertex *v1, R3MeshVertex *v2, R3MeshVertex *v3,
 void R3Mesh::
 DeallocateVertex(R3MeshVertex *v)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Remove vertex from mesh array by moving last vertex
   assert(!vertices.IsEmpty());
   R3MeshVertex *tail = vertices.Tail();
@@ -1563,6 +1595,9 @@ DeallocateVertex(R3MeshVertex *v)
 void R3Mesh::
 DeallocateEdge(R3MeshEdge *e)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Remove edge from mesh array by moving last edge
   assert(!edges.IsEmpty());
   R3MeshEdge *tail = edges.Tail();
@@ -1585,6 +1620,9 @@ DeallocateEdge(R3MeshEdge *e)
 void R3Mesh::
 DeallocateFace(R3MeshFace *f)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Remove face from mesh array by moving last face
   assert(!faces.IsEmpty());
   R3MeshFace *tail = faces.Tail();
@@ -1694,6 +1732,9 @@ R3MeshVertex* R3Mesh::
 MergeVertex(R3MeshVertex *v1, R3MeshVertex *v2)
 {
 #if 0
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Check if there is an edge between the vertices
   // R3MeshEdge *e = EdgeBetweenVertices(v1, v2);
   // if (e) return CollapseEdge(e, v1->position);
@@ -2085,6 +2126,7 @@ CollapseEdge(R3MeshEdge *edge)
 R3MeshVertex *R3Mesh::
 CollapseFace(R3MeshFace *f, const R3Point& point)
 {
+  // Collapse face into single point
   R3MeshVertex *v0 = VertexOnFace(f, 0);
   R3MeshVertex *v1 = VertexOnFace(f, 1);
   R3MeshVertex *v2 = VertexOnFace(f, 2);
@@ -2252,6 +2294,9 @@ SubdivideEdge(R3MeshEdge *e)
 R3MeshVertex *R3Mesh::
 SplitFace(R3MeshFace *f, const R3Point& point, R3MeshFace **f0, R3MeshFace **f1, R3MeshFace **f2)
 {
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Find vertices/edges bounding face
   R3MeshVertex *v0 = VertexOnFace(f, 0);
   R3MeshEdge *e0 = EdgeOnFace(f, v0, RN_CCW);
@@ -2415,6 +2460,9 @@ SwapEdge(R3MeshEdge *edge)
   UpdateFacePlane(f[1]);
   UpdateFaceBBox(f[1]);
 
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Return success
   return 1;
 }
@@ -2433,6 +2481,9 @@ FlipEdge(R3MeshEdge *e)
   R3MeshFace *f = e->face[0];
   e->face[0] = e->face[1];
   e->face[1] = f;
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -2452,6 +2503,9 @@ FlipFace(R3MeshFace *f)
   R3MeshEdge *eswap = f->edge[0];
   f->edge[0] = f->edge[1];
   f->edge[1] = eswap;
+
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
 }
 
 
@@ -3171,6 +3225,9 @@ operator=(const R3Mesh& mesh)
     this->SetFaceCategory(copy_face, mesh.FaceCategory(face));
   }
 
+  // Invalidate GL buffer objects
+  InvalidateGLBufferObjects();
+
   // Return this
   return *this;
 }
@@ -3343,6 +3400,26 @@ GLPickColorBufferObject(void) const
 
   // Return pick color buffer identifier
   return vbo_pick_color_buffer;
+}
+
+
+
+void R3Mesh::
+InvalidateGLBufferObjects(void)
+{
+  // Delete buffers
+  if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
+  if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
+  if (vbo_texcoord_buffer > 0) glDeleteBuffers(1, &vbo_texcoord_buffer);
+  if (vbo_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_rgb_color_buffer);
+  if (vbo_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_pick_color_buffer);
+
+  // Zero out buffer identifiers
+  vbo_position_buffer = 0;
+  vbo_normal_buffer = 0;
+  vbo_texcoord_buffer = 0;
+  vbo_rgb_color_buffer = 0;
+  vbo_pick_color_buffer = 0;
 }
 
 

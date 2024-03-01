@@ -692,6 +692,7 @@ class R3Mesh {
     virtual unsigned int GLTextureCoordBufferObject(void) const;
     virtual unsigned int GLRgbColorBufferObject(void) const;
     virtual unsigned int GLPickColorBufferObject(void) const;
+    virtual void InvalidateGLBufferObjects(void);
   
   protected:
     // INTERNAL DELETE FUNCTIONS

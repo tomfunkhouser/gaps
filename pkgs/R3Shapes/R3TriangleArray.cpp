@@ -307,10 +307,6 @@ operator=(const R3TriangleArray& array)
     // Update everything
     Update();
 
-    // Initialize vbo variables
-    vbo_id = 0;
-    vbo_size = 0;
-    
     // Return this
     return *this;
 }
@@ -638,7 +634,7 @@ Update(void)
 void R3TriangleArray::
 Draw(const R3DrawFlags draw_flags) const
 {
-#if 0 && (RN_3D_GRFX == RN_OPENGL)
+#if (RN_3D_GRFX == RN_OPENGL)
   // Draw surfaces
   if (draw_flags[R3_SURFACES_DRAW_FLAG]) {
     DrawVBO(draw_flags);
@@ -646,6 +642,11 @@ Draw(const R3DrawFlags draw_flags) const
 
   // Draw edges
   if (draw_flags[R3_EDGES_DRAW_FLAG]) {
+#if 1
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    DrawVBO(draw_flags);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#else
     RNGrfxBegin(RN_GRFX_LINES);
     for (int i = 0; i < NTriangles(); i++) {
       R3Triangle *triangle = Triangle(i);
@@ -657,6 +658,7 @@ Draw(const R3DrawFlags draw_flags) const
       }
     }
     RNGrfxEnd();
+#endif
   }
 #else
     // Draw all triangles

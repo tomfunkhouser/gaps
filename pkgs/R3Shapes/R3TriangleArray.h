@@ -90,7 +90,7 @@ class R3TriangleArray : public R3Surface {
         R3Box bbox;
         RNFlags flags;
 
-public:
+     private:
         // VBO drawing data
         unsigned int vbo_id;
         unsigned int vbo_size;
