@@ -164,8 +164,8 @@ void GLUTRedraw(void)
       else {
         // Draw faces
         RNFlags draw_flags = R3_DEFAULT_DRAW_FLAGS;
-        if (show_vertex_colors) { glDisable(GL_LIGHTING); draw_flags.Add(R3_VERTEX_COLORS_DRAW_FLAG); }
-        else { glEnable(GL_LIGHTING); RNLoadRgb(0.8, 0.8, 0.8); }
+        if (show_vertex_colors) glDisable(GL_LIGHTING); 
+        else { glEnable(GL_LIGHTING); RNLoadRgb(0.8, 0.8, 0.8); draw_flags.Remove(R3_VERTEX_COLORS_DRAW_FLAG); }
         mesh->DrawFaces(draw_flags);
       }
     }
