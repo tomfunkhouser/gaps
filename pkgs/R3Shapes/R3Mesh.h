@@ -685,13 +685,19 @@ class R3Mesh {
       // Returns whether face data structure is valid
     void SetData(void *data);
       // Set the user data stored with mesh
-  
+
+  public:
     // VBO FUNCTIONS
-    virtual unsigned int GLPositionBufferObject(void) const;
-    virtual unsigned int GLNormalBufferObject(void) const;
-    virtual unsigned int GLTextureCoordBufferObject(void) const;
-    virtual unsigned int GLRgbColorBufferObject(void) const;
-    virtual unsigned int GLPickColorBufferObject(void) const;
+    virtual unsigned int GLFacePositionBufferObject(void) const;
+    virtual unsigned int GLFaceNormalBufferObject(void) const;
+    virtual unsigned int GLFaceTextureCoordBufferObject(void) const;
+    virtual unsigned int GLFaceRgbColorBufferObject(void) const;
+    virtual unsigned int GLFacePickColorBufferObject(void) const;
+    virtual unsigned int GLVertexPositionBufferObject(void) const;
+    virtual unsigned int GLVertexNormalBufferObject(void) const;
+    virtual unsigned int GLVertexTextureCoordBufferObject(void) const;
+    virtual unsigned int GLVertexRgbColorBufferObject(void) const;
+    virtual unsigned int GLVertexPickColorBufferObject(void) const;
     virtual void InvalidateGLBufferObjects(void);
   
   protected:
@@ -722,11 +728,16 @@ class R3Mesh {
     R3MeshFace *face_block;
 
     // OpenGL buffer ids
-    unsigned int vbo_position_buffer;
-    unsigned int vbo_normal_buffer;
-    unsigned int vbo_texcoord_buffer;
-    unsigned int vbo_rgb_color_buffer;
-    unsigned int vbo_pick_color_buffer;
+    unsigned int vbo_face_position_buffer;
+    unsigned int vbo_face_normal_buffer;
+    unsigned int vbo_face_texcoord_buffer;
+    unsigned int vbo_face_rgb_color_buffer;
+    unsigned int vbo_face_pick_color_buffer;
+    unsigned int vbo_vertex_position_buffer;
+    unsigned int vbo_vertex_normal_buffer;
+    unsigned int vbo_vertex_texcoord_buffer;
+    unsigned int vbo_vertex_rgb_color_buffer;
+    unsigned int vbo_vertex_pick_color_buffer;
 
     // Other attributes
     char name[R3_MESH_NAME_LENGTH];

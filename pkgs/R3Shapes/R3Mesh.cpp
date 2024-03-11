@@ -31,11 +31,16 @@ R3Mesh(void)
   : vertex_block(NULL),
     edge_block(NULL),
     face_block(NULL),
-    vbo_position_buffer(0),
-    vbo_normal_buffer(0),
-    vbo_texcoord_buffer(0),
-    vbo_rgb_color_buffer(0),
-    vbo_pick_color_buffer(0),
+    vbo_face_position_buffer(0),
+    vbo_face_normal_buffer(0),
+    vbo_face_texcoord_buffer(0),
+    vbo_face_rgb_color_buffer(0),
+    vbo_face_pick_color_buffer(0),
+    vbo_vertex_position_buffer(0),
+    vbo_vertex_normal_buffer(0),
+    vbo_vertex_texcoord_buffer(0),
+    vbo_vertex_rgb_color_buffer(0),
+    vbo_vertex_pick_color_buffer(0),
     bbox(R3null_box),
     data(NULL)
 {
@@ -53,11 +58,16 @@ R3Mesh(const R3Mesh& mesh)
   : vertex_block(NULL),
     edge_block(NULL),
     face_block(NULL),
-    vbo_position_buffer(0),
-    vbo_normal_buffer(0),
-    vbo_texcoord_buffer(0),
-    vbo_rgb_color_buffer(0),
-    vbo_pick_color_buffer(0),
+    vbo_face_position_buffer(0),
+    vbo_face_normal_buffer(0),
+    vbo_face_texcoord_buffer(0),
+    vbo_face_rgb_color_buffer(0),
+    vbo_face_pick_color_buffer(0),
+    vbo_vertex_position_buffer(0),
+    vbo_vertex_normal_buffer(0),
+    vbo_vertex_texcoord_buffer(0),
+    vbo_vertex_rgb_color_buffer(0),
+    vbo_vertex_pick_color_buffer(0),
     bbox(mesh.bbox),
     data(NULL)
 {
@@ -3240,15 +3250,15 @@ operator=(const R3Mesh& mesh)
 ////////////////////////////////////////////////////////////////////////
 
 unsigned int R3Mesh::
-GLPositionBufferObject(void) const
+GLFacePositionBufferObject(void) const
 {
   // Check if nothing to be done
   if (NFaces() == 0) return 0;
   
   // Update position buffer
-  if (vbo_position_buffer == 0) {
-    glGenBuffers(1, (GLuint *) &vbo_position_buffer);
-    if (vbo_position_buffer > 0) {
+  if (vbo_face_position_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_face_position_buffer);
+    if (vbo_face_position_buffer > 0) {
       std::vector<GLfloat> positions;
       for (int i = 0; i < NFaces(); i++) {
         R3MeshFace *face = Face(i);
@@ -3260,28 +3270,28 @@ GLPositionBufferObject(void) const
           positions.push_back(position.Z());
         }
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_position_buffer);
       glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   }
 
   // Return position buffer identifier
-  return vbo_position_buffer;
+  return vbo_face_position_buffer;
 }
 
 
 
 unsigned int R3Mesh::
-GLNormalBufferObject(void) const
+GLFaceNormalBufferObject(void) const
 {
   // Check if nothing to be done
   if (NFaces() == 0) return 0;
   
   // Update normal buffer
-  if (vbo_normal_buffer == 0) {
-    glGenBuffers(1, (GLuint *) &vbo_normal_buffer);
-    if (vbo_normal_buffer > 0) {
+  if (vbo_face_normal_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_face_normal_buffer);
+    if (vbo_face_normal_buffer > 0) {
       std::vector<GLfloat> normals;
       for (int i = 0; i < NFaces(); i++) {
         R3MeshFace *face = Face(i);
@@ -3293,28 +3303,28 @@ GLNormalBufferObject(void) const
           normals.push_back(normal.Z());
         }
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_normal_buffer);
       glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   }
 
   // Return normal buffer identifier
-  return vbo_normal_buffer;
+  return vbo_face_normal_buffer;
 }
 
 
 
 unsigned int R3Mesh::
-GLTextureCoordBufferObject(void) const
+GLFaceTextureCoordBufferObject(void) const
 {
   // Check if nothing to be done
   if (NFaces() == 0) return 0;
 
   // Update texcoord buffer
-  if (vbo_texcoord_buffer == 0) {
-    glGenBuffers(1, (GLuint *) &vbo_texcoord_buffer);
-    if (vbo_texcoord_buffer > 0) {
+  if (vbo_face_texcoord_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_face_texcoord_buffer);
+    if (vbo_face_texcoord_buffer > 0) {
       std::vector<GLfloat> texcoords;
       for (int i = 0; i < NFaces(); i++) {
         R3MeshFace *face = Face(i);
@@ -3325,28 +3335,28 @@ GLTextureCoordBufferObject(void) const
           texcoords.push_back(texcoord.Y());
         }
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord_buffer);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_texcoord_buffer);
       glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(GLfloat), &texcoords[0], GL_STATIC_DRAW);
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   }
 
   // Return texcoord buffer identifier
-  return vbo_texcoord_buffer;
+  return vbo_face_texcoord_buffer;
 }
 
 
 
 unsigned int R3Mesh::
-GLRgbColorBufferObject(void) const
+GLFaceRgbColorBufferObject(void) const
 {
   // Check if nothing to be done
   if (NFaces() == 0) return 0;
 
   // Update rgb color buffer
-  if (vbo_rgb_color_buffer == 0) {
-    glGenBuffers(1, (GLuint *) &vbo_rgb_color_buffer);
-    if (vbo_rgb_color_buffer > 0) {
+  if (vbo_face_rgb_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_face_rgb_color_buffer);
+    if (vbo_face_rgb_color_buffer > 0) {
       std::vector<GLubyte> rgb_colors;
       for (int i = 0; i < NFaces(); i++) {
         R3MeshFace *face = Face(i);
@@ -3359,28 +3369,28 @@ GLRgbColorBufferObject(void) const
           rgb_colors.push_back(255);
         }
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_rgb_color_buffer);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_rgb_color_buffer);
       glBufferData(GL_ARRAY_BUFFER, rgb_colors.size() * sizeof(GLubyte), &rgb_colors[0], GL_STATIC_DRAW);
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   }
 
   // Return rgb color buffer identifier
-  return vbo_rgb_color_buffer;
+  return vbo_face_rgb_color_buffer;
 }
 
 
 
 unsigned int R3Mesh::
-GLPickColorBufferObject(void) const
+GLFacePickColorBufferObject(void) const
 {
   // Check if nothing to be done
   if (NFaces() == 0) return 0;
 
   // Update pick color buffer
-  if (vbo_pick_color_buffer == 0) {
-    glGenBuffers(1, (GLuint *) &vbo_pick_color_buffer);
-    if (vbo_pick_color_buffer > 0) {
+  if (vbo_face_pick_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_face_pick_color_buffer);
+    if (vbo_face_pick_color_buffer > 0) {
       std::vector<GLubyte> pick_colors;
       for (int i = 0; i < NFaces(); i++) {
         for (int j = 0; j < 3; j++){
@@ -3392,14 +3402,165 @@ GLPickColorBufferObject(void) const
           pick_colors.push_back(pick_color[3]);
         }
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_pick_color_buffer);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_pick_color_buffer);
       glBufferData(GL_ARRAY_BUFFER, pick_colors.size() * sizeof(GLubyte), &pick_colors[0], GL_STATIC_DRAW);
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   }
 
   // Return pick color buffer identifier
-  return vbo_pick_color_buffer;
+  return vbo_face_pick_color_buffer;
+}
+
+
+
+unsigned int R3Mesh::
+GLVertexPositionBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+  
+  // Update position buffer
+  if (vbo_vertex_position_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_vertex_position_buffer);
+    if (vbo_vertex_position_buffer > 0) {
+      std::vector<GLfloat> positions;
+      for (int i = 0; i < NVertices(); i++) {
+        R3MeshVertex *vertex = Vertex(i);
+        const R3Point& position = VertexPosition(vertex);
+        positions.push_back(position.X());
+        positions.push_back(position.Y());
+        positions.push_back(position.Z());
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_position_buffer);
+      glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return position buffer identifier
+  return vbo_vertex_position_buffer;
+}
+
+
+
+unsigned int R3Mesh::
+GLVertexNormalBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+  
+  // Update normal buffer
+  if (vbo_vertex_normal_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_vertex_normal_buffer);
+    if (vbo_vertex_normal_buffer > 0) {
+      std::vector<GLfloat> normals;
+      for (int i = 0; i < NVertices(); i++) {
+        R3MeshVertex *vertex = Vertex(i);
+        const R3Vector& normal = VertexNormal(vertex);
+        normals.push_back(normal.X());
+        normals.push_back(normal.Y());
+        normals.push_back(normal.Z());
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_normal_buffer);
+      glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return normal buffer identifier
+  return vbo_vertex_normal_buffer;
+}
+
+
+
+unsigned int R3Mesh::
+GLVertexTextureCoordBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+
+  // Update texcoord buffer
+  if (vbo_vertex_texcoord_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_vertex_texcoord_buffer);
+    if (vbo_vertex_texcoord_buffer > 0) {
+      std::vector<GLfloat> texcoords;
+      for (int i = 0; i < NVertices(); i++) {
+        R3MeshVertex *vertex = Vertex(i);
+        const R2Point& texcoord = VertexTextureCoords(vertex);
+        texcoords.push_back(texcoord.X());
+        texcoords.push_back(texcoord.Y());
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_texcoord_buffer);
+      glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(GLfloat), &texcoords[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return texcoord buffer identifier
+  return vbo_vertex_texcoord_buffer;
+}
+
+
+
+unsigned int R3Mesh::
+GLVertexRgbColorBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+
+  // Update rgb color buffer
+  if (vbo_vertex_rgb_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_vertex_rgb_color_buffer);
+    if (vbo_vertex_rgb_color_buffer > 0) {
+      std::vector<GLubyte> rgb_colors;
+      for (int i = 0; i < NVertices(); i++) {
+        R3MeshVertex *vertex = Vertex(i);
+        const RNRgb& rgb_color = VertexColor(vertex);
+        rgb_colors.push_back(255.0 * rgb_color.R());
+        rgb_colors.push_back(255.0 * rgb_color.G());
+        rgb_colors.push_back(255.0 * rgb_color.B());
+        rgb_colors.push_back(255);
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_rgb_color_buffer);
+      glBufferData(GL_ARRAY_BUFFER, rgb_colors.size() * sizeof(GLubyte), &rgb_colors[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return rgb color buffer identifier
+  return vbo_vertex_rgb_color_buffer;
+}
+
+
+
+unsigned int R3Mesh::
+GLVertexPickColorBufferObject(void) const
+{
+  // Check if nothing to be done
+  if (NVertices() == 0) return 0;
+
+  // Update pick color buffer
+  if (vbo_vertex_pick_color_buffer == 0) {
+    glGenBuffers(1, (GLuint *) &vbo_vertex_pick_color_buffer);
+    if (vbo_vertex_pick_color_buffer > 0) {
+      std::vector<GLubyte> pick_colors;
+      for (int i = 0; i < NVertices(); i++) {
+        unsigned char pick_color[4];
+        EncodePickColor(i, 255, pick_color);
+        pick_colors.push_back(pick_color[0]);
+        pick_colors.push_back(pick_color[1]);
+        pick_colors.push_back(pick_color[2]);
+        pick_colors.push_back(pick_color[3]);
+      }
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_pick_color_buffer);
+      glBufferData(GL_ARRAY_BUFFER, pick_colors.size() * sizeof(GLubyte), &pick_colors[0], GL_STATIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  // Return pick color buffer identifier
+  return vbo_vertex_pick_color_buffer;
 }
 
 
@@ -3407,19 +3568,33 @@ GLPickColorBufferObject(void) const
 void R3Mesh::
 InvalidateGLBufferObjects(void)
 {
-  // Delete buffers
-  if (vbo_position_buffer > 0) glDeleteBuffers(1, &vbo_position_buffer);
-  if (vbo_normal_buffer > 0) glDeleteBuffers(1, &vbo_normal_buffer);
-  if (vbo_texcoord_buffer > 0) glDeleteBuffers(1, &vbo_texcoord_buffer);
-  if (vbo_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_rgb_color_buffer);
-  if (vbo_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_pick_color_buffer);
+  // Delete face buffers
+  if (vbo_face_position_buffer > 0) glDeleteBuffers(1, &vbo_face_position_buffer);
+  if (vbo_face_normal_buffer > 0) glDeleteBuffers(1, &vbo_face_normal_buffer);
+  if (vbo_face_texcoord_buffer > 0) glDeleteBuffers(1, &vbo_face_texcoord_buffer);
+  if (vbo_face_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_face_rgb_color_buffer);
+  if (vbo_face_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_face_pick_color_buffer);
 
-  // Zero out buffer identifiers
-  vbo_position_buffer = 0;
-  vbo_normal_buffer = 0;
-  vbo_texcoord_buffer = 0;
-  vbo_rgb_color_buffer = 0;
-  vbo_pick_color_buffer = 0;
+  // Delete vertex buffers
+  if (vbo_vertex_position_buffer > 0) glDeleteBuffers(1, &vbo_vertex_position_buffer);
+  if (vbo_vertex_normal_buffer > 0) glDeleteBuffers(1, &vbo_vertex_normal_buffer);
+  if (vbo_vertex_texcoord_buffer > 0) glDeleteBuffers(1, &vbo_vertex_texcoord_buffer);
+  if (vbo_vertex_rgb_color_buffer > 0) glDeleteBuffers(1, &vbo_vertex_rgb_color_buffer);
+  if (vbo_vertex_pick_color_buffer > 0) glDeleteBuffers(1, &vbo_vertex_pick_color_buffer);
+
+  // Zero out face buffer identifiers
+  vbo_face_position_buffer = 0;
+  vbo_face_normal_buffer = 0;
+  vbo_face_texcoord_buffer = 0;
+  vbo_face_rgb_color_buffer = 0;
+  vbo_face_pick_color_buffer = 0;
+
+  // Zero out vertex buffer identifiers
+  vbo_vertex_position_buffer = 0;
+  vbo_vertex_normal_buffer = 0;
+  vbo_vertex_texcoord_buffer = 0;
+  vbo_vertex_rgb_color_buffer = 0;
+  vbo_vertex_pick_color_buffer = 0;
 }
 
 
@@ -3432,43 +3607,53 @@ void R3Mesh::
 DrawVertices(const RNFlags draw_flags) const
 {
   // Bind position buffer
-  if (GLPositionBufferObject() <= 0) return;
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+  if (GLVertexPositionBufferObject() <= 0) return;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_position_buffer);
   glVertexPointer(3, GL_FLOAT, 0, 0);
   glEnableClientState(GL_VERTEX_ARRAY);
   
-  // Bind normal buffer
+  // Bind vertex normal buffer
   if (draw_flags[R3_VERTEX_NORMALS_DRAW_FLAG]) {
-    if (GLNormalBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+    if (GLVertexNormalBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_normal_buffer);
       glNormalPointer(GL_FLOAT, 0, 0);
       glEnableClientState(GL_NORMAL_ARRAY);
     }
   }
   
-  // Bind color buffer
+  // Bind vertex texcoord buffer
+  if (draw_flags & R3_VERTEX_TEXTURE_COORDS_DRAW_FLAG) {  
+    if (GLVertexTextureCoordBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_texcoord_buffer);
+      glTexCoordPointer(2, GL_FLOAT, 0, 0);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    }
+  }
+  
+  // Bind vertex color buffer
   if (draw_flags[R3_VERTEX_PICK_DRAW_FLAG]) {
-    if (GLPickColorBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_pick_color_buffer);
+    if (GLVertexPickColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_pick_color_buffer);
       glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
       glEnableClientState(GL_COLOR_ARRAY);
     }
   }
   else if (draw_flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
-    if (GLRgbColorBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_rgb_color_buffer);
+    if (GLVertexRgbColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_rgb_color_buffer);
       glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
       glEnableClientState(GL_COLOR_ARRAY);
     }
   }
   
   // Draw vertices
-  glDrawArrays(GL_POINTS, 0, 3*NFaces());
+  glDrawArrays(GL_POINTS, 0, NVertices());
 
   // Reset everything
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
   glDisableClientState(GL_COLOR_ARRAY);
 }
 
@@ -3489,15 +3674,15 @@ void R3Mesh::
 DrawFaces(const R3DrawFlags draw_flags) const
 {
   // Bind face position buffer
-  if (GLPositionBufferObject() <= 0) return;
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_position_buffer);
+  if (GLFacePositionBufferObject() <= 0) return;
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_face_position_buffer);
   glVertexPointer(3, GL_FLOAT, 0, 0);
   glEnableClientState(GL_VERTEX_ARRAY);
   
   // Bind face normal buffer
   if (draw_flags & R3_SURFACE_NORMALS_DRAW_FLAG) {  
-    if (GLNormalBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_normal_buffer);
+    if (GLFaceNormalBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_normal_buffer);
       glNormalPointer(GL_FLOAT, 0, 0);
       glEnableClientState(GL_NORMAL_ARRAY);
     }
@@ -3505,8 +3690,8 @@ DrawFaces(const R3DrawFlags draw_flags) const
   
   // Bind face texcoord buffer
   if (draw_flags & R3_SURFACE_TEXTURE_DRAW_FLAG) {  
-    if (GLTextureCoordBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord_buffer);
+    if (GLFaceTextureCoordBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_texcoord_buffer);
       glTexCoordPointer(2, GL_FLOAT, 0, 0);
       glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     }
@@ -3514,15 +3699,15 @@ DrawFaces(const R3DrawFlags draw_flags) const
   
   // Bind face color buffer
   if (draw_flags[R3_SURFACE_PICK_DRAW_FLAG]) {
-    if (GLPickColorBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_pick_color_buffer);
+    if (GLFacePickColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_pick_color_buffer);
       glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
       glEnableClientState(GL_COLOR_ARRAY);
     }
   }
   else if (draw_flags[R3_VERTEX_COLORS_DRAW_FLAG]) {
-    if (GLRgbColorBufferObject() > 0) {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_rgb_color_buffer);
+    if (GLFaceRgbColorBufferObject() > 0) {
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_face_rgb_color_buffer);
       glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0);
       glEnableClientState(GL_COLOR_ARRAY);
     }
