@@ -196,6 +196,7 @@ Read(const char *filename)
 
   // Read file of appropriate type
   if (!strcmp(extension, ".arff")) return ReadARFF(filename);
+  else if (!strcmp(extension, ".npy")) return ReadNumpy(filename);
   else if (!strcmp(extension, ".prp")) return ReadBinary(filename);
   else if (!strcmp(extension, ".trt")) return ReadToronto(filename);
   else return ReadProperty(filename);
@@ -285,6 +286,226 @@ ReadARFF(const char *filename)
 
   // Delete buffer
   delete [] buffer;
+  
+  // Return success
+  return 1;
+}
+
+
+
+static int
+NumpyDataTypeSize(int data_type, int data_size)
+{
+  switch (data_type) {
+  case 'U': return 4 * data_size;
+  default: return data_size;
+  }
+}
+
+
+
+int R3MeshPropertySet::
+ReadNumpy(const char *filename)
+{
+  // Open file
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    fprintf(stderr, "Unable to open npy file %s\n", filename);
+    return 0;
+  }
+  
+  // Read magic string
+  unsigned char magic[6];
+  if (fread(magic, sizeof(unsigned char), 6, fp) != (unsigned int) 6) {
+    fprintf(stderr, "Unable to read first character from npy file\n");
+    fclose(fp);
+    return 0;
+  }
+
+  // Check magic string
+  if ((magic[0] != 0x93) || (magic[1] != 'N') || (magic[2] != 'U') ||
+      (magic[3] != 'M')  || (magic[4] != 'P') || (magic[5] != 'Y')) {
+    fprintf(stderr, "Unrecognized format in npy file\n");
+    fclose(fp);
+    return 0;
+  }
+
+  // Read version info
+  unsigned char version[2];
+  if (fread(version, sizeof(unsigned char), 2, fp) != (unsigned int) 2) {
+    fprintf(stderr, "Unable to read version in npy file\n");
+    fclose(fp);
+    return 0;
+  }
+  
+  // Read header length
+  unsigned short int header_length;
+  if (fread(&header_length, sizeof(unsigned short), 1, fp) != (unsigned int) 1) {
+    fprintf(stderr, "Unable to read header length in npy file\n");
+    fclose(fp);
+    return 0;
+  }
+
+  // Check header length
+  if (header_length <= 0) {
+    fprintf(stderr, "Invalid header length in npy file\n");
+    fclose(fp);
+    return 0;
+  }
+
+  // Read header
+  char *header = new char [ header_length + 1 ];
+  if (fread(header, sizeof(char), header_length, fp) != (unsigned int) header_length) {
+    fprintf(stderr, "Unable to read header in npy file\n");
+    delete [] header;
+    fclose(fp);
+    return 0;
+  }
+  header[header_length] = '\0';
+
+  // Extract data type and size
+  int data_type = 0;
+  int data_size = 0;
+  char *start = strstr(header, "'descr'");
+  if (start) {
+    start = strchr(start, '<');
+    if (start) {
+      start++;
+      while (*start == ' ') start++;
+      data_type = *start;
+      start++;
+      char *end = strchr(start, '\'');
+      if (end && (start < end)) {
+        *end = '\0';
+        data_size = atoi(start);
+        *end = '\'';
+      }
+    }
+  }
+
+  // Extract fortrain order
+  int fortran_order = 0;
+  start = strstr(header, "'fortran_order'");
+  if (start) {
+    start = strchr(start, ':');
+    if (start) {
+      start++;
+      while (*start == ' ') start++;
+      char *end = strchr(start, ',');
+      if (end && (start < end)) {
+        *end = '\0';
+        if (!strcmp(start, "True")) fortran_order = 1;
+        if (!strcmp(start, "true")) fortran_order = 1;
+        *end = ',';
+      }
+    }
+  }
+
+  // Extract width
+  int width = 1;
+  start = strstr(header, "'shape'");
+  if (start) {
+    start = strchr(start, '(');
+    if (start) {
+      start++;
+      while (*start == ' ') start++;
+      char *end = strchr(start, ',');
+      if (end && (start < end)) {
+        *end = '\0';
+        width = atoi(start);
+        *end = ',';
+      }
+    }
+  }
+
+  // Extract height
+  int height = 1;
+  start = strstr(header, "'shape'");
+  if (start) {
+    start = strchr(start, ',');
+    if (start) {
+      start++;
+      while (*start == ' ') start++;
+      char *end1 = strchr(start, ',');
+      char *end2 = strchr(start, ')');
+      char *end = (end1 < end2) ? end1 : end2;
+      if (end && (start < end)) {
+        *end = '\0';
+        height = atoi(start);
+        *end = ')';
+      }
+    }
+  }
+
+  // Delete header
+  delete [] header;
+
+  // Read values
+  unsigned int nbytes = width * height * NumpyDataTypeSize(data_type, data_size);
+  unsigned char *array = new unsigned char [ nbytes ];
+  unsigned int read_nbytes = 0;
+  while (read_nbytes < nbytes) {
+    size_t k = fread(&array[read_nbytes], sizeof(unsigned char), nbytes - read_nbytes, fp);
+    if (k <= 0) {
+      fprintf(stderr, "Unable to read array in npy file (%lu %u %u)\n", k, read_nbytes, nbytes);
+      if (k < 0) {
+        delete [] array;
+        fclose(fp);
+        return 0;
+      }
+    }
+    read_nbytes += k;
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Create properties
+  for (int j = 0; j < height; j++) {
+    char property_name[128];
+    sprintf(property_name, "P%d", j);
+    Insert(new R3MeshProperty(mesh, property_name));
+  }
+
+  // Fill property values
+  unsigned char *arrayp = array;
+  if (fortran_order) {
+    // Fortran order
+    for (int j = 0; j < height; j++) {
+      for (int i = 0; i < width; i++) {
+        if (data_size == 4) {
+          float *a = (float *) arrayp;
+          Property(j)->SetVertexValue(i, (float) *a);
+          arrayp += 4;
+        }
+        else if (data_size == 8) {
+          double *a = (double *) arrayp;
+          Property(j)->SetVertexValue(i, (float) *a);
+          arrayp += 8;
+        }
+      }
+    }
+  }
+  else {
+    // C order
+    for (int i = 0; i < width; i++) {
+      for (int j = 0; j < height; j++) {
+        if (data_size == 4) {
+          float *a = (float *) arrayp;
+          Property(j)->SetVertexValue(i, (float) *a);
+          arrayp += 4;
+        }
+        else if (data_size == 8) {
+          double *a = (double *) arrayp;
+          Property(j)->SetVertexValue(i, (float) *a);
+          arrayp += 8;
+        }
+      }
+    }
+  }
+
+  // Delete array
+  delete [] array;
   
   // Return success
   return 1;
@@ -500,6 +721,7 @@ Write(const char *filename) const
 
   // Write file of appropriate type
   if (!strcmp(extension, ".arff")) return WriteARFF(filename);
+  else if (!strcmp(extension, ".npy")) return WriteNumpy(filename);
   else if (!strcmp(extension, ".txt")) return WriteValues(filename);
   else if (!strcmp(extension, ".prp")) return WriteBinary(filename);
   else if (!strcmp(extension, ".val")) return WriteValues(filename);
@@ -538,6 +760,69 @@ WriteARFF(const char *filename) const
       fprintf(fp, "%g ", properties[j]->VertexValue(i));
     }
     fprintf(fp, "\n");
+  }
+
+  // Close file
+  fclose(fp);
+
+  // Return success
+  return 1;
+}
+
+
+
+int R3MeshPropertySet::
+WriteNumpy(const char *filename) const
+{
+  // Open file
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    RNFail("Unable to open npy file %s\n", filename);
+    return 0;
+  }
+
+  // Write magic string
+  unsigned char magic[] = { 0x93, 'N', 'U', 'M', 'P', 'Y' };
+  unsigned int magic_length = sizeof(magic) / sizeof(unsigned char);
+  if (fwrite(magic, 1, magic_length, fp) != magic_length) {
+    RNFail("Unable to write first line to numpy file");
+    return 0;
+  }
+
+  // Write version
+  unsigned char version[] = { 0x01, 0x00 };
+  unsigned int version_length = sizeof(version) / sizeof(unsigned char);
+  if (fwrite(version, 1, version_length, fp) != version_length) {
+    RNFail("Unable to write version to numpy file");
+    return 0;
+  }
+
+  // Create header
+  char header[1024];
+  sprintf(header, "{'descr': '<f4', 'fortran_order': False, 'shape': (%d, %d), }", mesh->NVertices(), NProperties());
+  unsigned int header_length = strlen(header);
+ 
+  // Write header length
+  if (fwrite(&header_length, sizeof(unsigned short), 1, fp) != (unsigned int) 1) {
+    RNFail("Unable to write header length to numpy file");
+    return 0;
+  }
+
+  // Write header
+  if (fwrite(header, sizeof(char), header_length, fp) != header_length) {
+    RNFail("Unable to write header to numpy file");
+    return 0;
+  }
+
+  // Write values
+  for (int i = 0; i < mesh->NVertices(); i++) {
+    for (int j = 0; j < NProperties(); j++) {
+      RNScalar32 value = Property(j)->VertexValue(i);
+      if (fwrite(&value, sizeof(RNScalar32), 1, fp) != (unsigned int) 1) {
+        RNFail("Unable to write value to binary file: %s\n", filename);
+        return 0;
+      }
+    }
   }
 
   // Close file
@@ -647,7 +932,6 @@ WriteValues(const char *filename) const
   // Return success
   return 1;
 }
-
 
 
 } // namespace gaps

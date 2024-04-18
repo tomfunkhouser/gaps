@@ -44,11 +44,13 @@ public:
   // Input/output functions
   int Read(const char *filename);
   int ReadARFF(const char *filename);
+  int ReadNumpy(const char *filename);
   int ReadBinary(const char *filename);
   int ReadToronto(const char *filename);
   int ReadProperty(const char *filename);
   int Write(const char *filename) const;
   int WriteARFF(const char *filename) const;
+  int WriteNumpy(const char *filename) const;
   int WriteBinary(const char *filename) const;
   int WriteValues(const char *filename) const;
 
