@@ -382,29 +382,35 @@ SetPixel(int x, int y, const unsigned char *value)
 void R2Image::
 SetPixelRGB(int x, int y, const RNRgb& rgb)
 {
+  // Clamp rgb
+  unsigned char r = (unsigned char) ((rgb.R() > 0) ? ((rgb.R() < 1.0) ? 255.0 * rgb.R() : 255) : 0);
+  unsigned char g = (unsigned char) ((rgb.G() > 0) ? ((rgb.G() < 1.0) ? 255.0 * rgb.G() : 255) : 0);
+  unsigned char b = (unsigned char) ((rgb.B() > 0) ? ((rgb.B() < 1.0) ? 255.0 * rgb.B() : 255) : 0);
+  static const unsigned char a = 255;
+  
   // Set pixel color
   unsigned char *pixel = &(pixels[y*rowsize + x*ncomponents]);
   switch (ncomponents) {
   case 1: 
-    *(pixel++) = (unsigned char) (255 * rgb.Luminance());
+    *(pixel++) = (unsigned char) (0.3*r + 0.59*g + 0.11*b);
     break;
 
   case 2:
-    *(pixel++) = (unsigned char) (255 * rgb.Luminance());
-    *(pixel++) = (unsigned char) 255;
+    *(pixel++) = (unsigned char) (0.3*r + 0.59*g + 0.11*b);
+    *(pixel++) = a;
     break;
 
   case 3:
-    *(pixel++) = (unsigned char) (255 * rgb.R());
-    *(pixel++) = (unsigned char) (255 * rgb.G());
-    *(pixel++) = (unsigned char) (255 * rgb.B());
+    *(pixel++) = r;
+    *(pixel++) = g;
+    *(pixel++) = b;
     break;
 
   case 4:
-    *(pixel++) = (unsigned char) (255 * rgb.R());
-    *(pixel++) = (unsigned char) (255 * rgb.G());
-    *(pixel++) = (unsigned char) (255 * rgb.B());
-    *(pixel++) = (unsigned char) 255;
+    *(pixel++) = r;
+    *(pixel++) = g;
+    *(pixel++) = b;
+    *(pixel++) = a;
     break;
   }
 }

@@ -1331,7 +1331,6 @@ ComputeRayTracingProperties(R3Mesh *mesh)
 struct MTurkLabel {
   int id;
   char *name;
-  int nyuId;
   int nyu40id;
 };
 
@@ -1383,7 +1382,7 @@ ReadMTurkSegmentationProperties(R3Mesh *mesh, const char *filename)
   }
 
   // Allocate property
-  R3MeshProperty *segmentation = new R3MeshProperty(mesh, "MTurkSegment");
+  R3MeshProperty *segmentation = new R3MeshProperty(mesh, "Segment");
 
   // Parse segment identifiers
   if (json_root.isMember("segIndices")) {
@@ -1442,19 +1441,17 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
   // Extract index of model_id
   int id_index = -1;
   int name_index = -1;
-  int nyuId_index = -1;
   int nyu40id_index = -1;
   for (int i = 0; i < keys.NEntries(); i++) {
     if (!strcmp(keys[i], "index")) id_index = i;
     else if (!strcmp(keys[i], "id")) id_index = i;
     else if (!strcmp(keys[i], "category")) name_index = i; 
-    else if (!strcmp(keys[i], "nyuId")) nyuId_index = i; 
     else if (!strcmp(keys[i], "nyu40id")) nyu40id_index = i; 
   }
 
   // Check if found key fields in header
-  if ((id_index < 0) || (name_index < 0) || (nyuId_index < 0) || (nyu40id_index < 0)) {
-    RNFail("Did not find index, category, nyuId, and nyu40id in header of %s\n", filename);
+  if ((id_index < 0) || (name_index < 0) || (nyu40id_index < 0)) {
+    RNFail("Did not find index, category, and nyu40id in header of %s\n", filename);
     return 0;
   }
 
@@ -1473,7 +1470,6 @@ ReadMTurkLabelMapping(RNSymbolTable<MTurkLabel *>& labels, const char *filename)
     MTurkLabel *label = new MTurkLabel();
     label->id = atoi(values[id_index]);
     label->name = RNStrdup(values[name_index]);
-    label->nyuId = atoi(values[nyuId_index]);
     label->nyu40id = atoi(values[nyu40id_index]);
     labels.Insert(label->name, label);
   }
@@ -1544,9 +1540,9 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
   }
 
   // Allocate properites
-  R3MeshProperty *instance = new R3MeshProperty(mesh, "MTurkInstance");
-  R3MeshProperty *nyuId = new R3MeshProperty(mesh, "MTurkNNYUId");
-  R3MeshProperty *nyu40id = new R3MeshProperty(mesh, "MTurkNYU40Id");
+  R3MeshProperty *instance = new R3MeshProperty(mesh, "Instance");
+  R3MeshProperty *categoryId = new R3MeshProperty(mesh, "Category");
+  R3MeshProperty *nyu40id = new R3MeshProperty(mesh, "NYU40Id");
 
   // Parse instance identifiers
   if (json_root.isMember("segGroups")) {
@@ -1566,7 +1562,7 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
           if (RNIsEqual(segmentation_property->VertexValue(i), segment_id)) {
             instance->SetVertexValue(i, group_index);
             if (label) {
-              nyuId->SetVertexValue(i, label->nyuId);
+              categoryId->SetVertexValue(i, label->id);
               nyu40id->SetVertexValue(i, label->nyu40id);
             }
           }
@@ -1577,7 +1573,7 @@ ReadMTurkAnnotationProperties(R3Mesh *mesh,
 
   // Insert properties
   InsertProperty(properties, instance);
-  InsertProperty(properties, nyuId);
+  InsertProperty(properties, categoryId);
   InsertProperty(properties, nyu40id);
 
   // Print statistics
@@ -1597,9 +1593,9 @@ static int
 TransferMTurkPropertiesToFaces(R3Mesh *mesh, R3MeshPropertySet *properties)
 {
   // Get relevant mturk properties
-  R3MeshProperty *material_property = properties->Property("MTurkSegment");
-  R3MeshProperty *segment_property = properties->Property("MTurkInstance");
-  R3MeshProperty *category_property = properties->Property("MTurkNYU40Id");
+  R3MeshProperty *material_property = properties->Property("Segment");
+  R3MeshProperty *segment_property = properties->Property("Instance");
+  R3MeshProperty *category_property = properties->Property("NYU40Id");
   if (!material_property || !segment_property || !category_property) return 1;
 
   // Allocate segment info
@@ -1667,7 +1663,7 @@ ReadMTurkProperties(R3Mesh *mesh, const char *segmentation_filename,
     properties->Insert(segmentation_properties);
     delete segmentation_properties;
     if (input_mturk_annotation_name && input_mturk_label_mapping_name) {
-      R3MeshProperty *segmentation_property = properties->Property("MTurkSegment");
+      R3MeshProperty *segmentation_property = properties->Property("Segment");
       if (segmentation_property) {
         RNSymbolTable<MTurkLabel *> label_mapping;
         if (ReadMTurkLabelMapping(label_mapping, label_mapping_filename)) {
