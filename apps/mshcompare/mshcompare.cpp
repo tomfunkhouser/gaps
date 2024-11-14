@@ -22,7 +22,7 @@ static int print_verbose = 0;
 
 
 ////////////////////////////////////////////////////////////////////////
-// Input
+// Input/Output
 ////////////////////////////////////////////////////////////////////////
 
 static R3Mesh *
@@ -47,7 +47,7 @@ ReadMesh(char *filename)
 
   // Print statistics
   if (print_verbose) {
-    printf("Read mesh ...\n");
+    printf("Read mesh from %s\n", filename);
     printf("  Time = %.2f seconds\n", start_time.Elapsed());
     printf("  # Faces = %d\n", mesh->NFaces());
     printf("  # Edges = %d\n", mesh->NEdges());
@@ -57,6 +57,30 @@ ReadMesh(char *filename)
 
   // Return success
   return mesh;
+}
+
+
+static int
+WriteProperties(R3MeshPropertySet *properties, char *filename)
+{
+  // Start statistics
+  RNTime start_time;
+  start_time.Read();
+
+  // Write properties
+  if (!properties->Write(filename)) exit(-1);
+
+  // Print statistics
+  if (print_verbose) {
+    printf("Wrote properties to %s\n", filename);
+    printf("  Time = %.2f seconds\n", start_time.Elapsed());
+    printf("  # Vertices = %d\n", properties->Mesh()->NVertices());
+    printf("  # Properties = %d\n", properties->NProperties());
+    fflush(stdout);
+  }
+
+  // Return success
+  return 1;
 }
 
 
@@ -264,7 +288,7 @@ main(int argc, char **argv)
   if (!properties) exit(-1);
 
   // Write the properties to a file
-  if (!properties->Write(output_property_filename)) exit(-1);
+  if (!WriteProperties(properties, output_property_filename)) exit(-1);
 
   // Delete the properties
   delete properties;
