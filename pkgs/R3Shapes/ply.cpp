@@ -84,8 +84,9 @@ PlyProperty *find_property(PlyElement *, char *, int *);
 /* write to a file the word describing a PLY file data type */
 void write_scalar_type (FILE *, int);
 
-/* read a line from a file and break it up into separate words */
-char **get_words(FILE *, int *, char **);
+/* after read a line from a file, break it up into separate words */
+int get_words(char *, int, int, char *, char **, int *);
+/* char **get_words(FILE *, int *, char **); */
 char **old_get_words(FILE *, int *);
 
 /* write an item to a file */
@@ -718,11 +719,14 @@ PlyFile *ply_read(FILE *fp, int *nelems, char ***elem_names)
 {
   int i,j;
   PlyFile *plyfile;
-  int nwords;
-  char **words;
+  const int max_line_size = 4096;
+  char orig_line[max_line_size];
+  const int max_words = 1024;
+  char *words[max_words];
+  char word_buffer[max_line_size];
+  int nwords = 0;
   char **elist;
   PlyElement *elem;
-  char *orig_line;
 
   /* check for NULL file pointer */
   if (fp == NULL)
@@ -746,21 +750,41 @@ PlyFile *ply_read(FILE *fp, int *nelems, char ***elem_names)
 
   /* read and parse the file's header */
 
-  words = get_words (plyfile->fp, &nwords, &orig_line);
-  if (!words || !equal_strings (words[0], "ply"))
-  {
-      if (words)
-	 free(words);
-      return (NULL);
+  /* read in a line */
+  if (!fgets (orig_line, max_line_size, plyfile->fp)) {
+    fprintf(stderr, "Unable to read header from ply file\n");
+    return (NULL);
   }
-  
-  while (words) {
+
+  /* break line into words */
+  if (!get_words(orig_line, max_line_size, max_words, word_buffer, words, &nwords)) {
+    fprintf(stderr, "Unable to parse first line from ply file\n");
+    return (NULL);
+  }
+
+  // Check for ply keyword
+  if (!equal_strings (words[0], "ply")) {
+    fprintf(stderr, "No ply keyword at beginning of ply file\n");
+    return (NULL);
+  }
+
+  // Parse rest of header
+  while (true) {
+    /* read in a line */
+    if (!fgets (orig_line, max_line_size, plyfile->fp)) {
+      fprintf(stderr, "Unable to read line from header of ply file\n");
+      return (NULL);
+    }
+
+    /* break line into words */
+    if (!get_words(orig_line, max_line_size, max_words, word_buffer, words, &nwords)) {
+      fprintf(stderr, "Unable to parse words of line in header of ply file\n");
+      return (NULL);
+    }
 
     /* parse words */
-
     if (equal_strings (words[0], "format")) {
       if (nwords != 3) {
-	free(words);
 	return (NULL);
       }
       if (equal_strings (words[1], "ascii"))
@@ -770,7 +794,7 @@ PlyFile *ply_read(FILE *fp, int *nelems, char ***elem_names)
       else if (equal_strings (words[1], "binary_little_endian"))
         plyfile->file_type = PLY_BINARY_LE;
       else {
-	free(words);
+        fprintf(stderr, "Unrecognized format (%s) in ply file\n", words[1]);
         return (NULL);
       }
       plyfile->version = atof (words[2]);
@@ -784,14 +808,8 @@ PlyFile *ply_read(FILE *fp, int *nelems, char ***elem_names)
     else if (equal_strings (words[0], "obj_info"))
       add_obj_info (plyfile, orig_line);
     else if (equal_strings (words[0], "end_header")) {
-      free(words);
       break;
     }
-    
-    /* free up words space */
-    free (words);
-
-    words = get_words (plyfile->fp, &nwords, &orig_line);
   }
 
   /* create tags for each property of each element, to be used */
@@ -1517,8 +1535,12 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
   int j,k;
   PlyElement *elem;
   PlyProperty *prop;
-  char **words;
-  int nwords;
+  const int max_line_size = 4096;
+  char orig_line[max_line_size];
+  const int max_words = 1024;
+  char *words[max_words];
+  char word_buffer[max_line_size];
+  int nwords = 0;
   int which_word;
   char *elem_data,*item=NULL;
   char *item_ptr;
@@ -1529,7 +1551,6 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
   int list_count;
   int store_it;
   char **store_array;
-  char *orig_line;
   char *other_data=NULL;
   int other_flag;
 
@@ -1547,14 +1568,21 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
     ptr = (char **) (elem_ptr + elem->other_offset);
     *ptr = other_data;
   }
-  else
+  else {
     other_flag = 0;
+  }
 
   /* read in the element */
 
-  words = get_words (plyfile->fp, &nwords, &orig_line);
-  if (words == NULL) {
-    fprintf (stderr, "ply_get_element: unexpected end of file\n");
+  /* read in the elemnt */
+  if (!fgets (orig_line, max_line_size, plyfile->fp)) {
+    fprintf(stderr, "ply_get_element: unexpected end of file\n");
+    exit (-1);
+  }
+
+  /* break line into words */
+  if (!get_words(orig_line, max_line_size, max_words, word_buffer, words, &nwords)) {
+    fprintf(stderr, "ply_get_element: unexpected format\n");
     exit (-1);
   }
 
@@ -1620,8 +1648,6 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
     }
 
   }
-
-  free (words);
 }
 
 
@@ -1843,6 +1869,73 @@ Exit:
   returns a list of words from the line, or NULL if end-of-file
 ******************************************************************************/
 
+#if 1
+
+int get_words(char *orig_line, int max_line_size, int max_words, char *words_buffer, char **words, int *nwords)
+{
+  char *ptr,*ptr2;
+
+  /* initialize result */
+  words_buffer[0] = '\0';
+  *nwords = 0;
+
+  /* add space at end of buffer so that surely terminate search for spaces */
+  orig_line[max_line_size-2] = ' ';
+  orig_line[max_line_size-1] = '\0';
+
+  /* convert line-feed and tabs into spaces */
+  /* (this guarentees that there will be a space before the */
+  /*  null character at the end of the string) */
+  for (ptr = orig_line, ptr2 = words_buffer; *ptr != '\0'; ptr++, ptr2++) {
+    *ptr2 = *ptr;
+    if (*ptr == '\t') {
+      *ptr = ' ';
+      *ptr2 = ' ';
+    }
+    else if (*ptr == '\n') {
+      *ptr2 = ' ';
+      *ptr = '\0';
+      break;
+    }
+    else if (*ptr == '\r') {
+      *ptr2 = ' ';
+      *ptr = '\0';
+    }
+  }
+
+  /* find the words in the line */
+  ptr = words_buffer;
+  while (*ptr != '\0') {
+
+    /* jump over leading spaces */
+    while (*ptr == ' ')
+      ptr++;
+
+    /* break if we reach the end */
+    if (*ptr == '\0')
+      break;
+
+    /* save pointer to beginning of word */
+    words[*nwords] = ptr;
+    (*nwords)++;
+
+    /* jump over non-spaces */
+    while (*ptr != ' ')
+      ptr++;
+
+    /* place a null character here to mark the end of the word */
+    *ptr++ = '\0';
+
+    // Check if found max words
+    if (*nwords >= max_words) break;
+  }
+
+  // Return success
+  return 1;
+}
+
+#else
+
 char **get_words(FILE *fp, int *nwords, char **orig_line)
 {
 #define BIG_STGAPS 4096
@@ -1852,7 +1945,6 @@ char **get_words(FILE *fp, int *nwords, char **orig_line)
   int max_words = 10;
   int num_words = 0;
   char *ptr,*ptr2;
-  char *result;
 
   words = (char **) myalloc (sizeof (char *) * max_words);
 
@@ -1922,6 +2014,7 @@ char **get_words(FILE *fp, int *nwords, char **orig_line)
   return (words);
 }
 
+#endif
 
 /******************************************************************************
 Return the value of an item, given a pointer to it and its type.
