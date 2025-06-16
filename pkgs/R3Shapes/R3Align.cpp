@@ -507,79 +507,91 @@ R3EstimatePlaneWithRansac(const RNArray<R3Point *>& points, const RNScalar *weig
 
 
 R3Box 
-R3BoundingBox(int npoints, R3Point *points)
+R3BoundingBox(int npoints, const R3Point *points)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3BoundingBox(array);
 }
 
 
 
 R3Point 
-R3Centroid(int npoints, R3Point *points, const RNScalar *weights)
+R3Centroid(int npoints, const R3Point *points, const RNScalar *weights)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3Centroid(array, weights);
 }
 
 
 
 R3Triad 
-R3PrincipleAxes(const R3Point& centroid, int npoints, R3Point *points, const RNScalar *weights, RNScalar *variances)
+R3PrincipleAxes(const R3Point& centroid, int npoints, const R3Point *points, const RNScalar *weights, RNScalar *variances)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3PrincipleAxes(centroid, array, weights, variances);
 }
 
 
 
 RNLength
-R3AverageDistance(const R3Point& center, int npoints, R3Point *points, const RNScalar *weights)
+R3AverageDistance(const R3Point& center, int npoints, const R3Point *points, const RNScalar *weights)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3AverageDistance(center, array, weights);
 }
 
 
 
 R3Affine 
-R3NormalizationTransformation(int npoints, R3Point *points,  RNBoolean translate, RNBoolean rotate, int scale) 
+R3NormalizationTransformation(int npoints, const R3Point *points,  RNBoolean translate, RNBoolean rotate, int scale) 
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3NormalizationTransformation(array, translate, rotate, scale);
 }
 
 
 
 RNScalar
-R3AlignError(int npoints, R3Point *points1, R3Point *points2, const R4Matrix& matrix, const RNScalar *weights)
+R3AlignError(int npoints, const R3Point *points1, const R3Point *points2, const R4Matrix& matrix, const RNScalar *weights)
 {
   RNArray<R3Point *> array1, array2;
-  for (int i = 0; i < npoints; i++) { array1.Insert(&points1[i]); array2.Insert(&points2[i]); }
+  for (int i = 0; i < npoints; i++) {
+    array1.Insert((R3Point *) &points1[i]);
+    array2.Insert((R3Point *) &points2[i]);
+  }
   return R3AlignError(array1, array2, matrix, weights);
 }
 
 
 R4Matrix
-R3AlignPoints(int npoints, R3Point *points1, R3Point *points2, const RNScalar *weights, RNBoolean align_center, RNBoolean align_rotation, int align_scale)
+R3AlignPoints(int npoints, const R3Point *points1, const R3Point *points2, const RNScalar *weights, RNBoolean align_center, RNBoolean align_rotation, int align_scale)
 {
   RNArray<R3Point *> array1, array2;
-  for (int i = 0; i < npoints; i++) { array1.Insert(&points1[i]); array2.Insert(&points2[i]); }
+  for (int i = 0; i < npoints; i++) {
+    array1.Insert((R3Point *) &points1[i]);
+    array2.Insert((R3Point *) &points2[i]);
+  }
   return R3AlignPoints(array1, array2, weights, align_center, align_rotation, align_scale);
 }
 
 
 
 R3Plane
-R3EstimatePlaneWithPCA(int npoints, R3Point *points, const RNScalar *weights)
+R3EstimatePlaneWithPCA(int npoints, const R3Point *points, const RNScalar *weights)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3EstimatePlaneWithPCA(array, weights);
 
 }
@@ -587,11 +599,12 @@ R3EstimatePlaneWithPCA(int npoints, R3Point *points, const RNScalar *weights)
 
 
 R3Plane
-R3EstimatePlaneWithRansac(int npoints, R3Point *points, const RNScalar *weights,
+R3EstimatePlaneWithRansac(int npoints, const R3Point *points, const RNScalar *weights,
   RNScalar tolerance, int max_iterations, RNScalar *max_inlier_fraction, RNScalar *avg_inlier_fraction)
 {
   RNArray<R3Point *> array;
-  for (int i = 0; i < npoints; i++) array.Insert(&points[i]);
+  for (int i = 0; i < npoints; i++)
+    array.Insert((R3Point *) &points[i]);
   return R3EstimatePlaneWithRansac(array, weights, tolerance, max_iterations, max_inlier_fraction, avg_inlier_fraction);
 
 }

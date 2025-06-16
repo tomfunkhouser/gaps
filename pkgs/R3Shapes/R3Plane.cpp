@@ -180,7 +180,7 @@ R3Plane(const RNArray<R3Point *>& points, RNBoolean polygon_vertices)
 
 
 R3Plane::
-R3Plane(R3Point *points, int npoints, RNBoolean polygon_vertices)
+R3Plane(const R3Point *points, int npoints, RNBoolean polygon_vertices)
 {
     // Initialize plane
     v = R3null_vector;

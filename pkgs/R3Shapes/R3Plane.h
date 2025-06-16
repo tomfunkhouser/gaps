@@ -31,7 +31,7 @@ class R3Plane {
 	R3Plane(const R3Point& point, const R3Vector& vector1, const R3Vector& vector2);
 	R3Plane(const R3Point& point1, const R3Point& point2, const R3Point& point3);
 	R3Plane(const RNArray<R3Point *>& points, RNBoolean polygon_vertices = TRUE);
-	R3Plane(R3Point *points, int npoints, RNBoolean polygon_vertices = TRUE);
+	R3Plane(const R3Point *points, int npoints, RNBoolean polygon_vertices = TRUE);
 
         // Property functions/operators
 	const RNScalar A(void) const;
