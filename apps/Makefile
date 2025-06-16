@@ -28,6 +28,7 @@ target:
 	cd msh2pts; $(MAKE) $(TARGET)
 	cd msh2prp; $(MAKE) $(TARGET)
 	cd msh2df; $(MAKE) $(TARGET)
+	cd mshcompare; $(MAKE) $(TARGET)
 	cd mshalign; $(MAKE) $(TARGET)
 	cd mshsegment; $(MAKE) $(TARGET)
 	cd mshparam; $(MAKE) $(TARGET)

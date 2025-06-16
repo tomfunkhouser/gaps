@@ -562,6 +562,31 @@ Draw(const R3DrawFlags draw_flags) const
 
 
 
+void R3Polygon::
+Draw(const R3DrawFlags draw_flags) const
+{
+    // Draw polygon
+    if (draw_flags[R3_SURFACES_DRAW_FLAG]) {
+        R3BeginPolygon();
+        if (draw_flags[R3_SURFACE_NORMALS_DRAW_FLAG] ||
+            draw_flags[R3_VERTEX_NORMALS_DRAW_FLAG])
+            R3LoadNormal(plane.Normal());
+        for (int i = 0; i < npoints; i++) {
+            R3LoadPoint(points[i]);
+        }
+        R3EndPolygon();
+    }
+    if (draw_flags[R3_EDGES_DRAW_FLAG]) {
+        R3BeginLoop();
+        for (int i = 0; i < npoints; i++) {
+            R3LoadPoint(points[i]);
+        }
+        R3EndLoop();
+    }
+}
+
+
+
 void R3Box::
 Draw(const R3DrawFlags draw_flags) const
 {
