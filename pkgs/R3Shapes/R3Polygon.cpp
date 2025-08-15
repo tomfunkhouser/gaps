@@ -160,6 +160,15 @@ IsPlanar(void) const
 }
 
 
+  
+const RNInterval R3Polygon::
+NFacets(void) const
+{
+  // All polygons have one facet
+  return RNInterval(1,1);
+}
+
+
 
 const RNArea R3Polygon::
 Area(void) const
