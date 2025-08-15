@@ -1876,7 +1876,7 @@ int get_words(char *orig_line, int max_line_size, int max_words, char *words_buf
   char *ptr,*ptr2;
 
   /* initialize result */
-  words_buffer[0] = '\0';
+  memset(words_buffer, 0, max_line_size);
   *nwords = 0;
 
   /* add space at end of buffer so that surely terminate search for spaces */
