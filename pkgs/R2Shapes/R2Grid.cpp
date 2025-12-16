@@ -2209,19 +2209,27 @@ RasterizeGridPoint(RNScalar x, RNScalar y, RNScalar value, int operation)
   if ((x < 0) || (x > grid_resolution[0]-1)) return;
   if ((y < 0) || (y > grid_resolution[1]-1)) return;
 
-  // Bilinear interpolation
-  int ix1 = (int) x;
-  int iy1 = (int) y;
-  int ix2 = ix1 + 1;
-  int iy2 = iy1 + 1;
-  if (ix2 >= grid_resolution[0]) ix2 = ix1;
-  if (iy2 >= grid_resolution[1]) iy2 = iy1;
-  RNScalar dx = x - ix1;
-  RNScalar dy = y - iy1;
-  RasterizeGridValue(ix1, iy1, value * (1.0-dx) * (1.0-dy), operation);
-  RasterizeGridValue(ix1, iy2, value * (1.0-dx) * dy, operation);
-  RasterizeGridValue(ix2, iy1, value * dx * (1.0-dy), operation);
-  RasterizeGridValue(ix2, iy2, value * dx * dy, operation);
+  // Check operation
+  if (operation == R2_GRID_REPLACE_OPERATION) {
+    int ix = x + 0.5;
+    int iy = y + 0.5;
+    RasterizeGridValue(ix, iy, value, operation);
+  }
+  else {
+    // Bilinear interpolation
+    int ix1 = (int) x;
+    int iy1 = (int) y;
+    int ix2 = ix1 + 1;
+    int iy2 = iy1 + 1;
+    if (ix2 >= grid_resolution[0]) ix2 = ix1;
+    if (iy2 >= grid_resolution[1]) iy2 = iy1;
+    RNScalar dx = x - ix1;
+    RNScalar dy = y - iy1;
+    RasterizeGridValue(ix1, iy1, value * (1.0-dx) * (1.0-dy), operation);
+    RasterizeGridValue(ix1, iy2, value * (1.0-dx) * dy, operation);
+    RasterizeGridValue(ix2, iy1, value * dx * (1.0-dy), operation);
+    RasterizeGridValue(ix2, iy2, value * dx * dy, operation);
+  }
 }
 
 
@@ -2238,7 +2246,7 @@ RasterizeGridSpan(const R2Point& p1, const R2Point& p2, RNScalar value1, RNScala
   for (int i = 0; i <= nsteps; i++) {
     RNScalar v = value1 + i*dv;
     gaps::R2Point p = p1 + i*dp;
-    RasterizeGridPoint(p, v);
+    RasterizeGridPoint(p, v, operation);
   }
 }
 
